@@ -25,7 +25,7 @@ const SB_KEY_KEY = "krapmaps_sb_key";
 
 // Supabase hardcoded defaults (can be overridden in settings)
 const DEFAULT_SB_URL = "https://xiudsyiinkqtmowkiqxh.supabase.co";
-const ANTHROPIC_KEY = "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";
+const ANTHROPIC_KEY = "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";
 const DEFAULT_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpdWRzeWlpbmtxdG1vd2tpcXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzU5OTcsImV4cCI6MjA4OTQ1MTk5N30.8aHpQIcEcrDXo9DJN52SWAOee-rrkp-ti00h72-_sZE";
 
 const loadJSON = (k,fb) => { try { return JSON.parse(localStorage.getItem(k))||fb; } catch { return fb; } };
