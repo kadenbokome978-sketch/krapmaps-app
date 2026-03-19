@@ -1,4 +1,4 @@
-export const config = { api: { bodyParser: { sizeLimit: "10mb" } } };
+export const config = { api: { bodyParser: { sizeLimit: "10mb" }, responseLimit: "10mb" } };
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -8,6 +8,8 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55000);
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -16,7 +18,9 @@ export default async function handler(req, res) {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
     const text = await response.text();
     res.setHeader("Content-Type", "application/json");
     return res.status(response.status).send(text);
