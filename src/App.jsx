@@ -25,6 +25,7 @@ const SB_KEY_KEY = "krapmaps_sb_key";
 
 // Supabase hardcoded defaults (can be overridden in settings)
 const DEFAULT_SB_URL = "https://xiudsyiinkqtmowkiqxh.supabase.co";
+const ANTHROPIC_KEY = "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";
 const DEFAULT_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpdWRzeWlpbmtxdG1vd2tpcXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzU5OTcsImV4cCI6MjA4OTQ1MTk5N30.8aHpQIcEcrDXo9DJN52SWAOee-rrkp-ti00h72-_sZE";
 
 const loadJSON = (k,fb) => { try { return JSON.parse(localStorage.getItem(k))||fb; } catch { return fb; } };
@@ -168,8 +169,10 @@ function ChipGroup({ label, options, value, onChange, color=C.pink }) {
 const SYSTEM = `You are the growth strategist for KrapMaps — a crowdsourced gamified bin-finding app on iOS & Android. TikTok: @findkrap. Also active on Instagram. Goal: push the app as big as possible across both platforms. Best TikTok formula: Problem→struggle→KrapMaps saves the day→reaction. Edgy/controversial hooks and facecam/street content outperform demos. Hook must land in 1-2 seconds. Instagram strategy: more polished, community-focused, behind-the-scenes, aesthetic bin content, before/after maps, user-generated content reposts. Mini-games: bin catcher slider + guess the country quiz. Songkran April 13-15 Thailand is a major activation. Harley in Thailand films, Bk in UK edits/strategy. Respond ONLY with valid JSON — no markdown, no preamble.`;
 
 async function callAI(prompt, maxTokens=1000) {
+  const headers = {"Content-Type":"application/json","anthropic-dangerous-direct-browser-access":"true"};
+  if(ANTHROPIC_KEY) { headers["x-api-key"] = ANTHROPIC_KEY; headers["anthropic-version"] = "2023-06-01"; }
   const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method:"POST", headers:{"Content-Type":"application/json"},
+    method:"POST", headers,
     body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:maxTokens, system:SYSTEM, messages:[{role:"user",content:prompt}] }),
   });
   const data = await res.json();
@@ -1343,8 +1346,10 @@ function Dashboard({ keys, onEditKeys }) {
       setPreview(URL.createObjectURL(file));
       try {
         const b64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(",")[1]); r.onerror=rej; r.readAsDataURL(file); });
+        const scanHeaders = {"Content-Type":"application/json","anthropic-dangerous-direct-browser-access":"true"};
+        if(ANTHROPIC_KEY) { scanHeaders["x-api-key"] = ANTHROPIC_KEY; scanHeaders["anthropic-version"] = "2023-06-01"; }
         const resp = await fetch("https://api.anthropic.com/v1/messages", {
-          method:"POST", headers:{"Content-Type":"application/json"},
+          method:"POST", headers:scanHeaders,
           body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:800, system:SYSTEM,
             messages:[{ role:"user", content:[
               { type:"image", source:{ type:"base64", media_type:file.type||"image/jpeg", data:b64 }},
