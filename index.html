@@ -1,13 +1,323 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KrapMaps Content OS</title>
-    <meta name="description" content="KrapMaps Content OS — growth tracking and AI strategy" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KrapMaps | Content OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Roboto:wght@300;400;500;600;700&display=swap">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    html, body { background:#07050F; color:#F8EEFF; font-family:'Lilita One', Georgia, serif; min-height:100vh; -webkit-font-smoothing:antialiased; }
+    input, button, select, textarea { font-family:inherit; }
+
+    /* ── GRAIN OVERLAY ── */
+    body::before {
+      content:""; position:fixed; inset:0; z-index:998; pointer-events:none;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:180px 180px; opacity:0.03; mix-blend-mode:overlay;
+      animation:grain 0.55s steps(3) infinite;
+    }
+    @keyframes grain {
+      0%{transform:translate(0,0)} 20%{transform:translate(-3%,-2%)}
+      40%{transform:translate(2%,3%)} 60%{transform:translate(-2%,1%)}
+      80%{transform:translate(3%,-1%)} 100%{transform:translate(0,0)}
+    }
+
+    /* ── CUSTOM CURSOR ── */
+    .cur {
+      display:none; position:fixed; pointer-events:none; z-index:9999;
+      width:6px; height:6px; border-radius:50%; background:#FF2D78;
+      transform:translate(-50%,-50%);
+    }
+    .cur-ring {
+      display:none; position:fixed; pointer-events:none; z-index:9998;
+      width:28px; height:28px; border-radius:50%;
+      border:1px solid rgba(255,107,157,0.5);
+      transform:translate(-50%,-50%);
+      transition:width .25s, height .25s, border-color .25s, background .25s;
+    }
+    body.hovering .cur-ring {
+      width:44px; height:44px;
+      border-color:rgba(255,107,157,0.9);
+      background:rgba(255,107,157,0.06);
+    }
+
+    /* ── SCROLL PROGRESS ── */
+    #scroll-progress {
+      position:fixed; top:0; left:0; right:0; height:2px;
+      background:linear-gradient(90deg,#FF2D78,#C566FF);
+      z-index:9997; transform-origin:left; transform:scaleX(0);
+      pointer-events:none;
+    }
+
+    /* ── CARD HOVER ── */
+    [data-card] {
+      position:relative; overflow:hidden;
+      transition:transform .3s, box-shadow .3s;
+      will-change:transform;
+    }
+    [data-card]:hover { transform:translateY(-3px); }
+    [data-card] .card-shine {
+      position:absolute; top:0; left:-110%; width:55%; height:100%;
+      background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.06) 50%,transparent 70%);
+      transform:skewX(-15deg); pointer-events:none; z-index:10;
+    }
+
+    /* ── BUTTON HOVER ── */
+    button {
+      -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+      transition:transform .18s, filter .18s, box-shadow .18s;
+    }
+    button:hover:not([data-nav-btn]) {
+      filter:brightness(1.12) !important;
+      transform:translateY(-1px) scale(1.04) !important;
+      box-shadow:0 4px 14px rgba(255,107,157,0.12) !important;
+    }
+    button:active:not([data-nav-btn]) { transform:scale(0.96) !important; }
+    [data-nav-btn] { transition:transform .15s, filter .15s; }
+    [data-nav-btn]:hover { filter:brightness(1.15) !important; }
+    [data-nav-btn]:active { transform:scale(0.88); }
+    [data-btn] { position:relative; overflow:hidden; will-change:transform; }
+    [data-btn] .btn-shine {
+      position:absolute; top:0; left:-110%; width:60%; height:100%;
+      background:linear-gradient(105deg,transparent 20%,rgba(255,255,255,0.22) 50%,transparent 80%);
+      transform:skewX(-20deg); pointer-events:none; z-index:10;
+    }
+    [data-pill] { transition:color .2s, border-color .2s, background .2s; }
+
+    /* ── MISC ── */
+    ::-webkit-scrollbar { display:none; }
+    * { scrollbar-width:none; }
+    .view-root { will-change:transform,opacity; }
+    .swept::before {
+      content:""; position:absolute; top:0; left:-100%; width:100%; height:1px;
+      background:linear-gradient(90deg,transparent,#FF2D78,transparent);
+      z-index:10; pointer-events:none; animation:sweepLine .9s ease-out forwards;
+    }
+    @keyframes sweepLine { 0%{left:-100%;opacity:1} 100%{left:100%;opacity:0} }
+    .pulse-badge { animation:badgePulse 3s ease-in-out infinite; }
+    @keyframes badgePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.025)} }
+
+    /* ══ WEB LAYOUT ══ */
+    .web-sidebar   { display:none; }
+    .mobile-header { display:flex; }
+    .mobile-nav    { display:flex; }
+
+    body { font-size:16px; }
+    .web-inner { padding:12px 14px 80px !important; }
+    [data-card] { border-radius:16px !important; }
+    button { min-height:40px; }
+
+    @media(min-width:768px) {
+      body { overflow-x:hidden; background:#07050F; }
+      .web-sidebar {
+        display:flex !important; position:fixed;
+        top:0; left:0; bottom:0; width:260px;
+        flex-direction:column; padding:28px 20px;
+        background:#0A0814;
+        border-right:1px solid rgba(255,255,255,0.06); z-index:200;
+      }
+      .web-sidebar button {
+        display:flex; align-items:center; gap:14px; width:100%;
+        padding:13px 16px; border:none; border-radius:14px;
+        font-size:14px; cursor:pointer; text-align:left;
+        white-space:nowrap; transition:all 0.18s;
+        font-family:'Lilita One', Georgia, serif;
+        font-weight:600; letter-spacing:0.04em;
+      }
+      .mobile-header { display:none !important; }
+      .mobile-nav    { display:none !important; }
+      .web-content {
+        margin-left:260px; min-height:100vh; overflow-y:auto; overflow-x:hidden;
+        padding:0; background:#07050F;
+      }
+      .web-content > div:first-child { width:100%; }
+      [data-stats-grid] { grid-template-columns:repeat(4,1fr) !important; gap:14px !important; }
+      [data-ai-grid]    { grid-template-columns:1fr 1fr !important; gap:16px !important; }
+      [data-ai-grid] > div { padding:20px !important; }
+      [data-two-col]    { grid-template-columns:1fr 1fr !important; gap:16px !important; }
+    }
+
+    @media(min-width:1100px) {
+      .web-sidebar { width:280px; }
+      .web-content { margin-left:280px; }
+    }
+
+    @media(min-width:1440px) {
+      .web-sidebar { width:300px; }
+      .web-content { margin-left:300px; }
+    }
+
+    @media(min-width:768px) {
+      .app-outer { display:flex; }
+      .web-inner {
+        max-width:100% !important; width:100% !important;
+        margin:0 !important; padding:0 !important;
+      }
+    }
+
+    /* ── TYPOGRAPHY ── */
+    [style*="fontFamily:C.fontHead"],
+    [style*="fontFamily:C.fontSora"] {
+      font-family:'Lilita One', Georgia, serif !important;
+    }
+    button, input, select, textarea {
+      font-family:'Lilita One', Georgia, serif !important;
+    }
+    .web-sidebar button {
+      font-family:'Lilita One', Georgia, serif !important;
+      font-size:16px !important;
+      font-weight:600 !important;
+      letter-spacing:0.03em !important;
+    }
+
+    /* ── CENTRE CONTENT ── */
+    @media(min-width:768px) {
+      .web-content { align-items:center !important; }
+      .web-inner { width:100% !important; max-width:900px !important; }
+    }
+    @media(min-width:1100px) {
+      .web-inner { max-width:1000px !important; }
+    }
+    @media(min-width:1440px) {
+      .web-inner { max-width:1100px !important; }
+    }
+
+    /* ── ALL LILITA ONE ── */
+    html, body, *, button, input, select, textarea {
+      font-family:'Lilita One', Georgia, serif !important;
+    }
+
+    /* ── INTER BASE ── */
+    * { text-transform:none !important; }
+    html, body { font-family:'Lilita One', Georgia, serif; -webkit-font-smoothing:antialiased; }
+  </style>
+</head>
+<body>
+  <div id="scroll-progress"></div>
+  <div class="cur" id="cur"></div>
+  <div class="cur-ring" id="curRing"></div>
+  <div id="root"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.42/bundled/lenis.min.js"></script>
+  <script type="module" src="/src/main.jsx"></script>
+  <script type="text/javascript">
+    // ── LENIS SMOOTH SCROLL
+    (function initLenis() {
+      if (typeof Lenis === 'undefined') { setTimeout(initLenis, 100); return; }
+      const lenis = new Lenis({ duration:1.2, easing: t => Math.min(1, 1.001 - Math.pow(2, -10*t)), smoothWheel:true });
+      function raf(t) { lenis.raf(t); requestAnimationFrame(raf); }
+      requestAnimationFrame(raf);
+    })();
+
+    // ── CUSTOM CURSOR
+    (function() {
+      const isTouch = navigator.maxTouchPoints > 0 || ('ontouchstart' in window);
+      if (isTouch) return;
+      const cur = document.getElementById('cur');
+      const ring = document.getElementById('curRing');
+      if (!cur || !ring) return;
+      cur.style.display = 'block'; ring.style.display = 'block';
+      window.addEventListener('mousemove', function(e) {
+        cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px';
+        if (typeof gsap !== 'undefined') gsap.to(ring, { left:e.clientX, top:e.clientY, duration:0.15, ease:'power2.out', overwrite:true });
+        else { ring.style.left = e.clientX + 'px'; ring.style.top = e.clientY + 'px'; }
+      });
+      function bind() {
+        document.querySelectorAll('a, button').forEach(function(el) {
+          if (el.__cb) return; el.__cb = true;
+          el.addEventListener('mouseenter', function() { document.body.classList.add('hovering'); });
+          el.addEventListener('mouseleave', function() { document.body.classList.remove('hovering'); });
+        });
+      }
+      bind();
+      new MutationObserver(bind).observe(document.body, { childList:true, subtree:true });
+    })();
+
+    // ── SCROLL PROGRESS
+    (function() {
+      const bar = document.getElementById('scroll-progress');
+      if (!bar) return;
+      window.addEventListener('scroll', function() {
+        const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+        bar.style.transform = 'scaleX(' + Math.min(1, pct) + ')';
+      }, { passive:true });
+    })();
+
+    // ── GSAP HOVER + SHINE
+    (function initHover() {
+      if (typeof gsap === 'undefined') { setTimeout(initHover, 200); return; }
+      function injectShines() {
+        document.querySelectorAll('[data-btn]:not(.shine-ready)').forEach(function(el) {
+          el.classList.add('shine-ready');
+          var s = document.createElement('span'); s.className = 'btn-shine'; el.appendChild(s);
+        });
+        document.querySelectorAll('[data-card]:not(.shine-ready)').forEach(function(el) {
+          el.classList.add('shine-ready');
+          var s = document.createElement('span'); s.className = 'card-shine'; el.appendChild(s);
+        });
+      }
+      injectShines();
+      new MutationObserver(injectShines).observe(document.body, { childList:true, subtree:true });
+      document.addEventListener('mouseover', function(e) {
+        var btn = e.target.closest('[data-btn]');
+        if (btn) {
+          var shine = btn.querySelector('.btn-shine');
+          gsap.killTweensOf(btn);
+          gsap.to(btn, { y:-2, scale:1.04, duration:0.2, ease:'power2.out' });
+          if (shine) gsap.fromTo(shine, { x:'-110%' }, { x:'120%', duration:0.45, ease:'power2.inOut' });
+          return;
+        }
+        var card = e.target.closest('[data-card]');
+        if (card) {
+          var cs = card.querySelector('.card-shine');
+          gsap.killTweensOf(card);
+          gsap.to(card, { y:-4, scale:1.01, duration:0.35, ease:'power3.out' });
+          if (cs) gsap.fromTo(cs, { x:'-110%' }, { x:'120%', duration:0.55, ease:'power2.inOut', delay:0.05 });
+        }
+      });
+      document.addEventListener('mouseout', function(e) {
+        var btn = e.target.closest('[data-btn]');
+        if (btn && !btn.contains(e.relatedTarget)) {
+          gsap.killTweensOf(btn);
+          gsap.to(btn, { y:0, scale:1, duration:0.3, ease:'power2.out' });
+          return;
+        }
+        var card = e.target.closest('[data-card]');
+        if (card && !card.contains(e.relatedTarget)) {
+          gsap.killTweensOf(card);
+          gsap.to(card, { y:0, scale:1, duration:0.4, ease:'power3.out' });
+        }
+      });
+      document.addEventListener('touchstart', function(e) {
+        var btn = e.target.closest('[data-btn]');
+        if (btn) gsap.to(btn, { scale:0.94, duration:0.1 });
+      }, { passive:true });
+      document.addEventListener('touchend', function(e) {
+        var btn = e.target.closest('[data-btn]');
+        if (btn) gsap.to(btn, { scale:1, duration:0.35, ease:'elastic.out(1.2,0.5)' });
+      }, { passive:true });
+      document.addEventListener('click', function(e) {
+        var nb = e.target.closest('[data-nav-btn]');
+        if (nb) gsap.fromTo(nb, { scale:0.88 }, { scale:1, duration:0.35, ease:'elastic.out(1.2,0.5)' });
+      });
+    })();
+
+    // ── GSAP VIEW TRANSITION
+    window.__animateView = function(el) {
+      if (!el || typeof gsap === 'undefined') return;
+      if (window.__sweepView) window.__sweepView();
+      var cards = el.querySelectorAll('[data-card]');
+      gsap.fromTo(el, { opacity:0, y:18 }, { opacity:1, y:0, duration:0.38, ease:'power3.out', clearProps:'transform' });
+      if (cards.length) gsap.fromTo(cards, { opacity:0, y:22, scale:0.97 }, { opacity:1, y:0, scale:1, duration:0.5, stagger:0.055, ease:'power3.out', clearProps:'transform', delay:0.05 });
+    };
+    window.__sweepView = function() {
+      var el = document.querySelector('.view-root');
+      if (!el) return;
+      el.classList.remove('swept'); void el.offsetWidth; el.classList.add('swept');
+    };
+  </script>
+</body>
 </html>
