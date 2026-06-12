@@ -3593,34 +3593,21 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
     if(!geminiKey) { setMsgs(m=>[...m,{role:"assistant",content:"No Gemini API key set. Go to Settings to add one — video analysis uses Gemini."}]); return; }
 
     setUploading(true);
-    setMsgs(m=>[...m, { role:"user", content:`📎 ${file.name}` }, { role:"assistant", content:"Uploading your clip to Gemini..." }]);
+    setMsgs(m=>[...m, { role:"user", content:`📎 ${file.name}` }, { role:"assistant", content:"Reading your clip..." }]);
 
     try {
-      // Step 1: resumable upload to Gemini Files API
-      const startRes = await fetch(
-        `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}`,
-        { method:"POST",
-          headers:{ "X-Goog-Upload-Protocol":"resumable", "X-Goog-Upload-Command":"start", "X-Goog-Upload-Header-Content-Length":file.size, "X-Goog-Upload-Header-Content-Type":file.type, "Content-Type":"application/json" },
-          body: JSON.stringify({ file:{ display_name: file.name } })
-        }
-      );
-      if(!startRes.ok) throw new Error(`Upload start failed: ${startRes.status}`);
-      const uploadUrl = startRes.headers.get("X-Goog-Upload-URL");
-      if(!uploadUrl) throw new Error("No upload URL returned");
-
-      const uploadRes = await fetch(uploadUrl, {
-        method:"POST",
-        headers:{ "Content-Length":file.size, "X-Goog-Upload-Offset":"0", "X-Goog-Upload-Command":"upload, finalize", "Content-Type":file.type },
-        body: file
+      // Read file as base64 for inline sending (browser-compatible, no CORS issues)
+      const base64 = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => res(reader.result.split(",")[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
       });
-      if(!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
-      const uploadData = await uploadRes.json();
-      const fileUri = uploadData?.file?.uri;
-      if(!fileUri) throw new Error("No file URI returned from Gemini");
 
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
 
-      // Step 2: send to Gemini for analysis
+      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
+
       const prompt = `You are a viral TikTok and Instagram Reels content expert. Analyse this video clip and give:
 
 1. HOOK (0-3s) — is it strong enough to stop the scroll? What's working or not?
@@ -3633,13 +3620,16 @@ Be direct, specific, and harsh if needed. No fluff.`;
       const genRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
         { method:"POST", headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ contents:[{ parts:[{ file_data:{ mime_type:file.type, file_uri:fileUri } }, { text:prompt }] }] })
+          body: JSON.stringify({ contents:[{ parts:[{ inline_data:{ mime_type:file.type, data:base64 } }, { text:prompt }] }] })
         }
       );
-      if(!genRes.ok) throw new Error(`Gemini error: ${genRes.status}`);
+      if(!genRes.ok) {
+        const errData = await genRes.json().catch(()=>({}));
+        throw new Error(`Gemini error: ${genRes.status} — ${errData?.error?.message||""}`);
+      }
       const genData = await genRes.json();
       const text = genData?.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis returned.";
-      setLastFileUri(fileUri);
+      setLastFileUri(base64);
       setLastFileMime(file.type);
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:text, showCapcutBtn:true }]);
     } catch(e) {
@@ -3782,7 +3772,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
       const genRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
         { method:"POST", headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ contents:[{ parts:[{ file_data:{ mime_type:lastFileMime, file_uri:lastFileUri } }, { text:prompt }] }] })
+          body: JSON.stringify({ contents:[{ parts:[{ inline_data:{ mime_type:lastFileMime, data:lastFileUri } }, { text:prompt }] }] })
         }
       );
       if(!genRes.ok) throw new Error(`Gemini error: ${genRes.status}`);
