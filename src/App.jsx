@@ -4850,7 +4850,7 @@ Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 senten
           </div>
 
           {/* STICKY DESKTOP TOP BAR */}
-          <div style={{ position:"sticky", top:0, zIndex:100, background:"rgba(6,4,14,0.92)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", borderBottom:"1px solid rgba(255,255,255,0.05)", padding:"0 40px", height:60, display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 1px 0 rgba(255,255,255,0.04)" }}>
+          <div className="web-topbar" style={{ position:"sticky", top:0, zIndex:100, background:"rgba(6,4,14,0.92)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", borderBottom:"1px solid rgba(255,255,255,0.05)", padding:"0 40px", height:60, display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 1px 0 rgba(255,255,255,0.04)" }}>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
               <span style={{ fontSize:16, color:"rgba(255,255,255,0.28)" }}>KrapMaps</span>
               <span style={{ fontSize:16, color:"rgba(255,255,255,0.75)" }}>/</span>
@@ -4874,7 +4874,7 @@ Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 senten
           </div>
 
           {/* PAGE CONTENT */}
-          <div style={{ padding:"32px 44px 60px" }}>
+          <div className="web-page-content" style={{ padding:"32px 44px 60px" }}>
             {/* PAGE TITLE */}
             <div style={{ marginBottom:32, display:"flex", alignItems:"flex-end", justifyContent:"space-between" }}>
               <div>

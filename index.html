@@ -100,29 +100,43 @@
     .pulse-badge { animation:badgePulse 3s ease-in-out infinite; }
     @keyframes badgePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.025)} }
 
-    /* ══ WEB LAYOUT ══ */
+    /* ── ALL LILITA ONE ── */
+    html, body, *, button, input, select, textarea {
+      font-family:'Lilita One', Georgia, serif !important;
+    }
+
+    /* ══ WEB LAYOUT — MOBILE FIRST ══ */
     .web-sidebar   { display:none; }
     .mobile-header { display:flex; }
     .mobile-nav    { display:flex; }
 
     body { font-size:16px; }
-    .web-inner { padding:12px 14px 80px !important; }
     [data-card] { border-radius:16px !important; }
     button { min-height:40px; }
 
+    /* Mobile content padding + safe area for notched phones */
+    .web-inner { padding:10px 12px calc(72px + env(safe-area-inset-bottom)) !important; }
+    .mobile-nav { padding-bottom:calc(6px + env(safe-area-inset-bottom)) !important; }
+
+    /* Small phones */
+    @media(max-width:374px) {
+      .web-inner { padding:8px 10px calc(72px + env(safe-area-inset-bottom)) !important; }
+    }
+
+    /* Tablet (768px+) — show sidebar */
     @media(min-width:768px) {
-      body { overflow-x:hidden; background:#07050F; }
+      body { overflow-x:hidden; }
       .web-sidebar {
         display:flex !important; position:fixed;
-        top:0; left:0; bottom:0; width:260px;
-        flex-direction:column; padding:28px 20px;
+        top:0; left:0; bottom:0; width:240px;
+        flex-direction:column; padding:24px 18px;
         background:#0A0814;
         border-right:1px solid rgba(255,255,255,0.06); z-index:200;
       }
       .web-sidebar button {
-        display:flex; align-items:center; gap:14px; width:100%;
-        padding:13px 16px; border:none; border-radius:14px;
-        font-size:14px; cursor:pointer; text-align:left;
+        display:flex; align-items:center; gap:12px; width:100%;
+        padding:11px 14px; border:none; border-radius:14px;
+        font-size:13px; cursor:pointer; text-align:left;
         white-space:nowrap; transition:all 0.18s;
         font-family:'Lilita One', Georgia, serif;
         font-weight:600; letter-spacing:0.04em;
@@ -130,68 +144,56 @@
       .mobile-header { display:none !important; }
       .mobile-nav    { display:none !important; }
       .web-content {
-        margin-left:260px; min-height:100vh; overflow-y:auto; overflow-x:hidden;
-        padding:0; background:#07050F;
+        margin-left:240px; min-height:100vh;
+        overflow-y:auto; overflow-x:hidden;
+        background:#07050F;
       }
-      .web-content > div:first-child { width:100%; }
-      [data-stats-grid] { grid-template-columns:repeat(4,1fr) !important; gap:14px !important; }
-      [data-ai-grid]    { grid-template-columns:1fr 1fr !important; gap:16px !important; }
-      [data-ai-grid] > div { padding:20px !important; }
-      [data-two-col]    { grid-template-columns:1fr 1fr !important; gap:16px !important; }
+      .web-inner {
+        width:100% !important; margin:0 auto !important;
+        padding:0 !important;
+      }
+      /* Page content area */
+      .web-page-content { padding:24px 28px 60px !important; }
+      /* Top bar */
+      .web-topbar { padding:0 28px !important; }
+      /* Grids */
+      [data-stats-grid] { grid-template-columns:repeat(2,1fr) !important; gap:12px !important; }
+      [data-ai-grid]    { grid-template-columns:1fr 1fr !important; gap:14px !important; }
+      [data-two-col]    { grid-template-columns:1fr 1fr !important; gap:14px !important; }
     }
 
-    @media(min-width:1100px) {
+    /* Desktop (1024px+) */
+    @media(min-width:1024px) {
+      .web-sidebar { width:260px; padding:28px 20px; }
+      .web-content { margin-left:260px; }
+      .web-page-content { padding:32px 40px 60px !important; }
+      .web-topbar { padding:0 40px !important; }
+      [data-stats-grid] { grid-template-columns:repeat(4,1fr) !important; gap:14px !important; }
+    }
+
+    /* Large desktop (1280px+) */
+    @media(min-width:1280px) {
       .web-sidebar { width:280px; }
       .web-content { margin-left:280px; }
+      .web-inner { max-width:1100px !important; }
+      .web-page-content { padding:36px 44px 60px !important; }
+      .web-topbar { padding:0 44px !important; }
     }
 
-    @media(min-width:1440px) {
+    /* XL (1600px+) — centre content */
+    @media(min-width:1600px) {
       .web-sidebar { width:300px; }
-      .web-content { margin-left:300px; }
+      .web-content { margin-left:300px; display:flex; justify-content:center; }
+      .web-inner { max-width:1200px !important; }
     }
 
-    @media(min-width:768px) {
-      .app-outer { display:flex; }
-      .web-inner {
-        max-width:100% !important; width:100% !important;
-        margin:0 !important; padding:0 !important;
-      }
-    }
-
-    /* ── TYPOGRAPHY ── */
-    [style*="fontFamily:C.fontHead"],
-    [style*="fontFamily:C.fontSora"] {
-      font-family:'Lilita One', Georgia, serif !important;
-    }
-    button, input, select, textarea {
-      font-family:'Lilita One', Georgia, serif !important;
-    }
+    /* Sidebar font fix */
     .web-sidebar button {
       font-family:'Lilita One', Georgia, serif !important;
-      font-size:16px !important;
       font-weight:600 !important;
       letter-spacing:0.03em !important;
     }
 
-    /* ── CENTRE CONTENT ── */
-    @media(min-width:768px) {
-      .web-content { align-items:center !important; }
-      .web-inner { width:100% !important; max-width:900px !important; }
-    }
-    @media(min-width:1100px) {
-      .web-inner { max-width:1000px !important; }
-    }
-    @media(min-width:1440px) {
-      .web-inner { max-width:1100px !important; }
-    }
-
-    /* ── ALL LILITA ONE ── */
-    html, body, *, button, input, select, textarea {
-      font-family:'Lilita One', Georgia, serif !important;
-    }
-
-    /* ── INTER BASE ── */
-    * { text-transform:none !important; }
     html, body { font-family:'Lilita One', Georgia, serif; -webkit-font-smoothing:antialiased; }
   </style>
 </head>
