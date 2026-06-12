@@ -3655,21 +3655,23 @@ Be concise and action-oriented. When the user asks to add something, use the app
   const msgText = (msg) => typeof msg.content === "string" ? msg.content : msg.content?.filter?.(b=>b.type==="text").map(b=>b.text).join("\n") || "";
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", height:"calc(100vh - 200px)", maxWidth:640, margin:"0 auto" }}>
-      {/* Quick-action chips */}
-      <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:16 }}>
-        {[
-          { label:"Show my stats", icon:I.bar },
-          { label:"Add task: post 3x this week", icon:I.check },
-          { label:"Add idea: bin location challenge for TikTok", icon:I.idea },
-          { label:"What should I post next?", icon:I.zap },
-        ].map(s=>(
-          <button key={s.label} onClick={()=>{ setInput(s.label); setTimeout(()=>inputRef.current?.focus(),50); }}
-            style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, padding:"7px 13px", borderRadius:12, border:`1px solid ${C.purple}35`, background:`${C.purple}10`, color:C.textMed, cursor:"pointer", fontFamily:C.fontBody }}>
-            {s.icon(13,C.purple)}{s.label}
-          </button>
-        ))}
-      </div>
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, display:"flex", flexDirection:"column", paddingTop:160, paddingBottom:90, paddingLeft:16, paddingRight:16 }}>
+      {/* Quick-action chips — only show when no conversation yet */}
+      {msgs.length <= 1 && (
+        <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:12 }}>
+          {[
+            { label:"Show my stats", icon:I.bar },
+            { label:"Add task: post 3x this week", icon:I.check },
+            { label:"Add idea: bin location challenge for TikTok", icon:I.idea },
+            { label:"What should I post next?", icon:I.zap },
+          ].map(s=>(
+            <button key={s.label} onClick={()=>{ setInput(s.label); setTimeout(()=>inputRef.current?.focus(),50); }}
+              style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, padding:"7px 13px", borderRadius:12, border:`1px solid ${C.purple}35`, background:`${C.purple}10`, color:C.textMed, cursor:"pointer", fontFamily:C.fontBody }}>
+              {s.icon(13,C.purple)}{s.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Messages */}
       <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", gap:12, paddingRight:4 }}>
@@ -3699,8 +3701,8 @@ Be concise and action-oriented. When the user asks to add something, use the app
         <div ref={bottomRef}/>
       </div>
 
-      {/* Input */}
-      <div style={{ marginTop:16, display:"flex", gap:10, padding:"14px", background:"rgba(255,255,255,0.04)", borderRadius:18, border:`1px solid rgba(255,255,255,0.08)` }}>
+      {/* Input pinned above nav */}
+      <div style={{ display:"flex", gap:10, padding:"12px 14px", background:"rgba(12,8,28,0.98)", borderRadius:18, border:`1px solid rgba(255,255,255,0.1)`, marginTop:10 }}>
         <input
           ref={inputRef}
           value={input}
