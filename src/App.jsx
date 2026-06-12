@@ -381,7 +381,7 @@ const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDi
         <div style={{ position:"absolute", top:"30%", left:"40%", width:250, height:250, borderRadius:"50%", background:`radial-gradient(circle,#3B1FFF18 0%,transparent 70%)`, pointerEvents:"none" }}/>
         {/* Top shimmer */}
         <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent 0%,${C.pink}60 30%,${C.purple}60 70%,transparent 100%)` }}/>
-        <div style={{ position:"relative", padding:"40px 44px", display:"flex", alignItems:"stretch", gap:48 }}>
+        <div style={{ position:"relative", padding:"44px 48px", display:"flex", alignItems:"stretch", gap:48 }}>
           {/* Left: main stat */}
           <div style={{ flex:1 }}>
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
@@ -417,73 +417,79 @@ const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDi
       </div>
 
       {/* ══ STAT CARDS ════════════════════════════════════════════ */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14 }}>
         {[
-          { label:"TT Followers", value:m?.tt_followers>=1e3?(m.tt_followers/1e3).toFixed(1)+"K":String(m?.tt_followers||0), color:C.pink, icon:I.tt, delta:null, deltaUp:null },
-          { label:"TT Views", value:ttViewsDisplay>=1e6?(ttViewsDisplay/1e6).toFixed(1)+"M":ttViewsDisplay>=1e3?(ttViewsDisplay/1e3).toFixed(1)+"K":String(ttViewsDisplay||0), color:C.cyan, icon:I.eye, delta:null, deltaUp:null },
-          { label:"IG Followers", value:(()=>{ const f=igData?.profile?.followers_count||m?.ig_followers||0; return f>=1e3?(f/1e3).toFixed(1)+"K":f?String(f):"--"; })(), color:C.yellow, icon:I.ig, delta:null, deltaUp:null },
-          { label:"IG Views", value:(()=>{ const t=videos.filter(v=>v.platform==="instagram").reduce((s,v)=>s+(v.views||0),0); return t>=1e6?(t/1e6).toFixed(1)+"M":t>=1e3?(t/1e3).toFixed(1)+"K":String(t||0); })(), color:C.purple, icon:I.ig, delta:null, deltaUp:null },
+          { label:"TT Followers", value:m?.tt_followers>=1e3?(m.tt_followers/1e3).toFixed(1)+"K":String(m?.tt_followers||0), color:C.pink, icon:I.tt },
+          { label:"TT Views", value:ttViewsDisplay>=1e6?(ttViewsDisplay/1e6).toFixed(1)+"M":ttViewsDisplay>=1e3?(ttViewsDisplay/1e3).toFixed(1)+"K":String(ttViewsDisplay||0), color:C.cyan, icon:I.eye },
+          { label:"IG Followers", value:(()=>{ const f=igData?.profile?.followers_count||m?.ig_followers||0; return f>=1e3?(f/1e3).toFixed(1)+"K":f?String(f):"--"; })(), color:C.yellow, icon:I.ig },
+          { label:"IG Views", value:(()=>{ const t=videos.filter(v=>v.platform==="instagram").reduce((s,v)=>s+(v.views||0),0); return t>=1e6?(t/1e6).toFixed(1)+"M":t>=1e3?(t/1e3).toFixed(1)+"K":String(t||0); })(), color:C.purple, icon:I.ig },
         ].map((s,i)=>(
-          <div key={i} style={{ borderRadius:18, padding:"22px 22px 20px", background:`linear-gradient(160deg,${s.color}12 0%,rgba(10,6,20,0.9) 100%)`, border:`1px solid ${s.color}28`, position:"relative", overflow:"hidden" }}>
-            <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${s.color}ee,${s.color}00)` }}/>
-            <div style={{ position:"absolute", bottom:-24, right:-24, width:90, height:90, borderRadius:"50%", background:`${s.color}18`, filter:"blur(28px)" }}/>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-              <div style={{ width:36, height:36, borderRadius:10, background:`${s.color}16`, border:`1px solid ${s.color}28`, display:"flex", alignItems:"center", justifyContent:"center" }}>{s.icon(16,s.color)}</div>
-              {s.deltaUp!==null
-                ? <div style={{ fontSize:17, fontWeight:700, color:s.deltaUp?C.green:C.pink, background:s.deltaUp?`${C.green}12`:`${C.pink}12`, padding:"3px 8px", borderRadius:6 }}>{s.delta}</div>
-                : <div style={{ fontSize:16, color:"rgba(255,255,255,0.8)", letterSpacing:"0.08em" }}>{s.delta}</div>
-              }
+          <div key={i} style={{ borderRadius:22, padding:"24px 24px 22px", background:`linear-gradient(145deg,${s.color}16 0%,rgba(8,5,18,0.95) 70%)`, border:`1px solid ${s.color}30`, position:"relative", overflow:"hidden", boxShadow:`0 8px 32px ${s.color}08` }}>
+            <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${s.color},${s.color}00)`, borderRadius:"22px 22px 0 0" }}/>
+            <div style={{ position:"absolute", bottom:-40, right:-40, width:130, height:130, borderRadius:"50%", background:`${s.color}12`, filter:"blur(40px)", pointerEvents:"none" }}/>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+              <div style={{ width:42, height:42, borderRadius:13, background:`linear-gradient(135deg,${s.color}25,${s.color}0a)`, border:`1px solid ${s.color}30`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 4px 16px ${s.color}18` }}>{s.icon(18,s.color)}</div>
+              <div style={{ width:28, height:28, borderRadius:8, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                {I.trend(12,s.color)}
+              </div>
             </div>
-            <div style={{ fontSize:16, color:"rgba(255,255,255,0.65)", letterSpacing:"0.14em", textTransform:"uppercase", marginBottom:8 }}>{s.label}</div>
-            <div style={{ fontSize:40, fontWeight:400, fontFamily:C.fontHead, color:s.color, lineHeight:1, textShadow:`0 0 24px ${s.color}45` }}>{s.value}</div>
+            <div style={{ fontSize:44, fontWeight:400, fontFamily:C.fontHead, color:"#fff", lineHeight:1, letterSpacing:"-0.01em", marginBottom:10, textShadow:`0 0 30px ${s.color}30` }}>{s.value}</div>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", letterSpacing:"0.12em", textTransform:"uppercase" }}>{s.label}</div>
+              <div style={{ width:40, height:2, borderRadius:1, background:`linear-gradient(90deg,${s.color}80,${s.color}10)` }}/>
+            </div>
           </div>
         ))}
       </div>
 
       {/* ══ PERFORMANCE CHART ══════════════════════════════════════ */}
-      <div style={{ borderRadius:20, overflow:"hidden", background:"linear-gradient(145deg,#0D0A1A,#090612)", border:"1px solid rgba(255,255,255,0.07)", position:"relative" }}>
+      <div style={{ borderRadius:22, overflow:"hidden", background:"linear-gradient(145deg,#0E0B1E,#080514)", border:"1px solid rgba(255,255,255,0.07)", position:"relative", boxShadow:"0 8px 40px rgba(0,0,0,0.4)" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.pink},${C.purple},${C.cyan},transparent)` }}/>
-        <div style={{ padding:"24px 28px 0" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+        <div style={{ position:"absolute", top:0, right:0, width:300, height:300, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}08,transparent 70%)`, pointerEvents:"none" }}/>
+        <div style={{ padding:"28px 32px 0" }}>
+          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:24 }}>
             <div>
-              <div style={{ fontSize:16, color:"rgba(255,255,255,0.6)", letterSpacing:"0.18em", textTransform:"uppercase", marginBottom:8 }}>Platform Views — 7 Days</div>
-              <div style={{ display:"flex", alignItems:"baseline", gap:16 }}>
-                <div style={{ fontSize:38, fontWeight:400, fontFamily:C.fontHead, color:"#fff" }}>{(last7.reduce((s,d)=>s+d.value,0)+igLast7.reduce((s,d)=>s+d.value,0)).toLocaleString()}</div>
-              </div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", letterSpacing:"0.18em", textTransform:"uppercase", marginBottom:10, fontWeight:600 }}>Platform Views — 7 Days</div>
+              <div style={{ fontSize:48, fontWeight:400, fontFamily:C.fontHead, color:"#fff", lineHeight:1, letterSpacing:"-0.01em" }}>{(last7.reduce((s,d)=>s+d.value,0)+igLast7.reduce((s,d)=>s+d.value,0)).toLocaleString()}</div>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.25)", marginTop:8 }}>Total across both platforms this week</div>
             </div>
             <div style={{ display:"flex", gap:10 }}>
               {[{c:C.pink,l:"TikTok",v:last7.reduce((s,d)=>s+d.value,0),dash:false},{c:C.purple,l:"Instagram",v:igLast7.reduce((s,d)=>s+d.value,0),dash:true}].map((p,i)=>(
-                <div key={i} style={{ padding:"10px 16px", borderRadius:12, background:`${p.c}10`, border:`1px solid ${p.c}22`, minWidth:110, textAlign:"center" }}>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginBottom:4 }}>
-                    <svg width="18" height="2"><line x1="0" y1="1" x2="18" y2="1" stroke={p.c} strokeWidth="2" strokeDasharray={p.dash?"5,3":""}/></svg>
-                    <span style={{ fontSize:16, color:"rgba(255,255,255,0.75)", letterSpacing:"0.1em" }}>{p.l}</span>
+                <div key={i} style={{ padding:"14px 20px", borderRadius:16, background:`linear-gradient(145deg,${p.c}12,rgba(8,5,18,0.8))`, border:`1px solid ${p.c}25`, minWidth:120, textAlign:"center", boxShadow:`0 4px 20px ${p.c}08` }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginBottom:8 }}>
+                    <div style={{ width:8, height:8, borderRadius:"50%", background:p.c, boxShadow:`0 0 8px ${p.c}` }}/>
+                    <span style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.1em", textTransform:"uppercase" }}>{p.l}</span>
                   </div>
-                  <div style={{ fontSize:20, fontWeight:700, color:p.c, fontFamily:C.fontHead }}>{p.v.toLocaleString()}</div>
+                  <div style={{ fontSize:24, fontWeight:400, color:p.c, fontFamily:C.fontHead, textShadow:`0 0 20px ${p.c}40` }}>{p.v.toLocaleString()}</div>
                 </div>
               ))}
             </div>
           </div>
         </div>
-        <div style={{ padding:"0 12px 16px" }}>
+        <div style={{ padding:"0 16px 20px" }}>
           <DualAreaChart
             ttData={[...last7].sort((a,b)=>["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].indexOf(a.label)-["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].indexOf(b.label))}
             igData={[...igLast7].sort((a,b)=>["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].indexOf(a.label)-["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].indexOf(b.label))}
-            height={200}/>
+            height={220}/>
         </div>
       </div>
 
       {/* ══ QUICK ACTIONS ══════════════════════════════════════════ */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
         {[
-          { icon:I.idea, label:"ADD IDEA",    color:C.purple, fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); } },
-          { icon:I.cal,  label:"SCHEDULE",    color:C.cyan,   fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addCal"),50); } },
-          { icon:I.vid,  label:"LOG VIDEO",   color:C.pink,   fn:()=>openModal&&openModal("addVideo") },
-          { icon:I.bar,  label:"UPDATE STATS",color:C.yellow, fn:()=>openModal&&openModal("editStats") },
+          { icon:I.idea, label:"Add Idea",     desc:"Brainstorm content", color:C.purple, fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); } },
+          { icon:I.cal,  label:"Schedule",     desc:"Plan your calendar",  color:C.cyan,   fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addCal"),50); } },
+          { icon:I.vid,  label:"Log Video",    desc:"Track performance",   color:C.pink,   fn:()=>openModal&&openModal("addVideo") },
+          { icon:I.bar,  label:"Update Stats", desc:"Manual stat entry",   color:C.yellow, fn:()=>openModal&&openModal("editStats") },
         ].map((a,i)=>(
-          <button data-btn key={i} onClick={a.fn} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, padding:"22px 10px 20px", borderRadius:16, background:`linear-gradient(160deg,${a.color}10,rgba(10,6,20,0.8))`, border:`1px solid ${a.color}22`, cursor:"pointer", fontFamily:C.fontBody, transition:"all 0.2s", position:"relative", overflow:"hidden" }}>
-            <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${a.color}45,transparent)` }}/>
-            <div style={{ width:52, height:52, borderRadius:15, display:"flex", alignItems:"center", justifyContent:"center", background:`linear-gradient(135deg,${a.color}20,${a.color}08)`, border:`1px solid ${a.color}28`, boxShadow:`0 6px 20px ${a.color}15, inset 0 1px 0 ${a.color}25` }}>{a.icon(24,a.color)}</div>
-            <span style={{ fontSize:17, fontWeight:700, color:"rgba(255,255,255,0.75)", letterSpacing:"0.08em", textTransform:"uppercase", textAlign:"center" }}>{a.label}</span>
+          <button data-btn key={i} onClick={a.fn} style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", gap:14, padding:"22px 20px", borderRadius:20, background:`linear-gradient(145deg,${a.color}12,rgba(8,5,18,0.9))`, border:`1px solid ${a.color}25`, cursor:"pointer", fontFamily:C.fontBody, transition:"all 0.2s", position:"relative", overflow:"hidden", textAlign:"left" }}>
+            <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,${a.color}50,transparent)` }}/>
+            <div style={{ position:"absolute", bottom:-20, right:-20, width:80, height:80, borderRadius:"50%", background:`${a.color}0c`, filter:"blur(24px)" }}/>
+            <div style={{ width:46, height:46, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", background:`linear-gradient(135deg,${a.color}25,${a.color}08)`, border:`1px solid ${a.color}30`, boxShadow:`0 6px 20px ${a.color}15` }}>{a.icon(22,a.color)}</div>
+            <div>
+              <div style={{ fontSize:14, fontWeight:700, color:"#fff", letterSpacing:"0.02em", marginBottom:3 }}>{a.label}</div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.04em" }}>{a.desc}</div>
+            </div>
           </button>
         ))}
       </div>
@@ -509,20 +515,25 @@ const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDi
             )
           },
         ].map((section,si)=>(
-          <div key={si} style={{ borderRadius:18, padding:"22px 24px", background:`linear-gradient(155deg,${section.color}0d,rgba(10,6,20,0.9))`, border:`1px solid ${section.color}22`, position:"relative", overflow:"hidden" }}>
-            <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${section.color}cc,${section.color}00)` }}/>
-            <div style={{ position:"absolute", bottom:-30, right:-30, width:100, height:100, borderRadius:"50%", background:`${section.color}10`, filter:"blur(30px)" }}/>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:18 }}>
-              <div style={{ width:38, height:38, borderRadius:11, background:`${section.color}18`, border:`1px solid ${section.color}32`, display:"flex", alignItems:"center", justifyContent:"center" }}>{section.icon(17,section.color)}</div>
-              <div>
-                <div style={{ fontSize:17, fontWeight:700, color:"#fff", letterSpacing:"0.04em", textTransform:"uppercase" }}>{section.title}</div>
-                <div style={{ fontSize:17, color:`${section.color}aa`, marginTop:1 }}>{section.sub}</div>
+          <div key={si} style={{ borderRadius:22, padding:"24px 26px", background:`linear-gradient(145deg,${section.color}0f,rgba(8,5,18,0.96))`, border:`1px solid ${section.color}20`, position:"relative", overflow:"hidden", boxShadow:`0 8px 40px rgba(0,0,0,0.3)` }}>
+            <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${section.color}cc,transparent 60%)` }}/>
+            <div style={{ position:"absolute", bottom:-40, right:-40, width:140, height:140, borderRadius:"50%", background:`${section.color}08`, filter:"blur(40px)" }}/>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <div style={{ width:40, height:40, borderRadius:12, background:`linear-gradient(135deg,${section.color}22,${section.color}08)`, border:`1px solid ${section.color}28`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 4px 14px ${section.color}15` }}>{section.icon(18,section.color)}</div>
+                <div>
+                  <div style={{ fontSize:15, fontWeight:700, color:"#fff", letterSpacing:"0.03em" }}>{section.title}</div>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:2, letterSpacing:"0.06em" }}>{section.sub}</div>
+                </div>
               </div>
+              <div style={{ fontSize:11, color:section.color, fontWeight:700, letterSpacing:"0.1em", padding:"3px 10px", borderRadius:6, background:`${section.color}12`, border:`1px solid ${section.color}20` }}>{section.items.length} ITEMS</div>
             </div>
-            {section.items.length===0
-              ? <div style={{ fontSize:16, color:"rgba(255,255,255,0.75)", fontStyle:"italic", paddingTop:4 }}>{section.empty}</div>
-              : section.items.map((item,i,arr)=>section.renderItem(item,i,arr))
-            }
+            <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+              {section.items.length===0
+                ? <div style={{ fontSize:13, color:"rgba(255,255,255,0.3)", fontStyle:"italic", padding:"12px 0" }}>{section.empty}</div>
+                : section.items.map((item,i,arr)=>section.renderItem(item,i,arr))
+              }
+            </div>
           </div>
         ))}
       </div>
