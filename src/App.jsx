@@ -968,7 +968,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
         const igFollowers = igData?.profile?.followers_count || m?.ig_followers || 0;
         const ttBarData = [...ttVids].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,8).map(v=>({label:(v.title||"").slice(0,7),value:v.views||0}));
         const igBarData = [...igVids].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,8).map(v=>({label:(v.title||"").slice(0,7),value:v.views||0}));
-        return (<React.Fragment>
+        return (<>
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
 
           {/* Platform stat cards — TikTok row */}
@@ -1104,7 +1104,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
             )}
           </div>
         </div>
-        </React.Fragment>);
+        </>);
       })()}
 
       {/* ── VIDEOS ──────────────────────────────────────────────── */}
