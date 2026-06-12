@@ -3597,7 +3597,7 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
 
     try {
       // Upload via Vercel proxy to avoid CORS — supports large files
-      const proxyRes = await fetch("https://krapmaps-app.vercel.app/api/gemini-upload", {
+      const proxyRes = await fetch("https://krapmaps-app-nine.vercel.app/api/gemini-upload", {
         method: "POST",
         headers: { "x-gemini-key": geminiKey, "x-file-name": file.name, "x-mime-type": file.type, "Content-Type": file.type },
         body: file,
