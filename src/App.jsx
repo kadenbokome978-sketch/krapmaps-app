@@ -3596,13 +3596,17 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
     setMsgs(m=>[...m, { role:"user", content:`📎 ${file.name}` }, { role:"assistant", content:"Reading your clip..." }]);
 
     try {
-      // Read file as base64 for inline sending (browser-compatible, no CORS issues)
-      const base64 = await new Promise((res, rej) => {
-        const reader = new FileReader();
-        reader.onload = () => res(reader.result.split(",")[1]);
-        reader.onerror = rej;
-        reader.readAsDataURL(file);
+      // Upload via Vercel proxy to avoid CORS — supports large files
+      const proxyRes = await fetch("https://krapmaps-app.vercel.app/api/gemini-upload", {
+        method: "POST",
+        headers: { "x-gemini-key": geminiKey, "x-file-name": file.name, "x-mime-type": file.type, "Content-Type": file.type },
+        body: file,
       });
+      if(!proxyRes.ok) {
+        const e = await proxyRes.json().catch(()=>({}));
+        throw new Error(e.error || `Proxy error ${proxyRes.status}`);
+      }
+      const { fileUri, mimeType } = await proxyRes.json();
 
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
 
@@ -3620,7 +3624,7 @@ Be direct, specific, and harsh if needed. No fluff.`;
       const genRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
         { method:"POST", headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ contents:[{ parts:[{ inline_data:{ mime_type:file.type, data:base64 } }, { text:prompt }] }] })
+          body: JSON.stringify({ contents:[{ parts:[{ file_data:{ mime_type:mimeType, file_uri:fileUri } }, { text:prompt }] }] })
         }
       );
       if(!genRes.ok) {
@@ -3629,8 +3633,8 @@ Be direct, specific, and harsh if needed. No fluff.`;
       }
       const genData = await genRes.json();
       const text = genData?.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis returned.";
-      setLastFileUri(base64);
-      setLastFileMime(file.type);
+      setLastFileUri(fileUri);
+      setLastFileMime(mimeType);
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:text, showCapcutBtn:true }]);
     } catch(e) {
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:`Error: ${e.message}` }]);
@@ -3772,7 +3776,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
       const genRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
         { method:"POST", headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ contents:[{ parts:[{ inline_data:{ mime_type:lastFileMime, data:lastFileUri } }, { text:prompt }] }] })
+          body: JSON.stringify({ contents:[{ parts:[{ file_data:{ mime_type:lastFileMime, file_uri:lastFileUri } }, { text:prompt }] }] })
         }
       );
       if(!genRes.ok) throw new Error(`Gemini error: ${genRes.status}`);
