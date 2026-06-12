@@ -3508,6 +3508,8 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
   const [loading, setLoading] = useState(false);
   const [videoFile, setVideoFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [lastFileUri, setLastFileUri] = useState(null);
+  const [lastFileMime, setLastFileMime] = useState(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const fileRef = useRef(null);
@@ -3614,14 +3616,14 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
 
       // Step 2: send to Gemini for analysis
-      const prompt = `You are a TikTok and Instagram content expert. Analyse this video clip and give specific, actionable feedback on:
-1. Hook strength (first 1-3 seconds) — is it grabbing attention?
-2. Pacing — is it too slow, too fast, or well-timed?
-3. Editing suggestions — cuts, transitions, text overlays, music timing
-4. Caption/hook text suggestions if none visible
-5. Overall verdict — post as-is, needs edits, or reshoot?
+      const prompt = `You are a viral TikTok and Instagram Reels content expert. Analyse this video clip and give:
 
-Be direct and specific. Format with clear sections.`;
+1. HOOK (0-3s) — is it strong enough to stop the scroll? What's working or not?
+2. PACING — too slow, too fast, or good? Where does attention drop?
+3. CONTENT — key strengths and weaknesses
+4. VERDICT — post as-is / needs edits / reshoot, and why
+
+Be direct, specific, and harsh if needed. No fluff.`;
 
       const genRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
@@ -3632,7 +3634,9 @@ Be direct and specific. Format with clear sections.`;
       if(!genRes.ok) throw new Error(`Gemini error: ${genRes.status}`);
       const genData = await genRes.json();
       const text = genData?.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis returned.";
-      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:text }]);
+      setLastFileUri(fileUri);
+      setLastFileMime(file.type);
+      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:text, showCapcutBtn:true }]);
     } catch(e) {
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:`Error: ${e.message}` }]);
     } finally {
@@ -3719,6 +3723,74 @@ Be concise and action-oriented. When the user asks to add something, use the app
 
   const msgText = (msg) => typeof msg.content === "string" ? msg.content : msg.content?.filter?.(b=>b.type==="text").map(b=>b.text).join("\n") || "";
 
+  const getCapcutPlan = async () => {
+    if(!lastFileUri) return;
+    const cfg = loadJSON(KEYS_KEY, {});
+    const geminiKey = cfg?.keys?.gemini;
+    if(!geminiKey) return;
+    setMsgs(m=>[...m, { role:"user", content:"Give me a step-by-step CapCut edit plan for maximum virality" }, { role:"assistant", content:"Building your CapCut edit plan..." }]);
+    setLoading(true);
+    try {
+      const prompt = `You are an expert viral video editor for TikTok and Instagram Reels. Watch this clip carefully and create a detailed step-by-step CapCut editing guide for MAXIMUM virality.
+
+Give me EXACTLY this format:
+
+CLIP TRIM
+- Start at: [timestamp] End at: [timestamp] (remove any dead air or slow parts)
+- Any sections to cut out: [timestamps]
+
+HOOK EDIT (0-3 seconds)
+- What to show: [exact description]
+- Text overlay: [exact text to add] at [timestamp], font style suggestion
+- Any speed change: [e.g. 1.2x from 0s-2s]
+
+MAIN BODY CUTS
+- Cut 1: [timestamp] → [timestamp] — reason
+- Cut 2: [timestamp] → [timestamp] — reason
+(list every cut)
+
+TEXT OVERLAYS
+- [timestamp]: "[exact text]" — placement (top/middle/bottom)
+(list every text overlay with exact wording)
+
+TRANSITIONS
+- [timestamp]: use [transition type] between clips
+
+MUSIC
+- Vibe needed: [describe the energy]
+- Specific suggestions: [2-3 TikTok sound suggestions]
+- Music timing tip: [e.g. drop beat at 3s]
+
+CAPTIONS
+- Style: [auto-captions on/off, font, colour]
+- Any manual caption tweaks
+
+FINAL SETTINGS
+- Aspect ratio: 9:16
+- Export quality: 1080p
+- Any filters or colour grade suggestion
+
+VIRALITY SCORE PREDICTION: [X/10] — [one line reason]
+
+Be extremely specific with timestamps. This is for someone who is not confident at editing.`;
+
+      const genRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+        { method:"POST", headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ contents:[{ parts:[{ file_data:{ mime_type:lastFileMime, file_uri:lastFileUri } }, { text:prompt }] }] })
+        }
+      );
+      if(!genRes.ok) throw new Error(`Gemini error: ${genRes.status}`);
+      const genData = await genRes.json();
+      const text = genData?.candidates?.[0]?.content?.parts?.[0]?.text || "No plan returned.";
+      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:text }]);
+    } catch(e) {
+      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:`Error: ${e.message}` }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"calc(100dvh - 220px)" }}>
       {/* Quick-action chips — only show when no conversation yet */}
@@ -3741,18 +3813,26 @@ Be concise and action-oriented. When the user asks to add something, use the app
       {/* Messages */}
       <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", gap:12, paddingRight:4 }}>
         {msgs.map((msg,i)=>(
-          <div key={i} style={{ display:"flex", justifyContent:msg.role==="user"?"flex-end":"flex-start", gap:10, alignItems:"flex-end" }}>
-            {msg.role==="assistant" && (
-              <div style={{ width:30, height:30, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                {I.brain(14,"#fff")}
+          <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:msg.role==="user"?"flex-end":"flex-start", gap:6 }}>
+            <div style={{ display:"flex", justifyContent:msg.role==="user"?"flex-end":"flex-start", gap:10, alignItems:"flex-end" }}>
+              {msg.role==="assistant" && (
+                <div style={{ width:30, height:30, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  {I.brain(14,"#fff")}
+                </div>
+              )}
+              <div style={{ maxWidth:"78%", padding:"12px 16px", borderRadius:msg.role==="user"?"18px 18px 4px 18px":"18px 18px 18px 4px",
+                background:msg.role==="user"?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.07)",
+                border:msg.role==="assistant"?`1px solid rgba(255,255,255,0.06)`:"none",
+                color:"#fff", fontSize:14, lineHeight:1.6, fontFamily:C.fontBody, wordBreak:"break-word", whiteSpace:"pre-wrap" }}>
+                {msgText(msg)}
               </div>
-            )}
-            <div style={{ maxWidth:"78%", padding:"12px 16px", borderRadius:msg.role==="user"?"18px 18px 4px 18px":"18px 18px 18px 4px",
-              background:msg.role==="user"?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.07)",
-              border:msg.role==="assistant"?`1px solid rgba(255,255,255,0.06)`:"none",
-              color:"#fff", fontSize:14, lineHeight:1.6, fontFamily:C.fontBody, wordBreak:"break-word", whiteSpace:"pre-wrap" }}>
-              {msgText(msg)}
             </div>
+            {msg.showCapcutBtn && (
+              <button onClick={getCapcutPlan} disabled={loading}
+                style={{ marginLeft:40, display:"flex", alignItems:"center", gap:7, padding:"9px 16px", borderRadius:12, border:"none", cursor:loading?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.cyan},${C.purple})`, color:"#fff", fontSize:13, fontFamily:C.fontHead, fontWeight:700, opacity:loading?0.6:1 }}>
+                {I.write(14,"#fff")} Get CapCut Edit Plan
+              </button>
+            )}
           </div>
         ))}
         {loading && (
