@@ -3804,61 +3804,84 @@ Be extremely specific with timestamps. This is for someone who is not confident 
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"calc(100dvh - 220px)" }}>
-      {/* Clear button — only show when there's a conversation */}
-      {msgs.length > 1 && (
-        <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:8 }}>
-          <button onClick={clearChat} style={{ fontSize:11, padding:"5px 12px", borderRadius:10, border:`1px solid rgba(255,255,255,0.1)`, background:"transparent", color:"rgba(255,255,255,0.35)", cursor:"pointer", fontFamily:C.fontBody }}>
-            Clear chat
-          </button>
+
+      {/* Top bar */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ width:36, height:36, borderRadius:12, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 4px 16px ${C.pink}40` }}>
+            {I.brain(18,"#fff")}
+          </div>
+          <div>
+            <div style={{ fontSize:15, fontWeight:700, color:"#fff", fontFamily:C.fontHead, lineHeight:1 }}>KrapMaps AI</div>
+            <div style={{ fontSize:11, color:C.purple, marginTop:2 }}>claude-fable-5 · gemini-2.0-flash</div>
+          </div>
         </div>
-      )}
-      {/* Quick-action chips — only show when no conversation yet */}
+        {msgs.length > 1 && (
+          <button onClick={clearChat} style={{ fontSize:11, padding:"5px 12px", borderRadius:10, border:`1px solid rgba(255,255,255,0.1)`, background:"transparent", color:"rgba(255,255,255,0.3)", cursor:"pointer", fontFamily:C.fontBody, transition:"all 0.15s" }}>
+            End session
+          </button>
+        )}
+      </div>
+
+      {/* Quick-action chips */}
       {msgs.length <= 1 && (
-        <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:12 }}>
-          {[
-            { label:"Show my stats", icon:I.bar },
-            { label:"Add task: post 3x this week", icon:I.check },
-            { label:"Add idea: bin location challenge for TikTok", icon:I.idea },
-            { label:"What should I post next?", icon:I.zap },
-          ].map(s=>(
-            <button key={s.label} onClick={()=>{ setInput(s.label); setTimeout(()=>inputRef.current?.focus(),50); }}
-              style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, padding:"7px 13px", borderRadius:12, border:`1px solid ${C.purple}35`, background:`${C.purple}10`, color:C.textMed, cursor:"pointer", fontFamily:C.fontBody }}>
-              {s.icon(13,C.purple)}{s.label}
-            </button>
-          ))}
+        <div style={{ marginBottom:16 }}>
+          <div style={{ fontSize:11, color:"rgba(255,255,255,0.25)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:8 }}>Quick actions</div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+            {[
+              { label:"Show my stats", icon:I.bar, color:C.cyan },
+              { label:"Add task: post 3x this week", icon:I.check, color:C.green },
+              { label:"Add idea: bin location challenge for TikTok", icon:I.idea, color:C.purple },
+              { label:"What should I post next?", icon:I.zap, color:C.yellow },
+            ].map(s=>(
+              <button key={s.label} onClick={()=>{ setInput(s.label); setTimeout(()=>inputRef.current?.focus(),50); }}
+                style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, padding:"8px 14px", borderRadius:12, border:`1px solid ${s.color}30`, background:`${s.color}0e`, color:"rgba(255,255,255,0.7)", cursor:"pointer", fontFamily:C.fontBody, transition:"all 0.15s" }}>
+                {s.icon(12,s.color)}{s.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Messages */}
-      <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", gap:12, paddingRight:4 }}>
+      <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", gap:14, paddingRight:2 }}>
         {msgs.map((msg,i)=>(
-          <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:msg.role==="user"?"flex-end":"flex-start", gap:6 }}>
+          <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:msg.role==="user"?"flex-end":"flex-start", gap:8 }}>
             <div style={{ display:"flex", justifyContent:msg.role==="user"?"flex-end":"flex-start", gap:10, alignItems:"flex-end" }}>
               {msg.role==="assistant" && (
-                <div style={{ width:30, height:30, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  {I.brain(14,"#fff")}
+                <div style={{ width:28, height:28, borderRadius:9, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:`0 2px 10px ${C.pink}30` }}>
+                  {I.brain(13,"#fff")}
                 </div>
               )}
-              <div style={{ maxWidth:"78%", padding:"12px 16px", borderRadius:msg.role==="user"?"18px 18px 4px 18px":"18px 18px 18px 4px",
-                background:msg.role==="user"?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.07)",
-                border:msg.role==="assistant"?`1px solid rgba(255,255,255,0.06)`:"none",
-                color:"#fff", fontSize:14, lineHeight:1.6, fontFamily:C.fontBody, wordBreak:"break-word", whiteSpace:"pre-wrap" }}>
+              <div style={{ maxWidth:"80%", padding:"13px 16px",
+                borderRadius:msg.role==="user"?"18px 18px 5px 18px":"5px 18px 18px 18px",
+                background:msg.role==="user"
+                  ? `linear-gradient(135deg,${C.pink},${C.purple})`
+                  : "rgba(255,255,255,0.055)",
+                border:msg.role==="assistant" ? `1px solid rgba(255,255,255,0.08)` : "none",
+                boxShadow:msg.role==="user" ? `0 4px 20px ${C.pink}30` : "none",
+                color:"#fff", fontSize:13, lineHeight:1.65, fontFamily:C.fontBody, wordBreak:"break-word", whiteSpace:"pre-wrap" }}>
                 {msgText(msg)}
               </div>
+              {msg.role==="user" && (
+                <div style={{ width:28, height:28, borderRadius:9, background:`linear-gradient(135deg,${C.pink}80,${C.purple}80)`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, color:"#fff", fontFamily:C.fontHead }}>
+                  BK
+                </div>
+              )}
             </div>
             {msg.showCapcutBtn && (
               <button onClick={getCapcutPlan} disabled={loading}
-                style={{ marginLeft:40, display:"flex", alignItems:"center", gap:7, padding:"9px 16px", borderRadius:12, border:"none", cursor:loading?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.cyan},${C.purple})`, color:"#fff", fontSize:13, fontFamily:C.fontHead, fontWeight:700, opacity:loading?0.6:1 }}>
-                {I.write(14,"#fff")} Get CapCut Edit Plan
+                style={{ marginLeft:38, display:"flex", alignItems:"center", gap:8, padding:"10px 18px", borderRadius:13, border:`1px solid ${C.cyan}40`, cursor:loading?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.cyan}18,${C.purple}18)`, color:C.cyan, fontSize:12, fontFamily:C.fontHead, fontWeight:700, opacity:loading?0.5:1, transition:"all 0.15s" }}>
+                {I.write(13,C.cyan)} Get CapCut Edit Plan →
               </button>
             )}
           </div>
         ))}
-        {loading && (
+        {(loading||uploading) && (
           <div style={{ display:"flex", alignItems:"flex-end", gap:10 }}>
-            <div style={{ width:30, height:30, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{I.brain(14,"#fff")}</div>
-            <div style={{ padding:"12px 18px", borderRadius:"18px 18px 18px 4px", background:"rgba(255,255,255,0.07)", border:`1px solid rgba(255,255,255,0.06)`, display:"flex", gap:5, alignItems:"center" }}>
-              {[0,1,2].map(i=><div key={i} style={{ width:7, height:7, borderRadius:"50%", background:C.purple, animation:`pulse 1.2s ${i*0.2}s infinite` }}/>)}
+            <div style={{ width:28, height:28, borderRadius:9, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{I.brain(13,"#fff")}</div>
+            <div style={{ padding:"13px 18px", borderRadius:"5px 18px 18px 18px", background:"rgba(255,255,255,0.055)", border:`1px solid rgba(255,255,255,0.08)`, display:"flex", gap:5, alignItems:"center" }}>
+              {[0,1,2].map(k=><div key={k} style={{ width:6, height:6, borderRadius:"50%", background:C.purple, animation:`pulse 1.2s ${k*0.2}s infinite` }}/>)}
             </div>
           </div>
         )}
@@ -3867,34 +3890,34 @@ Be extremely specific with timestamps. This is for someone who is not confident 
 
       {/* Video preview pill */}
       {videoFile && (
-        <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:`${C.purple}18`, border:`1px solid ${C.purple}40`, borderRadius:12, marginTop:8 }}>
-          {I.vid(14,C.purple)}
-          <span style={{ fontSize:12, color:C.textMed, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{videoFile.name}</span>
-          <button onClick={()=>{ setVideoFile(null); if(fileRef.current) fileRef.current.value=""; }} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", cursor:"pointer", fontSize:16, lineHeight:1 }}>×</button>
+        <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px", background:`${C.purple}12`, border:`1px solid ${C.purple}35`, borderRadius:14, marginTop:10 }}>
+          <div style={{ width:28, height:28, borderRadius:8, background:`${C.purple}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{I.vid(13,C.purple)}</div>
+          <span style={{ fontSize:12, color:"rgba(255,255,255,0.6)", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{videoFile.name}</span>
+          <button onClick={()=>{ setVideoFile(null); if(fileRef.current) fileRef.current.value=""; }} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.3)", cursor:"pointer", fontSize:18, lineHeight:1, padding:"0 4px" }}>×</button>
           <button onClick={()=>analyseVideo(videoFile)} disabled={uploading}
-            style={{ padding:"5px 14px", borderRadius:9, border:"none", cursor:uploading?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontSize:12, fontFamily:C.fontHead, opacity:uploading?0.6:1 }}>
-            {uploading?"Analysing...":"Analyse"}
+            style={{ padding:"6px 16px", borderRadius:10, border:"none", cursor:uploading?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontSize:12, fontFamily:C.fontHead, fontWeight:700, opacity:uploading?0.6:1, whiteSpace:"nowrap" }}>
+            {uploading?"Uploading...":"Analyse clip"}
           </button>
         </div>
       )}
 
-      {/* Input */}
-      <div style={{ display:"flex", gap:10, padding:"12px 14px", background:"rgba(12,8,28,0.98)", borderRadius:18, border:`1px solid rgba(255,255,255,0.1)`, marginTop:10 }}>
+      {/* Input bar */}
+      <div style={{ display:"flex", gap:8, padding:"10px 12px", background:"rgba(255,255,255,0.04)", borderRadius:18, border:`1px solid rgba(255,255,255,0.09)`, marginTop:10, alignItems:"center" }}>
         <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e=>{ if(e.target.files[0]) setVideoFile(e.target.files[0]); }} />
-        <button onClick={()=>fileRef.current?.click()} title="Upload clip for analysis"
-          style={{ width:36, height:36, borderRadius:10, border:`1px solid rgba(255,255,255,0.12)`, background:"rgba(255,255,255,0.06)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:"rgba(255,255,255,0.5)" }}>
-          {I.vid(15,"rgba(255,255,255,0.6)")}
+        <button onClick={()=>fileRef.current?.click()} title="Upload video clip"
+          style={{ width:34, height:34, borderRadius:10, border:`1px solid rgba(255,255,255,0.1)`, background:"rgba(255,255,255,0.05)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+          {I.vid(14,"rgba(255,255,255,0.5)")}
         </button>
         <input
           ref={inputRef}
           value={input}
           onChange={e=>setInput(e.target.value)}
           onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
-          placeholder="Add a task, idea, or ask anything..."
+          placeholder="Message KrapMaps AI..."
           style={{ flex:1, background:"transparent", border:"none", color:"#fff", fontSize:14, fontFamily:C.fontBody, outline:"none" }}
         />
         <button onClick={send} disabled={loading||!input.trim()}
-          style={{ padding:"10px 20px", borderRadius:13, border:"none", cursor:loading||!input.trim()?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.pink},${C.purple})`, opacity:loading||!input.trim()?0.5:1, color:"#fff", fontSize:13, fontFamily:C.fontHead, fontWeight:700, flexShrink:0 }}>
+          style={{ padding:"9px 18px", borderRadius:12, border:"none", cursor:loading||!input.trim()?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.pink},${C.purple})`, opacity:loading||!input.trim()?0.4:1, color:"#fff", fontSize:13, fontFamily:C.fontHead, fontWeight:700, flexShrink:0, transition:"opacity 0.15s", boxShadow:loading||!input.trim()?"none":`0 4px 16px ${C.pink}40` }}>
           Send
         </button>
       </div>
