@@ -3781,12 +3781,12 @@ function Dashboard({ keys, onEditKeys }) {
       const wl = loadWL();
       const handle = (wl.handle||"@findkrap").replace("@","");
       const r = await fetch(
-        "https://instagram-scraper-ai1.p.rapidapi.com/user/info_v2/?username=" + handle,
-        { headers: { "x-rapidapi-host": "instagram-scraper-ai1.p.rapidapi.com", "x-rapidapi-key": rapidKey } }
+        "https://instagram-scraper-api2.p.rapidapi.com/v1/info?username_or_id_or_url=" + handle,
+        { headers: { "x-rapidapi-host": "instagram-scraper-api2.p.rapidapi.com", "x-rapidapi-key": rapidKey } }
       );
       if(!r.ok) { console.warn("IG followers: HTTP", r.status); return; }
       const data = await r.json();
-      const igFollowers = data?.data?.user?.follower_count || data?.data?.follower_count || data?.follower_count || 0;
+      const igFollowers = data?.data?.follower_count || data?.data?.edge_followed_by?.count || data?.follower_count || 0;
       console.log("IG followers raw:", JSON.stringify(data?.data).slice(0,200));
       if(igFollowers) {
         setManualData(prev => {
@@ -3814,8 +3814,8 @@ function Dashboard({ keys, onEditKeys }) {
 
       // Fetch ALL reels via pagination using max_id cursor
       const userId = "78520217622"; // findkrap user ID
-      const baseUrl = "https://instagram-scraper-ai1.p.rapidapi.com/user/reels_videos_v2/?user_id=" + userId;
-      const headers = { "x-rapidapi-host": "instagram-scraper-ai1.p.rapidapi.com", "x-rapidapi-key": rapidKey };
+      const baseUrl = "https://instagram-scraper-api2.p.rapidapi.com/v1/clips?user_id=" + userId;
+      const headers = { "x-rapidapi-host": "instagram-scraper-api2.p.rapidapi.com", "x-rapidapi-key": rapidKey };
       
       let allItems = [];
       let cursor = null;
@@ -3823,9 +3823,8 @@ function Dashboard({ keys, onEditKeys }) {
       const maxPages = 5; // cap at 5 pages (~50+ reels) to avoid rate limits
       
       while(pages < maxPages) {
-        const url = cursor ? baseUrl + "&reels_max_id=" + encodeURIComponent(cursor) : baseUrl;
+        const url = cursor ? baseUrl + "&pagination_token=" + encodeURIComponent(cursor) : baseUrl;
         let r = await fetch(url, { headers });
-        // On 429 retry up to 2 times with backoff before giving up
         let retries = 0;
         while(r.status===429 && retries < 2) {
           console.warn("IG 429 — backing off", (retries+1)*3, "s");
@@ -3835,15 +3834,18 @@ function Dashboard({ keys, onEditKeys }) {
         }
         if(!r.ok) { console.warn("IG reels fetch HTTP", r.status, "on page", pages+1); break; }
         const data = await r.json();
-        if(!data.items?.length) break;
-        allItems = allItems.concat(data.items);
+        // instagram-scraper-api2 returns { data: { items: [...], pagination_token: "..." } }
+        const items = data?.data?.items || data?.items || [];
+        if(!items.length) break;
+        allItems = allItems.concat(items);
         pages++;
-        console.log("IG page", pages, "items:", data.items.length, "total:", allItems.length, "more:", data.paging_info?.more_available);
-        if(!data.paging_info?.more_available || !data.paging_info?.max_id) break;
-        cursor = data.paging_info.max_id;
+        const nextCursor = data?.data?.pagination_token || data?.pagination_token;
+        console.log("IG page", pages, "items:", items.length, "total:", allItems.length, "next:", !!nextCursor);
+        if(!nextCursor) break;
+        cursor = nextCursor;
         await new Promise(res => setTimeout(res, 1200));
       }
-      
+
       if(!allItems.length) { console.warn("IG reels: no items fetched"); return; }
       const reels = allItems;
 
@@ -3854,11 +3856,11 @@ function Dashboard({ keys, onEditKeys }) {
         const views  = media.play_count || media.view_count || media.video_view_count || media.ig_play_count || 0;
         const likes  = media.like_count || 0;
         const comments = media.comment_count || 0;
-        const cover  = media.image_versions2?.candidates?.[0]?.url || "";
-        const code   = media.code || "";
+        const cover  = media.image_versions2?.candidates?.[0]?.url || media.thumbnail_url || "";
+        const code   = media.code || media.shortcode || "";
         const videoUrl = "https://www.instagram.com/reel/"+code+"/";
-        const title  = media.caption?.text?.slice(0,100) || "Instagram Reel";
-        const created = media["1ltaken_at"] ? new Date(media["1ltaken_at"]*1000).toISOString() : (media.taken_at ? new Date(media.taken_at*1000).toISOString() : new Date().toISOString());
+        const title  = media.caption?.text?.slice(0,100) || media.accessibility_caption?.slice(0,100) || "Instagram Reel";
+        const created = media.taken_at ? new Date(media.taken_at*1000).toISOString() : new Date().toISOString();
         return {
           id: "ig_"+reelId,
           title, views, likes, comments,
