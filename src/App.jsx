@@ -3501,9 +3501,13 @@ const NAV = [
 
 // ── AI CHAT VIEW ──────────────────────────────────────────────────
 function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) {
-  const [msgs, setMsgs] = useState([
-    { role:"assistant", content:"Hey! I'm your KrapMaps AI assistant. I can add tasks, create video ideas, answer questions about your content — or upload a clip and I'll analyse it and tell you how to edit it." }
-  ]);
+  const CHAT_KEY = "krapmaps_v1_chat";
+  const [msgs, setMsgs] = useState(()=>{
+    const saved = loadJSON(CHAT_KEY, null);
+    return saved || [{ role:"assistant", content:"Hey! I'm your KrapMaps AI assistant. I can add tasks, create video ideas, answer questions about your content — or upload a clip and I'll analyse it and tell you how to edit it." }];
+  });
+
+  useEffect(()=>{ saveJSON(CHAT_KEY, msgs); }, [msgs]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [videoFile, setVideoFile] = useState(null);
@@ -3791,8 +3795,23 @@ Be extremely specific with timestamps. This is for someone who is not confident 
     }
   };
 
+  const clearChat = () => {
+    const fresh = [{ role:"assistant", content:"Hey! I'm your KrapMaps AI assistant. I can add tasks, create video ideas, answer questions about your content — or upload a clip and I'll analyse it and tell you how to edit it." }];
+    setMsgs(fresh);
+    setLastFileUri(null);
+    setLastFileMime(null);
+  };
+
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"calc(100dvh - 220px)" }}>
+      {/* Clear button — only show when there's a conversation */}
+      {msgs.length > 1 && (
+        <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:8 }}>
+          <button onClick={clearChat} style={{ fontSize:11, padding:"5px 12px", borderRadius:10, border:`1px solid rgba(255,255,255,0.1)`, background:"transparent", color:"rgba(255,255,255,0.35)", cursor:"pointer", fontFamily:C.fontBody }}>
+            Clear chat
+          </button>
+        </div>
+      )}
       {/* Quick-action chips — only show when no conversation yet */}
       {msgs.length <= 1 && (
         <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:12 }}>
