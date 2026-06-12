@@ -3587,20 +3587,74 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
     return "Unknown tool";
   };
 
+  const convertToMp4 = (file) => new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.src = URL.createObjectURL(file);
+    video.muted = true;
+    video.onloadedmetadata = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.min(video.videoWidth, 1280);
+      canvas.height = Math.round(canvas.width * video.videoHeight / video.videoWidth);
+      const ctx = canvas.getContext("2d");
+      const stream = canvas.captureStream(30);
+
+      // Add audio if possible
+      try {
+        const audioCtx = new AudioContext();
+        const src = audioCtx.createMediaElementSource(video);
+        const dst = audioCtx.createMediaStreamDestination();
+        src.connect(dst);
+        dst.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+      } catch {}
+
+      const recorder = new MediaRecorder(stream, { mimeType:"video/webm;codecs=vp8", videoBitsPerSecond:1500000 });
+      const chunks = [];
+      recorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type:"video/webm" });
+        resolve(new File([blob], file.name.replace(/\.\w+$/, ".webm"), { type:"video/webm" }));
+        URL.revokeObjectURL(video.src);
+      };
+      recorder.onerror = reject;
+
+      video.currentTime = 0;
+      video.play();
+      recorder.start();
+      video.onended = () => recorder.stop();
+      // Safety timeout
+      setTimeout(() => { if(recorder.state==="recording") recorder.stop(); }, (video.duration+2)*1000);
+    };
+    video.onerror = reject;
+  });
+
   const analyseVideo = async (file) => {
     const cfg = loadJSON(KEYS_KEY, {});
     const geminiKey = cfg?.keys?.gemini;
     if(!geminiKey) { setMsgs(m=>[...m,{role:"assistant",content:"No Gemini API key set. Go to Settings to add one — video analysis uses Gemini."}]); return; }
 
     setUploading(true);
-    setMsgs(m=>[...m, { role:"user", content:`📎 ${file.name}` }, { role:"assistant", content:"Reading your clip..." }]);
+    setMsgs(m=>[...m, { role:"user", content:`📎 ${file.name}` }, { role:"assistant", content:"Preparing your clip..." }]);
 
     try {
+      // Convert MOV/large files to MP4 via canvas if needed
+      let uploadFile = file;
+      if(file.type !== "video/mp4" || file.size > 20*1024*1024) {
+        try {
+          setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Converting to MP4 for faster upload..." }]);
+          uploadFile = await convertToMp4(file);
+        } catch(e) {
+          // conversion failed, just use original
+          uploadFile = file;
+        }
+      }
+
+      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Uploading clip..." }]);
+
       // Upload via Vercel proxy to avoid CORS — supports large files
       const proxyRes = await fetch("https://krapmaps-app-nine.vercel.app/api/gemini-upload", {
         method: "POST",
-        headers: { "x-gemini-key": geminiKey, "x-file-name": file.name, "x-mime-type": file.type, "Content-Type": file.type },
-        body: file,
+        headers: { "x-gemini-key": geminiKey, "x-file-name": uploadFile.name, "x-mime-type": uploadFile.type, "Content-Type": uploadFile.type },
+        body: uploadFile,
       });
       if(!proxyRes.ok) {
         const e = await proxyRes.json().catch(()=>({}));
