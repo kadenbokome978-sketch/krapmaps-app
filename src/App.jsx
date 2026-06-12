@@ -3495,6 +3495,7 @@ const NAV = [
   { id:"analytics", label:"ANALYTICS", ic:I.bar       },
   { id:"tasks",     label:"TASKS",     ic:I.check     },
   { id:"ai",        label:"AI",        ic:I.brain     },
+  { id:"growth",    label:"GROWTH",    ic:I.rocket    },
   { id:"settings",  label:"SETTINGS",  ic:I.settings  },
 ];
 
@@ -4680,11 +4681,11 @@ Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 senten
       {/* NAV BAR */}
       <div className="mobile-nav" style={{ position:"fixed", bottom:0, left:0, right:0, background:"rgba(5,3,12,0.98)", backdropFilter:"blur(30px)", WebkitBackdropFilter:"blur(30px)", borderTop:"1px solid rgba(255,255,255,0.1)", display:"flex", padding:"6px 4px 28px", zIndex:99, gap:2 }}>
         {NAV.map(n=>(
-          <button key={n.id} onClick={()=>{ setNav(n.id); setSub(null); }} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"2px 0" }}>
-            <div style={{ width:42, height:42, borderRadius:13, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s", background:nav===n.id?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.09)", boxShadow:nav===n.id?`0 4px 20px ${C.pink}50`:"none", color:nav===n.id?"#fff":"rgba(255,255,255,0.65)" }}>
-              {n.ic(15, nav===n.id?"#fff":"rgba(255,255,255,0.65)")}
+          <button key={n.id} onClick={()=>{ setNav(n.id); setSub(null); }} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, padding:"2px 0" }}>
+            <div style={{ width:34, height:34, borderRadius:11, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s", background:nav===n.id?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.09)", boxShadow:nav===n.id?`0 4px 20px ${C.pink}50`:"none", color:nav===n.id?"#fff":"rgba(255,255,255,0.65)" }}>
+              {n.ic(13, nav===n.id?"#fff":"rgba(255,255,255,0.65)")}
             </div>
-            <span style={{ fontSize:17, fontWeight:600, letterSpacing:"-0.01em", color:nav===n.id?C.pink:"rgba(255,255,255,0.75)", fontFamily:"'Lilita One', Georgia, serif" }}>{n.label}</span>
+            <span style={{ fontSize:9, fontWeight:600, letterSpacing:"0.02em", color:nav===n.id?C.pink:"rgba(255,255,255,0.75)", fontFamily:"'Lilita One', Georgia, serif" }}>{n.label}</span>
           </button>
         ))}
       </div>
