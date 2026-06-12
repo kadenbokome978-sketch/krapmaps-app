@@ -3656,7 +3656,7 @@ Be concise and action-oriented. When the user asks to add something, use the app
   const msgText = (msg) => typeof msg.content === "string" ? msg.content : msg.content?.filter?.(b=>b.type==="text").map(b=>b.text).join("\n") || "";
 
   return (
-    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, display:"flex", flexDirection:"column", paddingTop:160, paddingBottom:90, paddingLeft:16, paddingRight:16 }}>
+    <div style={{ display:"flex", flexDirection:"column", height:"calc(100dvh - 220px)" }}>
       {/* Quick-action chips — only show when no conversation yet */}
       {msgs.length <= 1 && (
         <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:12 }}>
