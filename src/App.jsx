@@ -3849,6 +3849,13 @@ function Dashboard({ keys, onEditKeys }) {
       if(!allItems.length) { console.warn("IG reels: no items fetched"); return; }
       const reels = allItems;
 
+      // Debug: log raw structure of first reel to find correct view count field
+      if(reels[0]) {
+        const sample = reels[0].data || reels[0];
+        console.log("IG RAW REEL SAMPLE:", JSON.stringify(sample, null, 2).slice(0, 2000));
+        console.log("IG view fields:", { play_count: sample.play_count, view_count: sample.view_count, video_view_count: sample.video_view_count, ig_play_count: sample.ig_play_count, media_type: sample.media_type, is_paid_partnership: sample.is_paid_partnership });
+      }
+
       // Map reels to video format
       const fresh = reels.map(reel => {
         const media = reel.data || reel;
