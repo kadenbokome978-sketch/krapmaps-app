@@ -3498,6 +3498,242 @@ const NAV = [
   { id:"settings",  label:"SETTINGS",  ic:I.settings  },
 ];
 
+// ── AI CHATBOT ────────────────────────────────────────────────────
+function AIChatbot({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) {
+  const [open, setOpen] = useState(false);
+  const [msgs, setMsgs] = useState([
+    { role:"assistant", content:"Hey! I'm your KrapMaps AI assistant. I can add tasks, create video ideas, or answer questions about your content performance. What do you need?" }
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if(open) setTimeout(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); inputRef.current?.focus(); }, 100);
+  }, [open, msgs]);
+
+  const TOOLS = [
+    {
+      name: "add_task",
+      description: "Add a new task to the task list",
+      input_schema: {
+        type:"object",
+        properties: {
+          text: { type:"string", description:"The task text" },
+          assignee: { type:"string", enum:["BK","Harley","Both"], description:"Who the task is assigned to" },
+          priority: { type:"string", enum:["urgent","normal","low"], description:"Task priority" }
+        },
+        required:["text","assignee"]
+      }
+    },
+    {
+      name: "add_video_idea",
+      description: "Add a new video content idea",
+      input_schema: {
+        type:"object",
+        properties: {
+          title: { type:"string", description:"The video idea title/concept" },
+          hook: { type:"string", description:"The opening hook for the video" },
+          platform: { type:"string", enum:["tiktok","instagram","both"], description:"Target platform" },
+          notes: { type:"string", description:"Additional notes or description" }
+        },
+        required:["title","platform"]
+      }
+    },
+    {
+      name: "get_stats",
+      description: "Get current content performance stats",
+      input_schema: { type:"object", properties:{}, required:[] }
+    }
+  ];
+
+  const executeTool = (name, inp) => {
+    if(name === "add_task") {
+      const newTask = { id:Date.now(), text:inp.text, assignee:inp.assignee||"BK", done:false, priority:inp.priority||"normal", created:new Date().toISOString() };
+      setTasks(ts=>[newTask,...ts]);
+      saveJSON(TASKS_KEY, [newTask,...tasks]);
+      return `Task added: "${inp.text}" assigned to ${inp.assignee}`;
+    }
+    if(name === "add_video_idea") {
+      const newIdea = { id:Date.now(), title:inp.title, hook:inp.hook||"", platform:inp.platform, notes:inp.notes||"", viral:null, created:new Date().toISOString() };
+      setIdeas(is=>[newIdea,...is]);
+      saveJSON(IDEAS_KEY, [newIdea,...ideas]);
+      return `Video idea added: "${inp.title}" for ${inp.platform}`;
+    }
+    if(name === "get_stats") {
+      const ttVids = videos.filter(v=>v.platform==="tiktok");
+      const igVids = videos.filter(v=>v.platform==="instagram");
+      const totalViews = videos.reduce((s,v)=>s+(v.views||0),0);
+      const topVideo = [...videos].sort((a,b)=>(b.views||0)-(a.views||0))[0];
+      return JSON.stringify({
+        tiktok_videos: ttVids.length,
+        instagram_reels: igVids.length,
+        total_views: totalViews,
+        total_ideas: ideas.length,
+        pending_tasks: tasks.filter(t=>!t.done).length,
+        top_video: topVideo ? { title:topVideo.title, views:topVideo.views, platform:topVideo.platform } : null
+      });
+    }
+    return "Unknown tool";
+  };
+
+  const send = async () => {
+    if(!input.trim() || loading) return;
+    if(!anthropicKey) { setMsgs(m=>[...m,{role:"assistant",content:"No Anthropic API key set. Go to Settings to add one."}]); return; }
+
+    const userMsg = { role:"user", content:input.trim() };
+    const newMsgs = [...msgs, userMsg];
+    setMsgs(newMsgs);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const systemPrompt = `You are an AI assistant for KrapMaps Content OS — a social media management dashboard for the @findkrap TikTok and Instagram accounts. KrapMaps is a crowdsourced bin-finding app for backpackers.
+
+You can:
+- Add tasks (use add_task tool)
+- Add video content ideas (use add_video_idea tool)
+- Check performance stats (use get_stats tool)
+- Give advice on content strategy
+
+Current context:
+- ${tasks.filter(t=>!t.done).length} pending tasks
+- ${ideas.length} video ideas
+- ${videos.length} videos tracked
+- Team: BK and Harley
+
+Be concise and action-oriented. When the user asks to add something, use the appropriate tool immediately.`;
+
+      let conversationMsgs = newMsgs.slice(1); // skip the initial assistant greeting
+      let response = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{ "x-api-key":anthropicKey, "anthropic-version":"2023-06-01", "content-type":"application/json", "anthropic-dangerous-direct-browser-access":"true" },
+        body: JSON.stringify({ model:"claude-fable-5", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:conversationMsgs })
+      });
+
+      if(!response.ok) {
+        const err = await response.json().catch(()=>({}));
+        throw new Error(err.error?.message || `HTTP ${response.status}`);
+      }
+
+      let data = await response.json();
+      let assistantContent = data.content;
+      let allMsgs = [...conversationMsgs, { role:"assistant", content:assistantContent }];
+
+      // Handle tool use in a loop
+      while(data.stop_reason === "tool_use") {
+        const toolUses = assistantContent.filter(b=>b.type==="tool_use");
+        const toolResults = toolUses.map(tu => ({
+          type:"tool_result",
+          tool_use_id: tu.id,
+          content: executeTool(tu.name, tu.input)
+        }));
+
+        allMsgs = [...allMsgs, { role:"user", content:toolResults }];
+
+        response = await fetch("https://api.anthropic.com/v1/messages", {
+          method:"POST",
+          headers:{ "x-api-key":anthropicKey, "anthropic-version":"2023-06-01", "content-type":"application/json", "anthropic-dangerous-direct-browser-access":"true" },
+          body: JSON.stringify({ model:"claude-fable-5", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:allMsgs })
+        });
+
+        if(!response.ok) throw new Error(`HTTP ${response.status}`);
+        data = await response.json();
+        assistantContent = data.content;
+        allMsgs = [...allMsgs, { role:"assistant", content:assistantContent }];
+      }
+
+      const textContent = assistantContent.filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+      setMsgs(m=>[...m, { role:"assistant", content:textContent||"Done!" }]);
+    } catch(e) {
+      setMsgs(m=>[...m, { role:"assistant", content:`Error: ${e.message}` }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const msgText = (msg) => typeof msg.content === "string" ? msg.content : msg.content?.filter?.(b=>b.type==="text").map(b=>b.text).join("\n") || "";
+
+  return (
+    <>
+      {/* Floating button */}
+      <button
+        onClick={()=>setOpen(o=>!o)}
+        style={{ position:"fixed", bottom:100, right:18, width:54, height:54, borderRadius:18, border:"none", cursor:"pointer", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center",
+          background:`linear-gradient(135deg,${C.pink},${C.purple})`, boxShadow:`0 4px 24px ${C.pink}60, 0 0 0 2px rgba(255,45,120,0.2)`, transition:"all 0.2s" }}
+      >
+        {open ? <span style={{fontSize:20,color:"#fff",lineHeight:1}}>×</span> : I.msg(22,"#fff")}
+      </button>
+
+      {/* Chat panel */}
+      {open && (
+        <div style={{ position:"fixed", bottom:165, right:14, width:340, maxHeight:"60vh", borderRadius:20, background:"rgba(8,5,18,0.97)", border:`1px solid ${C.purple}40`, backdropFilter:"blur(30px)", zIndex:199, display:"flex", flexDirection:"column", overflow:"hidden", boxShadow:`0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06)` }}>
+          {/* Header */}
+          <div style={{ padding:"14px 18px", borderBottom:`1px solid rgba(255,255,255,0.07)`, display:"flex", alignItems:"center", gap:10, background:`linear-gradient(135deg,${C.pink}18,${C.purple}12)` }}>
+            <div style={{ width:32, height:32, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.brain(16,"#fff")}</div>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700, color:"#fff", fontFamily:C.fontHead }}>KrapMaps AI</div>
+              <div style={{ fontSize:11, color:C.purple }}>claude-fable-5 · tool use enabled</div>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div style={{ flex:1, overflowY:"auto", padding:"14px 16px", display:"flex", flexDirection:"column", gap:10 }}>
+            {msgs.map((msg,i)=>(
+              <div key={i} style={{ display:"flex", justifyContent:msg.role==="user"?"flex-end":"flex-start" }}>
+                <div style={{ maxWidth:"82%", padding:"10px 14px", borderRadius:msg.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",
+                  background:msg.role==="user"?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.07)",
+                  color:"#fff", fontSize:13, lineHeight:1.55, fontFamily:C.fontBody, wordBreak:"break-word" }}>
+                  {msgText(msg)}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div style={{ display:"flex", justifyContent:"flex-start" }}>
+                <div style={{ padding:"10px 16px", borderRadius:"16px 16px 16px 4px", background:"rgba(255,255,255,0.07)", display:"flex", gap:5, alignItems:"center" }}>
+                  {[0,1,2].map(i=><div key={i} style={{ width:6, height:6, borderRadius:"50%", background:C.purple, animation:`pulse 1.2s ${i*0.2}s infinite` }}/>)}
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef}/>
+          </div>
+
+          {/* Suggestions */}
+          {msgs.length <= 1 && (
+            <div style={{ padding:"0 14px 10px", display:"flex", flexWrap:"wrap", gap:6 }}>
+              {["Add task: post 3x this week","Add idea: bin location challenge","Show my stats"].map(s=>(
+                <button key={s} onClick={()=>{ setInput(s); inputRef.current?.focus(); }}
+                  style={{ fontSize:11, padding:"5px 10px", borderRadius:10, border:`1px solid ${C.purple}40`, background:`${C.purple}12`, color:C.textMed, cursor:"pointer", fontFamily:C.fontBody }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Input */}
+          <div style={{ padding:"10px 14px 14px", borderTop:`1px solid rgba(255,255,255,0.07)`, display:"flex", gap:8 }}>
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={e=>setInput(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
+              placeholder="Add a task, idea, or ask anything..."
+              style={{ flex:1, background:"rgba(255,255,255,0.07)", border:`1px solid rgba(255,255,255,0.1)`, borderRadius:12, padding:"9px 13px", color:"#fff", fontSize:13, fontFamily:C.fontBody, outline:"none" }}
+            />
+            <button onClick={send} disabled={loading||!input.trim()}
+              style={{ width:38, height:38, borderRadius:12, border:"none", cursor:loading||!input.trim()?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.pink},${C.purple})`, opacity:loading||!input.trim()?0.5:1, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              {I.rocket(16,"#fff")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`@keyframes pulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1)}}`}</style>
+    </>
+  );
+}
+
 // ── DASHBOARD ─────────────────────────────────────────────────────
 function Dashboard({ keys, onEditKeys }) {
   const isPhone = typeof window!=="undefined" && window.innerWidth < 520;
@@ -4470,6 +4706,8 @@ Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 senten
       {modals.editAppIdea && editAppIdeaTarget && <EditAppIdeaModal />}
       {modals.addCal      && <AddCalModal />}
       {modals.editStats   && <EditStatsModal />}
+
+      <AIChatbot anthropicKey={keys?.anthropic} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} />
     </div>
   );
 }
