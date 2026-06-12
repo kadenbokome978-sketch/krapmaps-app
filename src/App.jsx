@@ -3596,22 +3596,23 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
     setMsgs(m=>[...m, { role:"user", content:`📎 ${file.name}` }, { role:"assistant", content:"Uploading your clip to Gemini..." }]);
 
     try {
-      // Step 1: upload file to Gemini Files API
-      const uploadRes = await fetch(
+      // Step 1: resumable upload to Gemini Files API
+      const startRes = await fetch(
         `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}`,
-        { method:"POST", headers:{ "X-Goog-Upload-Protocol":"multipart", "Content-Type":`multipart/related; boundary=bound` },
-          body: (() => {
-            const meta = JSON.stringify({ file: { display_name: file.name, mime_type: file.type } });
-            const enc = new TextEncoder();
-            const parts = [
-              enc.encode(`--bound\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--bound\r\nContent-Type: ${file.type}\r\n\r\n`),
-              null, // placeholder for file bytes
-              enc.encode(`\r\n--bound--`)
-            ];
-            return new Blob([parts[0], file, parts[2]]);
-          })()
+        { method:"POST",
+          headers:{ "X-Goog-Upload-Protocol":"resumable", "X-Goog-Upload-Command":"start", "X-Goog-Upload-Header-Content-Length":file.size, "X-Goog-Upload-Header-Content-Type":file.type, "Content-Type":"application/json" },
+          body: JSON.stringify({ file:{ display_name: file.name } })
         }
       );
+      if(!startRes.ok) throw new Error(`Upload start failed: ${startRes.status}`);
+      const uploadUrl = startRes.headers.get("X-Goog-Upload-URL");
+      if(!uploadUrl) throw new Error("No upload URL returned");
+
+      const uploadRes = await fetch(uploadUrl, {
+        method:"POST",
+        headers:{ "Content-Length":file.size, "X-Goog-Upload-Offset":"0", "X-Goog-Upload-Command":"upload, finalize", "Content-Type":file.type },
+        body: file
+      });
       if(!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
       const uploadData = await uploadRes.json();
       const fileUri = uploadData?.file?.uri;
