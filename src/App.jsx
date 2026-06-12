@@ -3494,13 +3494,12 @@ const NAV = [
   { id:"content",   label:"CONTENT",   ic:I.write     },
   { id:"analytics", label:"ANALYTICS", ic:I.bar       },
   { id:"tasks",     label:"TASKS",     ic:I.check     },
-  { id:"growth",    label:"GROWTH",    ic:I.rocket    },
+  { id:"ai",        label:"AI",        ic:I.brain     },
   { id:"settings",  label:"SETTINGS",  ic:I.settings  },
 ];
 
-// ── AI CHATBOT ────────────────────────────────────────────────────
-function AIChatbot({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) {
-  const [open, setOpen] = useState(false);
+// ── AI CHAT VIEW ──────────────────────────────────────────────────
+function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) {
   const [msgs, setMsgs] = useState([
     { role:"assistant", content:"Hey! I'm your KrapMaps AI assistant. I can add tasks, create video ideas, or answer questions about your content performance. What do you need?" }
   ]);
@@ -3510,8 +3509,8 @@ function AIChatbot({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    if(open) setTimeout(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); inputRef.current?.focus(); }, 100);
-  }, [open, msgs]);
+    setTimeout(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); inputRef.current?.focus(); }, 100);
+  }, [msgs]);
 
   const TOOLS = [
     {
@@ -3656,81 +3655,68 @@ Be concise and action-oriented. When the user asks to add something, use the app
   const msgText = (msg) => typeof msg.content === "string" ? msg.content : msg.content?.filter?.(b=>b.type==="text").map(b=>b.text).join("\n") || "";
 
   return (
-    <>
-      {/* Floating button */}
-      <button
-        onClick={()=>setOpen(o=>!o)}
-        style={{ position:"fixed", bottom:100, right:18, width:54, height:54, borderRadius:18, border:"none", cursor:"pointer", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center",
-          background:`linear-gradient(135deg,${C.pink},${C.purple})`, boxShadow:`0 4px 24px ${C.pink}60, 0 0 0 2px rgba(255,45,120,0.2)`, transition:"all 0.2s" }}
-      >
-        {open ? <span style={{fontSize:20,color:"#fff",lineHeight:1}}>×</span> : I.msg(22,"#fff")}
-      </button>
+    <div style={{ display:"flex", flexDirection:"column", height:"calc(100vh - 200px)", maxWidth:640, margin:"0 auto" }}>
+      {/* Quick-action chips */}
+      <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:16 }}>
+        {[
+          { label:"Show my stats", icon:I.bar },
+          { label:"Add task: post 3x this week", icon:I.check },
+          { label:"Add idea: bin location challenge for TikTok", icon:I.idea },
+          { label:"What should I post next?", icon:I.zap },
+        ].map(s=>(
+          <button key={s.label} onClick={()=>{ setInput(s.label); setTimeout(()=>inputRef.current?.focus(),50); }}
+            style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, padding:"7px 13px", borderRadius:12, border:`1px solid ${C.purple}35`, background:`${C.purple}10`, color:C.textMed, cursor:"pointer", fontFamily:C.fontBody }}>
+            {s.icon(13,C.purple)}{s.label}
+          </button>
+        ))}
+      </div>
 
-      {/* Chat panel */}
-      {open && (
-        <div style={{ position:"fixed", bottom:165, right:14, width:340, maxHeight:"60vh", borderRadius:20, background:"rgba(8,5,18,0.97)", border:`1px solid ${C.purple}40`, backdropFilter:"blur(30px)", zIndex:199, display:"flex", flexDirection:"column", overflow:"hidden", boxShadow:`0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06)` }}>
-          {/* Header */}
-          <div style={{ padding:"14px 18px", borderBottom:`1px solid rgba(255,255,255,0.07)`, display:"flex", alignItems:"center", gap:10, background:`linear-gradient(135deg,${C.pink}18,${C.purple}12)` }}>
-            <div style={{ width:32, height:32, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.brain(16,"#fff")}</div>
-            <div>
-              <div style={{ fontSize:13, fontWeight:700, color:"#fff", fontFamily:C.fontHead }}>KrapMaps AI</div>
-              <div style={{ fontSize:11, color:C.purple }}>claude-fable-5 · tool use enabled</div>
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div style={{ flex:1, overflowY:"auto", padding:"14px 16px", display:"flex", flexDirection:"column", gap:10 }}>
-            {msgs.map((msg,i)=>(
-              <div key={i} style={{ display:"flex", justifyContent:msg.role==="user"?"flex-end":"flex-start" }}>
-                <div style={{ maxWidth:"82%", padding:"10px 14px", borderRadius:msg.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",
-                  background:msg.role==="user"?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.07)",
-                  color:"#fff", fontSize:13, lineHeight:1.55, fontFamily:C.fontBody, wordBreak:"break-word" }}>
-                  {msgText(msg)}
-                </div>
-              </div>
-            ))}
-            {loading && (
-              <div style={{ display:"flex", justifyContent:"flex-start" }}>
-                <div style={{ padding:"10px 16px", borderRadius:"16px 16px 16px 4px", background:"rgba(255,255,255,0.07)", display:"flex", gap:5, alignItems:"center" }}>
-                  {[0,1,2].map(i=><div key={i} style={{ width:6, height:6, borderRadius:"50%", background:C.purple, animation:`pulse 1.2s ${i*0.2}s infinite` }}/>)}
-                </div>
+      {/* Messages */}
+      <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", gap:12, paddingRight:4 }}>
+        {msgs.map((msg,i)=>(
+          <div key={i} style={{ display:"flex", justifyContent:msg.role==="user"?"flex-end":"flex-start", gap:10, alignItems:"flex-end" }}>
+            {msg.role==="assistant" && (
+              <div style={{ width:30, height:30, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                {I.brain(14,"#fff")}
               </div>
             )}
-            <div ref={bottomRef}/>
-          </div>
-
-          {/* Suggestions */}
-          {msgs.length <= 1 && (
-            <div style={{ padding:"0 14px 10px", display:"flex", flexWrap:"wrap", gap:6 }}>
-              {["Add task: post 3x this week","Add idea: bin location challenge","Show my stats"].map(s=>(
-                <button key={s} onClick={()=>{ setInput(s); inputRef.current?.focus(); }}
-                  style={{ fontSize:11, padding:"5px 10px", borderRadius:10, border:`1px solid ${C.purple}40`, background:`${C.purple}12`, color:C.textMed, cursor:"pointer", fontFamily:C.fontBody }}>
-                  {s}
-                </button>
-              ))}
+            <div style={{ maxWidth:"78%", padding:"12px 16px", borderRadius:msg.role==="user"?"18px 18px 4px 18px":"18px 18px 18px 4px",
+              background:msg.role==="user"?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.07)",
+              border:msg.role==="assistant"?`1px solid rgba(255,255,255,0.06)`:"none",
+              color:"#fff", fontSize:14, lineHeight:1.6, fontFamily:C.fontBody, wordBreak:"break-word", whiteSpace:"pre-wrap" }}>
+              {msgText(msg)}
             </div>
-          )}
-
-          {/* Input */}
-          <div style={{ padding:"10px 14px 14px", borderTop:`1px solid rgba(255,255,255,0.07)`, display:"flex", gap:8 }}>
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={e=>setInput(e.target.value)}
-              onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
-              placeholder="Add a task, idea, or ask anything..."
-              style={{ flex:1, background:"rgba(255,255,255,0.07)", border:`1px solid rgba(255,255,255,0.1)`, borderRadius:12, padding:"9px 13px", color:"#fff", fontSize:13, fontFamily:C.fontBody, outline:"none" }}
-            />
-            <button onClick={send} disabled={loading||!input.trim()}
-              style={{ width:38, height:38, borderRadius:12, border:"none", cursor:loading||!input.trim()?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.pink},${C.purple})`, opacity:loading||!input.trim()?0.5:1, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-              {I.rocket(16,"#fff")}
-            </button>
           </div>
-        </div>
-      )}
+        ))}
+        {loading && (
+          <div style={{ display:"flex", alignItems:"flex-end", gap:10 }}>
+            <div style={{ width:30, height:30, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{I.brain(14,"#fff")}</div>
+            <div style={{ padding:"12px 18px", borderRadius:"18px 18px 18px 4px", background:"rgba(255,255,255,0.07)", border:`1px solid rgba(255,255,255,0.06)`, display:"flex", gap:5, alignItems:"center" }}>
+              {[0,1,2].map(i=><div key={i} style={{ width:7, height:7, borderRadius:"50%", background:C.purple, animation:`pulse 1.2s ${i*0.2}s infinite` }}/>)}
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef}/>
+      </div>
+
+      {/* Input */}
+      <div style={{ marginTop:16, display:"flex", gap:10, padding:"14px", background:"rgba(255,255,255,0.04)", borderRadius:18, border:`1px solid rgba(255,255,255,0.08)` }}>
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={e=>setInput(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
+          placeholder="Add a task, idea, or ask anything..."
+          style={{ flex:1, background:"transparent", border:"none", color:"#fff", fontSize:14, fontFamily:C.fontBody, outline:"none" }}
+        />
+        <button onClick={send} disabled={loading||!input.trim()}
+          style={{ padding:"10px 20px", borderRadius:13, border:"none", cursor:loading||!input.trim()?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.pink},${C.purple})`, opacity:loading||!input.trim()?0.5:1, color:"#fff", fontSize:13, fontFamily:C.fontHead, fontWeight:700, flexShrink:0 }}>
+          Send
+        </button>
+      </div>
 
       <style>{`@keyframes pulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1)}}`}</style>
-    </>
+    </div>
   );
 }
 
@@ -4645,6 +4631,7 @@ Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 senten
                   {nav==="tasks" && <span>Your <span style={{color:C.green}}>Workflow</span></span>}
                   {nav==="growth" && <span>Monitor <span style={{color:C.orange}}>Growth</span></span>}
                   {nav==="settings" && <span>Configure <span style={{color:C.purple}}>Workspace</span></span>}
+                  {nav==="ai" && <span>Your <span style={{color:C.pink}}>AI</span> Assistant</span>}
                 </div>
                 <div style={{ fontSize:14, color:"rgba(255,255,255,0.4)", lineHeight:1.5 }}>
                   {nav==="home"&&"@findkrap · TikTok & Instagram"}
@@ -4653,6 +4640,7 @@ Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 senten
                   {nav==="tasks"&&"Keep BK and Harley aligned on what to do next"}
                   {nav==="growth"&&"TikTok, Instagram and KrapMaps app metrics"}
                   {nav==="settings"&&"API keys, creator config and sync controls"}
+                  {nav==="ai"&&"Add tasks, ideas and get content advice"}
                 </div>
               </div>
               <div style={{ height:1, flex:1, margin:"0 32px 4px", background:"linear-gradient(90deg,rgba(255,255,255,0.06),transparent)" }} />
@@ -4663,6 +4651,7 @@ Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 senten
         {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} />}
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
+        {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} />}
         {nav==="growth"    && <GrowthView m={m} ttViewsDisplay={ttViewsDisplay} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} scrapedStats={scrapedStats} saveManual={saveManual} setManualData={setManualData} videos={videos} />}
         {nav==="settings"  && <SettingsView keys={keys} onEditKeys={onEditKeys} scrapedStats={scrapedStats} hasIG={hasIG} WL={activeWL} onEditWL={onEditWL} onSyncTikTok={async()=>{
               setSyncMsg("Syncing...");
@@ -4707,7 +4696,6 @@ Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 senten
       {modals.addCal      && <AddCalModal />}
       {modals.editStats   && <EditStatsModal />}
 
-      <AIChatbot anthropicKey={keys?.anthropic} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} />
     </div>
   );
 }
