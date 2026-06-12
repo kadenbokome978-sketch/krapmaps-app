@@ -3659,7 +3659,7 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
       });
       if(!proxyRes.ok) {
         const e = await proxyRes.json().catch(()=>({}));
-        throw new Error(e.error || `Proxy error ${proxyRes.status}`);
+        throw new Error((e.error || `Proxy error ${proxyRes.status}`) + (e.detail ? ` — ${e.detail}` : ''));
       }
       const { fileUri, mimeType } = await proxyRes.json();
 

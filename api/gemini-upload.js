@@ -24,8 +24,11 @@ export default async function handler(req, res) {
     const videoBuffer = Buffer.concat(chunks);
 
     if (videoBuffer.length === 0) {
-      return res.status(400).json({ error: 'Empty video body received' });
+      return res.status(400).json({ error: 'Empty video body received — conversion may have failed' });
     }
+
+    // Log size for debugging
+    console.log(`Upload: ${fileName} ${mimeType} ${videoBuffer.length} bytes`);
 
     // Use multipart upload (simpler and more reliable than resumable for small files)
     const boundary = '----GeminiBoundary' + Date.now();
