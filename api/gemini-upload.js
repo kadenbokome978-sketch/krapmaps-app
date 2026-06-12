@@ -10,9 +10,9 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   const geminiKey = req.headers['x-gemini-key'];
-  const fileName  = req.headers['x-file-name'] || 'clip.mp4';
-  const rawMime   = req.headers['x-mime-type'] || 'video/mp4';
-  // Gemini doesn't accept video/quicktime — remap to video/mov
+  const fileName  = req.headers['x-file-name'] || 'clip.webm';
+  const rawMime   = req.headers['x-mime-type'] || 'video/webm';
+  // Normalise quicktime to mov which Gemini accepts
   const mimeType  = rawMime === 'video/quicktime' ? 'video/mov' : rawMime;
 
   if (!geminiKey) return res.status(400).json({ error: 'Missing x-gemini-key header' });
@@ -23,41 +23,31 @@ export default async function handler(req, res) {
     for await (const chunk of req) chunks.push(chunk);
     const videoBuffer = Buffer.concat(chunks);
 
-    // Step 1: start resumable upload session with Gemini
-    const startRes = await fetch(
-      `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}`,
+    if (videoBuffer.length === 0) {
+      return res.status(400).json({ error: 'Empty video body received' });
+    }
+
+    // Use multipart upload (simpler and more reliable than resumable for small files)
+    const boundary = '----GeminiBoundary' + Date.now();
+    const metaPart = Buffer.from(
+      `--${boundary}\r\nContent-Type: application/json; charset=utf-8\r\n\r\n` +
+      JSON.stringify({ file: { display_name: fileName } }) +
+      `\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`
+    );
+    const closePart = Buffer.from(`\r\n--${boundary}--`);
+    const body = Buffer.concat([metaPart, videoBuffer, closePart]);
+
+    const uploadRes = await fetch(
+      `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}&uploadType=multipart`,
       {
         method: 'POST',
         headers: {
-          'X-Goog-Upload-Protocol': 'resumable',
-          'X-Goog-Upload-Command': 'start',
-          'X-Goog-Upload-Header-Content-Length': videoBuffer.length,
-          'X-Goog-Upload-Header-Content-Type': mimeType,
-          'Content-Type': 'application/json',
+          'Content-Type': `multipart/related; boundary=${boundary}`,
+          'Content-Length': body.length,
         },
-        body: JSON.stringify({ file: { display_name: fileName } }),
+        body,
       }
     );
-
-    if (!startRes.ok) {
-      const err = await startRes.text();
-      return res.status(502).json({ error: `Gemini start failed: ${startRes.status}`, detail: err });
-    }
-
-    const uploadUrl = startRes.headers.get('x-goog-upload-url');
-    if (!uploadUrl) return res.status(502).json({ error: 'No upload URL from Gemini' });
-
-    // Step 2: upload the video bytes
-    const uploadRes = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Length': videoBuffer.length,
-        'X-Goog-Upload-Offset': '0',
-        'X-Goog-Upload-Command': 'upload, finalize',
-        'Content-Type': mimeType,
-      },
-      body: videoBuffer,
-    });
 
     if (!uploadRes.ok) {
       const err = await uploadRes.text();
@@ -66,7 +56,7 @@ export default async function handler(req, res) {
 
     const data = await uploadRes.json();
     const fileUri = data?.file?.uri;
-    if (!fileUri) return res.status(502).json({ error: 'No file URI in Gemini response' });
+    if (!fileUri) return res.status(502).json({ error: 'No file URI in Gemini response', raw: data });
 
     res.json({ fileUri, mimeType });
   } catch (e) {
