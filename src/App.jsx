@@ -4,10 +4,10 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 const C = {
   pink:"#FF2D78", cyan:"#00CFFF", yellow:"#FFD60A",
   green:"#00FF94", orange:"#FF6B35", purple:"#C566FF",
-  bg:"#07050F", card:"rgba(255,255,255,0.04)",
-  cardSolid:"#0D0B18", cardAlt:"rgba(255,255,255,0.02)",
-  border:"rgba(255,255,255,0.08)", borderMed:"rgba(255,255,255,0.12)",
-  dim:"rgba(255,255,255,0.32)", text:"#F8EEFF", textMed:"#C8A8E0",
+  bg:"#06040E", card:"rgba(255,255,255,0.035)",
+  cardSolid:"#0C0A1A", cardAlt:"rgba(255,255,255,0.018)",
+  border:"rgba(255,255,255,0.07)", borderMed:"rgba(255,255,255,0.11)",
+  dim:"rgba(255,255,255,0.28)", text:"#F8EEFF", textMed:"#C8A8E0",
   fontHead:"'Lilita One', Georgia, serif",
   fontSora:"'Lilita One', Georgia, serif",
   fontBody:"'Lilita One', Georgia, serif",
@@ -48,8 +48,9 @@ const I = {
 };
 
 const Glass = ({ children, glow, border, style={} }) => (
-  <div style={{ background:"#0D0B18", backdropFilter:"blur(24px)", WebkitBackdropFilter:"blur(24px)", border:`1px solid ${border||glow?(glow+"30"):C.border}`, borderRadius:18, boxShadow:glow?`0 0 40px ${glow}18, inset 0 1px 0 rgba(255,255,255,0.06)`:"inset 0 1px 0 rgba(255,255,255,0.04)", position:"relative", overflow:"hidden", ...style }}>
-    {glow && <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${glow},${glow}00)`, borderRadius:"18px 18px 0 0", pointerEvents:"none" }} />}
+  <div style={{ background:"linear-gradient(135deg,rgba(255,255,255,0.04) 0%,rgba(255,255,255,0.01) 100%)", backdropFilter:"blur(32px)", WebkitBackdropFilter:"blur(32px)", border:`1px solid ${border||(glow?(glow+"28"):C.border)}`, borderRadius:20, boxShadow:glow?`0 8px 40px ${glow}12, 0 0 0 0.5px ${glow}20, inset 0 1px 0 rgba(255,255,255,0.08)`:"0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)", position:"relative", overflow:"hidden", ...style }}>
+    {glow && <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${glow}60,transparent)`, pointerEvents:"none" }} />}
+    {glow && <div style={{ position:"absolute", top:0, left:0, bottom:0, width:1, background:`linear-gradient(180deg,${glow}40,transparent)`, pointerEvents:"none" }} />}
     {children}
   </div>
 );
@@ -75,14 +76,20 @@ const SectionHead = ({ title, color=C.text, action, actionColor=C.pink }) => (
     {action && <button onClick={action} style={{ width:38, height:38, borderRadius:12, background:`${actionColor}18`, border:`1px solid ${actionColor}40`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:actionColor }}>{I.plus(16,actionColor)}</button>}
   </Row>
 );
-const StatMini = ({ label, value, color, icon }) => (
-  <Glass glow={color} style={{ padding:"18px 18px", position:"relative", overflow:"hidden" }}>
-    <div style={{ position:"absolute", bottom:-20, right:-20, width:80, height:80, borderRadius:"50%", background:`${color}18`, filter:"blur(24px)", pointerEvents:"none" }} />
-    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-      <div style={{ width:36, height:36, borderRadius:10, background:`${color}20`, border:`1px solid ${color}40`, display:"flex", alignItems:"center", justifyContent:"center", color, flexShrink:0, boxShadow:`0 0 12px ${color}25` }}>{icon}</div>
-      <div style={{ fontSize:16, color:"rgba(255,255,255,0.6)", fontWeight:600, fontFamily:"'Lilita One', Georgia, serif", letterSpacing:"0.06em", textTransform:"uppercase" }}>{label}</div>
+const StatMini = ({ label, value, color, icon, delta, deltaUp }) => (
+  <Glass glow={color} style={{ padding:"22px 22px", position:"relative", overflow:"hidden" }}>
+    <div style={{ position:"absolute", bottom:-30, right:-30, width:120, height:120, borderRadius:"50%", background:`${color}10`, filter:"blur(40px)", pointerEvents:"none" }} />
+    <div style={{ position:"absolute", top:0, right:0, width:80, height:80, borderRadius:"50%", background:`${color}06`, filter:"blur(30px)", pointerEvents:"none" }} />
+    <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:16 }}>
+      <div style={{ width:40, height:40, borderRadius:12, background:`linear-gradient(135deg,${color}30,${color}10)`, border:`1px solid ${color}35`, display:"flex", alignItems:"center", justifyContent:"center", color, flexShrink:0, boxShadow:`0 4px 16px ${color}20` }}>{icon}</div>
+      {delta != null && (
+        <div style={{ display:"flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:6, background:deltaUp?"rgba(0,255,148,0.1)":"rgba(255,45,120,0.1)", border:`1px solid ${deltaUp?"rgba(0,255,148,0.2)":"rgba(255,45,120,0.2)"}` }}>
+          <span style={{ fontSize:11, color:deltaUp?C.green:C.pink, fontWeight:700 }}>{deltaUp?"↑":"↓"} {delta}</span>
+        </div>
+      )}
     </div>
-    <Num color={color} size={32}>{value}</Num>
+    <Num color={color} size={34}>{value}</Num>
+    <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", marginTop:8 }}>{label}</div>
   </Glass>
 );
 const SubTabs = ({ tabs, active, onChange, color=C.pink }) => (
@@ -4300,25 +4307,25 @@ Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 senten
         </div>
 
         {/* Nav */}
-        <div style={{ fontSize:16, color:"rgba(255,255,255,0.22)", letterSpacing:"0.16em", fontWeight:700, marginBottom:10, paddingLeft:12 }}>NAVIGATION</div>
+        <div style={{ fontSize:10, color:"rgba(255,255,255,0.2)", letterSpacing:"0.18em", fontWeight:700, marginBottom:8, paddingLeft:12, textTransform:"uppercase" }}>Navigation</div>
         <div style={{ display:"flex", flexDirection:"column", gap:6, flex:1 }}>
           {NAV.map(n=>{
             const active = nav===n.id;
             return (
               <button data-nav-btn key={n.id} onClick={()=>{ setNav(n.id); setSub(null); }}
-                style={{ display:"flex", alignItems:"center", gap:16, padding:"16px 18px", borderRadius:14, border:"none", cursor:"pointer", transition:"all 0.18s",
-                  background: active ? `linear-gradient(135deg,${C.pink}22,${C.purple}12)` : "transparent",
-                  color: active ? "#fff" : "rgba(255,255,255,0.7)",
-                  boxShadow: active ? `inset 0 0 0 1px ${C.pink}30` : "none"
+                style={{ display:"flex", alignItems:"center", gap:14, padding:"13px 16px", borderRadius:14, border:"none", cursor:"pointer", transition:"all 0.18s", position:"relative", overflow:"hidden",
+                  background: active ? `linear-gradient(135deg,${C.pink}18,${C.purple}0a)` : "transparent",
+                  color: active ? "#fff" : "rgba(255,255,255,0.55)",
+                  boxShadow: active ? `inset 0 0 0 1px ${C.pink}25, 0 4px 20px ${C.pink}08` : "none"
                 }}>
-                <div style={{ width:40, height:40, borderRadius:13, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
-                  background: active ? `linear-gradient(135deg,${C.pink}40,${C.purple}30)` : "rgba(255,255,255,0.05)",
-                  boxShadow: active ? `0 4px 14px ${C.pink}30` : "none"
+                {active && <div style={{ position:"absolute", left:0, top:"20%", bottom:"20%", width:3, borderRadius:"0 3px 3px 0", background:`linear-gradient(180deg,${C.pink},${C.purple})`, boxShadow:`0 0 8px ${C.pink}` }} />}
+                <div style={{ width:36, height:36, borderRadius:11, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.18s",
+                  background: active ? `linear-gradient(135deg,${C.pink}35,${C.purple}25)` : "rgba(255,255,255,0.04)",
+                  boxShadow: active ? `0 4px 16px ${C.pink}25` : "none"
                 }}>
-                  {n.ic(19, active ? C.pink : "rgba(255,255,255,0.65)")}
+                  {n.ic(18, active ? C.pink : "rgba(255,255,255,0.5)")}
                 </div>
-                <span style={{ fontSize:15, fontWeight:active?700:500, letterSpacing:"0.04em", textTransform:"uppercase" }}>{n.label}</span>
-  
+                <span style={{ fontSize:14, fontWeight:active?700:500, letterSpacing:"0.05em", textTransform:"uppercase" }}>{n.label}</span>
               </button>
             );
           })}
@@ -4326,15 +4333,15 @@ Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 senten
 
         {/* Workspace */}
         <div>
-          <div style={{ fontSize:16, color:"rgba(255,255,255,0.22)", letterSpacing:"0.16em", fontWeight:700, marginBottom:10, paddingLeft:12 }}>WORKSPACE</div>
-          <div style={{ padding:"14px 16px", borderRadius:14, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-              <div style={{ width:38, height:38, borderRadius:12, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:900, color:"#fff", flexShrink:0 }}>B</div>
+          <div style={{ fontSize:10, color:"rgba(255,255,255,0.2)", letterSpacing:"0.18em", fontWeight:700, marginBottom:8, paddingLeft:12, textTransform:"uppercase" }}>Workspace</div>
+          <div style={{ padding:"14px 16px", borderRadius:16, background:"linear-gradient(135deg,rgba(255,45,120,0.08),rgba(197,102,255,0.05))", border:"1px solid rgba(255,45,120,0.15)", boxShadow:"inset 0 1px 0 rgba(255,255,255,0.06)" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:11 }}>
+              <div style={{ width:38, height:38, borderRadius:12, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:900, color:"#fff", flexShrink:0, boxShadow:`0 4px 14px ${C.pink}30` }}>B</div>
               <div>
-                <div style={{ fontSize:16, fontWeight:700, color:"#fff" }}>BK + HARLEY</div>
+                <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.02em" }}>BK + HARLEY</div>
                 <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:3 }}>
-                  <div style={{ width:6, height:6, borderRadius:"50%", background:C.green, boxShadow:`0 0 6px ${C.green}` }} />
-                  <span style={{ fontSize:17, color:"rgba(255,255,255,0.7)" }}>@findkrap · Online</span>
+                  <div style={{ width:5, height:5, borderRadius:"50%", background:C.green, boxShadow:`0 0 8px ${C.green}` }} />
+                  <span style={{ fontSize:11, color:"rgba(255,255,255,0.55)" }}>@findkrap · Online</span>
                 </div>
               </div>
             </div>
@@ -4353,7 +4360,7 @@ Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 senten
           </div>
 
           {/* STICKY DESKTOP TOP BAR */}
-          <div style={{ position:"sticky", top:0, zIndex:100, background:"rgba(7,5,15,0.96)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(255,255,255,0.06)", padding:"0 40px", height:64, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ position:"sticky", top:0, zIndex:100, background:"rgba(6,4,14,0.92)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", borderBottom:"1px solid rgba(255,255,255,0.05)", padding:"0 40px", height:60, display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 1px 0 rgba(255,255,255,0.04)" }}>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
               <span style={{ fontSize:16, color:"rgba(255,255,255,0.28)" }}>KrapMaps</span>
               <span style={{ fontSize:16, color:"rgba(255,255,255,0.75)" }}>/</span>
@@ -4377,25 +4384,31 @@ Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 senten
           </div>
 
           {/* PAGE CONTENT */}
-          <div style={{ padding:"36px 48px 60px" }}>
-            {/* PAGE TITLE — like G.Take "Make Things Simple!" */}
-            <div style={{ marginBottom:36 }}>
-              <div style={{ fontSize:38, fontWeight:400, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:8 }}>
-                {nav==="home" && <span><span style={{color:C.pink}}>Content</span> OS</span>}
-                {nav==="content" && <span>Manage <span style={{color:C.cyan}}>Videos</span> & Ideas</span>}
-                {nav==="analytics" && <span>Track Your <span style={{color:C.yellow}}>Performance</span></span>}
-                {nav==="tasks" && <span>Your <span style={{color:C.green}}>Workflow</span></span>}
-                {nav==="growth" && <span>Monitor <span style={{color:C.orange}}>Growth</span></span>}
-                {nav==="settings" && <span>Configure <span style={{color:C.purple}}>Workspace</span></span>}
+          <div style={{ padding:"32px 44px 60px" }}>
+            {/* PAGE TITLE */}
+            <div style={{ marginBottom:32, display:"flex", alignItems:"flex-end", justifyContent:"space-between" }}>
+              <div>
+                <div style={{ fontSize:13, color:"rgba(255,255,255,0.3)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:600, marginBottom:6 }}>
+                  {nav==="home"?"Dashboard":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="growth"?"Growth":"Settings"}
+                </div>
+                <div style={{ fontSize:34, fontWeight:400, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:6 }}>
+                  {nav==="home" && <span><span style={{color:C.pink}}>Content</span> OS</span>}
+                  {nav==="content" && <span>Manage <span style={{color:C.cyan}}>Content</span></span>}
+                  {nav==="analytics" && <span>Track <span style={{color:C.yellow}}>Performance</span></span>}
+                  {nav==="tasks" && <span>Your <span style={{color:C.green}}>Workflow</span></span>}
+                  {nav==="growth" && <span>Monitor <span style={{color:C.orange}}>Growth</span></span>}
+                  {nav==="settings" && <span>Configure <span style={{color:C.purple}}>Workspace</span></span>}
+                </div>
+                <div style={{ fontSize:14, color:"rgba(255,255,255,0.4)", lineHeight:1.5 }}>
+                  {nav==="home"&&"@findkrap · TikTok & Instagram"}
+                  {nav==="content"&&"All your TikTok and Instagram content in one view"}
+                  {nav==="analytics"&&"Deep performance data across all your content"}
+                  {nav==="tasks"&&"Keep BK and Harley aligned on what to do next"}
+                  {nav==="growth"&&"TikTok, Instagram and KrapMaps app metrics"}
+                  {nav==="settings"&&"API keys, creator config and sync controls"}
+                </div>
               </div>
-              <div style={{ fontSize:17, color:"rgba(255,255,255,0.65)", lineHeight:1.5 }}>
-                {nav==="home"&&"@findkrap · TikTok & Instagram"}
-                {nav==="content"&&"All your TikTok and Instagram content in one view"}
-                {nav==="analytics"&&"Deep performance data across all your content"}
-                {nav==="tasks"&&"Keep BK and Harley aligned on what to do next"}
-                {nav==="growth"&&"TikTok, Instagram and KrapMaps app metrics"}
-                {nav==="settings"&&"API keys, creator config and sync controls"}
-              </div>
+              <div style={{ height:1, flex:1, margin:"0 32px 4px", background:"linear-gradient(90deg,rgba(255,255,255,0.06),transparent)" }} />
             </div>
 
         {/* VIEWS */}
