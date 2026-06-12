@@ -11,7 +11,9 @@ export default async function handler(req, res) {
 
   const geminiKey = req.headers['x-gemini-key'];
   const fileName  = req.headers['x-file-name'] || 'clip.mp4';
-  const mimeType  = req.headers['x-mime-type'] || 'video/mp4';
+  const rawMime   = req.headers['x-mime-type'] || 'video/mp4';
+  // Gemini doesn't accept video/quicktime — remap to video/mov
+  const mimeType  = rawMime === 'video/quicktime' ? 'video/mov' : rawMime;
 
   if (!geminiKey) return res.status(400).json({ error: 'Missing x-gemini-key header' });
 

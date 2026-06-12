@@ -3640,11 +3640,12 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
       let uploadFile = file;
       if(file.type !== "video/mp4" || file.size > 20*1024*1024) {
         try {
-          setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Converting to MP4 for faster upload..." }]);
+          setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Converting clip for upload (plays in real-time, please wait)..." }]);
           uploadFile = await convertToMp4(file);
         } catch(e) {
-          // conversion failed, just use original
-          uploadFile = file;
+          setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Conversion failed — try a shorter clip under 30 seconds, or export as MP4 from your phone first." }]);
+          setUploading(false);
+          return;
         }
       }
 
