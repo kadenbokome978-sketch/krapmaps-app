@@ -164,99 +164,126 @@ const GlowAreaChart = ({ data=[], color=C.pink, height=120, dataKey="value", xKe
   );
 };
 
-// Dual line area chart — two platforms on same chart
-const DualAreaChart = ({ ttData=[], igData=[], height=160 }) => {
-  const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-  const W=500, H=height, PAD=30, BPAD=24;
+// Dual grouped bar chart — Meet AI style
+const DualAreaChart = ({ ttData=[], igData=[], height=220 }) => {
+  const W=560, H=height, LPAD=48, RPAD=20, TPAD=16, BPAD=36;
+  const chartW = W-LPAD-RPAD, chartH = H-TPAD-BPAD;
+  const n = Math.max(ttData.length, igData.length, 1);
   const allVals = [...ttData.map(d=>d.value||0), ...igData.map(d=>d.value||0)];
   const max = Math.max(...allVals, 1);
-  const toY = v => H-BPAD-((v/max)*(H-BPAD-8));
-  const ttPts = ttData.map((d,i)=>[PAD+(i/(ttData.length-1||1))*(W-PAD*2), toY(d.value||0)]);
-  const igPts = igData.map((d,i)=>[PAD+(i/(igData.length-1||1))*(W-PAD*2), toY(d.value||0)]);
-  const ttPath = bezier(ttPts);
-  const igPath = bezier(igPts);
-  const ttArea = ttPts.length ? `${ttPath} L${ttPts[ttPts.length-1][0]},${H-BPAD} L${ttPts[0][0]},${H-BPAD} Z` : "";
-  const igArea = igPts.length ? `${igPath} L${igPts[igPts.length-1][0]},${H-BPAD} L${igPts[0][0]},${H-BPAD} Z` : "";
+  const grp = chartW / n;
+  const bw = Math.max(6, grp*0.28);
+  const gap = 4;
+  const fmt = v => v>=1000?(v/1000).toFixed(0)+"k":String(v);
+  const gridLines = [0,0.25,0.5,0.75,1];
   return (
     <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{overflow:"visible",display:"block"}}>
       <defs>
-        <linearGradient id="datt" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={C.pink} stopOpacity="0.35"/>
-          <stop offset="100%" stopColor={C.pink} stopOpacity="0"/>
+        <linearGradient id="dab_tt" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={C.pink} stopOpacity="1"/>
+          <stop offset="100%" stopColor={C.pink} stopOpacity="0.15"/>
         </linearGradient>
-        <linearGradient id="daig" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={C.purple} stopOpacity="0.3"/>
-          <stop offset="100%" stopColor={C.purple} stopOpacity="0"/>
+        <linearGradient id="dab_ig" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={C.purple} stopOpacity="0.9"/>
+          <stop offset="100%" stopColor={C.purple} stopOpacity="0.1"/>
         </linearGradient>
-        <filter id="gltt"><feGaussianBlur stdDeviation="3"/></filter>
-        <filter id="glig"><feGaussianBlur stdDeviation="3"/></filter>
+        <filter id="bgl"><feGaussianBlur stdDeviation="5"/></filter>
       </defs>
-      {/* Grid */}
-      {[0.25,0.5,0.75,1].map(f=>(
-        <line key={f} x1={PAD} y1={H-BPAD-(f*(H-BPAD-8))} x2={W-PAD} y2={H-BPAD-(f*(H-BPAD-8))} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
-      ))}
-      {/* TikTok area */}
-      {ttArea && <path d={ttArea} fill="url(#datt)"/>}
-      {/* Instagram area */}
-      {igArea && <path d={igArea} fill="url(#daig)"/>}
-      {/* TikTok glow + line */}
-      {ttPath && <>
-        <path d={ttPath} fill="none" stroke={C.pink} strokeWidth="5" strokeOpacity="0.2" filter="url(#gltt)"/>
-        <path d={ttPath} fill="none" stroke={C.pink} strokeWidth="2.5" strokeLinecap="round"/>
-        {ttPts.map((p,i)=><g key={i}><circle cx={p[0]} cy={p[1]} r="4" fill={C.pink} opacity="0.2"/><circle cx={p[0]} cy={p[1]} r="2.5" fill={C.pink}/></g>)}
-      </>}
-      {/* Instagram glow + line */}
-      {igPath && <>
-        <path d={igPath} fill="none" stroke={C.purple} strokeWidth="5" strokeOpacity="0.2" filter="url(#glig)"/>
-        <path d={igPath} fill="none" stroke={C.purple} strokeWidth="2.5" strokeLinecap="round" strokeDasharray="6,3"/>
-        {igPts.map((p,i)=><g key={i}><circle cx={p[0]} cy={p[1]} r="4" fill={C.purple} opacity="0.2"/><circle cx={p[0]} cy={p[1]} r="2.5" fill={C.purple}/></g>)}
-      </>}
-      {/* X labels */}
-      {ttData.map((d,i)=>(
-        <text key={i} x={ttPts[i][0]} y={H-6} textAnchor="middle" fill="rgba(255,255,255,0.6)" fontSize="14" fontFamily="inherit">{d.label}</text>
-      ))}
+      {/* Y grid lines + labels */}
+      {gridLines.map(f=>{
+        const y = TPAD + chartH*(1-f);
+        return (
+          <g key={f}>
+            <line x1={LPAD} y1={y} x2={W-RPAD} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth="1"/>
+            {f>0 && <text x={LPAD-8} y={y+4} textAnchor="end" fill="rgba(255,255,255,0.3)" fontSize="11" fontFamily="inherit">{fmt(Math.round(max*f))}</text>}
+          </g>
+        );
+      })}
+      {/* Bars */}
+      {ttData.map((d,i)=>{
+        const x = LPAD + i*grp + grp/2;
+        const ttH = ((d.value||0)/max)*chartH;
+        const igH = ((igData[i]?.value||0)/max)*chartH;
+        const ttX = x - bw - gap/2;
+        const igX = x + gap/2;
+        const ttY = TPAD+chartH-ttH;
+        const igY = TPAD+chartH-igH;
+        const r = 4;
+        return (
+          <g key={i}>
+            {/* TikTok bar glow */}
+            {ttH>2 && <rect x={ttX} y={ttY} width={bw} height={ttH} rx={r} fill={C.pink} opacity="0.15" filter="url(#bgl)"/>}
+            {/* TikTok bar */}
+            {ttH>2 && <>
+              <rect x={ttX} y={ttY} width={bw} height={ttH} rx={r} fill="url(#dab_tt)"/>
+              <rect x={ttX} y={ttY} width={bw} height={Math.min(3,ttH)} rx={r} fill={C.pink}/>
+            </>}
+            {/* IG bar glow */}
+            {igH>2 && <rect x={igX} y={igY} width={bw} height={igH} rx={r} fill={C.purple} opacity="0.15" filter="url(#bgl)"/>}
+            {/* IG bar */}
+            {igH>2 && <>
+              <rect x={igX} y={igY} width={bw} height={igH} rx={r} fill="url(#dab_ig)"/>
+              <rect x={igX} y={igY} width={bw} height={Math.min(3,igH)} rx={r} fill={C.purple}/>
+            </>}
+            {/* X label */}
+            <text x={x} y={H-8} textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="12" fontFamily="inherit">{d.label}</text>
+            {/* Base line tick */}
+            <line x1={x} y1={TPAD+chartH} x2={x} y2={TPAD+chartH+4} stroke="rgba(255,255,255,0.1)" strokeWidth="1"/>
+          </g>
+        );
+      })}
+      {/* Bottom axis */}
+      <line x1={LPAD} y1={TPAD+chartH} x2={W-RPAD} y2={TPAD+chartH} stroke="rgba(255,255,255,0.08)" strokeWidth="1"/>
     </svg>
   );
 };
 
-const GlowBarChart = ({ data=[], color=C.pink, height=120, dataKey="value", xKey="label" }) => {
-  if(!data.length) return <div style={{height,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,color:"rgba(255,255,255,0.75)"}}>No data</div>;
-  const W=500, H=height, BPAD=24, GAP=0.35;
+const GlowBarChart = ({ data=[], color=C.pink, height=140, dataKey="value", xKey="label" }) => {
+  if(!data.length) return <div style={{height,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"rgba(255,255,255,0.3)"}}>No data yet</div>;
+  const W=500, H=height, LPAD=40, RPAD=12, TPAD=12, BPAD=28;
+  const chartW=W-LPAD-RPAD, chartH=H-TPAD-BPAD;
   const vals = data.map(d=>d[dataKey]||0);
   const max = Math.max(...vals,1);
-  const barW = (W/data.length)*(1-GAP);
+  const grp = chartW/data.length;
+  const bw = Math.max(8, grp*0.5);
   const id = color.replace("#","b");
+  const fmt = v => v>=1000?(v/1000).toFixed(0)+"k":String(v);
   return (
     <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{overflow:"visible",display:"block"}}>
       <defs>
         <linearGradient id={`gb${id}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="1"/>
-          <stop offset="100%" stopColor={color} stopOpacity="0.25"/>
+          <stop offset="100%" stopColor={color} stopOpacity="0.12"/>
         </linearGradient>
-        <filter id={`bf${id}`}><feGaussianBlur in="SourceGraphic" stdDeviation="4"/></filter>
+        <filter id={`bf${id}`}><feGaussianBlur stdDeviation="6"/></filter>
       </defs>
-      {/* Grid */}
-      {[0.33,0.66,1].map(f=>(
-        <line key={f} x1="0" y1={H-BPAD-(f*(H-BPAD))} x2={W} y2={H-BPAD-(f*(H-BPAD))} stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>
-      ))}
-      {data.map((d,i)=>{
-        const barH = ((d[dataKey]||0)/max)*(H-BPAD);
-        const x = (i/data.length)*W + (W/data.length)*GAP/2;
-        const y = H-BPAD-barH;
-        const isTop = i===0;
+      {/* Grid lines + Y labels */}
+      {[0.25,0.5,0.75,1].map(f=>{
+        const y = TPAD+chartH*(1-f);
         return (
-          <g key={i}>
-            {/* Glow */}
-            <rect x={x} y={y} width={barW} height={barH} rx="4" fill={color} opacity="0.15" filter={`url(#bf${id})`}/>
-            {/* Bar */}
-            <rect x={x} y={y} width={barW} height={barH} rx="4" fill={`url(#gb${id})`}/>
-            {/* Top highlight */}
-            <rect x={x} y={y} width={barW} height="2" rx="1" fill={color} opacity="0.8"/>
-            {/* Label */}
-            <text x={x+barW/2} y={H-6} textAnchor="middle" fill="rgba(255,255,255,0.65)" fontSize="13" fontFamily="inherit">{d[xKey]}</text>
+          <g key={f}>
+            <line x1={LPAD} y1={y} x2={W-RPAD} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth="1"/>
+            <text x={LPAD-6} y={y+4} textAnchor="end" fill="rgba(255,255,255,0.25)" fontSize="10" fontFamily="inherit">{fmt(Math.round(max*f))}</text>
           </g>
         );
       })}
+      {/* Bars */}
+      {data.map((d,i)=>{
+        const barH = Math.max(0,((d[dataKey]||0)/max)*chartH);
+        const x = LPAD + i*grp + grp/2 - bw/2;
+        const y = TPAD+chartH-barH;
+        const r = 5;
+        return (
+          <g key={i}>
+            {barH>2 && <rect x={x} y={y} width={bw} height={barH} rx={r} fill={color} opacity="0.18" filter={`url(#bf${id})`}/>}
+            {barH>2 && <rect x={x} y={y} width={bw} height={barH} rx={r} fill={`url(#gb${id})`}/>}
+            {barH>3 && <rect x={x} y={y} width={bw} height={3} rx={r} fill={color} opacity="0.9"/>}
+            <text x={x+bw/2} y={H-8} textAnchor="middle" fill="rgba(255,255,255,0.35)" fontSize="11" fontFamily="inherit">{d[xKey]}</text>
+          </g>
+        );
+      })}
+      {/* Axis */}
+      <line x1={LPAD} y1={TPAD+chartH} x2={W-RPAD} y2={TPAD+chartH} stroke="rgba(255,255,255,0.08)" strokeWidth="1"/>
     </svg>
   );
 };
