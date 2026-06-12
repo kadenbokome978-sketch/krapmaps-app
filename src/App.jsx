@@ -3847,44 +3847,34 @@ function Dashboard({ keys, onEditKeys }) {
       if(!allItems.length) { console.warn("IG reels: no items fetched"); return; }
       const reels = allItems;
 
-      // IG follower count fetched separately via fetchIGFollowers
+      // Map reels to video format
+      const fresh = reels.map(reel => {
+        const media = reel.data || reel;
+        const reelId = media.pk || media.id;
+        const views  = media.play_count || media.view_count || media.video_view_count || media.ig_play_count || 0;
+        const likes  = media.like_count || 0;
+        const comments = media.comment_count || 0;
+        const cover  = media.image_versions2?.candidates?.[0]?.url || "";
+        const code   = media.code || "";
+        const videoUrl = "https://www.instagram.com/reel/"+code+"/";
+        const title  = media.caption?.text?.slice(0,100) || "Instagram Reel";
+        const created = media["1ltaken_at"] ? new Date(media["1ltaken_at"]*1000).toISOString() : (media.taken_at ? new Date(media.taken_at*1000).toISOString() : new Date().toISOString());
+        return {
+          id: "ig_"+reelId,
+          title, views, likes, comments,
+          shares: 0, cover, videoUrl, url: videoUrl,
+          platform: "instagram",
+          _igId: reelId, _source: "igscraper", created_at: created,
+          type: "reel", _igCode: code,
+        };
+      });
 
-      // Map reels to our video format — wipe old IG entries and repopulate clean
       setVideos(prev => {
         const nonIG = prev.filter(v => v.platform !== "instagram");
-        const fresh = reels.map(reel => {
-          const media = reel.data || reel;
-          const reelId = media.pk || media.id;
-          const views  = media.play_count || media.view_count || 0;
-          const likes  = media.like_count || 0;
-          const comments = media.comment_count || 0;
-          const cover  = media.image_versions2?.candidates?.[0]?.url || "";
-          const code   = media.code || "";
-          const videoUrl = "https://www.instagram.com/reel/"+code+"/";
-          const title  = media.caption?.text?.slice(0,100) || "Instagram Reel";
-          const created = media["1ltaken_at"] ? new Date(media["1ltaken_at"]*1000).toISOString() : (media.taken_at ? new Date(media.taken_at*1000).toISOString() : new Date().toISOString());
-          return {
-              id: "ig_"+reelId,
-              title,
-              views,
-              likes,
-              comments,
-              shares: 0,
-              cover,
-              videoUrl,
-              url: videoUrl,
-              platform: "instagram",
-              _igId: reelId,
-              _source: "igscraper",
-              created_at: created,
-              type: "reel",
-              _igCode: code,
-            };
-        });
         return [...nonIG, ...fresh];
       });
 
-      // Fetch real view counts from our Vercel proxy
+      // Fetch real view counts from Vercel proxy (now fresh is in scope)
       try {
         const codes = fresh.map(v=>v._igCode).filter(Boolean).join(',');
         if(codes) {
