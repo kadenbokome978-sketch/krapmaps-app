@@ -3494,7 +3494,7 @@ const NAV = [
   { id:"content",   label:"CONTENT",   ic:I.write     },
   { id:"analytics", label:"ANALYTICS", ic:I.bar       },
   { id:"tasks",     label:"TASKS",     ic:I.check     },
-  { id:"ai",        label:"AI",        ic:I.brain     },
+  { id:"ai",        label:"ASSIST",    ic:I.brain     },
   { id:"growth",    label:"GROWTH",    ic:I.rocket    },
   { id:"settings",  label:"SETTINGS",  ic:I.settings  },
 ];
@@ -3502,12 +3502,15 @@ const NAV = [
 // ── AI CHAT VIEW ──────────────────────────────────────────────────
 function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) {
   const [msgs, setMsgs] = useState([
-    { role:"assistant", content:"Hey! I'm your KrapMaps AI assistant. I can add tasks, create video ideas, or answer questions about your content performance. What do you need?" }
+    { role:"assistant", content:"Hey! I'm your KrapMaps AI assistant. I can add tasks, create video ideas, answer questions about your content — or upload a clip and I'll analyse it and tell you how to edit it." }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [videoFile, setVideoFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+  const fileRef = useRef(null);
 
   useEffect(() => {
     setTimeout(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); inputRef.current?.focus(); }, 100);
@@ -3576,6 +3579,67 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
       });
     }
     return "Unknown tool";
+  };
+
+  const analyseVideo = async (file) => {
+    const cfg = loadJSON(KEYS_KEY, {});
+    const geminiKey = cfg?.keys?.gemini;
+    if(!geminiKey) { setMsgs(m=>[...m,{role:"assistant",content:"No Gemini API key set. Go to Settings to add one — video analysis uses Gemini."}]); return; }
+
+    setUploading(true);
+    setMsgs(m=>[...m, { role:"user", content:`📎 ${file.name}` }, { role:"assistant", content:"Uploading your clip to Gemini..." }]);
+
+    try {
+      // Step 1: upload file to Gemini Files API
+      const uploadRes = await fetch(
+        `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}`,
+        { method:"POST", headers:{ "X-Goog-Upload-Protocol":"multipart", "Content-Type":`multipart/related; boundary=bound` },
+          body: (() => {
+            const meta = JSON.stringify({ file: { display_name: file.name, mime_type: file.type } });
+            const enc = new TextEncoder();
+            const parts = [
+              enc.encode(`--bound\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--bound\r\nContent-Type: ${file.type}\r\n\r\n`),
+              null, // placeholder for file bytes
+              enc.encode(`\r\n--bound--`)
+            ];
+            return new Blob([parts[0], file, parts[2]]);
+          })()
+        }
+      );
+      if(!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
+      const uploadData = await uploadRes.json();
+      const fileUri = uploadData?.file?.uri;
+      if(!fileUri) throw new Error("No file URI returned from Gemini");
+
+      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
+
+      // Step 2: send to Gemini for analysis
+      const prompt = `You are a TikTok and Instagram content expert. Analyse this video clip and give specific, actionable feedback on:
+1. Hook strength (first 1-3 seconds) — is it grabbing attention?
+2. Pacing — is it too slow, too fast, or well-timed?
+3. Editing suggestions — cuts, transitions, text overlays, music timing
+4. Caption/hook text suggestions if none visible
+5. Overall verdict — post as-is, needs edits, or reshoot?
+
+Be direct and specific. Format with clear sections.`;
+
+      const genRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+        { method:"POST", headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ contents:[{ parts:[{ file_data:{ mime_type:file.type, file_uri:fileUri } }, { text:prompt }] }] })
+        }
+      );
+      if(!genRes.ok) throw new Error(`Gemini error: ${genRes.status}`);
+      const genData = await genRes.json();
+      const text = genData?.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis returned.";
+      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:text }]);
+    } catch(e) {
+      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:`Error: ${e.message}` }]);
+    } finally {
+      setUploading(false);
+      setVideoFile(null);
+      if(fileRef.current) fileRef.current.value = "";
+    }
   };
 
   const send = async () => {
@@ -3702,8 +3766,26 @@ Be concise and action-oriented. When the user asks to add something, use the app
         <div ref={bottomRef}/>
       </div>
 
-      {/* Input pinned above nav */}
+      {/* Video preview pill */}
+      {videoFile && (
+        <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:`${C.purple}18`, border:`1px solid ${C.purple}40`, borderRadius:12, marginTop:8 }}>
+          {I.vid(14,C.purple)}
+          <span style={{ fontSize:12, color:C.textMed, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{videoFile.name}</span>
+          <button onClick={()=>{ setVideoFile(null); if(fileRef.current) fileRef.current.value=""; }} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", cursor:"pointer", fontSize:16, lineHeight:1 }}>×</button>
+          <button onClick={()=>analyseVideo(videoFile)} disabled={uploading}
+            style={{ padding:"5px 14px", borderRadius:9, border:"none", cursor:uploading?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontSize:12, fontFamily:C.fontHead, opacity:uploading?0.6:1 }}>
+            {uploading?"Analysing...":"Analyse"}
+          </button>
+        </div>
+      )}
+
+      {/* Input */}
       <div style={{ display:"flex", gap:10, padding:"12px 14px", background:"rgba(12,8,28,0.98)", borderRadius:18, border:`1px solid rgba(255,255,255,0.1)`, marginTop:10 }}>
+        <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e=>{ if(e.target.files[0]) setVideoFile(e.target.files[0]); }} />
+        <button onClick={()=>fileRef.current?.click()} title="Upload clip for analysis"
+          style={{ width:36, height:36, borderRadius:10, border:`1px solid rgba(255,255,255,0.12)`, background:"rgba(255,255,255,0.06)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:"rgba(255,255,255,0.5)" }}>
+          {I.vid(15,"rgba(255,255,255,0.6)")}
+        </button>
         <input
           ref={inputRef}
           value={input}
@@ -4634,7 +4716,7 @@ Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 senten
                   {nav==="tasks" && <span>Your <span style={{color:C.green}}>Workflow</span></span>}
                   {nav==="growth" && <span>Monitor <span style={{color:C.orange}}>Growth</span></span>}
                   {nav==="settings" && <span>Configure <span style={{color:C.purple}}>Workspace</span></span>}
-                  {nav==="ai" && <span>Your <span style={{color:C.pink}}>AI</span> Assistant</span>}
+                  {nav==="ai" && <span><span style={{color:C.pink}}>AI</span> Assistant</span>}
                 </div>
                 <div style={{ fontSize:14, color:"rgba(255,255,255,0.4)", lineHeight:1.5 }}>
                   {nav==="home"&&"@findkrap · TikTok & Instagram"}
