@@ -1135,100 +1135,109 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
       {/* ── CAPTIONS ──────────────────────────────────────────── */}
       {sub==="CAPTIONS" && (
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-          {/* Left — idea picker */}
-          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            <div style={{ borderRadius:18, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)" }}>
-              <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:14 }}>Pick an idea to caption</div>
-              {ideas.slice(0,8).map((idea,i)=>(
-                <div key={idea.id} onClick={()=>genCaption&&genCaption(idea)}
-                  style={{ padding:"12px 14px", borderRadius:12, background:captionIdea?.id===idea.id?`${C.pink}18`:"rgba(255,255,255,0.03)", border:`1px solid ${captionIdea?.id===idea.id?C.pink:"rgba(255,255,255,0.07)"}`, fontSize:14, fontWeight:600, color:"#fff", cursor:"pointer", marginBottom:i<Math.min(ideas.length,8)-1?8:0, lineHeight:1.3, transition:"all 0.15s" }}>
-                  <div style={{ marginBottom:4 }}>{idea.title?.slice(0,55)}{(idea.title?.length||0)>55?"...":""}</div>
-                  <div style={{ display:"flex", gap:6 }}>
-                    <Tag color={ic(idea.viral||0)} sm>{idea.viral||0} VIRAL</Tag>
-                    {idea.type && <Tag color={C.pink} sm>{idea.type}</Tag>}
-                  </div>
-                </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          {/* Idea picker — horizontal scroll row */}
+          <div style={{ overflowX:"auto", paddingBottom:4 }}>
+            <div style={{ display:"flex", gap:8, minWidth:"max-content" }}>
+              {ideas.slice(0,10).map(idea=>(
+                <button key={idea.id} onClick={()=>genCaption&&genCaption(idea)}
+                  style={{ padding:"10px 16px", borderRadius:12, border:`1px solid ${captionIdea?.id===idea.id?C.pink:"rgba(255,255,255,0.08)"}`, background:captionIdea?.id===idea.id?`${C.pink}18`:"rgba(255,255,255,0.03)", color:captionIdea?.id===idea.id?"#fff":"rgba(255,255,255,0.6)", fontFamily:C.fontBody, fontWeight:600, fontSize:13, cursor:"pointer", whiteSpace:"nowrap", transition:"all 0.15s", textAlign:"left" }}>
+                  <div style={{ marginBottom:3 }}>{idea.title?.slice(0,35)}{(idea.title?.length||0)>35?"…":""}</div>
+                  <div style={{ fontSize:10, color:captionIdea?.id===idea.id?C.pink:"rgba(255,255,255,0.3)", fontWeight:700 }}>{idea.viral||0} viral · {idea.type||"—"}</div>
+                </button>
               ))}
             </div>
           </div>
 
-          {/* Right — caption output */}
-          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-            {aiLoad&&aiLoad.caption ? (
-              <div style={{ padding:"48px", textAlign:"center", borderRadius:18, border:"1px solid rgba(255,255,255,0.07)", fontSize:15, color:"rgba(255,255,255,0.5)" }}>Writing captions...</div>
-            ) : captionResult && captionIdea ? (
-              <>
-                <div style={{ fontSize:13, color:"rgba(255,255,255,0.4)", letterSpacing:"0.12em", textTransform:"uppercase", fontWeight:700 }}>
-                  Captions for: {captionIdea.title?.slice(0,40)}
-                </div>
+          {/* Caption output */}
+          {aiLoad&&aiLoad.caption ? (
+            <div style={{ padding:"48px", textAlign:"center", borderRadius:18, border:"1px solid rgba(255,255,255,0.07)", fontSize:15, color:"rgba(255,255,255,0.5)" }}>Writing captions...</div>
+          ) : captionResult && captionIdea ? (
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.35)", letterSpacing:"0.12em", textTransform:"uppercase", fontWeight:700 }}>
+                Captions for: <span style={{color:"rgba(255,255,255,0.7)"}}>{captionIdea.title?.slice(0,50)}</span>
+              </div>
+
+              {/* Platform tabs — TikTok / Instagram side by side */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(340px,100%),1fr))", gap:12 }}>
+
                 {/* TikTok */}
-                <div style={{ borderRadius:18, padding:"20px 22px", background:`${C.pink}08`, border:`1px solid ${C.pink}25`, position:"relative", overflow:"hidden" }}>
-                  <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+                <div style={{ borderRadius:16, background:"rgba(12,8,24,0.95)", border:`1px solid ${C.pink}22`, overflow:"hidden" }}>
+                  <div style={{ padding:"14px 18px", borderBottom:`1px solid ${C.pink}15`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                      <div style={{ width:30, height:30, borderRadius:9, background:`${C.pink}20`, border:`1px solid ${C.pink}35`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.tt(14,C.pink)}</div>
-                      <span style={{ fontSize:15, fontWeight:700, color:"#fff" }}>TikTok</span>
+                      <div style={{ width:28, height:28, borderRadius:8, background:`${C.pink}18`, border:`1px solid ${C.pink}30`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.tt(13,C.pink)}</div>
+                      <span style={{ fontSize:14, fontWeight:700, color:"#fff" }}>TikTok</span>
                     </div>
                     <button onClick={()=>copyText&&copyText("ttCap",(captionResult.tiktok?.caption||"")+" "+(captionResult.tiktok?.hashtags||[]).map(h=>"#"+h).join(" "))}
-                      style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${copied?.ttCap?C.green:C.pink}40`, background:copied?.ttCap?`${C.green}15`:`${C.pink}15`, color:copied?.ttCap?C.green:C.pink, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>
-                      {copied?.ttCap?"COPIED ✓":"COPY"}
+                      style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${copied?.ttCap?C.green:C.pink}35`, background:copied?.ttCap?`${C.green}12`:`${C.pink}10`, color:copied?.ttCap?C.green:C.pink, fontFamily:C.fontBody, fontWeight:700, fontSize:11, cursor:"pointer" }}>
+                      {copied?.ttCap?"✓ COPIED":"COPY"}
                     </button>
                   </div>
-                  <div style={{ fontSize:15, color:"rgba(255,255,255,0.85)", lineHeight:1.8, marginBottom:12 }}>{captionResult.tiktok?.caption}</div>
-                  <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
-                    {(captionResult.tiktok?.hashtags||[]).map(h=><Tag key={h} color={C.pink} sm>#{h}</Tag>)}
+
+                  {/* Primary caption */}
+                  <div style={{ padding:"16px 18px", borderBottom:`1px solid rgba(255,255,255,0.05)` }}>
+                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:"0.12em", marginBottom:8 }}>PRIMARY CAPTION</div>
+                    <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", lineHeight:1.75, marginBottom:10 }}>{captionResult.tiktok?.caption}</div>
+                    <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                      {(captionResult.tiktok?.hashtags||[]).map(h=><span key={h} style={{ fontSize:11, color:C.pink, background:`${C.pink}10`, borderRadius:5, padding:"2px 7px" }}>#{h}</span>)}
+                    </div>
                   </div>
-                  {/* Hook Variants */}
+
+                  {/* Hook variants */}
                   {captionResult.tiktok?.variants && (
-                    <div style={{ marginTop:12 }}>
-                      <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>3 Hook Variants</div>
+                    <div style={{ padding:"14px 18px", display:"flex", flexDirection:"column", gap:8 }}>
+                      <div style={{ fontSize:10, color:"rgba(255,255,255,0.25)", fontWeight:700, letterSpacing:"0.12em" }}>3 HOOK VARIANTS — pick one to test</div>
                       {captionResult.tiktok.variants.map((v,i)=>(
-                        <div key={i} style={{ marginBottom:8, padding:"10px 12px", borderRadius:10, background:`${C.pink}08`, border:`1px solid ${C.pink}20` }}>
-                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
-                            <span style={{ fontSize:10, fontWeight:700, color:C.pink, letterSpacing:"0.10em", textTransform:"uppercase" }}>{v.hook_type}</span>
-                            <div style={{ display:"flex", gap:6 }}>
+                        <div key={i} style={{ borderRadius:10, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.06)", overflow:"hidden" }}>
+                          <div style={{ padding:"8px 12px", borderBottom:"1px solid rgba(255,255,255,0.04)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                            <span style={{ fontSize:10, fontWeight:700, color:C.pink, letterSpacing:"0.10em" }}>{v.hook_type}</span>
+                            <div style={{ display:"flex", gap:5 }}>
                               <button onClick={()=>{
                                 const mem = loadJSON(MEMORY_KEY,{entries:[]});
                                 mem.entries.push({ type:"HOOK_LEARNING", recommendation:`Hook split test winner: "${v.hook_type}" for idea "${captionIdea?.title?.slice(0,40)||"unknown"}". Caption: ${v.caption?.slice(0,80)}`, date:new Date().toISOString().slice(0,10), id:Date.now() });
                                 saveJSON(MEMORY_KEY,mem);
-                                alert(`✓ "${v.hook_type}" marked as winner — saved to memory`);
-                              }} style={{ padding:"3px 10px", borderRadius:6, border:`1px solid ${C.green}30`, background:`${C.green}10`, color:C.green, fontFamily:C.fontBody, fontSize:10, fontWeight:700, cursor:"pointer" }}>🏆 WIN</button>
-                              <button onClick={()=>navigator.clipboard.writeText(v.caption+(v.hashtags?" "+v.hashtags.map(h=>"#"+h).join(" "):"")+"\n\n"+v.hashtags?.map(h=>"#"+h).join(" "))} style={{ padding:"3px 10px", borderRadius:6, border:`1px solid ${C.pink}30`, background:"transparent", color:C.pink, fontFamily:C.fontBody, fontSize:10, fontWeight:700, cursor:"pointer" }}>COPY</button>
+                                alert(`✓ "${v.hook_type}" saved to memory`);
+                              }} style={{ padding:"3px 9px", borderRadius:5, border:`1px solid ${C.green}25`, background:`${C.green}08`, color:C.green, fontFamily:C.fontBody, fontSize:9, fontWeight:700, cursor:"pointer" }}>🏆 WIN</button>
+                              <button onClick={()=>navigator.clipboard.writeText(v.caption+(v.hashtags?" "+v.hashtags.map(h=>"#"+h).join(" "):""))} style={{ padding:"3px 9px", borderRadius:5, border:`1px solid ${C.pink}25`, background:"transparent", color:C.pink, fontFamily:C.fontBody, fontSize:9, fontWeight:700, cursor:"pointer" }}>COPY</button>
                             </div>
                           </div>
-                          <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)", lineHeight:1.5 }}>{v.caption}</div>
-                          {v.hashtags && <div style={{ fontSize:11, color:`${C.pink}99`, marginTop:4 }}>{v.hashtags.map(h=>"#"+h).join(" ")}</div>}
+                          <div style={{ padding:"8px 12px" }}>
+                            <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)", lineHeight:1.5, marginBottom:v.hashtags?5:0 }}>{v.caption}</div>
+                            {v.hashtags && <div style={{ fontSize:10, color:`${C.pink}80` }}>{v.hashtags.map(h=>"#"+h).join(" ")}</div>}
+                          </div>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
+
                 {/* Instagram */}
-                <div style={{ borderRadius:18, padding:"20px 22px", background:`${C.purple}08`, border:`1px solid ${C.purple}25`, position:"relative", overflow:"hidden" }}>
-                  <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.purple},${C.purple}00)` }}/>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+                <div style={{ borderRadius:16, background:"rgba(12,8,24,0.95)", border:`1px solid ${C.purple}22`, overflow:"hidden" }}>
+                  <div style={{ padding:"14px 18px", borderBottom:`1px solid ${C.purple}15`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                      <div style={{ width:30, height:30, borderRadius:9, background:`${C.purple}20`, border:`1px solid ${C.purple}35`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.ig(14,C.purple)}</div>
-                      <span style={{ fontSize:15, fontWeight:700, color:"#fff" }}>Instagram</span>
+                      <div style={{ width:28, height:28, borderRadius:8, background:`${C.purple}18`, border:`1px solid ${C.purple}30`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.ig(13,C.purple)}</div>
+                      <span style={{ fontSize:14, fontWeight:700, color:"#fff" }}>Instagram</span>
                     </div>
                     <button onClick={()=>copyText&&copyText("igCap",(captionResult.instagram?.caption||"")+" "+(captionResult.instagram?.hashtags||[]).map(h=>"#"+h).join(" "))}
-                      style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${copied?.igCap?C.green:C.purple}40`, background:copied?.igCap?`${C.green}15`:`${C.purple}15`, color:copied?.igCap?C.green:C.purple, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>
-                      {copied?.igCap?"COPIED ✓":"COPY"}
+                      style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${copied?.igCap?C.green:C.purple}35`, background:copied?.igCap?`${C.green}12`:`${C.purple}10`, color:copied?.igCap?C.green:C.purple, fontFamily:C.fontBody, fontWeight:700, fontSize:11, cursor:"pointer" }}>
+                      {copied?.igCap?"✓ COPIED":"COPY"}
                     </button>
                   </div>
-                  <div style={{ fontSize:15, color:"rgba(255,255,255,0.85)", lineHeight:1.8, marginBottom:12 }}>{captionResult.instagram?.caption}</div>
-                  <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
-                    {(captionResult.instagram?.hashtags||[]).map(h=><Tag key={h} color={C.purple} sm>#{h}</Tag>)}
+                  <div style={{ padding:"16px 18px" }}>
+                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:"0.12em", marginBottom:8 }}>CAPTION</div>
+                    <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", lineHeight:1.75, marginBottom:10 }}>{captionResult.instagram?.caption}</div>
+                    <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                      {(captionResult.instagram?.hashtags||[]).map(h=><span key={h} style={{ fontSize:11, color:C.purple, background:`${C.purple}10`, borderRadius:5, padding:"2px 7px" }}>#{h}</span>)}
+                    </div>
                   </div>
                 </div>
-              </>
-            ) : (
-              <div style={{ padding:"48px", textAlign:"center", borderRadius:18, border:"1px solid rgba(255,255,255,0.07)", fontSize:15, color:"rgba(255,255,255,0.3)" }}>
-                Pick an idea on the left to generate captions
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div style={{ padding:"56px 48px", textAlign:"center", borderRadius:18, border:"1px dashed rgba(255,255,255,0.08)", fontSize:14, color:"rgba(255,255,255,0.25)" }}>
+              Select an idea above to generate captions
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -1627,12 +1636,24 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
             {/* Next videos */}
             <div style={{ borderRadius:18, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.green}20`, position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.green},${C.green}00)` }}/>
-              <div style={{ fontSize:14, color:C.green, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:16 }}>Next Videos</div>
+              <div style={{ fontSize:14, color:C.green, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:14 }}>Next Videos</div>
               {nextVids?.tiktok?.length>0 ? nextVids.tiktok.map((v,i)=>(
-                <div key={i} style={{ padding:"12px 14px", borderRadius:12, background:`${C.pink}07`, border:`1px solid ${C.pink}18`, marginBottom:10 }}>
-                  <div style={{ fontSize:15, fontWeight:700, color:"#fff", marginBottom:6 }}>{v.title}</div>
-                  <div style={{ fontSize:13, color:"rgba(255,255,255,0.6)", marginBottom:8 }}>{v.whyItWillWork}</div>
-                  {v.openingLine && <div style={{ padding:"8px 10px", background:`${C.green}08`, borderRadius:8, fontSize:14, color:"rgba(255,255,255,0.8)", fontStyle:"italic" }}>"{v.openingLine}"</div>}
+                <div key={i} style={{ borderRadius:12, border:`1px solid rgba(255,255,255,0.06)`, marginBottom:10, overflow:"hidden" }}>
+                  <div style={{ padding:"12px 14px", borderBottom:"1px solid rgba(255,255,255,0.04)", display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10 }}>
+                    <div style={{ fontSize:14, fontWeight:700, color:"#fff", lineHeight:1.35, flex:1 }}>{v.title}</div>
+                    {v.priority && <span style={{ fontSize:10, fontWeight:700, color:v.priority==="HIGH"?C.green:C.yellow, background:v.priority==="HIGH"?`${C.green}12`:`${C.yellow}12`, border:`1px solid ${v.priority==="HIGH"?C.green:C.yellow}25`, borderRadius:6, padding:"3px 8px", flexShrink:0 }}>{v.priority}</span>}
+                  </div>
+                  <div style={{ padding:"10px 14px", display:"flex", flexDirection:"column", gap:8 }}>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.55)", lineHeight:1.5 }}>{v.whyItWillWork}</div>
+                    {v.openingLine && (
+                      <div style={{ padding:"8px 12px", background:`${C.green}08`, border:`1px solid ${C.green}15`, borderRadius:8, fontSize:13, color:"rgba(255,255,255,0.8)", fontStyle:"italic" }}>"{v.openingLine}"</div>
+                    )}
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                      {v.type && <span style={{ fontSize:10, fontWeight:700, color:C.pink, background:`${C.pink}10`, borderRadius:5, padding:"2px 8px" }}>{v.type}</span>}
+                      {v.estimated_views && <span style={{ fontSize:10, fontWeight:700, color:C.cyan, background:`${C.cyan}10`, borderRadius:5, padding:"2px 8px" }}>{v.estimated_views}</span>}
+                      {v.winning_combo_used && <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)" }}>✓ winning combo</span>}
+                    </div>
+                  </div>
                 </div>
               )) : <div style={{ fontSize:14, color:"rgba(255,255,255,0.3)", fontStyle:"italic" }}>Run "Next Videos" for AI recommendations</div>}
             </div>
