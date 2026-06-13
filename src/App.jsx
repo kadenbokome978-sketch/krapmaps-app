@@ -9,9 +9,8 @@ const C = {
   border:"rgba(255,255,255,0.08)", borderMed:"rgba(255,255,255,0.11)",
   dim:"rgba(255,255,255,0.45)", text:"#F8EEFF", textMed:"#C8A8E0",
   fontHead:"'Lilita One', Georgia, serif",
-  fontSora:"'Lilita One', Georgia, serif",
-  fontBody:"'Inter','Segoe UI',system-ui,sans-serif",
-  fontMono:"monospace",
+  fontBody:"'Inter', system-ui, sans-serif",
+  fontMono:"'SF Mono','Fira Code',monospace",
 };
 
 const fmt = n => n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n||0);
@@ -55,25 +54,25 @@ const Glass = ({ children, glow, border, style={} }) => (
   </div>
 );
 const Tag = ({ children, color, sm }) => (
-  <span style={{ background:`${color}18`, border:`1px solid ${color}40`, color, borderRadius:6, padding:sm?"3px 10px":"4px 12px", fontSize:sm?11:13, fontWeight:700, letterSpacing:"0.04em", display:"inline-block", whiteSpace:"nowrap", fontFamily:"'Lilita One', Georgia, serif", textTransform:"uppercase" }}>{children}</span>
+  <span style={{ background:`${color}18`, border:`1px solid ${color}40`, color, borderRadius:6, padding:sm?"2px 8px":"3px 10px", fontSize:sm?10:12, fontWeight:700, letterSpacing:"0.06em", display:"inline-block", whiteSpace:"nowrap", fontFamily:C.fontBody, textTransform:"uppercase" }}>{children}</span>
 );
 const Pill = ({ children, color, active, onClick }) => (
-  <button onClick={onClick} style={{ padding:"7px 18px", borderRadius:20, border:`1px solid ${active?color:C.border}`, background:active?`${color}22`:"rgba(255,255,255,0.03)", color:active?color:"rgba(255,255,255,0.85)", fontSize:16, fontWeight:700, letterSpacing:"0.06em", cursor:"pointer", fontFamily:"'Lilita One', Georgia, serif", transition:"all 0.15s", whiteSpace:"nowrap", textTransform:"uppercase" }}>{children}</button>
+  <button onClick={onClick} style={{ padding:"7px 16px", borderRadius:20, border:`1px solid ${active?color:C.border}`, background:active?`${color}20`:"transparent", color:active?color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:600, letterSpacing:"0.04em", cursor:"pointer", fontFamily:C.fontBody, transition:"all 0.15s", whiteSpace:"nowrap" }}>{children}</button>
 );
 const Num = ({ children, color, size=26 }) => (
   <div style={{ fontSize:size, fontWeight:400, fontFamily:C.fontHead, letterSpacing:"0.04em", color, textShadow:`0 0 18px ${color}45`, lineHeight:1 }}>{children}</div>
 );
 const SLabel = ({ children, color=C.dim, mb=10 }) => (
-  <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", color, marginBottom:mb, fontFamily:"'Lilita One', Georgia, serif", textTransform:"uppercase" }}>{children}</div>
+  <div style={{ fontSize:11, fontWeight:600, letterSpacing:"0.1em", color, marginBottom:mb, fontFamily:C.fontBody, textTransform:"uppercase" }}>{children}</div>
 );
 const Row = ({ children, style={} }) => (
   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", ...style }}>{children}</div>
 );
 const Divider = ({ my=10 }) => <div style={{ height:1, background:C.border, margin:`${my}px 0` }} />;
 const SectionHead = ({ title, color=C.text, action, actionColor=C.pink }) => (
-  <Row style={{ marginBottom:16 }}>
-    <div style={{ fontSize:28, fontWeight:700, fontFamily:"'Lilita One', Georgia, serif", letterSpacing:"0.02em", color:"#fff", textTransform:"uppercase" }}>{title}</div>
-    {action && <button onClick={action} style={{ width:38, height:38, borderRadius:12, background:`${actionColor}18`, border:`1px solid ${actionColor}40`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:actionColor }}>{I.plus(16,actionColor)}</button>}
+  <Row style={{ marginBottom:20 }}>
+    <div style={{ fontSize:24, fontWeight:700, fontFamily:C.fontBody, letterSpacing:"-0.02em", color:"#fff" }}>{title}</div>
+    {action && <button onClick={action} style={{ width:36, height:36, borderRadius:10, background:`${actionColor}15`, border:`1px solid ${actionColor}35`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:actionColor }}>{I.plus(15,actionColor)}</button>}
   </Row>
 );
 const StatMini = ({ label, value, color, icon, delta, deltaUp }) => (
@@ -98,7 +97,7 @@ const SubTabs = ({ tabs, active, onChange, color=C.pink }) => (
   </div>
 );
 const ActionBtn = ({ children, color, onClick }) => (
-  <button onClick={onClick} style={{ padding:"5px 10px", borderRadius:8, background:`${color}18`, border:`1px solid ${color}30`, fontSize:13, fontWeight:600, color, cursor:"pointer", fontFamily:"'Lilita One', Georgia, serif", letterSpacing:"-0.01em", whiteSpace:"nowrap" }}>{children}</button>
+  <button onClick={onClick} style={{ padding:"6px 12px", borderRadius:8, background:`${color}15`, border:`1px solid ${color}30`, fontSize:12, fontWeight:600, color, cursor:"pointer", fontFamily:C.fontBody, letterSpacing:"0.02em", whiteSpace:"nowrap" }}>{children}</button>
 );
 const IconBtn = ({ icon, onClick, color=C.dim }) => (
   <button onClick={onClick} style={{ padding:"5px 8px", borderRadius:8, background:"rgba(255,255,255,0.04)", border:`1px solid ${C.border}`, cursor:"pointer", color, display:"flex", alignItems:"center" }}>{icon}</button>
@@ -6366,8 +6365,8 @@ Return JSON:
               {I.bin(18,"#fff")}
             </div>
             <div>
-              <div style={{ fontSize:20, fontWeight:900, color:"#fff", fontFamily:C.fontSora, lineHeight:1 }}>Krap<span style={{color:C.pink}}>Maps</span></div>
-              <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", letterSpacing:"0.14em", marginTop:2 }}>CONTENT OS</div>
+              <div style={{ fontSize:18, fontWeight:800, color:"#fff", fontFamily:C.fontBody, lineHeight:1, letterSpacing:"-0.02em" }}>Krap<span style={{color:C.pink}}>Maps</span></div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.12em", marginTop:3, fontWeight:600 }}>CONTENT OS</div>
             </div>
           </div>
         </div>
@@ -6443,14 +6442,14 @@ Return JSON:
               {scrapedStats?.scraped_at && (
                 <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:8, background:"rgba(0,255,148,0.08)", border:"1px solid rgba(0,255,148,0.18)" }}>
                   <div style={{ width:6, height:6, borderRadius:"50%", background:C.green }} />
-                  <span style={{ fontSize:17, color:C.green, fontWeight:700, letterSpacing:"0.08em" }}>LIVE</span>
+                  <span style={{ fontSize:12, color:C.green, fontWeight:600, letterSpacing:"0.06em" }}>LIVE</span>
                 </div>
               )}
               <div style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 14px 6px 8px", borderRadius:10, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)" }}>
                 <div style={{ width:30, height:30, borderRadius:9, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:900, color:"#fff" }}>B</div>
                 <div>
-                  <div style={{ fontSize:15, fontWeight:700, color:"#fff", lineHeight:1 }}>BK</div>
-                  <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginTop:1 }}>Creator</div>
+                  <div style={{ fontSize:13, fontWeight:600, color:"#fff", lineHeight:1 }}>BK</div>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", marginTop:2 }}>Creator</div>
                 </div>
               </div>
             </div>
@@ -6464,14 +6463,14 @@ Return JSON:
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:600, marginBottom:6 }}>
                   {nav==="home"?"Dashboard":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="growth"?"Growth":"Settings"}
                 </div>
-                <div style={{ fontSize:34, fontWeight:400, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:6 }}>
-                  {nav==="home" && <span><span style={{color:C.pink}}>Content</span> OS</span>}
-                  {nav==="content" && <span>Manage <span style={{color:C.cyan}}>Content</span></span>}
-                  {nav==="analytics" && <span>Track <span style={{color:C.yellow}}>Performance</span></span>}
-                  {nav==="tasks" && <span>Your <span style={{color:C.green}}>Workflow</span></span>}
-                  {nav==="growth" && <span>Monitor <span style={{color:C.orange}}>Growth</span></span>}
-                  {nav==="settings" && <span>Configure <span style={{color:C.purple}}>Workspace</span></span>}
-                  {nav==="ai" && <span><span style={{color:C.pink}}>AI</span> Assistant</span>}
+                <div style={{ fontSize:32, fontWeight:800, color:"#fff", fontFamily:C.fontBody, lineHeight:1.15, marginBottom:6, letterSpacing:"-0.03em" }}>
+                  {nav==="home" && "Content OS"}
+                  {nav==="content" && "Manage Content"}
+                  {nav==="analytics" && "Performance"}
+                  {nav==="tasks" && "Workflow"}
+                  {nav==="growth" && "Growth"}
+                  {nav==="settings" && "Settings"}
+                  {nav==="ai" && "AI Assistant"}
                 </div>
                 <div style={{ fontSize:14, color:"rgba(255,255,255,0.4)", lineHeight:1.5 }}>
                   {nav==="home"&&"@findkrap · TikTok & Instagram"}
@@ -6535,7 +6534,7 @@ Return JSON:
             <div style={{ width:34, height:34, borderRadius:11, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s", background:nav===n.id?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.09)", boxShadow:nav===n.id?`0 4px 20px ${C.pink}50`:"none", color:nav===n.id?"#fff":"rgba(255,255,255,0.85)" }}>
               {n.ic(13, nav===n.id?"#fff":"rgba(255,255,255,0.85)")}
             </div>
-            <span style={{ fontSize:9, fontWeight:600, letterSpacing:"0.02em", color:nav===n.id?C.pink:"rgba(255,255,255,0.85)", fontFamily:"'Lilita One', Georgia, serif" }}>{n.label}</span>
+            <span style={{ fontSize:9, fontWeight:600, letterSpacing:"0.02em", color:nav===n.id?C.pink:"rgba(255,255,255,0.85)", fontFamily:C.fontBody }}>{n.label}</span>
           </button>
         ))}
       </div>
