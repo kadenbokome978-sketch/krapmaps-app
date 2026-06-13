@@ -3945,17 +3945,20 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
 
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
 
-      const avgViewsForAnalysis = videos.length ? Math.round(videos.filter(v=>!v.boosted).reduce((s,v)=>s+(v.views||0),0) / (videos.filter(v=>!v.boosted).length||1)) : 0;
-      const topVidsForAnalysis = [...videos].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,3).map(v=>v.title);
+      const organicForAnalysis = videos.filter(v=>!v.boosted);
+      const avgViewsForAnalysis = organicForAnalysis.length ? Math.round(organicForAnalysis.reduce((s,v)=>s+(v.views||0),0)/organicForAnalysis.length) : 0;
+      const topVidsForAnalysis = [...(organicForAnalysis.length?organicForAnalysis:videos)].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,3).map(v=>({ title:v.title, hook:v.hook, type:v.type, views:v.views }));
+      const hookDBForAnalysis = buildHookDB(organicForAnalysis.length?organicForAnalysis:videos).slice(0,3);
       const trendsForAnalysis = loadJSON(CUR_TRENDS_KEY,"");
 
       const prompt = `You are the world's best viral video analyst — combining expertise in social psychology, the 2025 TikTok/Reels algorithm, and environmental travel content. You are analysing a clip for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia, creators BK + Harley).
 
-CHANNEL CALIBRATION:
-- Organic avg views: ${avgViewsForAnalysis} (use this as baseline for virality estimates — "good" = 3x this, "viral" = 10x+)
-- Top performers: ${topVidsForAnalysis.join(" | ")||"not tracked yet"}
-- Many early videos were paid/boosted — weight content patterns over raw numbers
-${trendsForAnalysis ? `\nCURRENT TRENDS (use these in your editing + sound recommendations):\n${trendsForAnalysis}` : ""}
+CHANNEL DNA — study these to understand what "good" looks like for this specific channel:
+- Organic avg views: ${avgViewsForAnalysis} ("good" = 3x this = ${fmt(avgViewsForAnalysis*3)}, "viral" = 10x+ = ${fmt(avgViewsForAnalysis*10)})
+- Top organic performers: ${JSON.stringify(topVidsForAnalysis)||"not tracked yet"}
+- Hook types that perform best on this channel: ${hookDBForAnalysis.map(h=>`"${h.hook}" avg ${fmt(h.avgViews)} views`).join(", ")||"not enough data yet"}
+- Many early videos were paid/boosted — weight content patterns over raw view counts
+${trendsForAnalysis ? `\nCURRENT TRENDS (use these in editing + sound recommendations):\n${trendsForAnalysis}` : ""}
 ${videoContext ? `\nCREATOR CONTEXT FOR THIS CLIP:\n${videoContext}` : ""}
 
 
@@ -4910,8 +4913,32 @@ function Dashboard({ keys, onEditKeys }) {
   const markPosted = (idea, actualViews=0) => {
     const predicted = idea.aiScore?.estimated_views||"unknown";
     const outcome = actualViews>0 ? `Got ${fmt(actualViews)} views (AI predicted ${predicted})` : "Posted, views not tracked yet";
-    addMemoryEntry("IDEA_OUTCOME", `"${idea.title.slice(0,60)}" posted. ${outcome}. Pillar: ${idea.aiScore?.contentPillar||idea.type||"unknown"}. Score was: ${idea.viral||"unscored"}/100`, outcome);
+    const pillar = idea.aiScore?.contentPillar||idea.type||"unknown";
+    const score = idea.viral||0;
+    addMemoryEntry("IDEA_OUTCOME", `"${idea.title.slice(0,60)}" posted. ${outcome}. Pillar: ${pillar}. Score: ${score}/100`, outcome);
     setIdeas(is=>is.map(i=>i.id===idea.id?{...i,status:"posted",postedViews:actualViews,postedDate:new Date().toISOString().slice(0,10)}:i));
+
+    // Background: extract structured learning if views are known
+    if(actualViews > 0) {
+      const cfg = loadJSON(KEYS_KEY,{});
+      const key = cfg?.keys?.anthropic;
+      if(key) {
+        setTimeout(async()=>{
+          try {
+            const avgV = videos.length ? Math.round(videos.reduce((s,v)=>s+(v.views||0),0)/videos.length) : 0;
+            const multiple = avgV > 0 ? (actualViews/avgV).toFixed(1)+"x channel avg" : "";
+            const res = await fetch("https://api.anthropic.com/v1/messages",{
+              method:"POST",
+              headers:{"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
+              body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:200,messages:[{role:"user",content:`A KrapMaps video was posted and got ${fmt(actualViews)} views (${multiple}). Idea score was ${score}/100. Hook type: "${idea.hook||"unknown"}". Content pillar: "${pillar}". In ONE sentence, what is the key learning for future content strategy?`}]})
+            });
+            const d = await res.json();
+            const learning = (d.content||[]).map(b=>b.text||"").join("").trim().slice(0,200);
+            if(learning) addMemoryEntry("STRUCTURED_LEARNING", learning, `${fmt(actualViews)} views`);
+          } catch(e) { /* silent */ }
+        }, 1000);
+      }
+    }
   };
 
   const scoreIdea = async (idea) => {
@@ -4921,16 +4948,35 @@ function Dashboard({ keys, onEditKeys }) {
       const organicVids = videos.filter(v=>!v.boosted);
       const topV = [...(organicVids.length?organicVids:videos)].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
       const postedIdeas = ideas.filter(i=>i.status==="posted"&&i.postedViews>0);
-      const ideaOutcomes = postedIdeas.slice(0,5).map(i=>`"${i.title.slice(0,40)}" → ${fmt(i.postedViews)} views (score was ${i.viral||"?"}/100)`);
+      const ideaOutcomes = postedIdeas.slice(0,5).map(i=>`"${i.title.slice(0,40)}" → ${fmt(i.postedViews)} views (score was ${i.viral||"?"}/100, pillar: ${i.aiScore?.contentPillar||"unknown"})`);
       const avgV = organicVids.length?Math.round(organicVids.reduce((s,v)=>s+(v.views||0),0)/organicVids.length):(videos.length?Math.round(videos.reduce((s,v)=>s+(v.views||0),0)/videos.length):0);
-        const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
-        const r = await callAI(`You are the world's best viral content strategist. Score this TikTok/Reels idea for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia).
+
+      // Build calibration curve from real outcomes
+      const calibration = (() => {
+        if(postedIdeas.length < 2) return "";
+        const brackets = [{label:"50-69",min:50,max:69},{label:"70-84",min:70,max:84},{label:"85-100",min:85,max:100}];
+        return brackets.map(b=>{
+          const inRange = postedIdeas.filter(i=>(i.viral||0)>=b.min&&(i.viral||0)<=b.max);
+          if(!inRange.length) return null;
+          const avg = Math.round(inRange.reduce((s,i)=>s+i.postedViews,0)/inRange.length);
+          return `Score ${b.label} → avg ${fmt(avg)} views on THIS channel`;
+        }).filter(Boolean).join(", ");
+      })();
+
+      // Hook performance from actual channel data
+      const hookDB = buildHookDB(organicVids.length?organicVids:videos);
+      const hookPerf = hookDB.slice(0,4).map(h=>`"${h.hook}" avg ${fmt(h.avgViews)} views`).join(", ");
+
+      const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
+      const r = await callAI(`You are the world's best viral content strategist. Score this TikTok/Reels idea for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia).
 
 CHANNEL CONTEXT:
 - Niche: environmental travel in SE Asia. Creators: BK (on camera) + Harley (strategy).
 - Organic avg: ${avgV} views. Top organic performers: ${JSON.stringify(topV.map(v=>({title:v.title,views:v.views,hook:v.hook,type:v.type})))}
 - Many early videos were PAID/BOOSTED — ignore view count outliers, weight content patterns over raw numbers.
-${ideaOutcomes.length?`- REAL OUTCOMES (ideas already posted): ${ideaOutcomes.join(" | ")} — calibrate estimated_views against these real results.`:""}
+${hookPerf?`- HOOK PERFORMANCE ON THIS CHANNEL (real data): ${hookPerf} — weight niche-fit score accordingly.`:""}
+${calibration?`- REAL CALIBRATION CURVE: ${calibration} — use this to anchor estimated_views.`:""}
+${ideaOutcomes.length?`- RECENT OUTCOMES: ${ideaOutcomes.join(" | ")}`:""}
 ${currentTrendsForScore?`- CURRENT TRENDS (June 2026): ${currentTrendsForScore}`:"- NOTE: It is June 2026 — factor in current platform algorithm behaviour, not 2024 data."}
 
 IDEA TO SCORE:
