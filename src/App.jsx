@@ -3637,36 +3637,27 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
     setMsgs(m=>[...m, { role:"user", content:`📎 ${file.name}` }, { role:"assistant", content:"Preparing your clip..." }]);
 
     try {
-      // Convert MOV/large files to WebM via canvas
-      let uploadFile = file;
-      if(file.type !== "video/mp4" && file.type !== "video/webm") {
-        try {
-          setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Converting clip (plays in real-time, please wait)..." }]);
-          uploadFile = await convertToMp4(file);
-        } catch(e) {
-          setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Conversion failed — export as MP4 from your phone and try again." }]);
-          setUploading(false);
-          return;
-        }
-      }
+      const uploadFile = file;
 
-      // Check size — inline base64 limit is ~15MB converted file
+      // Normalise mime type — Gemini accepts video/mov not video/quicktime
+      const mimeType = file.type === "video/quicktime" ? "video/mov" : (file.type || "video/mp4");
+
+      // Check size — inline base64 limit ~15MB
       if(uploadFile.size > 15 * 1024 * 1024) {
-        setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Clip is too large after conversion. Trim it to under 20 seconds and try again." }]);
+        setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Clip is too large (over 15MB). Trim it to under 20 seconds in your camera app and try again." }]);
         setUploading(false);
         return;
       }
 
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
 
-      // Read as base64 using FileReader — avoids stack overflow for large files
+      // Read as base64 using FileReader
       const b64 = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result.split(",")[1]);
         reader.onerror = reject;
         reader.readAsDataURL(uploadFile);
       });
-      const mimeType = uploadFile.type || "video/webm";
 
       const prompt = `You are a viral TikTok and Instagram Reels content expert. Analyse this video clip and give:
 
