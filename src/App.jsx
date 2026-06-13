@@ -1592,7 +1592,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
       {sub==="AI INSIGHTS" && (
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           {/* Action buttons */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
             {[
               {l:"WHAT'S WORKING", c:C.cyan, m:"analysis", load:aiLoad.analysis},
               {l:"NEXT VIDEOS", c:C.green, m:"nextVids", load:aiLoad.nextVids},
@@ -1600,7 +1600,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
               {l:"TRENDS", c:C.orange, m:"trends", load:aiLoad.trends},
             ].map((a,i)=>(
               <button key={i} onClick={()=>runAI&&runAI(a.m)} disabled={a.load}
-                style={{ padding:"16px 12px", borderRadius:14, border:`1px solid ${a.c}30`, background:`linear-gradient(135deg,${a.c}12,${a.c}05)`, color:a.c, fontFamily:C.fontBody, fontWeight:700, fontSize:14, cursor:"pointer", opacity:a.load?0.5:1, letterSpacing:"0.06em", position:"relative", overflow:"hidden" }}>
+                style={{ flex:"1 1 120px", padding:"14px 12px", borderRadius:14, border:`1px solid ${a.c}30`, background:`linear-gradient(135deg,${a.c}12,${a.c}05)`, color:a.c, fontFamily:C.fontBody, fontWeight:700, fontSize:12, cursor:"pointer", opacity:a.load?0.5:1, letterSpacing:"0.08em", position:"relative", overflow:"hidden" }}>
                 <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${a.c},${a.c}00)` }}/>
                 {a.load?"RUNNING...":a.l}
               </button>
@@ -1608,7 +1608,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
           </div>
 
           {/* Results grid */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(300px,100%),1fr))", gap:14 }}>
             {/* What's working */}
             <div style={{ borderRadius:18, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.cyan}20`, position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }}/>
@@ -1725,7 +1725,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
       </div>
 
       {sub==="TO DO" && (
-        <div style={{ display:"grid", gridTemplateColumns:"3fr 2fr", gap:20, alignItems:"start" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(320px,100%),1fr))", gap:20, alignItems:"start" }}>
 
           {/* LEFT — Input + Pending */}
           <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
@@ -1797,7 +1797,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                 {l:"TOTAL", v:tasks.length, c:C.cyan},
               ].map((s,i)=>(
                 <div key={i} style={{ borderRadius:14, padding:"14px 16px", background:`${s.c}10`, border:`1px solid ${s.c}25`, textAlign:"center" }}>
-                  <div style={{ fontSize:48, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+                  <div style={{ fontSize:32, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
                   <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.12em", textTransform:"uppercase", marginTop:6, fontWeight:700 }}>{s.l}</div>
                 </div>
               ))}
@@ -1863,7 +1863,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
           </div>
 
           {/* Ideas grid */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(260px,100%),1fr))", gap:14 }}>
             {appIdeas.length===0
               ? <div style={{ gridColumn:"1/-1", padding:"40px", textAlign:"center", fontSize:13, color:"rgba(255,255,255,0.25)", fontStyle:"italic" }}>No app ideas yet — add your first one</div>
               : appIdeas.map(idea=>{
