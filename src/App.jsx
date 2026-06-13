@@ -3659,9 +3659,13 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
 
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
 
-      // Read as base64 and send inline — avoids Files API / ACTIVE state issues
-      const arrayBuf = await uploadFile.arrayBuffer();
-      const b64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuf)));
+      // Read as base64 using FileReader — avoids stack overflow for large files
+      const b64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(uploadFile);
+      });
       const mimeType = uploadFile.type || "video/webm";
 
       const prompt = `You are a viral TikTok and Instagram Reels content expert. Analyse this video clip and give:
