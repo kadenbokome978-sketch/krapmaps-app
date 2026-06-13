@@ -571,6 +571,8 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
   const [sub, setSub]         = useState("IDEAS");
   const [expanded, setExpanded] = useState(null);
   const [calFilter, setCalFilter] = useState("ALL");
+  const [postingId, setPostingId] = useState(null);
+  const [postViews, setPostViews] = useState("");
   const sorted = [...ideas].sort((a,b)=>(Number(b.viral)||0)-(Number(a.viral)||0));
   const filteredCal = calFilter==="ALL" ? calItems : calItems.filter(c=>(c.platform||"").toUpperCase()===calFilter);
   const ic = v => (v||0)>=80?C.green:(v||0)>=60?C.yellow:C.pink;
@@ -707,8 +709,21 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                         <div style={{ width:7, height:7, borderRadius:"50%", background:C.green, boxShadow:`0 0 6px ${C.green}` }}/>
                         <span style={{ fontSize:13, fontWeight:700, color:C.green }}>POSTED{idea.postedViews>0?` · ${fmt(idea.postedViews)} views`:""}</span>
                       </div>
+                    ) : postingId===idea.id ? (
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <input
+                          autoFocus
+                          value={postViews}
+                          onChange={e=>setPostViews(e.target.value.replace(/[^0-9]/g,""))}
+                          onKeyDown={e=>{ if(e.key==="Enter"){ markPosted&&markPosted(idea,parseInt(postViews)||0); setPostingId(null); setPostViews(""); } if(e.key==="Escape"){ setPostingId(null); setPostViews(""); } }}
+                          placeholder="views e.g. 12000"
+                          style={{ width:120, background:"rgba(255,255,255,0.07)", border:`1px solid ${C.green}40`, borderRadius:9, color:"#fff", padding:"7px 10px", fontSize:12, fontFamily:C.fontBody, outline:"none" }}
+                        />
+                        <button onClick={()=>{ markPosted&&markPosted(idea,parseInt(postViews)||0); setPostingId(null); setPostViews(""); }} style={{ padding:"7px 12px", borderRadius:9, border:"none", background:C.green, color:"#000", fontFamily:C.fontBody, fontWeight:700, fontSize:12, cursor:"pointer" }}>✓</button>
+                        <button onClick={()=>{ setPostingId(null); setPostViews(""); }} style={{ padding:"7px 10px", borderRadius:9, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"rgba(255,255,255,0.4)", fontSize:13, cursor:"pointer" }}>✕</button>
+                      </div>
                     ) : (
-                      markPosted && <button onClick={()=>markPosted(idea)} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.green}30`, background:`${C.green}10`, color:C.green, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>MARK POSTED</button>
+                      markPosted && <button onClick={()=>{ setPostingId(idea.id); setPostViews(""); }} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.green}30`, background:`${C.green}10`, color:C.green, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>MARK POSTED</button>
                     )}
                     {onBuildScript && (
                       <button onClick={()=>onBuildScript(idea)} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.cyan}35`, background:`${C.cyan}14`, color:C.cyan, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>BUILD SCRIPT</button>
@@ -3060,7 +3075,7 @@ const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onS
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
           <div>
             <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>Current Trends</div>
-            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:3 }}>Injected into every AI call — update weekly</div>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:3 }}>{loadJSON(KEYS_KEY,{})?.keys?.perplexity ? "Auto-fetched via Perplexity every 12hrs — also editable below" : "Update weekly — add Perplexity key for auto-fetch"}</div>
           </div>
           <button onClick={saveTrends} style={{ padding:"9px 20px", borderRadius:11, border:`1px solid ${trendsSaved?C.green:C.orange}50`, background:trendsSaved?`${C.green}20`:`${C.orange}18`, color:trendsSaved?C.green:C.orange, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{trendsSaved?"SAVED ✓":"SAVE"}</button>
         </div>
@@ -3569,12 +3584,23 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
   }, [msgs]);
 
   // Auto-send preloaded message (from "Build Script" on idea cards)
+  const preloadPendingRef = useRef(null);
   useEffect(() => {
     if(!preloadMsg || preloadRef.current===preloadMsg.id) return;
     preloadRef.current = preloadMsg.id;
+    preloadPendingRef.current = preloadMsg.text;
+    // Trigger re-render so send can pick it up
     setInput(preloadMsg.text);
-    setTimeout(()=>{ inputRef.current?.focus(); }, 120);
   }, [preloadMsg]);
+
+  // When input is set from preload, auto-send it
+  useEffect(() => {
+    if(preloadPendingRef.current && input === preloadPendingRef.current && !loading) {
+      const txt = preloadPendingRef.current;
+      preloadPendingRef.current = null;
+      setTimeout(()=>send(txt), 50);
+    }
+  }, [input]);
 
   const TOOLS = [
     {
@@ -3810,11 +3836,12 @@ Be specific with timestamps. Harsh but constructive. No generic advice.`;
     }
   };
 
-  const send = async () => {
-    if(!input.trim() || loading) return;
+  const send = async (overrideText) => {
+    const text = (overrideText||input).trim();
+    if(!text || loading) return;
     if(!anthropicKey) { setMsgs(m=>[...m,{role:"assistant",content:"No Anthropic API key set. Go to Settings to add one."}]); return; }
 
-    const userMsg = { role:"user", content:input.trim() };
+    const userMsg = { role:"user", content:text };
     const newMsgs = [...msgs, userMsg];
     setMsgs(newMsgs);
     setInput("");
@@ -3955,7 +3982,9 @@ ${memCtx ? `━━ AI MEMORY LOG ━━\n${memCtx}` : ""}`;
     setMsgs(m=>[...m, { role:"user", content:"Give me a step-by-step CapCut edit plan for maximum virality" }, { role:"assistant", content:"Building your CapCut edit plan..." }]);
     setLoading(true);
     try {
-      const prompt = `You are an expert viral video editor for TikTok and Instagram Reels. Watch this clip carefully and create a detailed step-by-step CapCut editing guide for MAXIMUM virality.
+      const capCutTrends = loadJSON(CUR_TRENDS_KEY,"");
+      const prompt = `You are an expert viral video editor for TikTok and Instagram Reels in June 2026. Watch this clip carefully and create a detailed step-by-step CapCut editing guide for MAXIMUM virality.
+${capCutTrends?`\nCURRENT TRENDS TO USE IN YOUR SOUND/FORMAT RECOMMENDATIONS:\n${capCutTrends}\n`:""}
 
 Give me EXACTLY this format:
 
@@ -4694,12 +4723,9 @@ function Dashboard({ keys, onEditKeys }) {
     setAiLoad(l=>({...l,[mode]:false}));
   };
 
-  const markPosted = (idea) => {
-    const viewsStr = window.prompt(`How many views did "${idea.title.slice(0,40)}" get? (enter number, e.g. 12000)`);
-    if(viewsStr===null) return;
-    const actualViews = parseInt(viewsStr.replace(/[^0-9]/g,""))||0;
+  const markPosted = (idea, actualViews=0) => {
     const predicted = idea.aiScore?.estimated_views||"unknown";
-    const outcome = actualViews>0 ? `Got ${fmt(actualViews)} views (AI predicted ${predicted})` : "Posted, views not tracked";
+    const outcome = actualViews>0 ? `Got ${fmt(actualViews)} views (AI predicted ${predicted})` : "Posted, views not tracked yet";
     addMemoryEntry("IDEA_OUTCOME", `"${idea.title.slice(0,60)}" posted. ${outcome}. Pillar: ${idea.aiScore?.contentPillar||idea.type||"unknown"}. Score was: ${idea.viral||"unscored"}/100`, outcome);
     setIdeas(is=>is.map(i=>i.id===idea.id?{...i,status:"posted",postedViews:actualViews,postedDate:new Date().toISOString().slice(0,10)}:i));
   };
