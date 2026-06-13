@@ -3677,7 +3677,7 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
 Be direct, specific, and harsh if needed. No fluff.`;
 
       const genRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
         { method:"POST", headers:{ "Content-Type":"application/json" },
           body: JSON.stringify({ contents:[{ parts:[{ file_data:{ mime_type:mimeType, file_uri:fileUri } }, { text:prompt }] }] })
         }
@@ -3829,7 +3829,7 @@ VIRALITY SCORE PREDICTION: [X/10] — [one line reason]
 Be extremely specific with timestamps. This is for someone who is not confident at editing.`;
 
       const genRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
         { method:"POST", headers:{ "Content-Type":"application/json" },
           body: JSON.stringify({ contents:[{ parts:[{ file_data:{ mime_type:lastFileMime, file_uri:lastFileUri } }, { text:prompt }] }] })
         }
@@ -3863,7 +3863,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
           </div>
           <div>
             <div style={{ fontSize:15, fontWeight:700, color:"#fff", fontFamily:C.fontHead, lineHeight:1 }}>KrapMaps AI</div>
-            <div style={{ fontSize:11, color:C.purple, marginTop:2 }}>claude-fable-5 · gemini-2.0-flash</div>
+            <div style={{ fontSize:11, color:C.purple, marginTop:2 }}>claude-fable-5 · gemini-2.5-flash</div>
           </div>
         </div>
         {msgs.length > 1 && (
