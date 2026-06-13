@@ -3640,39 +3640,23 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
       // Normalise mime type — Gemini accepts video/mov not video/quicktime
       const mimeType = file.type === "video/quicktime" ? "video/mov" : (file.type || "video/mp4");
 
-      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Uploading clip to Gemini..." }]);
-
-      // Upload directly to Gemini Files API (supports CORS, no size limit)
-      const startRes = await fetch(
-        `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}`,
-        { method:"POST", headers:{
-            "X-Goog-Upload-Protocol":"resumable",
-            "X-Goog-Upload-Command":"start",
-            "X-Goog-Upload-Header-Content-Length": String(file.size),
-            "X-Goog-Upload-Header-Content-Type": mimeType,
-            "Content-Type":"application/json",
-          },
-          body: JSON.stringify({ file:{ display_name: file.name } })
-        }
-      );
-      if(!startRes.ok) {
-        const e = await startRes.json().catch(()=>({}));
-        throw new Error(`Upload start failed: ${startRes.status} — ${e?.error?.message||""}`);
-      }
-      const uploadUrl = startRes.headers.get("x-goog-upload-url");
-      if(!uploadUrl) throw new Error("No upload URL from Gemini");
-
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Uploading clip..." }]);
-      const uploadRes = await fetch(uploadUrl, {
-        method:"POST",
-        headers:{
-          "Content-Length": String(file.size),
-          "X-Goog-Upload-Offset":"0",
-          "X-Goog-Upload-Command":"upload, finalize",
-          "Content-Type": mimeType,
-        },
-        body: file,
-      });
+
+      // Multipart upload directly to Gemini (same domain as generateContent — CORS works)
+      const boundary = "GeminiBound" + Date.now();
+      const enc = new TextEncoder();
+      const metaBytes = enc.encode(
+        `--${boundary}\r\nContent-Type: application/json\r\n\r\n` +
+        JSON.stringify({ file:{ display_name: file.name } }) +
+        `\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`
+      );
+      const tailBytes = enc.encode(`\r\n--${boundary}--`);
+      const body = new Blob([metaBytes, file, tailBytes]);
+
+      const uploadRes = await fetch(
+        `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}&uploadType=multipart`,
+        { method:"POST", headers:{ "Content-Type":`multipart/related; boundary=${boundary}` }, body }
+      );
       if(!uploadRes.ok) {
         const e = await uploadRes.json().catch(()=>({}));
         throw new Error(`Upload failed: ${uploadRes.status} — ${e?.error?.message||""}`);
@@ -3681,7 +3665,7 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
       const fileUri = uploadData?.file?.uri;
       if(!fileUri) throw new Error("No file URI from Gemini");
 
-      // Poll until file is ACTIVE
+      // Poll until ACTIVE
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Processing clip..." }]);
       const fileId = fileUri.split("/files/")[1] || fileUri.split("/").pop();
       let ready = false;
@@ -3691,7 +3675,7 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
         if(s.ok) {
           const sd = await s.json();
           if(sd.state === "ACTIVE") { ready = true; break; }
-          if(sd.state === "FAILED") throw new Error("Gemini failed to process the video. Try a different clip.");
+          if(sd.state === "FAILED") throw new Error("Gemini failed to process this video format. Try exporting as MP4.");
         }
       }
       if(!ready) throw new Error("Processing timed out. Try a shorter clip.");
