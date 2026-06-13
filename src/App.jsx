@@ -3344,9 +3344,40 @@ const addMemoryEntry = (type, recommendation, outcome=null) => {
 const buildMemoryContext = () => {
   const mem = loadMemory();
   if(!mem.entries.length) return "";
-  const recent = mem.entries.slice(-15);
-  const logLines = recent.map(e=>"["+e.date+"] "+e.type+": "+e.recommendation+(e.outcome?" → RESULT: "+e.outcome:""));
-  return "LEARNING LOG (what AI previously recommended and what happened):\n"+logLines.join("\n")+"\nUse this to avoid repeating failed recommendations and double down on what worked.";
+
+  // Categorize entries by type for structured context instead of flat log
+  const outcomes   = mem.entries.filter(e=>["IDEA_OUTCOME","STRUCTURED_LEARNING","OUTCOME","AUTO_OUTCOME"].includes(e.type));
+  const strategy   = mem.entries.filter(e=>["STRATEGY","ANALYSIS","GAP_SCAN","COMPETITOR_SCAN"].includes(e.type));
+  const hooks      = mem.entries.filter(e=>["HOOKS","VIDEO_READ","HOOK_LEARNING"].includes(e.type));
+  const recent     = mem.entries.slice(-5); // last 5 regardless of type for recency
+
+  let ctx = "CHANNEL MEMORY (structured learnings — use as calibration, not just FYI):\n";
+
+  if(outcomes.length) {
+    ctx += "\n[OUTCOMES — what actually happened after posting]\n";
+    outcomes.slice(-6).forEach(e=>{
+      ctx += `• ${e.date}: ${e.recommendation}${e.outcome?" → "+e.outcome:""}\n`;
+    });
+  }
+  if(hooks.length) {
+    ctx += "\n[HOOK & FORMAT LEARNINGS]\n";
+    hooks.slice(-4).forEach(e=>{ ctx += `• ${e.date}: ${e.recommendation}\n`; });
+  }
+  if(strategy.length) {
+    ctx += "\n[STRATEGY FINDINGS]\n";
+    strategy.slice(-3).forEach(e=>{ ctx += `• ${e.date}: ${e.recommendation}\n`; });
+  }
+
+  // Include recent entries not already covered
+  const coveredIds = new Set([...outcomes,...hooks,...strategy].map(e=>e.id));
+  const uncovered = recent.filter(e=>!coveredIds.has(e.id));
+  if(uncovered.length) {
+    ctx += "\n[RECENT ACTIVITY]\n";
+    uncovered.forEach(e=>{ ctx += `• ${e.date} [${e.type}]: ${e.recommendation}\n`; });
+  }
+
+  ctx += "\nPattern: avoid repeating failed recommendations. Double down on what worked.";
+  return ctx;
 };
 
 // ── COMPETITOR INTELLIGENCE ──────────────────────────────────────
@@ -3431,6 +3462,122 @@ const buildPatterns = (videos=[]) => {
   const winningHooks = Object.entries(topHookFreq).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([h])=>h);
 
   return { avg:Math.round(avg), dayPerf, typePerf, shortAvg, longAvg, crossAvg, singleAvg, winningHooks, totalVideos:withViews.length };
+};
+
+// ── CHANNEL INSIGHTS ENGINE ─────────────────────────────────────
+// Hard statistical facts computed from actual video data — not AI opinions
+const buildChannelInsights = (videos=[]) => {
+  const v = videos.filter(vid => vid.views > 0);
+  if(v.length < 2) return null;
+
+  const avg = v.reduce((s,vid)=>s+(vid.views||0),0) / v.length;
+  const sorted = [...v].sort((a,b)=>(b.views||0)-(a.views||0));
+
+  // Hook performance table (real numbers)
+  const hookMap = {};
+  v.forEach(vid => {
+    if(!vid.hook) return;
+    if(!hookMap[vid.hook]) hookMap[vid.hook] = [];
+    hookMap[vid.hook].push(vid.views||0);
+  });
+  const hookTable = Object.entries(hookMap).map(([hook,views])=>{
+    const a = Math.round(views.reduce((s,x)=>s+x,0)/views.length);
+    return { hook, avgViews:a, count:views.length, vsChannelAvg:Math.round((a/avg-1)*100) };
+  }).sort((a,b)=>b.avgViews-a.avgViews);
+
+  // Content type performance
+  const typeMap = {};
+  v.forEach(vid => {
+    const t = vid.type || "untagged";
+    if(!typeMap[t]) typeMap[t] = [];
+    typeMap[t].push(vid.views||0);
+  });
+  const typeTable = Object.entries(typeMap).map(([type,views])=>{
+    const a = Math.round(views.reduce((s,x)=>s+x,0)/views.length);
+    return { type, avgViews:a, count:views.length, vsChannelAvg:Math.round((a/avg-1)*100) };
+  }).sort((a,b)=>b.avgViews-a.avgViews);
+
+  // Platform split
+  const tiktokV = v.filter(vid=>vid.platform==="TikTok"||!vid.platform);
+  const instaV  = v.filter(vid=>vid.platform==="Instagram");
+  const tiktokAvg = tiktokV.length ? Math.round(tiktokV.reduce((s,vid)=>s+(vid.views||0),0)/tiktokV.length) : null;
+  const instaAvg  = instaV.length  ? Math.round(instaV.reduce((s,vid)=>s+(vid.views||0),0)/instaV.length)   : null;
+
+  // Trend direction: compare last 5 vs previous 5
+  const last5  = sorted.slice(0,5).map(vid=>vid.views||0);
+  const prev5  = sorted.slice(5,10).map(vid=>vid.views||0);
+  const last5avg  = last5.length  ? Math.round(last5.reduce((a,b)=>a+b,0)/last5.length)  : null;
+  const prev5avg  = prev5.length  ? Math.round(prev5.reduce((a,b)=>a+b,0)/prev5.length)  : null;
+  const trendPct  = (last5avg && prev5avg) ? Math.round((last5avg/prev5avg-1)*100) : null;
+
+  // Day of week performance
+  const dayMap = {};
+  v.forEach(vid => {
+    if(!vid.created_at) return;
+    const day = new Date(vid.created_at).toLocaleDateString("en-US",{weekday:"short"});
+    if(!dayMap[day]) dayMap[day] = [];
+    dayMap[day].push(vid.views||0);
+  });
+  const dayTable = Object.entries(dayMap).map(([day,views])=>({
+    day, avgViews:Math.round(views.reduce((a,b)=>a+b,0)/views.length), count:views.length
+  })).sort((a,b)=>b.avgViews-a.avgViews);
+
+  // Score calibration using real video views (not just posted ideas)
+  // Bucket videos by estimated "score" band based on percentile
+  const p25 = sorted[Math.floor(sorted.length*0.75)]?.views||0;
+  const p50 = sorted[Math.floor(sorted.length*0.5)]?.views||0;
+  const p75 = sorted[Math.floor(sorted.length*0.25)]?.views||0;
+  const p90 = sorted[Math.floor(sorted.length*0.1)]?.views||0;
+
+  return {
+    channelAvgViews: Math.round(avg),
+    totalVideos: v.length,
+    hookTable,
+    typeTable,
+    tiktokAvg, instaAvg,
+    trendPct,
+    last5avg, prev5avg,
+    dayTable,
+    p25, p50, p75, p90,
+    topVideo: sorted[0] ? { title:sorted[0].title, views:sorted[0].views, hook:sorted[0].hook } : null,
+  };
+};
+
+// Formats channel insights as a text block for AI injection
+const formatChannelInsights = (insights) => {
+  if(!insights) return "";
+  const fmt = (n) => n>=1000 ? `${(n/1000).toFixed(1)}k` : String(n);
+  let out = `CHANNEL STATISTICS (computed from ${insights.totalVideos} real videos — treat as ground truth, not estimates):\n`;
+  out += `• Channel avg views: ${fmt(insights.channelAvgViews)}\n`;
+  if(insights.trendPct !== null) {
+    const dir = insights.trendPct >= 0 ? "↑ up" : "↓ down";
+    out += `• Recent trend: ${dir} ${Math.abs(insights.trendPct)}% (last 5 vs prev 5 by views)\n`;
+  }
+  if(insights.hookTable.length) {
+    out += `• Hook type performance (real avg views):\n`;
+    insights.hookTable.slice(0,6).forEach(h => {
+      const sign = h.vsChannelAvg >= 0 ? "+" : "";
+      out += `  - ${h.hook}: ${fmt(h.avgViews)} avg (${sign}${h.vsChannelAvg}% vs channel avg, n=${h.count})\n`;
+    });
+  }
+  if(insights.typeTable.length) {
+    out += `• Content type performance:\n`;
+    insights.typeTable.slice(0,4).forEach(t => {
+      const sign = t.vsChannelAvg >= 0 ? "+" : "";
+      out += `  - ${t.type}: ${fmt(t.avgViews)} avg (${sign}${t.vsChannelAvg}% vs channel avg, n=${t.count})\n`;
+    });
+  }
+  if(insights.tiktokAvg || insights.instaAvg) {
+    out += `• Platform: TikTok avg ${insights.tiktokAvg ? fmt(insights.tiktokAvg) : "n/a"} | Instagram avg ${insights.instaAvg ? fmt(insights.instaAvg) : "n/a"}\n`;
+  }
+  if(insights.dayTable.length) {
+    out += `• Best posting days: ${insights.dayTable.slice(0,3).map(d=>`${d.day} (${fmt(d.avgViews)})`).join(", ")}\n`;
+  }
+  out += `• View percentiles: top 10%=${fmt(insights.p90)}, top 25%=${fmt(insights.p75)}, median=${fmt(insights.p50)}, bottom 25%=${fmt(insights.p25)}\n`;
+  if(insights.topVideo) {
+    out += `• Best video: "${insights.topVideo.title}" — ${fmt(insights.topVideo.views)} views, hook: ${insights.topVideo.hook||"unknown"}\n`;
+  }
+  return out;
 };
 
 // ── VIDEO SCORE ENGINE ──────────────────────────────────────────
@@ -3937,16 +4084,14 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
 
       const organicForAnalysis = videos.filter(v=>!v.boosted);
       const avgViewsForAnalysis = organicForAnalysis.length ? Math.round(organicForAnalysis.reduce((s,v)=>s+(v.views||0),0)/organicForAnalysis.length) : 0;
-      const topVidsForAnalysis = [...(organicForAnalysis.length?organicForAnalysis:videos)].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,3).map(v=>({ title:v.title, hook:v.hook, type:v.type, views:v.views }));
-      const hookDBForAnalysis = buildHookDB(organicForAnalysis.length?organicForAnalysis:videos).slice(0,3);
+      const channelInsightsForAnalysis = buildChannelInsights(organicForAnalysis.length?organicForAnalysis:videos);
+      const channelStatsForAnalysis = formatChannelInsights(channelInsightsForAnalysis);
       const trendsForAnalysis = loadJSON(CUR_TRENDS_KEY,"");
 
-      const prompt = `You are the world's best viral video analyst — combining expertise in social psychology, the 2025 TikTok/Reels algorithm, and environmental travel content. You are analysing a clip for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia, creators BK + Harley).
+      const prompt = `You are the world's best viral video analyst — combining expertise in social psychology, the 2026 TikTok/Reels algorithm, and environmental travel content. You are analysing a clip for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia, creators BK + Harley).
 
-CHANNEL DNA — study these to understand what "good" looks like for this specific channel:
-- Organic avg views: ${avgViewsForAnalysis} ("good" = 3x this = ${fmt(avgViewsForAnalysis*3)}, "viral" = 10x+ = ${fmt(avgViewsForAnalysis*10)})
-- Top organic performers: ${JSON.stringify(topVidsForAnalysis)||"not tracked yet"}
-- Hook types that perform best on this channel: ${hookDBForAnalysis.map(h=>`"${h.hook}" avg ${fmt(h.avgViews)} views`).join(", ")||"not enough data yet"}
+${channelStatsForAnalysis || `CHANNEL: organic avg views ${avgViewsForAnalysis} | limited data — use niche benchmarks`}
+("good" = 3x channel avg = ${fmt(avgViewsForAnalysis*3)}, "viral" = 10x+ = ${fmt(avgViewsForAnalysis*10)})
 - Many early videos were paid/boosted — weight content patterns over raw view counts
 ${trendsForAnalysis ? `\nCURRENT TRENDS (use these in editing + sound recommendations):\n${trendsForAnalysis}` : ""}
 ${videoContext ? `\nCREATOR CONTEXT FOR THIS CLIP:\n${videoContext}` : ""}
@@ -4941,33 +5086,41 @@ function Dashboard({ keys, onEditKeys }) {
       const ideaOutcomes = postedIdeas.slice(0,5).map(i=>`"${i.title.slice(0,40)}" → ${fmt(i.postedViews)} views (score was ${i.viral||"?"}/100, pillar: ${i.aiScore?.contentPillar||"unknown"})`);
       const avgV = organicVids.length?Math.round(organicVids.reduce((s,v)=>s+(v.views||0),0)/organicVids.length):(videos.length?Math.round(videos.reduce((s,v)=>s+(v.views||0),0)/videos.length):0);
 
-      // Build calibration curve from real outcomes
+      // Build calibration curve — use posted idea outcomes if available, fall back to video percentiles
       const calibration = (() => {
-        if(postedIdeas.length < 2) return "";
-        const brackets = [{label:"50-69",min:50,max:69},{label:"70-84",min:70,max:84},{label:"85-100",min:85,max:100}];
-        return brackets.map(b=>{
-          const inRange = postedIdeas.filter(i=>(i.viral||0)>=b.min&&(i.viral||0)<=b.max);
-          if(!inRange.length) return null;
-          const avg = Math.round(inRange.reduce((s,i)=>s+i.postedViews,0)/inRange.length);
-          return `Score ${b.label} → avg ${fmt(avg)} views on THIS channel`;
-        }).filter(Boolean).join(", ");
+        if(postedIdeas.length >= 2) {
+          // Ideal: real outcome data from scored+posted ideas
+          const brackets = [{label:"50-69",min:50,max:69},{label:"70-84",min:70,max:84},{label:"85-100",min:85,max:100}];
+          return brackets.map(b=>{
+            const inRange = postedIdeas.filter(i=>(i.viral||0)>=b.min&&(i.viral||0)<=b.max);
+            if(!inRange.length) return null;
+            const avg = Math.round(inRange.reduce((s,i)=>s+i.postedViews,0)/inRange.length);
+            return `Score ${b.label} → avg ${fmt(avg)} views on THIS channel (n=${inRange.length})`;
+          }).filter(Boolean).join(", ");
+        }
+        // Fallback: use video library percentiles as proxy calibration
+        const vids = (organicVids.length?organicVids:videos).filter(v=>v.views>0).sort((a,b)=>b.views-a.views);
+        if(vids.length < 3) return "";
+        const p90 = vids[Math.floor(vids.length*0.1)]?.views||0;
+        const p75 = vids[Math.floor(vids.length*0.25)]?.views||0;
+        const p50 = vids[Math.floor(vids.length*0.5)]?.views||0;
+        return `Video library benchmarks (use to anchor estimates): top 10%=${fmt(p90)}, top 25%=${fmt(p75)}, median=${fmt(p50)} views. Score 85+ should target top 10%, score 70-84 top 25%, score <70 near median.`;
       })();
 
-      // Hook performance from actual channel data
-      const hookDB = buildHookDB(organicVids.length?organicVids:videos);
-      const hookPerf = hookDB.slice(0,4).map(h=>`"${h.hook}" avg ${fmt(h.avgViews)} views`).join(", ");
+      // Hard channel statistics from real video data
+      const channelInsights = buildChannelInsights(organicVids.length?organicVids:videos);
+      const channelStatsBlock = formatChannelInsights(channelInsights);
 
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
       const r = await callAI(`You are the world's best viral content strategist. Score this TikTok/Reels idea for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia).
 
 CHANNEL CONTEXT:
 - Niche: environmental travel in SE Asia. Creators: BK (on camera) + Harley (strategy).
-- Organic avg: ${avgV} views. Top organic performers: ${JSON.stringify(topV.map(v=>({title:v.title,views:v.views,hook:v.hook,type:v.type})))}
-- Many early videos were PAID/BOOSTED — ignore view count outliers, weight content patterns over raw numbers.
-${hookPerf?`- HOOK PERFORMANCE ON THIS CHANNEL (real data): ${hookPerf} — weight niche-fit score accordingly.`:""}
-${calibration?`- REAL CALIBRATION CURVE: ${calibration} — use this to anchor estimated_views.`:""}
-${ideaOutcomes.length?`- RECENT OUTCOMES: ${ideaOutcomes.join(" | ")}`:""}
-${currentTrendsForScore?`- CURRENT TRENDS (June 2026): ${currentTrendsForScore}`:"- NOTE: It is June 2026 — factor in current platform algorithm behaviour, not 2024 data."}
+- Many early videos were PAID/BOOSTED — ignore boosted view count outliers, weight content patterns over raw numbers.
+${channelStatsBlock}
+${calibration?`REAL CALIBRATION (from posted idea outcomes): ${calibration}`:""}
+${ideaOutcomes.length?`RECENT POSTED IDEA OUTCOMES: ${ideaOutcomes.join(" | ")}`:""}
+${currentTrendsForScore?`CURRENT TRENDS (June 2026): ${currentTrendsForScore}`:"NOTE: It is June 2026 — factor in current platform algorithm behaviour, not 2024 data."}
 
 IDEA TO SCORE:
 Title: "${idea.title}" | Type: ${idea.type} | Hook: ${idea.hook}
