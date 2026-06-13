@@ -2489,7 +2489,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
           {strategy.kpis?.length>0 && (
             <>
               <div style={{ fontSize:17, fontWeight:700, color:C.green, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:10, marginTop:8 }}>TARGET KPIs</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(280px,100%),1fr))", gap:8 }}>
                 {strategy.kpis.map((k,i)=>(
                   <div key={i} style={{ padding:"12px 14px", borderRadius:12, background:`${C.green}08`, border:`1px solid ${C.green}20` }}>
                     <div style={{ fontSize:14, fontWeight:700, color:C.green }}>{k.target}</div>
@@ -3089,7 +3089,7 @@ Return ONLY JSON: {
           <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:20 }}>Analysed {result.analysed_at?.slice(0,10)}</div>
 
           {/* Score + verdict */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:20 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(180px,100%),1fr))", gap:10, marginBottom:20 }}>
             {[
               {l:"OVERALL SCORE", v:(result.overall_score||"?")+"/100", c:scoreColor(result.overall_score||0)},
               {l:"VERDICT", v:(result.performance_verdict||"analysed").replace("_"," ").toUpperCase(), c:verdictColor(result.performance_verdict)},
