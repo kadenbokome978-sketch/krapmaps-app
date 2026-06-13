@@ -3768,23 +3768,13 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
   }, [msgs]);
 
   // Auto-send preloaded message (from "Build Script" on idea cards)
-  const preloadPendingRef = useRef(null);
+  // Pre-fill input from Build Script — user reviews and sends manually
   useEffect(() => {
     if(!preloadMsg || preloadRef.current===preloadMsg.id) return;
     preloadRef.current = preloadMsg.id;
-    preloadPendingRef.current = preloadMsg.text;
-    // Trigger re-render so send can pick it up
     setInput(preloadMsg.text);
+    setTimeout(()=>inputRef.current?.focus(), 120);
   }, [preloadMsg]);
-
-  // When input is set from preload, auto-send it
-  useEffect(() => {
-    if(preloadPendingRef.current && input === preloadPendingRef.current && !loading) {
-      const txt = preloadPendingRef.current;
-      preloadPendingRef.current = null;
-      setTimeout(()=>send(txt), 50);
-    }
-  }, [input]);
 
   const TOOLS = [
     {
@@ -4023,8 +4013,8 @@ Be specific with timestamps. Harsh but constructive. No generic advice.`;
     }
   };
 
-  const send = async (overrideText) => {
-    const text = (overrideText||input).trim();
+  const send = async () => {
+    const text = input.trim();
     if(!text || loading) return;
     if(!anthropicKey) { setMsgs(m=>[...m,{role:"assistant",content:"No Anthropic API key set. Go to Settings to add one."}]); return; }
 
