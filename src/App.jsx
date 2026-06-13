@@ -3077,16 +3077,60 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
   );
 };
 
-const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg }) => {
+const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[] }) => {
   const [editing, setEditing] = useState(null);
   const [draftKey, setDraftKey] = useState("");
   const [wlDraft, setWlDraft] = useState(null);
   const [trendsDraft, setTrendsDraft] = useState(()=>loadJSON(CUR_TRENDS_KEY,""));
   const [trendsSaved, setTrendsSaved] = useState(false);
+  const [theoryDraft, setTheoryDraft] = useState(()=>loadJSON(CHANNEL_THEORY_KEY,""));
+  const [theorySaved, setTheorySaved] = useState(false);
+  const [theoryLoading, setTheoryLoading] = useState(false);
   const saveTrends = () => { saveJSON(CUR_TRENDS_KEY, trendsDraft); setTrendsSaved(true); setTimeout(()=>setTrendsSaved(false),2000); };
+  const saveTheory = () => { saveJSON(CHANNEL_THEORY_KEY, theoryDraft); setTheorySaved(true); setTimeout(()=>setTheorySaved(false),2000); };
   const saveKey = (field) => { onEditKeys&&onEditKeys({...keys,[field]:draftKey.trim()}); setEditing(null); setDraftKey(""); };
   const startWL = () => setWlDraft({...WL});
   const saveWLEdit = () => { onEditWL&&onEditWL(wlDraft); setWlDraft(null); };
+
+  const generateChannelTheory = async () => {
+    if(!keys?.anthropic) return;
+    setTheoryLoading(true);
+    try {
+      const organicV = videos.filter(v=>!v.boosted&&v.views>0);
+      const sorted = [...organicV].sort((a,b)=>(b.views||0)-(a.views||0));
+      const top5 = sorted.slice(0,5).map(v=>({title:v.title,views:v.views,hook:v.hook,type:v.type}));
+      const bot5 = sorted.slice(-5).map(v=>({title:v.title,views:v.views,hook:v.hook,type:v.type}));
+      const postedIdeas = ideas.filter(i=>i.status==="posted"&&i.postedViews>0).slice(0,5);
+      const mem = buildMemoryContext();
+      const compData = loadCompetitorData();
+      const compSummary = compData?.data?.opportunities?.slice(0,2).map(o=>o.gap).join(", ")||"";
+
+      const res = await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"x-api-key":keys.anthropic,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:600,messages:[{role:"user",content:`You are a media psychologist analysing why a specific TikTok channel goes viral. Channel: @findkrap (KrapMaps — crowdsourced bin-finding app, environmental travel in SE Asia, creators BK + Harley).
+
+TOP PERFORMING VIDEOS: ${JSON.stringify(top5)}
+BOTTOM PERFORMING VIDEOS: ${JSON.stringify(bot5)}
+${postedIdeas.length ? `POSTED IDEA OUTCOMES: ${postedIdeas.map(i=>`"${i.title}" → ${i.postedViews} views`).join(", ")}` : ""}
+${compSummary ? `COMPETITOR GAPS: ${compSummary}` : ""}
+${mem ? `MEMORY: ${mem.slice(0,400)}` : ""}
+
+Synthesise a CHANNEL VIRAL THEORY: the deep psychological mechanism that explains why THIS specific channel goes viral when it does. Cover:
+1. The core emotional transaction (what emotional need does the audience satisfy by watching?)
+2. The primary share trigger (what makes someone press send to a friend — and who is that friend?)
+3. The content conditions that must be true for a video to hit 3x channel average
+4. The single biggest mistake this channel makes that kills virality
+5. The unfair advantage this channel has that competitors can't easily copy
+
+Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — no generic advice.`}]})
+      });
+      const d = await res.json();
+      const theory = (d.content||[]).map(b=>b.text||"").join("").trim();
+      if(theory) { setTheoryDraft(theory); saveJSON(CHANNEL_THEORY_KEY, theory); }
+    } catch(e) { /* silent */ }
+    setTheoryLoading(false);
+  };
 
   const ApiLogo = ({ id }) => {
     const logos = {
@@ -3304,6 +3348,28 @@ const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onS
           style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.orange}25`, borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:13, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box", resize:"vertical", lineHeight:1.6 }}
         />
       </div>
+
+      {/* Channel Viral Theory — the deep "why this channel goes viral" model */}
+      <div style={{ borderRadius:20, padding:"22px 24px", background:`linear-gradient(145deg,rgba(139,92,246,0.08),rgba(10,6,20,0.95))`, border:`1px solid ${C.purple}25`, position:"relative", overflow:"hidden" }}>
+        <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.purple},${C.purple}00)` }}/>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+          <div>
+            <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>Channel Viral Theory</div>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:3 }}>The deep "why this channel goes viral" — injected into every score. Generate from your data or write it yourself.</div>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={generateChannelTheory} disabled={!keys?.anthropic||theoryLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.purple}50`, background:`${C.purple}18`, color:C.purple, fontFamily:C.fontBody, fontWeight:700, fontSize:12, cursor:"pointer", opacity:(!keys?.anthropic||theoryLoading)?0.5:1 }}>{theoryLoading?"GENERATING...":"⚡ GENERATE"}</button>
+            <button onClick={saveTheory} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${theorySaved?C.green:C.purple}50`, background:theorySaved?`${C.green}20`:`${C.purple}18`, color:theorySaved?C.green:C.purple, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{theorySaved?"SAVED ✓":"SAVE"}</button>
+          </div>
+        </div>
+        <textarea
+          value={theoryDraft}
+          onChange={e=>setTheoryDraft(e.target.value)}
+          placeholder={`Click GENERATE to synthesise your channel's viral theory from your video data, or write it yourself.\n\nExample:\n1. Core emotion: guilt relief — viewers feel helpless about ocean plastic; this channel gives them a proxy hero to believe in.\n2. Share trigger: backpackers send to their group chat because it validates the "responsible traveller" identity they want others to see.\n3. Viral condition: BK must interact authentically with a local — scripted or solo content rarely breaks 2x average.\n4. Biggest mistake: over-explaining the app instead of showing the human story.\n5. Unfair advantage: the mission is real, which makes the emotion genuine and uncopyable.`}
+          rows={8}
+          style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.purple}25`, borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:13, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box", resize:"vertical", lineHeight:1.6 }}
+        />
+      </div>
     </div>
   );
 };
@@ -3332,8 +3398,9 @@ try { const t=loadJSON("krapmaps_v1_igreels_last",0); if(t && t < 1749500000000)
 const MEMORY_KEY      = "krapmaps_v1_memory";
 const COMPETE_KEY     = "krapmaps_v1_competitors";
 const PREDICT_KEY     = "krapmaps_v1_predictions";
-const SCORES_KEY      = "krapmaps_v1_scores";
-const CUR_TRENDS_KEY  = "krapmaps_v1_cur_trends";
+const SCORES_KEY        = "krapmaps_v1_scores";
+const CUR_TRENDS_KEY    = "krapmaps_v1_cur_trends";
+const CHANNEL_THEORY_KEY = "krapmaps_v1_channel_theory";
 const HOOK_DB_KEY  = "krapmaps_v1_hookdb";
 const PATTERN_KEY  = "krapmaps_v1_patterns";
 const GAP_KEY      = "krapmaps_v1_gaps";
@@ -3379,7 +3446,7 @@ const buildMemoryContext = () => {
   if(!mem.entries.length) return "";
 
   // Categorize entries by type for structured context instead of flat log
-  const outcomes   = mem.entries.filter(e=>["IDEA_OUTCOME","STRUCTURED_LEARNING","OUTCOME","AUTO_OUTCOME"].includes(e.type));
+  const outcomes   = mem.entries.filter(e=>["IDEA_OUTCOME","STRUCTURED_LEARNING","OUTCOME","AUTO_OUTCOME","COUNTERFACTUAL","REPLICATION_KEY"].includes(e.type));
   const strategy   = mem.entries.filter(e=>["STRATEGY","ANALYSIS","GAP_SCAN","COMPETITOR_SCAN"].includes(e.type));
   const hooks      = mem.entries.filter(e=>["HOOKS","VIDEO_READ","HOOK_LEARNING"].includes(e.type));
   const recent     = mem.entries.slice(-5); // last 5 regardless of type for recency
@@ -3652,6 +3719,73 @@ const formatDynamicWeights = (w, insights) => {
     ? ` [weights auto-adjusted from your ${insights.totalVideos}-video data]`
     : ` [default weights — add more videos for channel-specific calibration]`;
   return lines.join(" | ") + note;
+};
+
+// ── AUDIT-DERIVED RUBRIC ─────────────────────────────────────────
+// Compares top 25% vs bottom 25% of videos to extract proven patterns
+const buildAuditRubric = (videos=[]) => {
+  const v = videos.filter(vid=>vid.views>0);
+  if(v.length < 4) return null;
+  const sorted = [...v].sort((a,b)=>(b.views||0)-(a.views||0));
+  const cutTop = Math.max(1, Math.floor(sorted.length * 0.25));
+  const cutBot = Math.max(1, Math.floor(sorted.length * 0.25));
+  const top = sorted.slice(0, cutTop);
+  const bot = sorted.slice(sorted.length - cutBot);
+
+  const freq = (arr, field) => {
+    const m = {};
+    arr.forEach(vid=>{ const val=vid[field]; if(val) m[val]=(m[val]||0)+1; });
+    return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k);
+  };
+
+  const winningHooks = freq(top,"hook");
+  const losingHooks  = freq(bot,"hook");
+  const winningTypes = freq(top,"type");
+  const losingTypes  = freq(bot,"type");
+  const topAvg = Math.round(top.reduce((s,v)=>s+(v.views||0),0)/top.length);
+  const botAvg = Math.round(bot.reduce((s,v)=>s+(v.views||0),0)/bot.length);
+
+  return { winningHooks, losingHooks, winningTypes, losingTypes, topAvg, botAvg, sampleSize:v.length };
+};
+
+const formatAuditRubric = (rubric) => {
+  if(!rubric || rubric.sampleSize < 4) return "";
+  const fmt = n => n>=1000?`${(n/1000).toFixed(1)}k`:String(n);
+  let out = `AUDIT RUBRIC (top 25% avg ${fmt(rubric.topAvg)} vs bottom 25% avg ${fmt(rubric.botAvg)} — derived from real data):\n`;
+  if(rubric.winningHooks.length) out += `• Hooks that WIN on this channel: ${rubric.winningHooks.join(", ")} → SCORE HIGHER\n`;
+  if(rubric.losingHooks.length)  out += `• Hooks that LOSE on this channel: ${rubric.losingHooks.join(", ")} → SCORE LOWER\n`;
+  if(rubric.winningTypes.length) out += `• Content types that WIN: ${rubric.winningTypes.join(", ")} → SCORE HIGHER\n`;
+  if(rubric.losingTypes.length)  out += `• Content types that LOSE: ${rubric.losingTypes.join(", ")} → SCORE LOWER\n`;
+  out += `These are non-negotiable adjustments — apply them even if the idea "looks" strong on other factors.\n`;
+  return out;
+};
+
+// ── SERIES MOMENTUM DETECTOR ─────────────────────────────────────
+// Detects if idea builds on a proven viral concept — scores higher
+const detectSeriesMomentum = (idea, videos=[], ideas=[]) => {
+  const vidsAboveAvg = (() => {
+    const v = videos.filter(vid=>vid.views>0);
+    if(!v.length) return [];
+    const avg = v.reduce((s,vid)=>s+(vid.views||0),0)/v.length;
+    return v.filter(vid=>(vid.views||0) > avg*1.5);
+  })();
+
+  const ideaWords = (idea.title||"").toLowerCase().split(/\W+/).filter(w=>w.length>3);
+
+  // Check if idea shares significant keywords with above-avg videos or posted ideas
+  const matchedVideo = vidsAboveAvg.find(v => {
+    const vWords = (v.title||"").toLowerCase().split(/\W+/).filter(w=>w.length>3);
+    return ideaWords.filter(w=>vWords.includes(w)).length >= 2;
+  });
+
+  const postedSuccess = ideas.filter(i=>i.status==="posted"&&i.postedViews>0).find(i=>{
+    const iWords = (i.title||"").toLowerCase().split(/\W+/).filter(w=>w.length>3);
+    return ideaWords.filter(w=>iWords.includes(w)).length >= 2;
+  });
+
+  if(matchedVideo) return `SERIES MOMENTUM: This idea continues the theme of "${matchedVideo.title}" which got ${(matchedVideo.views/1000).toFixed(1)}k views — existing audience is already primed for this topic. Score HIGHER on niche fit.`;
+  if(postedSuccess) return `SERIES MOMENTUM: Similar topic to "${postedSuccess.title}" which got ${(postedSuccess.postedViews/1000).toFixed(1)}k views after posting — proven concept. Score HIGHER on share trigger.`;
+  return null;
 };
 
 // ── VIDEO SCORE ENGINE ──────────────────────────────────────────
@@ -5127,23 +5261,47 @@ function Dashboard({ keys, onEditKeys }) {
     addMemoryEntry("IDEA_OUTCOME", `"${idea.title.slice(0,60)}" posted. ${outcome}. Pillar: ${pillar}. Score: ${score}/100`, outcome);
     setIdeas(is=>is.map(i=>i.id===idea.id?{...i,status:"posted",postedViews:actualViews,postedDate:new Date().toISOString().slice(0,10)}:i));
 
-    // Background: extract structured learning if views are known
+    // Background: counterfactual reasoning + structured learning
     if(actualViews > 0) {
       const cfg = loadJSON(KEYS_KEY,{});
       const key = cfg?.keys?.anthropic;
       if(key) {
         setTimeout(async()=>{
           try {
-            const avgV = videos.length ? Math.round(videos.reduce((s,v)=>s+(v.views||0),0)/videos.length) : 0;
-            const multiple = avgV > 0 ? (actualViews/avgV).toFixed(1)+"x channel avg" : "";
+            const organicV = videos.filter(v=>!v.boosted);
+            const avgV = organicV.length ? Math.round(organicV.reduce((s,v)=>s+(v.views||0),0)/organicV.length) : 0;
+            const multiple = avgV > 0 ? `${(actualViews/avgV).toFixed(1)}x channel avg (${avgV>0?fmt(avgV):"unknown"} avg)` : "";
+            const performance = avgV > 0 ? (actualViews > avgV*2 ? "OVERPERFORMED" : actualViews > avgV*0.5 ? "MET EXPECTATIONS" : "UNDERPERFORMED") : "POSTED";
+            const channelTheory = loadJSON(CHANNEL_THEORY_KEY,"");
+
             const res = await fetch("https://api.anthropic.com/v1/messages",{
               method:"POST",
               headers:{"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
-              body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:200,messages:[{role:"user",content:`A KrapMaps video was posted and got ${fmt(actualViews)} views (${multiple}). Idea score was ${score}/100. Hook type: "${idea.hook||"unknown"}". Content pillar: "${pillar}". In ONE sentence, what is the key learning for future content strategy?`}]})
+              body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:350,messages:[{role:"user",content:`A KrapMaps TikTok/Reels video was posted.
+
+RESULT: ${fmt(actualViews)} views — ${performance} (${multiple})
+IDEA SCORE: ${score}/100 | Hook type: "${idea.hook||"unknown"}" | Pillar: "${pillar}"
+TITLE: "${idea.title}"
+${channelTheory ? `CHANNEL THEORY: ${channelTheory.slice(0,200)}` : ""}
+
+Do 3 things:
+1. COUNTERFACTUAL: Given this ${performance} result, name the 1-2 specific conditions that most explain WHY it performed this way (not generic advice — specific to this hook + pillar combination)
+2. REPLICATION: What exact condition must be true for the next video to beat this result by 50%?
+3. LEARNING: One sentence strategic insight for future scoring.
+
+Reply in this exact format:
+COUNTERFACTUAL: [why it performed this way]
+REPLICATION: [what must be true next time]
+LEARNING: [one sentence]`}]})
             });
             const d = await res.json();
-            const learning = (d.content||[]).map(b=>b.text||"").join("").trim().slice(0,200);
-            if(learning) addMemoryEntry("STRUCTURED_LEARNING", learning, `${fmt(actualViews)} views`);
+            const text = (d.content||[]).map(b=>b.text||"").join("").trim();
+            const learningMatch = text.match(/LEARNING:\s*(.+)/);
+            const counterfactualMatch = text.match(/COUNTERFACTUAL:\s*(.+?)(?=REPLICATION:|$)/s);
+            const replicationMatch = text.match(/REPLICATION:\s*(.+?)(?=LEARNING:|$)/s);
+            if(learningMatch?.[1]) addMemoryEntry("STRUCTURED_LEARNING", learningMatch[1].trim().slice(0,200), `${fmt(actualViews)} views — ${performance}`);
+            if(counterfactualMatch?.[1]) addMemoryEntry("COUNTERFACTUAL", counterfactualMatch[1].trim().slice(0,200), `${performance} (${fmt(actualViews)} views)`);
+            if(replicationMatch?.[1]) addMemoryEntry("REPLICATION_KEY", replicationMatch[1].trim().slice(0,200), `next video`);
           } catch(e) { /* silent */ }
         }, 1000);
       }
@@ -5187,18 +5345,31 @@ function Dashboard({ keys, onEditKeys }) {
       const weights = buildDynamicWeights(channelInsights);
       const weightsLine = formatDynamicWeights(weights, channelInsights);
 
+      // Audit rubric — proven winners/losers from this channel's history
+      const auditRubric = buildAuditRubric(organicVids.length?organicVids:videos);
+      const auditBlock = formatAuditRubric(auditRubric);
+
+      // Series momentum — does this build on a proven concept?
+      const seriesMomentum = detectSeriesMomentum(idea, organicVids.length?organicVids:videos, ideas);
+
       // Competitor intel — hooks proven to work in the niche
       const compData = loadCompetitorData();
       const stolenHooks = compData?.data?.steal_these_hooks?.slice(0,4).map(h=>`"${h.hook}" (from ${h.from_creator}) → for this channel: ${h.adapt_for_channel}`).join("\n") || "";
       const compOpportunities = compData?.data?.opportunities?.slice(0,2).map(o=>`${o.gap} [${o.urgency}]`).join(", ") || "";
 
+      // Channel theory — the deep "why this channel goes viral" model
+      const channelTheory = loadJSON(CHANNEL_THEORY_KEY,"");
+
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
       const r = await callAI(`You are the world's best viral content strategist. Score this TikTok/Reels idea for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia, niche: environmental travel / backpacker culture).
 
+${channelTheory ? `━━ CHANNEL VIRAL THEORY (why this channel specifically goes viral — anchor ALL scoring to this) ━━\n${channelTheory}\n` : ""}
 ━━ CHANNEL INTELLIGENCE (real data — treat as ground truth) ━━
 ${channelStatsBlock || "Limited data — use niche benchmarks as proxy"}
-${calibration ? `\nCALIBRATION: ${calibration}` : ""}
-${ideaOutcomes.length ? `\nRECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
+${auditBlock}
+${calibration ? `CALIBRATION: ${calibration}` : ""}
+${ideaOutcomes.length ? `RECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
+${seriesMomentum ? `\n${seriesMomentum}` : ""}
 
 ━━ NICHE INTELLIGENCE (what's working for competitors RIGHT NOW) ━━
 ${stolenHooks ? `Proven hooks from similar creators to adapt:\n${stolenHooks}` : "Run a competitor scan in settings to unlock niche benchmarks."}
@@ -5695,7 +5866,7 @@ Return JSON:
               } catch(e) { setSyncMsg("Sync failed: "+e.message); }
               setTimeout(()=>setSyncMsg(null), 4000);
             }}
-            syncMsg={syncMsg} />}
+            syncMsg={syncMsg} videos={videos} ideas={ideas} />}
 
           </div>{/* end page content padding */}
 
