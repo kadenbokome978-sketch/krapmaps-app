@@ -3665,15 +3665,21 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
 
       // Wait for Gemini file to become ACTIVE (it starts in PROCESSING state)
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Processing clip..." }]);
-      const fileId = fileUri.split("/").pop();
-      for(let i=0; i<20; i++) {
-        const stateRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/files/${fileId}?key=${geminiKey}`);
-        if(stateRes.ok) {
-          const stateData = await stateRes.json();
-          if(stateData?.state === "ACTIVE") break;
-        }
-        await new Promise(r => setTimeout(r, 3000));
+      const fileId = fileUri.split("/files/")[1] || fileUri.split("/").pop();
+      let fileActive = false;
+      for(let i=0; i<30; i++) {
+        await new Promise(r => setTimeout(r, 4000));
+        try {
+          const stateRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/files/${fileId}?key=${geminiKey}`);
+          if(stateRes.ok) {
+            const stateData = await stateRes.json();
+            const st = stateData?.state || stateData?.file?.state;
+            if(st === "ACTIVE") { fileActive = true; break; }
+            if(st === "FAILED") throw new Error("Gemini failed to process the video file. Try a shorter clip.");
+          }
+        } catch(e) { if(e.message.includes("FAILED")) throw e; }
       }
+      if(!fileActive) throw new Error("Video took too long to process. Try a shorter clip under 15 seconds.");
 
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
 
