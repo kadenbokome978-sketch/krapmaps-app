@@ -856,7 +856,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
             </button>
           </div>
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(300px,100%),1fr))", gap:14 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(300px,100%),1fr))", gap:14, alignItems:"start" }}>
           {sorted.length===0
             ? <div style={{ gridColumn:"1/-1", padding:"48px", textAlign:"center", borderRadius:18, border:"1px solid rgba(255,255,255,0.07)", fontSize:16, color:"rgba(255,255,255,0.3)" }}>No ideas yet — tap Add Idea to get started</div>
             : sorted.map(idea=>{
@@ -867,7 +867,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
               const hasScore = (idea.viral||0)>0;
               const isScoring = aiLoad&&aiLoad["s"+idea.id];
               const stageLabel = ({idea:"Idea",script_ready:"Scripted",filming:"Filming",posted:"Posted"})[idea.status||"idea"];
-              const stageColor = ({idea:"rgba(255,255,255,0.3)",script_ready:C.yellow,filming:C.orange,posted:C.green})[idea.status||"idea"];
+              const stageColor = ({idea:C.cyan,script_ready:C.green,filming:C.orange,posted:C.green})[idea.status||"idea"];
               return (
                 <div key={idea.id} style={{ borderRadius:20, background:"rgba(12,8,24,0.95)", border:`1px solid ${isStale?C.pink+"40":hasScore?scoreC+"22":"rgba(255,255,255,0.08)"}`, position:"relative", overflow:"hidden", display:"flex", flexDirection:"column", transition:"border-color 0.2s" }}>
 
@@ -991,13 +991,13 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                     <div style={{ padding:"8px 18px 10px", borderTop:"1px solid rgba(255,255,255,0.04)" }}>
                       <div style={{ display:"flex", gap:8 }}>
                         {[
-                          { label:"H", val:idea.hookScore, color:C.orange, title:"Hook" },
-                          { label:"R", val:idea.retentionScore, color:C.cyan, title:"Retention" },
-                          { label:"S", val:idea.shareScore, color:C.green, title:"Share" },
-                          { label:"A", val:idea.algoScore, color:C.yellow, title:"Algo" },
-                          { label:"N", val:idea.nicheScore, color:C.purple, title:"Niche" },
+                          { label:"Hook", val:idea.hookScore, color:C.orange },
+                          { label:"Ret", val:idea.retentionScore, color:C.cyan },
+                          { label:"Share", val:idea.shareScore, color:C.green },
+                          { label:"Algo", val:idea.algoScore, color:C.yellow },
+                          { label:"Niche", val:idea.nicheScore, color:C.purple },
                         ].filter(f=>f.val).map((f,fi)=>(
-                          <div key={fi} style={{ flex:1, textAlign:"center" }} title={`${f.title}: ${f.val}`}>
+                          <div key={fi} style={{ flex:1, textAlign:"center" }}>
                             <div style={{ fontSize:13, fontWeight:700, color:f.color, lineHeight:1 }}>{f.val}</div>
                             <div style={{ height:3, borderRadius:2, background:`${f.color}18`, marginTop:4, overflow:"hidden" }}>
                               <div style={{ width:`${f.val}%`, height:"100%", borderRadius:2, background:f.color }}/>
@@ -1013,10 +1013,10 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                   {(idea.aiScore?.estimated_views || idea.hook) && (
                     <div style={{ padding:"7px 18px", borderTop:"1px solid rgba(255,255,255,0.04)", display:"flex", alignItems:"center", gap:10 }}>
                       {idea.aiScore?.estimated_views && (
-                        <span style={{ fontSize:12, fontWeight:700, color:scoreC }}>{idea.aiScore.estimated_views}</span>
+                        <span style={{ fontSize:11, fontWeight:600, color:"rgba(255,255,255,0.45)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{idea.aiScore.estimated_views}</span>
                       )}
-                      {idea.hook && (
-                        <span style={{ fontSize:11, color:"rgba(255,255,255,0.35)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>"{idea.hook}"</span>
+                      {idea.hook && !idea.aiScore?.estimated_views && (
+                        <span style={{ fontSize:11, color:"rgba(255,255,255,0.3)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>"{idea.hook}"</span>
                       )}
                     </div>
                   )}
