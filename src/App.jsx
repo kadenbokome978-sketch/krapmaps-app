@@ -856,7 +856,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
             </button>
           </div>
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:14 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(300px,100%),1fr))", gap:14 }}>
           {sorted.length===0
             ? <div style={{ gridColumn:"1/-1", padding:"48px", textAlign:"center", borderRadius:18, border:"1px solid rgba(255,255,255,0.07)", fontSize:16, color:"rgba(255,255,255,0.3)" }}>No ideas yet — tap Add Idea to get started</div>
             : sorted.map(idea=>{
@@ -1022,7 +1022,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                   )}
 
                   {/* ── ACTIONS — clear hierarchy ── */}
-                  <div style={{ padding:"10px 14px", borderTop:"1px solid rgba(255,255,255,0.05)", display:"flex", gap:6, alignItems:"center" }}>
+                  <div style={{ padding:"10px 14px", borderTop:"1px solid rgba(255,255,255,0.05)", display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
 
                     {/* Primary CTA: score or re-score — solid gradient, most weight */}
                     <button onClick={()=>scoreIdea&&scoreIdea(idea)} disabled={!!isScoring}
