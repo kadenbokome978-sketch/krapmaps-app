@@ -3513,6 +3513,7 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
   const [videoFile, setVideoFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [lastFileUri, setLastFileUri] = useState(null);
+  const [lastFileB64, setLastFileB64] = useState(null);
   const [lastFileMime, setLastFileMime] = useState(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
@@ -3636,52 +3637,32 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
     setMsgs(m=>[...m, { role:"user", content:`📎 ${file.name}` }, { role:"assistant", content:"Preparing your clip..." }]);
 
     try {
-      // Convert MOV/large files to MP4 via canvas if needed
+      // Convert MOV/large files to WebM via canvas
       let uploadFile = file;
-      if(file.type !== "video/mp4" || file.size > 20*1024*1024) {
+      if(file.type !== "video/mp4" && file.type !== "video/webm") {
         try {
-          setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Converting clip for upload (plays in real-time, please wait)..." }]);
+          setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Converting clip (plays in real-time, please wait)..." }]);
           uploadFile = await convertToMp4(file);
         } catch(e) {
-          setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Conversion failed — try a shorter clip under 30 seconds, or export as MP4 from your phone first." }]);
+          setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Conversion failed — export as MP4 from your phone and try again." }]);
           setUploading(false);
           return;
         }
       }
 
-      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Uploading clip..." }]);
-
-      // Upload via Vercel proxy to avoid CORS — supports large files
-      const proxyRes = await fetch("/api/gemini-upload", {
-        method: "POST",
-        headers: { "x-gemini-key": geminiKey, "x-file-name": uploadFile.name, "x-mime-type": uploadFile.type, "Content-Type": uploadFile.type },
-        body: uploadFile,
-      });
-      if(!proxyRes.ok) {
-        const e = await proxyRes.json().catch(()=>({}));
-        throw new Error((e.error || `Proxy error ${proxyRes.status}`) + (e.detail ? ` — ${e.detail}` : ''));
+      // Check size — inline base64 limit is ~15MB converted file
+      if(uploadFile.size > 15 * 1024 * 1024) {
+        setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Clip is too large after conversion. Trim it to under 20 seconds and try again." }]);
+        setUploading(false);
+        return;
       }
-      const { fileUri, mimeType } = await proxyRes.json();
-
-      // Wait for Gemini file to become ACTIVE (it starts in PROCESSING state)
-      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Processing clip..." }]);
-      const fileId = fileUri.split("/files/")[1] || fileUri.split("/").pop();
-      let fileActive = false;
-      for(let i=0; i<30; i++) {
-        await new Promise(r => setTimeout(r, 4000));
-        try {
-          const stateRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/files/${fileId}?key=${geminiKey}`);
-          if(stateRes.ok) {
-            const stateData = await stateRes.json();
-            const st = stateData?.state || stateData?.file?.state;
-            if(st === "ACTIVE") { fileActive = true; break; }
-            if(st === "FAILED") throw new Error("Gemini failed to process the video file. Try a shorter clip.");
-          }
-        } catch(e) { if(e.message.includes("FAILED")) throw e; }
-      }
-      if(!fileActive) throw new Error("Video took too long to process. Try a shorter clip under 15 seconds.");
 
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
+
+      // Read as base64 and send inline — avoids Files API / ACTIVE state issues
+      const arrayBuf = await uploadFile.arrayBuffer();
+      const b64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuf)));
+      const mimeType = uploadFile.type || "video/webm";
 
       const prompt = `You are a viral TikTok and Instagram Reels content expert. Analyse this video clip and give:
 
@@ -3695,7 +3676,7 @@ Be direct, specific, and harsh if needed. No fluff.`;
       const genRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
         { method:"POST", headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ contents:[{ parts:[{ file_data:{ mime_type:mimeType, file_uri:fileUri } }, { text:prompt }] }] })
+          body: JSON.stringify({ contents:[{ parts:[{ inline_data:{ mime_type:mimeType, data:b64 } }, { text:prompt }] }] })
         }
       );
       if(!genRes.ok) {
@@ -3704,7 +3685,7 @@ Be direct, specific, and harsh if needed. No fluff.`;
       }
       const genData = await genRes.json();
       const text = genData?.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis returned.";
-      setLastFileUri(fileUri);
+      setLastFileB64(b64);
       setLastFileMime(mimeType);
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:text, showCapcutBtn:true }]);
     } catch(e) {
@@ -3794,7 +3775,7 @@ Be concise and action-oriented. When the user asks to add something, use the app
   const msgText = (msg) => typeof msg.content === "string" ? msg.content : msg.content?.filter?.(b=>b.type==="text").map(b=>b.text).join("\n") || "";
 
   const getCapcutPlan = async () => {
-    if(!lastFileUri) return;
+    if(!lastFileB64) return;
     const cfg = loadJSON(KEYS_KEY, {});
     const geminiKey = cfg?.keys?.gemini;
     if(!geminiKey) return;
@@ -3847,7 +3828,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
       const genRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
         { method:"POST", headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ contents:[{ parts:[{ file_data:{ mime_type:lastFileMime, file_uri:lastFileUri } }, { text:prompt }] }] })
+          body: JSON.stringify({ contents:[{ parts:[{ inline_data:{ mime_type:lastFileMime, data:lastFileB64 } }, { text:prompt }] }] })
         }
       );
       if(!genRes.ok) throw new Error(`Gemini error: ${genRes.status}`);
