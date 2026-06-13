@@ -3460,7 +3460,7 @@ async function callAI(prompt, maxTokens=2000) {
       "anthropic-dangerous-direct-browser-access":"true"
     },
     body: JSON.stringify({
-      model:"claude-fable-5",
+      model:"claude-sonnet-4-6",
       max_tokens:maxTokens + 3000,
       thinking:{ type:"enabled", budget_tokens:2500 },
       system:buildSystem(currentWL),
@@ -3746,7 +3746,7 @@ Be concise and action-oriented. When the user asks to add something, use the app
       let response = await fetch("https://api.anthropic.com/v1/messages", {
         method:"POST",
         headers:{ "x-api-key":anthropicKey, "anthropic-version":"2023-06-01", "content-type":"application/json", "anthropic-dangerous-direct-browser-access":"true" },
-        body: JSON.stringify({ model:"claude-fable-5", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:conversationMsgs })
+        body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:conversationMsgs })
       });
 
       if(!response.ok) {
@@ -3772,7 +3772,7 @@ Be concise and action-oriented. When the user asks to add something, use the app
         response = await fetch("https://api.anthropic.com/v1/messages", {
           method:"POST",
           headers:{ "x-api-key":anthropicKey, "anthropic-version":"2023-06-01", "content-type":"application/json", "anthropic-dangerous-direct-browser-access":"true" },
-          body: JSON.stringify({ model:"claude-fable-5", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:allMsgs })
+          body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:allMsgs })
         });
 
         if(!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -3878,7 +3878,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
           </div>
           <div>
             <div style={{ fontSize:16, fontWeight:700, color:"#fff", lineHeight:1.1 }}>KrapMaps AI</div>
-            <div style={{ fontSize:11, color:C.purple, marginTop:2, letterSpacing:"0.04em" }}>claude-fable-5 · gemini-2.5-flash</div>
+            <div style={{ fontSize:11, color:C.purple, marginTop:2, letterSpacing:"0.04em" }}>claude-sonnet-4-6 · gemini-2.5-flash</div>
           </div>
         </div>
         {msgs.length > 1 && (
