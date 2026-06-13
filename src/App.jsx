@@ -812,12 +812,24 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                         {(idea.viralReason||idea.hookFeedback) && (
                           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                             {idea.viralReason && <div style={{ padding:"12px 14px", background:"rgba(255,255,255,0.03)", borderRadius:12, border:"1px solid rgba(255,255,255,0.07)" }}>
-                              <div style={{ fontSize:11, color:scoreC, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>VIRALITY</div>
+                              <div style={{ fontSize:11, color:scoreC, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>SHARE TRIGGER</div>
                               <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)", lineHeight:1.5 }}>{idea.viralReason}</div>
                             </div>}
                             {idea.hookFeedback && <div style={{ padding:"12px 14px", background:"rgba(255,255,255,0.03)", borderRadius:12, border:"1px solid rgba(255,255,255,0.07)" }}>
                               <div style={{ fontSize:11, color:C.orange, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>HOOK FEEDBACK</div>
                               <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)", lineHeight:1.5 }}>{idea.hookFeedback}</div>
+                            </div>}
+                          </div>
+                        )}
+                        {(idea.retentionFix||idea.competitorAngle) && (
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                            {idea.retentionFix && <div style={{ padding:"12px 14px", background:"rgba(255,255,255,0.03)", borderRadius:12, border:`1px solid ${C.cyan}18` }}>
+                              <div style={{ fontSize:11, color:C.cyan, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>RETENTION FIX</div>
+                              <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)", lineHeight:1.5 }}>{idea.retentionFix}</div>
+                            </div>}
+                            {idea.competitorAngle && <div style={{ padding:"12px 14px", background:"rgba(255,255,255,0.03)", borderRadius:12, border:`1px solid ${C.purple}18` }}>
+                              <div style={{ fontSize:11, color:C.purple, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>COMPETITOR ANGLE</div>
+                              <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)", lineHeight:1.5 }}>{idea.competitorAngle}</div>
                             </div>}
                           </div>
                         )}
@@ -847,6 +859,27 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                       </div>
                     )}
                   </div>
+
+                  {/* 5-factor sub-score bars */}
+                  {(idea.hookScore||idea.retentionScore||idea.shareScore||idea.algoScore||idea.nicheScore) && (
+                    <div style={{ padding:"10px 20px", borderTop:"1px solid rgba(255,255,255,0.04)" }}>
+                      {[
+                        { label:"HOOK", val:idea.hookScore, color:C.orange },
+                        { label:"RETENTION", val:idea.retentionScore, color:C.cyan },
+                        { label:"SHARE", val:idea.shareScore, color:C.green },
+                        { label:"ALGO", val:idea.algoScore, color:C.yellow },
+                        { label:"NICHE", val:idea.nicheScore, color:C.purple },
+                      ].filter(f=>f.val).map((f,fi)=>(
+                        <div key={fi} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:fi<4?5:0 }}>
+                          <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", fontWeight:700, letterSpacing:"0.1em", width:58 }}>{f.label}</div>
+                          <div style={{ flex:1, height:4, borderRadius:2, background:"rgba(255,255,255,0.06)", overflow:"hidden" }}>
+                            <div style={{ width:`${f.val}%`, height:"100%", borderRadius:2, background:f.color, opacity:0.7 }}/>
+                          </div>
+                          <div style={{ fontSize:11, color:f.color, fontWeight:700, width:26, textAlign:"right" }}>{f.val}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Estimated views + pipeline status */}
                   {idea.aiScore?.estimated_views && (
@@ -3580,6 +3613,47 @@ const formatChannelInsights = (insights) => {
   return out;
 };
 
+// ── DYNAMIC SCORING WEIGHTS ─────────────────────────────────────
+// Adjusts the 5 scoring factor weights based on what actually drives views on THIS channel
+const buildDynamicWeights = (insights) => {
+  // Base weights (must sum to 100)
+  let w = { hook:25, retention:20, share:25, algo:15, niche:15 };
+  if(!insights || insights.totalVideos < 5) return w;
+
+  // If hook type variance is high → hook matters more (some hooks 3x+ others)
+  if(insights.hookTable.length >= 2) {
+    const best = insights.hookTable[0].avgViews;
+    const worst = insights.hookTable[insights.hookTable.length-1].avgViews;
+    if(best > worst * 2.5) { w.hook += 5; w.algo -= 5; }
+  }
+
+  // If content type variance is high → niche/format fit matters more
+  if(insights.typeTable.length >= 2) {
+    const best = insights.typeTable[0].avgViews;
+    const worst = insights.typeTable[insights.typeTable.length-1].avgViews;
+    if(best > worst * 2) { w.niche += 5; w.retention -= 5; }
+  }
+
+  // If channel is trending up → algo fit matters more (algorithm is already rewarding)
+  if(insights.trendPct !== null && insights.trendPct > 20) { w.algo += 5; w.share -= 5; }
+
+  return w;
+};
+
+const formatDynamicWeights = (w, insights) => {
+  const lines = [
+    `HOOK STRENGTH (${w.hook}%)`,
+    `RETENTION ARC (${w.retention}%)`,
+    `SHARE TRIGGER (${w.share}%)`,
+    `ALGORITHM FIT (${w.algo}%)`,
+    `NICHE FIT (${w.niche}%)`,
+  ];
+  const note = (insights && insights.totalVideos >= 5)
+    ? ` [weights auto-adjusted from your ${insights.totalVideos}-video data]`
+    : ` [default weights — add more videos for channel-specific calibration]`;
+  return lines.join(" | ") + note;
+};
+
 // ── VIDEO SCORE ENGINE ──────────────────────────────────────────
 // Time-weighted score — factors in age, velocity, ratio, hook performance
 const calcVideoScore = (video, allVideos=[]) => {
@@ -5110,31 +5184,63 @@ function Dashboard({ keys, onEditKeys }) {
       // Hard channel statistics from real video data
       const channelInsights = buildChannelInsights(organicVids.length?organicVids:videos);
       const channelStatsBlock = formatChannelInsights(channelInsights);
+      const weights = buildDynamicWeights(channelInsights);
+      const weightsLine = formatDynamicWeights(weights, channelInsights);
+
+      // Competitor intel — hooks proven to work in the niche
+      const compData = loadCompetitorData();
+      const stolenHooks = compData?.data?.steal_these_hooks?.slice(0,4).map(h=>`"${h.hook}" (from ${h.from_creator}) → for this channel: ${h.adapt_for_channel}`).join("\n") || "";
+      const compOpportunities = compData?.data?.opportunities?.slice(0,2).map(o=>`${o.gap} [${o.urgency}]`).join(", ") || "";
 
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
-      const r = await callAI(`You are the world's best viral content strategist. Score this TikTok/Reels idea for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia).
+      const r = await callAI(`You are the world's best viral content strategist. Score this TikTok/Reels idea for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia, niche: environmental travel / backpacker culture).
 
-CHANNEL CONTEXT:
-- Niche: environmental travel in SE Asia. Creators: BK (on camera) + Harley (strategy).
-- Many early videos were PAID/BOOSTED — ignore boosted view count outliers, weight content patterns over raw numbers.
-${channelStatsBlock}
-${calibration?`REAL CALIBRATION (from posted idea outcomes): ${calibration}`:""}
-${ideaOutcomes.length?`RECENT POSTED IDEA OUTCOMES: ${ideaOutcomes.join(" | ")}`:""}
-${currentTrendsForScore?`CURRENT TRENDS (June 2026): ${currentTrendsForScore}`:"NOTE: It is June 2026 — factor in current platform algorithm behaviour, not 2024 data."}
+━━ CHANNEL INTELLIGENCE (real data — treat as ground truth) ━━
+${channelStatsBlock || "Limited data — use niche benchmarks as proxy"}
+${calibration ? `\nCALIBRATION: ${calibration}` : ""}
+${ideaOutcomes.length ? `\nRECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
 
-IDEA TO SCORE:
-Title: "${idea.title}" | Type: ${idea.type} | Hook: ${idea.hook}
+━━ NICHE INTELLIGENCE (what's working for competitors RIGHT NOW) ━━
+${stolenHooks ? `Proven hooks from similar creators to adapt:\n${stolenHooks}` : "Run a competitor scan in settings to unlock niche benchmarks."}
+${compOpportunities ? `Active content gaps competitors aren't covering: ${compOpportunities}` : ""}
+${currentTrendsForScore ? `\nCURRENT TRENDS (June 2026):\n${currentTrendsForScore}` : "NOTE: It is June 2026 — use current platform behaviour, not 2024 data."}
 
-SCORE ON THESE 5 FACTORS (weighted):
-1. HOOK STRENGTH (25%) — does the hook stop the scroll in 0.5s? Which formula: visual disruption / open loop / identity trigger / contrast? Score the hook's ability to earn the first 3 seconds.
-2. RETENTION ARC (20%) — does the idea have a natural setup → tension → payoff? Will people watch to the end?
-3. SHARE TRIGGER (25%) — does it give social currency (backpacker identity), emotional currency (armchair viewer feels), or cultural pride (local SE Asian)? Strong share trigger = viral multiplier.
-4. ALGORITHM FIT 2025 (15%) — raw POV, local culture moments, stranger interaction, location contrast all score high right now. Scripted or produced content scores low.
-5. NICHE FIT (15%) — does it lean into the channel's proven pillars: local connection > location contrast > mission story > app story?
+━━ IDEA TO SCORE ━━
+Title: "${idea.title}" | Type: ${idea.type||"unknown"} | Hook: ${idea.hook||"not specified"}
+
+━━ SCORING FRAMEWORK ━━
+${weightsLine}
+
+Score each factor with this rigour:
+
+1. HOOK STRENGTH (${weights.hook}%) — The first 0.5 seconds is won or lost here. Classify: visual disruption (unexpected image), open loop (question unanswered), identity trigger ("if you're a backpacker..."), contrast (before/after or unexpected juxtaposition), social proof (others react). Score against your channel data: does this hook type outperform or underperform the channel average? Be specific about what frame/word earns the scroll-stop.
+
+2. RETENTION ARC (${weights.retention}%) — Map the arc: what is the SETUP (creates curiosity or stakes), what is the TENSION (maintains suspense), what is the PAYOFF (satisfying resolution that makes watch-through worth it)? If any element is missing the video will lose viewers early. Predict the drop-off timestamp and why. Check: is there dead air, filler, unnecessary explanation, or a weak ending?
+
+3. SHARE TRIGGER (${weights.share}%) — Shares are the only metric that breaks the algorithm ceiling. Score which trigger applies: SOCIAL CURRENCY (makes the sharer look good/knowledgeable — backpacker status), EMOTIONAL RESONANCE (makes armchair viewers feel something strong enough to share), CULTURAL PRIDE (SE Asian locals share it to their community). A strong share trigger is worth 5-10x in reach. Score honestly — most content fails here.
+
+4. ALGORITHM FIT (${weights.algo}%) — In 2026 the TikTok/Reels algorithm rewards: (a) POV and first-person raw footage over produced content, (b) genuine stranger interactions over scripted scenes, (c) location contrast — unexpected setting reveals, (d) local culture moments non-locals haven't seen. PENALISE: talking-to-camera explaining, over-produced visuals, no clear scene context. Cross-reference competitor data: what formats are getting pushed in this niche right now?
+
+5. NICHE FIT (${weights.niche}%) — Score against the channel's 5 proven pillars IN PRIORITY ORDER based on your channel data: Local Connection (authentic relationship with SE Asian community) > Location Contrast (unexpected setting reveal) > Mission Reveal (environmental/litter mission story) > App In Action (using KrapMaps to solve a real problem) > Travel Utility (backpacker tips). If this idea doesn't clearly belong to a pillar, score low. If it sits at the intersection of two pillars, score high.
 
 Return ONLY valid JSON:
-{"viralityScore":0-100,"hookScore":0-100,"verdict":"2 sentences — name the strongest and weakest of the 5 factors","viralityReason":"which share trigger is strongest and why","hookFeedback":"specific critique of the hook","improvedHook":"rewritten hook under 10 words","recommendations":[{"action":"specific next step","impact":"high|medium"}],"estimated_views":"organic ceiling e.g. 20K-80K","contentPillar":"Local Connection|Location Contrast|Mission Reveal|App In Action|Travel Utility"}`, 1600);
-      setIdeas(is=>is.map(i=>i.id===idea.id?{...i,aiScore:r,viral:r.viralityScore,hookScore:r.hookScore,verdict:r.verdict,viralReason:r.viralityReason,hookFeedback:r.hookFeedback,improvedHook:r.improvedHook,recs:r.recommendations?.map(x=>({a:x.action,impact:x.impact?.toUpperCase()}))}:i));
+{"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","retentionFix":"the single biggest retention improvement","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic organic ceiling e.g. 20K-80K — anchored to calibration data above","contentPillar":"Local Connection|Location Contrast|Mission Reveal|App In Action|Travel Utility","competitorAngle":"how to differentiate from what competitors are already doing in this niche"}`, 2000);
+      setIdeas(is=>is.map(i=>i.id===idea.id?{...i,
+        aiScore:r,
+        viral:r.viralityScore,
+        hookScore:r.hookScore,
+        retentionScore:r.retentionScore,
+        shareScore:r.shareScore,
+        algoScore:r.algoScore,
+        nicheScore:r.nicheScore,
+        verdict:r.verdict,
+        viralReason:r.viralityReason,
+        hookFeedback:r.hookFeedback,
+        improvedHook:r.improvedHook,
+        retentionFix:r.retentionFix,
+        competitorAngle:r.competitorAngle,
+        recs:r.recommendations?.map(x=>({a:x.action,impact:x.impact?.toUpperCase()}))
+      }:i));
     } catch(e) { setAiErr("Score failed: "+e.message); }
     setAiLoad(l=>({...l,[key]:false}));
   };
