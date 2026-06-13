@@ -539,6 +539,50 @@ const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDi
         ))}
       </div>
 
+      {/* ══ BEST POSTING DAY ═══════════════════════════════════════ */}
+      {(()=>{
+        const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+        const map = {};
+        DAYS.forEach(d=>{ map[d]=[]; });
+        (videos||[]).forEach(v=>{
+          if(!v.date&&!v.created_at) return;
+          const d = new Date(v.date||v.created_at);
+          const day = DAYS[d.getDay()];
+          map[day].push(v.views||0);
+        });
+        const dayPerf = DAYS.map(d=>({
+          day: d,
+          avg: map[d].length ? Math.round(map[d].reduce((s,x)=>s+x,0)/map[d].length) : 0,
+          count: map[d].length,
+        })).sort((a,b)=>b.avg-a.avg);
+        const maxAvg = Math.max(...dayPerf.map(d=>d.avg),1);
+        return videos.length > 3 ? (
+          <div style={{ borderRadius:22, padding:"24px 26px", background:"linear-gradient(145deg,rgba(255,107,53,0.08),rgba(8,5,18,0.96))", border:`1px solid ${C.orange}20`, position:"relative", overflow:"hidden" }}>
+            <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.orange}cc,transparent 60%)` }}/>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
+              <div>
+                <div style={{ fontSize:15, fontWeight:700, color:"#fff", letterSpacing:"0.03em" }}>Best Days to Post</div>
+                <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:2 }}>Based on avg views per day of week</div>
+              </div>
+              <div style={{ padding:"6px 14px", borderRadius:8, background:`${C.orange}15`, border:`1px solid ${C.orange}25`, fontSize:12, fontWeight:700, color:C.orange }}>
+                POST ON {dayPerf[0]?.day?.toUpperCase()||"—"}
+              </div>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {dayPerf.slice(0,5).map((d,i)=>(
+                <div key={d.day} style={{ display:"flex", alignItems:"center", gap:12 }}>
+                  <div style={{ width:32, fontSize:12, fontWeight:700, color:i===0?C.orange:i===1?C.yellow:"rgba(255,255,255,0.4)", textAlign:"right" }}>{d.day}</div>
+                  <div style={{ flex:1, height:8, borderRadius:4, background:"rgba(255,255,255,0.06)", overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:`${(d.avg/maxAvg)*100}%`, borderRadius:4, background:i===0?`linear-gradient(90deg,${C.orange},${C.yellow})`:i===1?`linear-gradient(90deg,${C.yellow},${C.yellow}80)`:"rgba(255,255,255,0.15)", transition:"width 0.6s ease" }}/>
+                  </div>
+                  <div style={{ width:60, fontSize:12, color:i<2?C.orange:"rgba(255,255,255,0.35)", fontWeight:700, textAlign:"right" }}>{d.avg>=1000?(d.avg/1000).toFixed(1)+"K":d.avg||"—"}{d.count>0?<span style={{fontSize:10,color:"rgba(255,255,255,0.2)",fontWeight:400}}> ({d.count})</span>:""}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null;
+      })()}
+
       {/* ══ AI STRATEGY ════════════════════════════════════════════ */}
       <div style={{ borderRadius:18, padding:"22px 24px", background:"linear-gradient(145deg,rgba(255,255,255,0.02),rgba(10,6,20,0.8))", border:"1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ fontSize:16, color:"rgba(255,255,255,0.8)", letterSpacing:"0.18em", textTransform:"uppercase", fontWeight:700, marginBottom:16 }}>AI Strategy</div>
@@ -563,6 +607,53 @@ const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDi
         </div>
       </div>
 
+      {/* Pillar Health */}
+      {(() => {
+        const PILLARS = ["Local Connection","Location Contrast","Mission Reveal","App In Action","Travel Utility"];
+        const PILLAR_COLORS = {
+          "Local Connection": C.green,
+          "Location Contrast": C.cyan,
+          "Mission Reveal": C.purple,
+          "App In Action": C.yellow,
+          "Travel Utility": C.orange,
+        };
+        const today = new Date();
+        const posted = (ideas||[]).filter(i=>i.status==="posted"&&i.postedDate);
+        const lastByPillar = {};
+        posted.forEach(i=>{
+          const p = i.aiScore?.contentPillar;
+          if(!p) return;
+          const d = new Date(i.postedDate);
+          if(!lastByPillar[p]||d>lastByPillar[p]) lastByPillar[p]=d;
+        });
+        const pillarsWithGap = PILLARS.map(p=>{
+          const last = lastByPillar[p];
+          const days = last ? Math.floor((today-last)/86400000) : null;
+          return { name:p, days, color: PILLAR_COLORS[p] };
+        });
+        const hasAny = posted.length > 0;
+        return (
+          <div style={{ borderRadius:18, padding:"20px 24px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", letterSpacing:"0.16em", textTransform:"uppercase", fontWeight:700, marginBottom:14 }}>Content Pillar Health</div>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+              {pillarsWithGap.map(p=>{
+                const stale = p.days===null ? true : p.days > 14;
+                const warn = p.days !== null && p.days > 7 && p.days <= 14;
+                const color = stale ? "rgba(255,255,255,0.2)" : warn ? C.yellow : p.color;
+                return (
+                  <div key={p.name} style={{ display:"flex", alignItems:"center", gap:7, padding:"7px 14px", borderRadius:10, background:`${color}12`, border:`1px solid ${color}30` }}>
+                    <div style={{ width:6, height:6, borderRadius:"50%", background:color, boxShadow:stale?"none":`0 0 6px ${color}` }}/>
+                    <span style={{ fontSize:12, fontWeight:700, color, letterSpacing:"0.04em" }}>{p.name.split(" ")[0].toUpperCase()}</span>
+                    <span style={{ fontSize:11, color:"rgba(255,255,255,0.35)" }}>{p.days===null?"never":`${p.days}d ago`}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {!hasAny && <div style={{ fontSize:12, color:"rgba(255,255,255,0.2)", marginTop:8 }}>Mark ideas as posted to track pillar coverage</div>}
+          </div>
+        );
+      })()}
+
     </div>
   );
 };
@@ -573,6 +664,52 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
   const [calFilter, setCalFilter] = useState("ALL");
   const [postingId, setPostingId] = useState(null);
   const [postViews, setPostViews] = useState("");
+  const [quickExpand, setQuickExpand] = useState("");
+  const [expanding, setExpanding] = useState(false);
+  const setIdeaStage = (idea, stage) => {
+    if(stage === "posted") {
+      setPostingId(idea.id); setPostViews("");
+    } else {
+      setIdeas(is=>is.map(i=>i.id===idea.id?{...i,status:stage}:i));
+    }
+  };
+
+  const doQuickExpand = async () => {
+    if(!quickExpand.trim()||expanding) return;
+    setExpanding(true);
+    try {
+      const cfg = loadJSON(KEYS_KEY,{});
+      const key = cfg?.keys?.anthropic;
+      if(!key) { alert("Add Anthropic key in Settings first"); return; }
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{ "x-api-key":key, "anthropic-version":"2023-06-01", "content-type":"application/json", "anthropic-dangerous-direct-browser-access":"true" },
+        body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:800, messages:[{role:"user",content:`Expand this rough content concept into a full video idea for @findkrap (KrapMaps — bin-finding app for backpackers in SE Asia).\n\nConcept: "${quickExpand}"\n\nReturn ONLY valid JSON:\n{"title":"compelling title under 12 words","type":"facecam|broll|voiceover|collab","hook":"hook type: achievement|contrast|challenge|curiosity|emotion|location|local|story","hookLine":"exact opening line under 10 words","body":"2 sentences on what happens in the video","cta":"what to say at the end","viralityScore":0-100,"contentPillar":"Local Connection|Location Contrast|Mission Reveal|App In Action|Travel Utility","estimated_views":"e.g. 20K-80K"}`}] })
+      });
+      const d = await r.json();
+      const text = (d.content||[]).map(b=>b.text||"").join("").trim();
+      const clean = text.replace(/```json/g,"").replace(/```/g,"").trim();
+      const match = clean.match(/\{[\s\S]*\}/);
+      if(!match) throw new Error("Parse failed");
+      const result = JSON.parse(match[0]);
+      const newIdea = {
+        id: Date.now().toString(),
+        title: result.title,
+        type: result.type||"facecam",
+        hook: result.hookLine||result.hook||"",
+        text: result.body||"",
+        viral: result.viralityScore||0,
+        aiScore: { estimated_views: result.estimated_views, contentPillar: result.contentPillar, viralityScore: result.viralityScore },
+        contentPillar: result.contentPillar,
+        status: "idea",
+        created: new Date().toISOString().slice(0,10),
+      };
+      setIdeas(is=>[newIdea,...is]);
+      setQuickExpand("");
+    } catch(e) { alert("Expand failed: "+e.message); }
+    setExpanding(false);
+  };
+
   const sorted = [...ideas].sort((a,b)=>(Number(b.viral)||0)-(Number(a.viral)||0));
   const filteredCal = calFilter==="ALL" ? calItems : calItems.filter(c=>(c.platform||"").toUpperCase()===calFilter);
   const ic = v => (v||0)>=80?C.green:(v||0)>=60?C.yellow:C.pink;
@@ -596,6 +733,24 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
       {/* ── IDEAS ─────────────────────────────────────────────── */}
       {sub==="IDEAS" && (
+        <>
+        {/* Quick expand panel */}
+        <div style={{ borderRadius:18, padding:"16px 20px", background:`${C.purple}0a`, border:`1px solid ${C.purple}25`, marginBottom:14 }}>
+          <div style={{ fontSize:11, color:C.purple, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", marginBottom:10 }}>Quick Expand</div>
+          <div style={{ display:"flex", gap:10 }}>
+            <input
+              value={quickExpand}
+              onChange={e=>setQuickExpand(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&doQuickExpand()}
+              placeholder="Rough concept e.g. 'BK finds illegal dump site in Bali' ..."
+              style={{ flex:1, background:"rgba(255,255,255,0.05)", border:`1px solid ${C.purple}30`, borderRadius:11, color:"#fff", padding:"10px 14px", fontSize:13, fontFamily:C.fontBody, outline:"none" }}
+            />
+            <button onClick={doQuickExpand} disabled={!quickExpand.trim()||expanding}
+              style={{ padding:"10px 20px", borderRadius:11, border:"none", background:expanding||!quickExpand.trim()?`${C.purple}30`:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:expanding||!quickExpand.trim()?"not-allowed":"pointer", whiteSpace:"nowrap", opacity:expanding||!quickExpand.trim()?0.6:1 }}>
+              {expanding ? "EXPANDING..." : "EXPAND →"}
+            </button>
+          </div>
+        </div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:14 }}>
           {sorted.length===0
             ? <div style={{ gridColumn:"1/-1", padding:"48px", textAlign:"center", borderRadius:18, border:"1px solid rgba(255,255,255,0.07)", fontSize:16, color:"rgba(255,255,255,0.3)" }}>No ideas yet — tap Add Idea to get started</div>
@@ -704,11 +859,20 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
                   {/* Actions */}
                   <div style={{ padding:"12px 20px", borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
-                    {idea.status==="posted" ? (
-                      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 14px", borderRadius:10, background:`${C.green}12`, border:`1px solid ${C.green}30` }}>
-                        <div style={{ width:7, height:7, borderRadius:"50%", background:C.green, boxShadow:`0 0 6px ${C.green}` }}/>
-                        <span style={{ fontSize:13, fontWeight:700, color:C.green }}>POSTED{idea.postedViews>0?` · ${fmt(idea.postedViews)} views`:""}</span>
-                      </div>
+                    {/* Pipeline stage cycling */}
+                    {idea.status !== "posted" ? (
+                      <button onClick={()=>{
+                        const stages = ["idea","script_ready","filming","posted"];
+                        const cur = stages.indexOf(idea.status||"idea");
+                        setIdeaStage(idea, stages[Math.min(cur+1, stages.length-1)]);
+                      }} style={{
+                        padding:"8px 14px", borderRadius:10, cursor:"pointer", fontFamily:C.fontBody, fontWeight:700, fontSize:11, letterSpacing:"0.10em",
+                        border: idea.status==="filming" ? `1px solid ${C.orange}35` : idea.status==="script_ready" ? `1px solid ${C.yellow}35` : "1px solid rgba(255,255,255,0.15)",
+                        background: idea.status==="filming" ? `${C.orange}10` : idea.status==="script_ready" ? `${C.yellow}10` : "transparent",
+                        color: idea.status==="filming" ? C.orange : idea.status==="script_ready" ? C.yellow : "rgba(255,255,255,0.4)"
+                      }}>
+                        {({idea:"IDEA →",script_ready:"SCRIPTED →",filming:"FILMING →"})[idea.status||"idea"]}
+                      </button>
                     ) : postingId===idea.id ? (
                       <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                         <input
@@ -723,7 +887,10 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                         <button onClick={()=>{ setPostingId(null); setPostViews(""); }} style={{ padding:"7px 10px", borderRadius:9, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"rgba(255,255,255,0.4)", fontSize:13, cursor:"pointer" }}>✕</button>
                       </div>
                     ) : (
-                      markPosted && <button onClick={()=>{ setPostingId(idea.id); setPostViews(""); }} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.green}30`, background:`${C.green}10`, color:C.green, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>MARK POSTED</button>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 14px", borderRadius:10, background:`${C.green}12`, border:`1px solid ${C.green}30` }}>
+                        <div style={{ width:7, height:7, borderRadius:"50%", background:C.green, boxShadow:`0 0 6px ${C.green}` }}/>
+                        <span style={{ fontSize:13, fontWeight:700, color:C.green }}>POSTED{idea.postedViews>0?` · ${fmt(idea.postedViews)} views`:""}</span>
+                      </div>
                     )}
                     {onBuildScript && (
                       <button onClick={()=>onBuildScript(idea)} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.cyan}35`, background:`${C.cyan}14`, color:C.cyan, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>BUILD SCRIPT</button>
@@ -744,6 +911,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
             })
           }
         </div>
+        </>
       )}
 
       {/* ── CALENDAR ──────────────────────────────────────────── */}
@@ -826,6 +994,22 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                   <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
                     {(captionResult.tiktok?.hashtags||[]).map(h=><Tag key={h} color={C.pink} sm>#{h}</Tag>)}
                   </div>
+                  {/* Hook Variants */}
+                  {captionResult.tiktok?.variants && (
+                    <div style={{ marginTop:12 }}>
+                      <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>3 Hook Variants</div>
+                      {captionResult.tiktok.variants.map((v,i)=>(
+                        <div key={i} style={{ marginBottom:8, padding:"10px 12px", borderRadius:10, background:`${C.pink}08`, border:`1px solid ${C.pink}20` }}>
+                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
+                            <span style={{ fontSize:10, fontWeight:700, color:C.pink, letterSpacing:"0.10em", textTransform:"uppercase" }}>{v.hook_type}</span>
+                            <button onClick={()=>navigator.clipboard.writeText(v.caption+(v.hashtags?" "+v.hashtags.map(h=>"#"+h).join(" "):"")+"\n\n"+v.hashtags?.map(h=>"#"+h).join(" "))} style={{ padding:"3px 10px", borderRadius:6, border:`1px solid ${C.pink}30`, background:"transparent", color:C.pink, fontFamily:C.fontBody, fontSize:10, fontWeight:700, cursor:"pointer" }}>COPY</button>
+                          </div>
+                          <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)", lineHeight:1.5 }}>{v.caption}</div>
+                          {v.hashtags && <div style={{ fontSize:11, color:`${C.pink}99`, marginTop:4 }}>{v.hashtags.map(h=>"#"+h).join(" ")}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {/* Instagram */}
                 <div style={{ borderRadius:18, padding:"20px 22px", background:`${C.purple}08`, border:`1px solid ${C.purple}25`, position:"relative", overflow:"hidden" }}>
@@ -4771,7 +4955,23 @@ Return ONLY valid JSON:
     setCaptionIdea(idea);
     setCaptionResult(null);
     try {
-      const r = await callAI(`Write captions for KrapMaps TikTok and Instagram for this idea: "${idea.title||idea.text}". Return JSON: {"tiktok":{"caption":"string","hashtags":["string"],"altCaption":"string"},"instagram":{"caption":"string","hashtags":["string"]}}`, 1200);
+      const r = await callAI(`Write captions for KrapMaps TikTok and Instagram for this idea: "${idea.title||idea.text}".
+
+For TikTok, provide 3 HOOK VARIANTS — each uses a different psychology trigger. For Instagram, one caption.
+
+Return JSON:
+{
+  "tiktok": {
+    "caption": "...(primary)",
+    "hashtags": ["..."],
+    "variants": [
+      {"hook_type": "Identity Trigger", "caption": "full caption starting with identity hook", "hashtags": ["..."]},
+      {"hook_type": "Open Loop", "caption": "full caption starting with open loop/curiosity gap", "hashtags": ["..."]},
+      {"hook_type": "Visual Disruption", "caption": "full caption starting with surprising statement", "hashtags": ["..."]}
+    ]
+  },
+  "instagram": {"caption": "...", "hashtags": ["..."]}
+}`, 1600);
       setCaptionResult(r);
     } catch(e) { setAiErr("Caption failed: "+e.message); }
     setAiLoad(l=>({...l,caption:false}));
