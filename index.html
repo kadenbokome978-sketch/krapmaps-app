@@ -101,9 +101,9 @@
     @keyframes badgePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.025)} }
 
     /* ── TYPE SYSTEM ── */
-    /* Inter for all UI text — Lilita One only for explicit display headings */
+    /* Lilita One everywhere, Inter only for long-form reading text */
     html, body, button, input, select, textarea {
-      font-family:'Inter', system-ui, sans-serif;
+      font-family:'Lilita One', Georgia, serif;
     }
     /* Focus states */
     input:focus, textarea:focus, select:focus {
@@ -115,8 +115,6 @@
     input, textarea, select {
       transition: border-color 0.15s, box-shadow 0.15s;
     }
-    /* Body line-height default */
-    p, li, div { line-height: 1.5; }
 
     /* ══ WEB LAYOUT — MOBILE FIRST ══ */
     .web-sidebar   { display:none; }
@@ -202,12 +200,12 @@
 
     /* Sidebar nav */
     .web-sidebar button {
-      font-family:'Inter', system-ui, sans-serif !important;
+      font-family:'Lilita One', Georgia, serif !important;
       font-weight:600 !important;
       letter-spacing:0.03em !important;
     }
 
-    html, body { font-family:'Inter', system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+    html, body { font-family:'Lilita One', Georgia, serif; -webkit-font-smoothing:antialiased; }
   </style>
 </head>
 <body>
