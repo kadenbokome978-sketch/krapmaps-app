@@ -2788,6 +2788,17 @@ Return ONLY JSON: {
         const combined = { ...claudeResult, gemini: geminiResult, video_id: video.id, analysed_at: new Date().toISOString() };
         setAnalysis(a=>({...a,[video.id]:combined}));
         addMemoryEntry("VIDEO_READ", '"'+video.title?.slice(0,40)+'" scored '+claudeResult.overall_score+'/100. Verdict: '+claudeResult.performance_verdict+'. Key: '+claudeResult.biggest_factor?.slice(0,60));
+        // Write analysis findings back to video record for future scoring
+        if(claudeResult.biggest_factor || claudeResult.replicate_these?.length) {
+          setVideos(vs=>vs.map(v=>v.id===video.id ? {
+            ...v,
+            analysisScore: claudeResult.overall_score,
+            analysisVerdict: claudeResult.performance_verdict,
+            biggestFactor: claudeResult.biggest_factor?.slice(0,120),
+            replicateThese: (claudeResult.replicate_these||[]).slice(0,2).join("; "),
+            analysedAt: new Date().toISOString().slice(0,10),
+          } : v));
+        }
       } else if(geminiResult) {
         setAnalysis(a=>({...a,[video.id]:{ gemini:geminiResult, video_id:video.id, analysed_at:new Date().toISOString() }}));
       }
@@ -3624,6 +3635,19 @@ const buildChannelInsights = (videos=[]) => {
     day, avgViews:Math.round(views.reduce((a,b)=>a+b,0)/views.length), count:views.length
   })).sort((a,b)=>b.avgViews-a.avgViews);
 
+  // Time of day performance
+  const hourMap = {};
+  v.forEach(vid => {
+    if(!vid.created_at) return;
+    const hour = new Date(vid.created_at).getHours();
+    const slot = hour < 6 ? "midnight-6am" : hour < 12 ? "6am-12pm" : hour < 18 ? "12pm-6pm" : "6pm-midnight";
+    if(!hourMap[slot]) hourMap[slot] = [];
+    hourMap[slot].push(vid.views||0);
+  });
+  const timeTable = Object.entries(hourMap).map(([slot,views])=>({
+    slot, avgViews:Math.round(views.reduce((a,b)=>a+b,0)/views.length), count:views.length
+  })).sort((a,b)=>b.avgViews-a.avgViews);
+
   // Score calibration using real video views (not just posted ideas)
   // Bucket videos by estimated "score" band based on percentile
   const p25 = sorted[Math.floor(sorted.length*0.75)]?.views||0;
@@ -3641,7 +3665,9 @@ const buildChannelInsights = (videos=[]) => {
     last5avg, prev5avg,
     dayTable,
     p25, p50, p75, p90,
+    timeTable,
     topVideo: sorted[0] ? { title:sorted[0].title, views:sorted[0].views, hook:sorted[0].hook } : null,
+    analysedVideos: v.filter(vid=>vid.biggestFactor).slice(0,3).map(vid=>({ title:vid.title?.slice(0,40), biggestFactor:vid.biggestFactor, replicateThese:vid.replicateThese, verdict:vid.analysisVerdict })),
   };
 };
 
@@ -3833,9 +3859,20 @@ const formatChannelInsights = (insights) => {
   if(insights.dayTable.length) {
     out += `• Best posting days: ${insights.dayTable.slice(0,3).map(d=>`${d.day} (${fmt(d.avgViews)})`).join(", ")}\n`;
   }
+  if(insights.timeTable?.length) {
+    out += `• Best posting times: ${insights.timeTable.slice(0,2).map(t=>`${t.slot} (${fmt(t.avgViews)} avg)`).join(", ")}\n`;
+  }
   out += `• View percentiles: top 10%=${fmt(insights.p90)}, top 25%=${fmt(insights.p75)}, median=${fmt(insights.p50)}, bottom 25%=${fmt(insights.p25)}\n`;
   if(insights.topVideo) {
     out += `• Best video: "${insights.topVideo.title}" — ${fmt(insights.topVideo.views)} views, hook: ${insights.topVideo.hook||"unknown"}\n`;
+  }
+  if(insights.analysedVideos?.length) {
+    out += `• Videos with AI teardown (use these findings in scoring):\n`;
+    insights.analysedVideos.forEach(v=>{
+      out += `  - "${v.title}" [${v.verdict||"analysed"}]: biggest factor = ${v.biggestFactor}`;
+      if(v.replicateThese) out += ` | replicate: ${v.replicateThese}`;
+      out += "\n";
+    });
   }
   return out;
 };
@@ -4109,8 +4146,9 @@ async function callConsensus(claudePrompt, gptPrompt, wl=WL) {
   return { claude:claudeResult, gpt:gptResult, bothSucceeded: !!(claudeResult && gptResult) };
 }
 
-const HOOK_TYPES  = ["edgy/controversial","problem->solution","gamification","achievement","reaction","challenge","pov","tutorial"];
-const VIDEO_TYPES = ["facecam","street","screencap","voiceover","mixed"];
+const HOOK_TYPES       = ["edgy/controversial","problem->solution","gamification","achievement","reaction","challenge","pov","tutorial"];
+const VIDEO_TYPES      = ["facecam","street","screencap","voiceover","mixed"];
+const THUMBNAIL_TYPES  = ["text overlay","face close-up","scene reveal","shock moment","before/after","question on screen","no text — pure visual"];
 const STATUSES    = ["idea","scripted","filming","editing","scheduled","posted"];
 const STATUS_C    = { idea:C.dim, scripted:C.purple, filming:C.yellow, editing:C.cyan, scheduled:C.green, posted:C.orange };
 
@@ -4554,11 +4592,19 @@ Be specific with timestamps. Harsh but constructive. No generic advice.`;
     setLoading(true);
 
     try {
-      const topVids = [...videos].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
       const organicVids = videos.filter(v=>!v.boosted);
       const avgViews = organicVids.length ? Math.round(organicVids.reduce((s,v)=>s+(v.views||0),0)/organicVids.length) : (videos.length ? Math.round(videos.reduce((s,v)=>s+(v.views||0),0)/videos.length) : 0);
       const memCtx = buildMemoryContext();
       const currentTrends = loadJSON(CUR_TRENDS_KEY,"");
+      const channelTheoryChat = loadJSON(CHANNEL_THEORY_KEY,"");
+      const chatInsights = buildChannelInsights(organicVids.length?organicVids:videos);
+      const chatInsightsBlock = formatChannelInsights(chatInsights);
+      const chatEngBlock = formatEngagementSignals(buildEngagementSignals(organicVids.length?organicVids:videos));
+      const chatComboBlock = formatComboMatrix(buildComboMatrix(organicVids.length?organicVids:videos));
+      const chatAuditBlock = formatAuditRubric(buildAuditRubric(organicVids.length?organicVids:videos));
+      const chatPredAcc = formatPredictionAccuracy(buildPredictionAccuracy(ideas));
+      const compDataChat = loadCompetitorData();
+      const chatCompHooks = compDataChat?.data?.steal_these_hooks?.slice(0,3).map(h=>`"${h.hook}" (${h.from_creator})`).join(", ")||"";
       const systemPrompt = `You are the world's best viral content strategist — you combine the expertise of a top TikTok growth hacker, a social psychology researcher, and an experienced travel/environmental content creator. You manage the @findkrap TikTok and Instagram accounts through KrapMaps Content OS.
 
 ━━ BRAND & MISSION ━━
@@ -4567,11 +4613,15 @@ Creators: BK (on camera, charismatic, genuine) + Harley (strategy, editing, syst
 Core identity: "We pick up rubbish in the world's most beautiful places because there are no bins — so we built an app to fix it."
 This is a DUAL product: entertainment (travel + environmental) AND utility (the app). Every video should serve both.
 
-━━ CHANNEL DATA ━━
-- ${videos.length} videos tracked | organic avg ${avgViews} views
-- Top organic performers: ${JSON.stringify(topVids.map(v=>({title:v.title,views:v.views,hook:v.hook})))}
-- CRITICAL: Many early videos were paid/boosted. Never use boosted view counts as the organic benchmark. Weight content patterns (hook type, format, emotion) over raw numbers.
-- ${tasks.filter(t=>!t.done).length} open tasks | ${ideas.length} ideas in pipeline
+━━ CHANNEL DATA (real numbers — treat as ground truth) ━━
+- ${videos.length} videos tracked | ${tasks.filter(t=>!t.done).length} open tasks | ${ideas.length} ideas in pipeline
+- CRITICAL: Many early videos were paid/boosted — never use boosted view counts as organic benchmark.
+${chatInsightsBlock}
+${chatEngBlock}
+${chatComboBlock}
+${chatAuditBlock}
+${chatPredAcc}
+${chatCompHooks ? `Competitor hooks proven in niche: ${chatCompHooks}` : ""}
 
 ━━ AUDIENCE PSYCHOLOGY ━━
 PRIMARY: Backpackers aged 18-30 who travel SE Asia — they want the app, relate to the rubbish problem, share because it validates their experience.
@@ -4625,9 +4675,11 @@ For this channel specifically:
 ━━ RESPONSE STYLE ━━
 Be brutally honest, specific, and strategic. Give concrete next actions, not vague advice. Reference the virality science above when explaining WHY something will or won't work. When adding tasks or ideas, do it immediately with tools — no confirmation needed.
 
-${currentTrends ? `━━ CURRENT TRENDS (updated by Harley) ━━\n${currentTrends}` : ""}
+${channelTheoryChat ? `━━ CHANNEL VIRAL THEORY ━━\n${channelTheoryChat}` : ""}
 
-${memCtx ? `━━ AI MEMORY LOG ━━\n${memCtx}` : ""}`;
+${currentTrends ? `━━ CURRENT TRENDS ━━\n${currentTrends}` : ""}
+
+${memCtx ? `━━ CHANNEL MEMORY ━━\n${memCtx}` : ""}`;
 
 
       let conversationMsgs = newMsgs.slice(1); // skip the initial assistant greeting
@@ -5405,9 +5457,18 @@ function Dashboard({ keys, onEditKeys }) {
 
       const liveCtx = liveData ? "\nLIVE DATA (fetched right now): "+JSON.stringify(liveData) : "";
 
+      // Full intelligence stack for analysis/nextVids
+      const richInsights = buildChannelInsights(sortedVideos.filter(v=>!v.boosted).length ? sortedVideos.filter(v=>!v.boosted) : sortedVideos);
+      const richInsightsBlock = formatChannelInsights(richInsights);
+      const richEngBlock = formatEngagementSignals(buildEngagementSignals(sortedVideos.filter(v=>!v.boosted)));
+      const richComboBlock = formatComboMatrix(buildComboMatrix(sortedVideos.filter(v=>!v.boosted)));
+      const richAuditBlock = formatAuditRubric(buildAuditRubric(sortedVideos.filter(v=>!v.boosted)));
+      const richTheory = loadJSON(CHANNEL_THEORY_KEY,"");
+      const richCtx = (richTheory ? `CHANNEL VIRAL THEORY:\n${richTheory}\n\n` : "") + richInsightsBlock + "\n" + richEngBlock + "\n" + richComboBlock + "\n" + richAuditBlock + "\n" + channelCtx;
+
       const prompts = {
-        analysis: channelCtx+liveCtx+"\nAnalyse these videos. Use real numbers. Return JSON: {whatIsWorking:[{insight,evidence,impact:'high|medium'}],whatIsNotWorking:[{insight,evidence,fix}],topFormat,bestHook,channel_diagnosis}. Videos: "+JSON.stringify(vSummary),
-        nextVids:  channelCtx+liveCtx+"\nSuggest next 5 videos. Use best-performing hook styles for this channel. Be specific. Return JSON: {tiktok:[{title,type,hook,whyItWillWork,openingLine,priority:'HIGH|MEDIUM',estimated_views}],instagram:[{concept,contentType,whyItWillWork}]}. Videos: "+JSON.stringify(vSummary),
+        analysis: richCtx+liveCtx+"\nAnalyse these videos. Use real numbers from the channel statistics above. Return JSON: {whatIsWorking:[{insight,evidence,impact:'high|medium'}],whatIsNotWorking:[{insight,evidence,fix}],topFormat,bestHook,channel_diagnosis,engagement_insight}. Videos: "+JSON.stringify(vSummary),
+        nextVids:  richCtx+liveCtx+"\nSuggest next 5 videos. Use winning hook+type combos and engagement signals from the data above. Be specific. Return JSON: {tiktok:[{title,type,hook,thumbnail_style,whyItWillWork,openingLine,priority:'HIGH|MEDIUM',estimated_views,winning_combo_used}],instagram:[{concept,contentType,whyItWillWork}]}. Videos: "+JSON.stringify(vSummary),
         weekly:    channelCtx+"\nWrite a filming brief for "+wl.creator2+". Return JSON: {harleyBrief:'2-3 sentences',priorities:[{task,why,how_to_shoot}],rawSummaryText:'WhatsApp-ready message'}. Videos: "+JSON.stringify(vSummary),
         trends:    channelCtx+liveCtx+"\nBest trending angles for "+wl.appName+" RIGHT NOW that fit this channel style. Return JSON: {trends:[{trend,urgency:'POST NOW|THIS WEEK|THIS MONTH',tiktokAngle,hook,why_fits_channel,instagramAngle}]}",
             };
@@ -5568,7 +5629,7 @@ ${compOpportunities ? `Active content gaps competitors aren't covering: ${compOp
 ${currentTrendsForScore ? `\nCURRENT TRENDS (June 2026):\n${currentTrendsForScore}` : "NOTE: It is June 2026 — use current platform behaviour, not 2024 data."}
 
 ━━ IDEA TO SCORE ━━
-Title: "${idea.title}" | Type: ${idea.type||"unknown"} | Hook: ${idea.hook||"not specified"}
+Title: "${idea.title}" | Type: ${idea.type||"unknown"} | Hook: ${idea.hook||"not specified"} | Thumbnail style: ${idea.thumbnail||"not specified"}
 
 ━━ SCORING FRAMEWORK ━━
 ${weightsLine}
@@ -5749,22 +5810,27 @@ Return JSON:
   };
 
   const AddIdeaModal = () => {
-    const [form, setForm] = useState({ title:"", type:"facecam", hook:"achievement", notes:"" });
+    const [form, setForm] = useState({ title:"", type:"facecam", hook:"achievement", thumbnail:"text overlay", notes:"" });
     const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
+    const selStyle = { width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:C.text,padding:"10px 12px",fontSize:16,fontFamily:C.fontBody,outline:"none",boxSizing:"border-box",marginBottom:12 };
     return (
       <ModalBase onClose={()=>closeModal("addIdea")}>
         <div style={{ fontSize:20,fontWeight:700,color:C.text,marginBottom:16 }}>Add Idea</div>
         <MLabel>Idea Title</MLabel><MInput value={form.title} onChange={set("title")} placeholder="Describe the video idea" />
         <MLabel>Type</MLabel>
-        <select value={form.type} onChange={set("type")} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:C.text,padding:"10px 12px",fontSize:16,fontFamily:C.fontBody,outline:"none",boxSizing:"border-box",marginBottom:12 }}>
+        <select value={form.type} onChange={set("type")} style={selStyle}>
           {VIDEO_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
         </select>
         <MLabel>Hook Type</MLabel>
-        <select value={form.hook} onChange={set("hook")} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:C.text,padding:"10px 12px",fontSize:16,fontFamily:C.fontBody,outline:"none",boxSizing:"border-box",marginBottom:12 }}>
+        <select value={form.hook} onChange={set("hook")} style={selStyle}>
           {HOOK_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
         </select>
+        <MLabel>Thumbnail Style</MLabel>
+        <select value={form.thumbnail} onChange={set("thumbnail")} style={selStyle}>
+          {THUMBNAIL_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+        </select>
         <MLabel>Notes (optional)</MLabel><MInput value={form.notes} onChange={set("notes")} placeholder="Extra context..." />
-        <MBtn onClick={()=>{ if(!form.title.trim()) return; setIdeas(is=>[{id:Date.now(),title:form.title.trim(),type:form.type,hook:form.hook,notes:form.notes,viral:0,hookScore:0,created:today()},...is]); closeModal("addIdea"); }}>Add Idea</MBtn>
+        <MBtn onClick={()=>{ if(!form.title.trim()) return; setIdeas(is=>[{id:Date.now(),title:form.title.trim(),type:form.type,hook:form.hook,thumbnail:form.thumbnail,notes:form.notes,viral:0,hookScore:0,created:today()},...is]); closeModal("addIdea"); }}>Add Idea</MBtn>
       </ModalBase>
     );
   };
