@@ -706,6 +706,8 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
       };
       setIdeas(is=>[newIdea,...is]);
       setQuickExpand("");
+      // Auto-score the new idea in background
+      if(scoreIdea) setTimeout(()=>scoreIdea(newIdea), 800);
     } catch(e) { alert("Expand failed: "+e.message); }
     setExpanding(false);
   };
@@ -3459,7 +3461,7 @@ const buildMemoryContext = () => {
   // Categorize entries by type for structured context instead of flat log
   const outcomes   = mem.entries.filter(e=>["IDEA_OUTCOME","STRUCTURED_LEARNING","OUTCOME","AUTO_OUTCOME","COUNTERFACTUAL","REPLICATION_KEY"].includes(e.type));
   const strategy   = mem.entries.filter(e=>["STRATEGY","ANALYSIS","GAP_SCAN","COMPETITOR_SCAN"].includes(e.type));
-  const hooks      = mem.entries.filter(e=>["HOOKS","VIDEO_READ","HOOK_LEARNING"].includes(e.type));
+  const hooks      = mem.entries.filter(e=>["HOOKS","VIDEO_READ","HOOK_LEARNING","CAPTION_LEARNING"].includes(e.type));
   const recent     = mem.entries.slice(-5); // last 5 regardless of type for recency
 
   const outcomeCount = outcomes.length;
@@ -3610,6 +3612,13 @@ const buildChannelInsights = (videos=[]) => {
     return { type, avgViews:a, count:views.length, vsChannelAvg:Math.round((a/avg-1)*100) };
   }).sort((a,b)=>b.avgViews-a.avgViews);
 
+  // Collab vs solo performance
+  const collabVids = v.filter(vid=>vid.collab);
+  const soloVids   = v.filter(vid=>!vid.collab);
+  const collabAvg  = collabVids.length >= 2 ? Math.round(collabVids.reduce((s,vid)=>s+(vid.views||0),0)/collabVids.length) : null;
+  const soloAvg    = soloVids.length >= 2   ? Math.round(soloVids.reduce((s,vid)=>s+(vid.views||0),0)/soloVids.length)   : null;
+  const collabMultiplier = (collabAvg && soloAvg) ? parseFloat((collabAvg/soloAvg).toFixed(2)) : null;
+
   // Platform split
   const tiktokV = v.filter(vid=>vid.platform==="TikTok"||!vid.platform);
   const instaV  = v.filter(vid=>vid.platform==="Instagram");
@@ -3648,6 +3657,22 @@ const buildChannelInsights = (videos=[]) => {
     slot, avgViews:Math.round(views.reduce((a,b)=>a+b,0)/views.length), count:views.length
   })).sort((a,b)=>b.avgViews-a.avgViews);
 
+  // Audio performance — original vs trending sound
+  const audioMap = {};
+  v.forEach(vid => {
+    if(!vid.audio) return;
+    const cat = vid.audio.toLowerCase().includes("original") ? "original audio" : "trending sound";
+    if(!audioMap[cat]) audioMap[cat] = [];
+    audioMap[cat].push(vid.views||0);
+  });
+  const audioTable = Object.entries(audioMap).map(([audio,views])=>({
+    audio, avgViews:Math.round(views.reduce((a,b)=>a+b,0)/views.length), count:views.length
+  })).sort((a,b)=>b.avgViews-a.avgViews);
+
+  // Velocity signal — 24hr views as % of total (high % = algorithm is still pushing)
+  const velocityVids = v.filter(vid=>vid.views24h&&vid.views>0);
+  const avgVelocity = velocityVids.length ? parseFloat((velocityVids.reduce((s,vid)=>s+(vid.views24h/vid.views*100),0)/velocityVids.length).toFixed(1)) : null;
+
   // Score calibration using real video views (not just posted ideas)
   // Bucket videos by estimated "score" band based on percentile
   const p25 = sorted[Math.floor(sorted.length*0.75)]?.views||0;
@@ -3668,6 +3693,9 @@ const buildChannelInsights = (videos=[]) => {
     timeTable,
     topVideo: sorted[0] ? { title:sorted[0].title, views:sorted[0].views, hook:sorted[0].hook } : null,
     analysedVideos: v.filter(vid=>vid.biggestFactor).slice(0,3).map(vid=>({ title:vid.title?.slice(0,40), biggestFactor:vid.biggestFactor, replicateThese:vid.replicateThese, verdict:vid.analysisVerdict })),
+    avgVelocity, velocityVidCount: velocityVids.length,
+    collabAvg, soloAvg, collabMultiplier, collabCount: collabVids.length,
+    audioTable,
   };
 };
 
@@ -3862,6 +3890,9 @@ const formatChannelInsights = (insights) => {
   if(insights.timeTable?.length) {
     out += `• Best posting times: ${insights.timeTable.slice(0,2).map(t=>`${t.slot} (${fmt(t.avgViews)} avg)`).join(", ")}\n`;
   }
+  if(insights.avgVelocity !== null && insights.velocityVidCount >= 2) {
+    out += `• Avg 24hr velocity: ${insights.avgVelocity}% of final views arrive in first 24hrs (n=${insights.velocityVidCount}) — high % means algorithm is pushing hard early\n`;
+  }
   out += `• View percentiles: top 10%=${fmt(insights.p90)}, top 25%=${fmt(insights.p75)}, median=${fmt(insights.p50)}, bottom 25%=${fmt(insights.p25)}\n`;
   if(insights.topVideo) {
     out += `• Best video: "${insights.topVideo.title}" — ${fmt(insights.topVideo.views)} views, hook: ${insights.topVideo.hook||"unknown"}\n`;
@@ -3873,6 +3904,13 @@ const formatChannelInsights = (insights) => {
       if(v.replicateThese) out += ` | replicate: ${v.replicateThese}`;
       out += "\n";
     });
+  }
+  if(insights.collabMultiplier !== null) {
+    const sign = insights.collabMultiplier >= 1 ? "+" : "";
+    out += `• Collab vs solo: collab avg ${fmt(insights.collabAvg)} vs solo avg ${fmt(insights.soloAvg)} (${sign}${Math.round((insights.collabMultiplier-1)*100)}% — n=${insights.collabCount} collabs)\n`;
+  }
+  if(insights.audioTable?.length >= 2) {
+    out += `• Audio: ${insights.audioTable.map(a=>`${a.audio}: ${fmt(a.avgViews)} avg (n=${a.count})`).join(" vs ")}\n`;
   }
   return out;
 };
@@ -4966,6 +5004,10 @@ function Dashboard({ keys, onEditKeys }) {
     setAssistPreload({ text: msg, id: Date.now() });
     setNav("ai");
     setSub(null);
+    // Background: auto-score if not already scored
+    if(!idea.viral && keys?.anthropic) {
+      setTimeout(()=>scoreIdea(idea), 500);
+    }
   };
   const [wlConfig, setWlConfig] = useState(()=>loadWL());
   const [videoScores, setVideoScores] = useState(()=>loadJSON(SCORES_KEY,{}));
@@ -5427,6 +5469,27 @@ function Dashboard({ keys, onEditKeys }) {
     }, 3000);
   },[]);
 
+  // Auto-refresh competitor scan every 7 days if stale
+  useEffect(()=>{
+    const cfg = loadJSON(KEYS_KEY,{});
+    if(!cfg?.keys?.perplexity) return;
+    const compData = loadCompetitorData();
+    if(!compData?.lastFetched) return; // never manually fetched — don't auto-start
+    const daysSince = Math.floor((Date.now()-new Date(compData.lastFetched).getTime())/86400000);
+    if(daysSince < 7) return;
+    const wl = loadWL();
+    if(!wl.competitors) return;
+    setTimeout(async()=>{
+      try {
+        const result = await callPerplexity(`Search RIGHT NOW for recent content from these TikTok/Instagram creators: ${wl.competitors}. For each find viral posts, hook styles, topics. Also find content gaps they aren't covering. Return ONLY JSON: { competitors:[{handle,recent_viral:[{title,est_views,why_worked,hook_style}],topics_covering:[string],weaknesses:[string]}], opportunities:[{gap,why_can_win:string,suggested_angle:string,urgency:"HIGH|MEDIUM|LOW"}], steal_these_hooks:[{hook,from_creator,adapt_for_channel:string}] }`, wl);
+        const data = { data:result, lastFetched:new Date().toISOString().slice(0,10) };
+        saveCompetitorData(data);
+        setCompetitors(data);
+        addMemoryEntry("COMPETITOR_SCAN", `Auto-refreshed (${daysSince}d stale). Top opportunity: ${result.opportunities?.[0]?.gap||"unknown"}`);
+      } catch(e) { /* silent */ }
+    }, 6000);
+  },[]);
+
   // ── AI FUNCTIONS ──────────────────────────────────────────────
   const runAI = async (mode) => {
     if(aiLoad[mode]) return;
@@ -5539,6 +5602,13 @@ LEARNING: [one sentence]`}]})
             if(learningMatch?.[1]) addMemoryEntry("STRUCTURED_LEARNING", learningMatch[1].trim().slice(0,200), `${fmt(actualViews)} views — ${performance}`);
             if(counterfactualMatch?.[1]) addMemoryEntry("COUNTERFACTUAL", counterfactualMatch[1].trim().slice(0,200), `${performance} (${fmt(actualViews)} views)`);
             if(replicationMatch?.[1]) addMemoryEntry("REPLICATION_KEY", replicationMatch[1].trim().slice(0,200), `next video`);
+            // Caption learning — infer which hook style fits this pillar based on outcome
+            const captionNote = performance === "OVERPERFORMED"
+              ? `"${pillar}" pillar OVERPERFORMED — caption hook that matched this pillar's share trigger worked. Double down on same caption style for this pillar.`
+              : performance === "UNDERPERFORMED"
+              ? `"${pillar}" pillar UNDERPERFORMED — reconsider caption hook strategy. Try a different trigger type next time.`
+              : null;
+            if(captionNote) addMemoryEntry("CAPTION_LEARNING", captionNote, `${fmt(actualViews)} views`);
           } catch(e) { /* silent */ }
         }, 1000);
       }
@@ -5589,6 +5659,21 @@ LEARNING: [one sentence]`}]})
       // Series momentum — does this build on a proven concept?
       const seriesMomentum = detectSeriesMomentum(idea, organicVids.length?organicVids:videos, ideas);
 
+      // Pillar gap boost — if a pillar hasn't been posted in X days, ideas in that pillar get a strategic bonus
+      const pillarGapBoost = (() => {
+        const PILLARS = ["Local Connection","Location Contrast","Mission Reveal","App In Action","Travel Utility"];
+        const posted = ideas.filter(i=>i.status==="posted"&&i.postedDate&&i.aiScore?.contentPillar);
+        const lastByPillar = {};
+        posted.forEach(i=>{ const p=i.aiScore.contentPillar; const d=new Date(i.postedDate); if(!lastByPillar[p]||d>lastByPillar[p]) lastByPillar[p]=d; });
+        const today = new Date();
+        return PILLARS.map(p=>{
+          const last = lastByPillar[p];
+          const days = last ? Math.floor((today-last)/86400000) : 999;
+          return { pillar:p, days };
+        }).filter(g=>g.days>=7).sort((a,b)=>b.days-a.days);
+      })();
+      const pillarGapLine = pillarGapBoost.length ? `STRATEGIC PILLAR GAP: ${pillarGapBoost.slice(0,2).map(g=>`"${g.pillar}" not posted in ${g.days===999?"ever":g.days+" days"}`).join(", ")}. If this idea fits one of these pillars, boost its niche fit score — posting here has strategic compounding value.` : "";
+
       // Competitor intel — hooks proven to work in the niche
       const compData = loadCompetitorData();
       const stolenHooks = compData?.data?.steal_these_hooks?.slice(0,4).map(h=>`"${h.hook}" (from ${h.from_creator}) → for this channel: ${h.adapt_for_channel}`).join("\n") || "";
@@ -5622,6 +5707,7 @@ ${predAccBlock}
 ${calibration ? `CALIBRATION: ${calibration}` : ""}
 ${ideaOutcomes.length ? `RECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
 ${seriesMomentum ? `\n${seriesMomentum}` : ""}
+${pillarGapLine ? `\n${pillarGapLine}` : ""}
 
 ━━ NICHE INTELLIGENCE (what's working for competitors RIGHT NOW) ━━
 ${stolenHooks ? `Proven hooks from similar creators to adapt:\n${stolenHooks}` : "Run a competitor scan in settings to unlock niche benchmarks."}
@@ -5751,7 +5837,7 @@ Return JSON:
 
   const AddVideoModal = () => {
     const [tab, setTab] = useState("manual");
-    const [form, setForm] = useState({ title:"", type:"facecam", hook:"achievement", views:"", likes:"", url:"" });
+    const [form, setForm] = useState({ title:"", type:"facecam", hook:"achievement", views:"", likes:"", url:"", collab: false, audio: "" });
     const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
     return (
       <ModalBase onClose={()=>closeModal("addVideo")}>
@@ -5770,12 +5856,18 @@ Return JSON:
             <select value={form.hook} onChange={set("hook")} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:C.text,padding:"10px 12px",fontSize:16,fontFamily:C.fontBody,outline:"none",boxSizing:"border-box",marginBottom:12 }}>
               {HOOK_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+              <input type="checkbox" id="collab-toggle" checked={form.collab} onChange={e=>setForm(f=>({...f,collab:e.target.checked}))} />
+              <label htmlFor="collab-toggle" style={{ color:"rgba(255,255,255,0.7)", fontSize:14, fontFamily:C.fontBody }}>Collab with local/partner account?</label>
+            </div>
             <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8 }}>
               <div><MLabel>Views</MLabel><MInput value={form.views} onChange={set("views")} placeholder="0" type="number" /></div>
               <div><MLabel>Likes</MLabel><MInput value={form.likes} onChange={set("likes")} placeholder="0" type="number" /></div>
             </div>
             <MLabel>TikTok URL (optional)</MLabel><MInput value={form.url} onChange={set("url")} placeholder="https://tiktok.com/..." />
-            <MBtn onClick={()=>addVideo({ title:form.title,type:form.type,hook:form.hook,views:parseInt(form.views)||0,likes:parseInt(form.likes)||0,url:form.url,date:today() })}>Save Video</MBtn>
+            <MLabel>Audio/Sound used (optional)</MLabel>
+            <MInput value={form.audio} onChange={set("audio")} placeholder='e.g. "Espresso - Sabrina Carpenter" or "original audio"' />
+            <MBtn onClick={()=>addVideo({ title:form.title,type:form.type,hook:form.hook,views:parseInt(form.views)||0,likes:parseInt(form.likes)||0,url:form.url,collab:form.collab,audio:form.audio,date:today() })}>Save Video</MBtn>
           </>
         )}
         {tab==="scan" && (
@@ -5792,7 +5884,7 @@ Return JSON:
 
   const UpdateVideoModal = () => {
     const v = updateTarget;
-    const [form, setForm] = useState({ views:v?.views||"", likes:v?.likes||"", comments:v?.comments||"", shares:v?.shares||"" });
+    const [form, setForm] = useState({ views:v?.views||"", likes:v?.likes||"", comments:v?.comments||"", shares:v?.shares||"", views24h:"", views48h:"" });
     const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
     if(!v) return null;
     return (
@@ -5803,14 +5895,16 @@ Return JSON:
           {[["Views","views"],["Likes","likes"],["Comments","comments"],["Shares","shares"]].map(([l,k])=>(
             <div key={k}><MLabel>{l}</MLabel><MInput value={form[k]} onChange={set(k)} placeholder="0" type="number" /></div>
           ))}
+          <div><MLabel>24hr Views</MLabel><MInput value={form.views24h} onChange={set("views24h")} placeholder="0" type="number" /></div>
+          <div><MLabel>48hr Views</MLabel><MInput value={form.views48h} onChange={set("views48h")} placeholder="0" type="number" /></div>
         </div>
-        <MBtn onClick={()=>updateVideo({ id:v.id,views:parseInt(form.views)||v.views,likes:parseInt(form.likes)||v.likes,comments:parseInt(form.comments)||v.comments||0,shares:parseInt(form.shares)||v.shares||0,_updated:true })}>Save Stats</MBtn>
+        <MBtn onClick={()=>updateVideo({ id:v.id,views:parseInt(form.views)||v.views,likes:parseInt(form.likes)||v.likes,comments:parseInt(form.comments)||v.comments||0,shares:parseInt(form.shares)||v.shares||0,views24h:parseInt(form.views24h)||v.views24h||0,views48h:parseInt(form.views48h)||v.views48h||0,_updated:true })}>Save Stats</MBtn>
       </ModalBase>
     );
   };
 
   const AddIdeaModal = () => {
-    const [form, setForm] = useState({ title:"", type:"facecam", hook:"achievement", thumbnail:"text overlay", notes:"" });
+    const [form, setForm] = useState({ title:"", type:"facecam", hook:"achievement", thumbnail:"text overlay", notes:"", collab: false });
     const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
     const selStyle = { width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:C.text,padding:"10px 12px",fontSize:16,fontFamily:C.fontBody,outline:"none",boxSizing:"border-box",marginBottom:12 };
     return (
@@ -5829,8 +5923,12 @@ Return JSON:
         <select value={form.thumbnail} onChange={set("thumbnail")} style={selStyle}>
           {THUMBNAIL_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
         </select>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+          <input type="checkbox" id="collab-toggle-idea" checked={form.collab} onChange={e=>setForm(f=>({...f,collab:e.target.checked}))} />
+          <label htmlFor="collab-toggle-idea" style={{ color:"rgba(255,255,255,0.7)", fontSize:14, fontFamily:C.fontBody }}>Collab with local/partner account?</label>
+        </div>
         <MLabel>Notes (optional)</MLabel><MInput value={form.notes} onChange={set("notes")} placeholder="Extra context..." />
-        <MBtn onClick={()=>{ if(!form.title.trim()) return; setIdeas(is=>[{id:Date.now(),title:form.title.trim(),type:form.type,hook:form.hook,thumbnail:form.thumbnail,notes:form.notes,viral:0,hookScore:0,created:today()},...is]); closeModal("addIdea"); }}>Add Idea</MBtn>
+        <MBtn onClick={()=>{ if(!form.title.trim()) return; setIdeas(is=>[{id:Date.now(),title:form.title.trim(),type:form.type,hook:form.hook,thumbnail:form.thumbnail,notes:form.notes,collab:form.collab,viral:0,hookScore:0,created:today()},...is]); closeModal("addIdea"); }}>Add Idea</MBtn>
       </ModalBase>
     );
   };
