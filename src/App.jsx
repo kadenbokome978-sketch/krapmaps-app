@@ -3663,7 +3663,17 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
       }
       const { fileUri, mimeType } = await proxyRes.json();
 
-      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
+      // Wait for Gemini file to become ACTIVE (it starts in PROCESSING state)
+      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Processing clip..." }]);
+      const fileId = fileUri.split("/").pop();
+      for(let i=0; i<20; i++) {
+        const stateRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/files/${fileId}?key=${geminiKey}`);
+        if(stateRes.ok) {
+          const stateData = await stateRes.json();
+          if(stateData?.state === "ACTIVE") break;
+        }
+        await new Promise(r => setTimeout(r, 3000));
+      }
 
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
 
