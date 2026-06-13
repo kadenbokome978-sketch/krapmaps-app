@@ -495,6 +495,32 @@ const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDi
         ))}
       </div>
 
+      {/* ══ NEXT BEST ACTION ══════════════════════════════════════ */}
+      {(() => {
+        const unscoredIdeas = (ideas||[]).filter(i=>!(i.viral>0)&&i.status!=="posted");
+        const filmingNow = (ideas||[]).filter(i=>i.status==="filming");
+        const readyToPost = (ideas||[]).filter(i=>i.status==="script_ready"&&(i.viral||0)>=75);
+        const noVideos = (videos||[]).length === 0;
+        const noIdeas = (ideas||[]).length === 0;
+
+        let action = null;
+        if(noVideos && noIdeas) action = { msg:"Start by logging your first video and adding your first idea.", cta:"Log a Video", color:C.pink, fn:()=>openModal&&openModal("addVideo") };
+        else if(noIdeas) action = { msg:"You have videos but no ideas. Add content ideas to start scoring them.", cta:"Add Idea", color:C.purple, fn:()=>{ setNav&&setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); } };
+        else if(unscoredIdeas.length>0) action = { msg:`${unscoredIdeas.length} idea${unscoredIdeas.length>1?"s":""} haven't been scored yet. Score them to see which ones are worth filming.`, cta:"Go to Ideas", color:C.purple, fn:()=>setNav&&setNav("content") };
+        else if(filmingNow.length>0) action = { msg:`"${filmingNow[0].title?.slice(0,40)}" is marked as filming. Log it as posted once it's live.`, cta:"Mark Posted", color:C.orange, fn:()=>setNav&&setNav("content") };
+        else if(readyToPost.length>0) action = { msg:`"${readyToPost[0].title?.slice(0,40)}" scored ${readyToPost[0].viral}/100 — high enough to film.`, cta:"View Ideas", color:C.green, fn:()=>setNav&&setNav("content") };
+
+        if(!action) return null;
+        return (
+          <div style={{ padding:"14px 20px", borderRadius:16, background:`${action.color}08`, border:`1px solid ${action.color}22`, display:"flex", alignItems:"center", gap:16 }}>
+            <div style={{ flex:1, fontSize:13, color:"rgba(255,255,255,0.7)", lineHeight:1.5 }}>
+              <span style={{ fontWeight:700, color:action.color }}>Next: </span>{action.msg}
+            </div>
+            <button onClick={action.fn} style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${action.color}45`, background:`${action.color}18`, color:action.color, fontFamily:C.fontBody, fontWeight:700, fontSize:12, cursor:"pointer", whiteSpace:"nowrap" }}>{action.cta} →</button>
+          </div>
+        );
+      })()}
+
       {/* ══ UPCOMING + IDEAS ═══════════════════════════════════════ */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
         {[
@@ -838,105 +864,120 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
               const isExpanded = expanded===idea.id;
               const daysOld = idea.createdAt ? Math.floor((Date.now()-new Date(idea.createdAt).getTime())/(1000*60*60*24)) : null;
               const isStale = daysOld!==null && daysOld>30 && idea.status!=="posted" && idea.status!=="filmed";
+              const hasScore = (idea.viral||0)>0;
+              const isScoring = aiLoad&&aiLoad["s"+idea.id];
+              const stageLabel = ({idea:"Idea",script_ready:"Scripted",filming:"Filming",posted:"Posted"})[idea.status||"idea"];
+              const stageColor = ({idea:"rgba(255,255,255,0.3)",script_ready:C.yellow,filming:C.orange,posted:C.green})[idea.status||"idea"];
               return (
-                <div key={idea.id} style={{ borderRadius:20, background:`linear-gradient(145deg,${scoreC}08,rgba(10,6,20,0.95))`, border:`1px solid ${isStale?C.pink+"50":scoreC+"25"}`, position:"relative", overflow:"hidden", display:"flex", flexDirection:"column" }}>
-                  <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${scoreC},${scoreC}00)` }}/>
+                <div key={idea.id} style={{ borderRadius:20, background:"rgba(12,8,24,0.95)", border:`1px solid ${isStale?C.pink+"40":hasScore?scoreC+"22":"rgba(255,255,255,0.08)"}`, position:"relative", overflow:"hidden", display:"flex", flexDirection:"column", transition:"border-color 0.2s" }}>
 
-                  {/* Score bar */}
-                  <div style={{ height:3, background:"rgba(255,255,255,0.05)" }}>
-                    <div style={{ height:"100%", width:`${idea.viral||0}%`, background:`linear-gradient(90deg,${scoreC}60,${scoreC})`, transition:"width 0.6s ease" }}/>
-                  </div>
+                  {/* Top accent line — score-coloured, full width */}
+                  <div style={{ height:2, background:hasScore?`linear-gradient(90deg,${scoreC},${scoreC}40,transparent)`:isStale?`linear-gradient(90deg,${C.pink}60,transparent)`:"rgba(255,255,255,0.04)" }}/>
 
-                  <div style={{ padding:"18px 20px", flex:1 }}>
-                    {/* Header */}
-                    <div style={{ display:"flex", alignItems:"flex-start", gap:14, marginBottom:14 }}>
+                  {/* ── CARD BODY ── */}
+                  <div style={{ padding:"16px 18px", flex:1 }}>
+
+                    {/* Title row */}
+                    <div style={{ display:"flex", alignItems:"flex-start", gap:12, marginBottom:12 }}>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:15, fontWeight:700, color:"#fff", lineHeight:1.35, marginBottom:10, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{idea.title}</div>
-                        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                        <div style={{ fontSize:15, fontWeight:700, color:"#fff", lineHeight:1.4, marginBottom:8, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{idea.title}</div>
+
+                        {/* Tags — minimal: type + stale only */}
+                        <div style={{ display:"flex", gap:5, flexWrap:"wrap", alignItems:"center" }}>
                           {idea.type && <Tag color={C.pink} sm>{idea.type}</Tag>}
-                          {idea.hook && <span style={{ background:`${C.cyan}18`, border:`1px solid ${C.cyan}40`, color:C.cyan, borderRadius:6, padding:"3px 10px", fontSize:11, fontWeight:700, display:"inline-block", maxWidth:"100%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{idea.hook}</span>}
-                          <Tag color={scoreC} sm>{perfLabel(idea.viral||0)}</Tag>
-                          {isStale && <Tag color={C.pink} sm>⚠ {daysOld}d STALE</Tag>}
+                          {idea.aiScore?.contentPillar && <Tag color={C.purple} sm>{idea.aiScore.contentPillar}</Tag>}
+                          <span style={{ fontSize:11, fontWeight:700, color:stageColor, letterSpacing:"0.08em", textTransform:"uppercase" }}>{stageLabel}</span>
+                          {isStale && <span style={{ fontSize:11, fontWeight:700, color:C.pink, letterSpacing:"0.08em" }}>⚠ {daysOld}d stale</span>}
                         </div>
                       </div>
-                      <div style={{ display:"flex", gap:10, flexShrink:0, alignItems:"flex-start" }}>
-                        <div style={{ textAlign:"center" }}>
-                          <div style={{ fontSize:36, fontWeight:400, fontFamily:C.fontHead, color:scoreC, lineHeight:1, textShadow:`0 0 20px ${scoreC}50` }}>{idea.viral||0}</div>
-                          <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginTop:3 }}>VIRAL</div>
-                          {idea.scoreDelta!=null && idea.scoreDelta!==0 && (
-                            <div style={{ fontSize:10, fontWeight:700, color:idea.scoreDelta>0?C.green:C.pink, marginTop:2 }}>{idea.scoreDelta>0?`+${idea.scoreDelta}`:idea.scoreDelta}</div>
-                          )}
-                        </div>
-                        {(idea.hookScore||0)>0 && (
-                          <div style={{ textAlign:"center" }}>
-                            <div style={{ fontSize:28, fontWeight:400, fontFamily:C.fontHead, color:C.orange, lineHeight:1 }}>{idea.hookScore}</div>
-                            <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginTop:3 }}>HOOK</div>
+
+                      {/* Score badge — single clean number */}
+                      <div style={{ flexShrink:0, textAlign:"center", minWidth:52 }}>
+                        {hasScore ? (
+                          <>
+                            <div style={{ fontSize:38, fontWeight:300, fontFamily:C.fontHead, color:scoreC, lineHeight:1, textShadow:`0 0 24px ${scoreC}60` }}>{idea.viral}</div>
+                            <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:"0.14em", marginTop:2 }}>{perfLabel(idea.viral)}</div>
+                            {idea.scoreDelta!=null && idea.scoreDelta!==0 && (
+                              <div style={{ fontSize:10, fontWeight:700, color:idea.scoreDelta>0?C.green:C.pink, marginTop:1 }}>{idea.scoreDelta>0?`+${idea.scoreDelta}`:idea.scoreDelta}</div>
+                            )}
+                          </>
+                        ) : (
+                          <div style={{ width:44, height:44, borderRadius:"50%", border:"2px dashed rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                            <div style={{ fontSize:9, color:"rgba(255,255,255,0.25)", fontWeight:700, letterSpacing:"0.06em", textAlign:"center", lineHeight:1.3 }}>NOT<br/>SCORED</div>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Verdict */}
+                    {/* Verdict — only when scored, single line clamped */}
                     {idea.verdict && (
-                      <div style={{ padding:"10px 14px", background:`${scoreC}08`, border:`1px solid ${scoreC}20`, borderRadius:12, marginBottom:14, fontSize:14, color:"rgba(255,255,255,0.75)", lineHeight:1.6 }}>
+                      <div style={{ fontSize:13, color:"rgba(255,255,255,0.55)", lineHeight:1.55, marginBottom:12, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:isExpanded?20:2, WebkitBoxOrient:"vertical" }}>
                         {idea.verdict}
                       </div>
                     )}
 
-                    {/* Improved hook */}
-                    {idea.improvedHook && (
-                      <div style={{ padding:"10px 14px", background:`${C.green}08`, border:`1px solid ${C.green}20`, borderRadius:12, marginBottom:14 }}>
-                        <div style={{ fontSize:11, color:C.green, fontWeight:700, letterSpacing:"0.12em", marginBottom:4 }}>IMPROVED HOOK</div>
-                        <div style={{ fontSize:14, color:"#fff", fontStyle:"italic", lineHeight:1.5 }}>"{idea.improvedHook}"</div>
+                    {/* Improved hook — only in expanded */}
+                    {isExpanded && idea.improvedHook && (
+                      <div style={{ padding:"10px 14px", background:`${C.green}08`, border:`1px solid ${C.green}18`, borderRadius:11, marginBottom:10 }}>
+                        <div style={{ fontSize:10, color:C.green, fontWeight:700, letterSpacing:"0.12em", marginBottom:4 }}>IMPROVED HOOK</div>
+                        <div style={{ fontSize:13, color:"#fff", fontStyle:"italic", lineHeight:1.5 }}>"{idea.improvedHook}"</div>
                       </div>
                     )}
 
-                    {/* Expanded content */}
+                    {/* Expanded detail panels — tabbed */}
                     {isExpanded && (
-                      <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:14 }}>
+                      <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:4 }}>
                         {(idea.viralReason||idea.hookFeedback) && (
-                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                            {idea.viralReason && <div style={{ padding:"12px 14px", background:"rgba(255,255,255,0.03)", borderRadius:12, border:"1px solid rgba(255,255,255,0.07)" }}>
-                              <div style={{ fontSize:11, color:scoreC, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>SHARE TRIGGER</div>
-                              <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)", lineHeight:1.5 }}>{idea.viralReason}</div>
-                            </div>}
-                            {idea.hookFeedback && <div style={{ padding:"12px 14px", background:"rgba(255,255,255,0.03)", borderRadius:12, border:"1px solid rgba(255,255,255,0.07)" }}>
-                              <div style={{ fontSize:11, color:C.orange, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>HOOK FEEDBACK</div>
-                              <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)", lineHeight:1.5 }}>{idea.hookFeedback}</div>
-                            </div>}
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                            {idea.viralReason && (
+                              <div style={{ padding:"10px 12px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:"1px solid rgba(255,255,255,0.06)" }}>
+                                <div style={{ fontSize:10, color:scoreC, fontWeight:700, letterSpacing:"0.1em", marginBottom:5 }}>SHARE TRIGGER</div>
+                                <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", lineHeight:1.5 }}>{idea.viralReason}</div>
+                              </div>
+                            )}
+                            {idea.hookFeedback && (
+                              <div style={{ padding:"10px 12px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:"1px solid rgba(255,255,255,0.06)" }}>
+                                <div style={{ fontSize:10, color:C.orange, fontWeight:700, letterSpacing:"0.1em", marginBottom:5 }}>HOOK FEEDBACK</div>
+                                <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", lineHeight:1.5 }}>{idea.hookFeedback}</div>
+                              </div>
+                            )}
                           </div>
                         )}
                         {(idea.retentionFix||idea.competitorAngle) && (
-                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                            {idea.retentionFix && <div style={{ padding:"12px 14px", background:"rgba(255,255,255,0.03)", borderRadius:12, border:`1px solid ${C.cyan}18` }}>
-                              <div style={{ fontSize:11, color:C.cyan, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>RETENTION FIX</div>
-                              <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)", lineHeight:1.5 }}>{idea.retentionFix}</div>
-                            </div>}
-                            {idea.competitorAngle && <div style={{ padding:"12px 14px", background:"rgba(255,255,255,0.03)", borderRadius:12, border:`1px solid ${C.purple}18` }}>
-                              <div style={{ fontSize:11, color:C.purple, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>COMPETITOR ANGLE</div>
-                              <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)", lineHeight:1.5 }}>{idea.competitorAngle}</div>
-                            </div>}
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                            {idea.retentionFix && (
+                              <div style={{ padding:"10px 12px", background:`${C.cyan}06`, borderRadius:10, border:`1px solid ${C.cyan}15` }}>
+                                <div style={{ fontSize:10, color:C.cyan, fontWeight:700, letterSpacing:"0.1em", marginBottom:5 }}>RETENTION FIX</div>
+                                <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", lineHeight:1.5 }}>{idea.retentionFix}</div>
+                              </div>
+                            )}
+                            {idea.competitorAngle && (
+                              <div style={{ padding:"10px 12px", background:`${C.purple}06`, borderRadius:10, border:`1px solid ${C.purple}15` }}>
+                                <div style={{ fontSize:10, color:C.purple, fontWeight:700, letterSpacing:"0.1em", marginBottom:5 }}>COMPETITOR ANGLE</div>
+                                <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", lineHeight:1.5 }}>{idea.competitorAngle}</div>
+                              </div>
+                            )}
                           </div>
                         )}
                         {idea.altHooks?.length>0 && (
-                          <div style={{ padding:"12px 14px", background:"rgba(255,255,255,0.03)", borderRadius:12, border:`1px solid ${C.purple}20` }}>
-                            <div style={{ fontSize:11, color:C.purple, fontWeight:700, letterSpacing:"0.1em", marginBottom:10 }}>3 ALTERNATIVE HOOKS</div>
+                          <div style={{ padding:"10px 12px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${C.purple}18` }}>
+                            <div style={{ fontSize:10, color:C.purple, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>ALTERNATIVE HOOKS</div>
                             {idea.altHooks.map((h,hi)=>(
-                              <div key={hi} style={{ padding:"8px 12px", borderRadius:10, background:`${C.purple}08`, border:`1px solid ${C.purple}18`, marginBottom:hi<2?8:0 }}>
-                                <div style={{ fontSize:14, fontWeight:700, color:"#fff", marginBottom:3 }}>"{h.hook}"</div>
-                                <div style={{ display:"flex", gap:6 }}><Tag color={C.purple} sm>{h.type}</Tag><span style={{ fontSize:12, color:"rgba(255,255,255,0.5)" }}>{h.why}</span></div>
+                              <div key={hi} style={{ padding:"7px 10px", borderRadius:8, background:`${C.purple}06`, border:`1px solid ${C.purple}12`, marginBottom:hi<idea.altHooks.length-1?6:0 }}>
+                                <div style={{ fontSize:13, fontWeight:600, color:"#fff", marginBottom:2 }}>"{h.hook}"</div>
+                                <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>{h.type} · {h.why}</span>
                               </div>
                             ))}
                           </div>
                         )}
                         {idea.recs?.length>0 && (
-                          <div style={{ padding:"12px 14px", background:"rgba(255,255,255,0.03)", borderRadius:12, border:"1px solid rgba(255,255,255,0.07)" }}>
-                            <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.1em", marginBottom:10 }}>RECOMMENDATIONS</div>
+                          <div style={{ padding:"10px 12px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:"1px solid rgba(255,255,255,0.05)" }}>
+                            <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>NEXT ACTIONS</div>
                             {idea.recs.map((r,ri)=>(
-                              <div key={ri} style={{ display:"flex", gap:10, alignItems:"flex-start", marginBottom:ri<idea.recs.length-1?8:0 }}>
-                                <div style={{ width:6, height:6, borderRadius:"50%", background:r.impact==="HIGH"?C.green:C.yellow, flexShrink:0, marginTop:5 }}/>
-                                <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)", lineHeight:1.5, flex:1 }}>{r.a}</div>
-                                <Tag color={r.impact==="HIGH"?C.green:C.yellow} sm>{r.impact}</Tag>
+                              <div key={ri} style={{ display:"flex", gap:8, alignItems:"flex-start", marginBottom:ri<idea.recs.length-1?7:0 }}>
+                                <div style={{ width:5, height:5, borderRadius:"50%", background:r.impact==="HIGH"?C.green:C.yellow, flexShrink:0, marginTop:5 }}/>
+                                <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", lineHeight:1.5, flex:1 }}>{r.a}</div>
+                                <span style={{ fontSize:10, fontWeight:700, color:r.impact==="HIGH"?C.green:C.yellow }}>{r.impact}</span>
                               </div>
                             ))}
                           </div>
@@ -945,84 +986,110 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                     )}
                   </div>
 
-                  {/* 5-factor sub-score bars */}
-                  {(idea.hookScore||idea.retentionScore||idea.shareScore||idea.algoScore||idea.nicheScore) && (
-                    <div style={{ padding:"10px 20px", borderTop:"1px solid rgba(255,255,255,0.04)" }}>
-                      {[
-                        { label:"HOOK", val:idea.hookScore, color:C.orange },
-                        { label:"RETENTION", val:idea.retentionScore, color:C.cyan },
-                        { label:"SHARE", val:idea.shareScore, color:C.green },
-                        { label:"ALGO", val:idea.algoScore, color:C.yellow },
-                        { label:"NICHE", val:idea.nicheScore, color:C.purple },
-                      ].filter(f=>f.val).map((f,fi)=>(
-                        <div key={fi} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:fi<4?5:0 }}>
-                          <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", fontWeight:700, letterSpacing:"0.1em", width:58 }}>{f.label}</div>
-                          <div style={{ flex:1, height:4, borderRadius:2, background:"rgba(255,255,255,0.06)", overflow:"hidden" }}>
-                            <div style={{ width:`${f.val}%`, height:"100%", borderRadius:2, background:f.color, opacity:0.7 }}/>
+                  {/* ── 5-FACTOR BARS — compact, always shown when scored ── */}
+                  {hasScore && (idea.hookScore||idea.retentionScore||idea.shareScore||idea.algoScore||idea.nicheScore) && (
+                    <div style={{ padding:"8px 18px 10px", borderTop:"1px solid rgba(255,255,255,0.04)" }}>
+                      <div style={{ display:"flex", gap:8 }}>
+                        {[
+                          { label:"H", val:idea.hookScore, color:C.orange, title:"Hook" },
+                          { label:"R", val:idea.retentionScore, color:C.cyan, title:"Retention" },
+                          { label:"S", val:idea.shareScore, color:C.green, title:"Share" },
+                          { label:"A", val:idea.algoScore, color:C.yellow, title:"Algo" },
+                          { label:"N", val:idea.nicheScore, color:C.purple, title:"Niche" },
+                        ].filter(f=>f.val).map((f,fi)=>(
+                          <div key={fi} style={{ flex:1, textAlign:"center" }} title={`${f.title}: ${f.val}`}>
+                            <div style={{ fontSize:13, fontWeight:700, color:f.color, lineHeight:1 }}>{f.val}</div>
+                            <div style={{ height:3, borderRadius:2, background:`${f.color}18`, marginTop:4, overflow:"hidden" }}>
+                              <div style={{ width:`${f.val}%`, height:"100%", borderRadius:2, background:f.color }}/>
+                            </div>
+                            <div style={{ fontSize:9, color:"rgba(255,255,255,0.25)", marginTop:3, letterSpacing:"0.08em" }}>{f.label}</div>
                           </div>
-                          <div style={{ fontSize:11, color:f.color, fontWeight:700, width:26, textAlign:"right" }}>{f.val}</div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   )}
 
-                  {/* Estimated views + pipeline status */}
-                  {idea.aiScore?.estimated_views && (
-                    <div style={{ padding:"8px 20px", borderTop:"1px solid rgba(255,255,255,0.04)", display:"flex", alignItems:"center", gap:10 }}>
-                      <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", fontWeight:700, letterSpacing:"0.1em" }}>EST. ORGANIC REACH</div>
-                      <div style={{ fontSize:14, fontWeight:700, color:scoreC, letterSpacing:"0.04em" }}>{idea.aiScore.estimated_views}</div>
-                      {idea.aiScore.contentPillar && <Tag color={C.purple} sm>{idea.aiScore.contentPillar}</Tag>}
+                  {/* ── EST REACH + HOOK PREVIEW ── */}
+                  {(idea.aiScore?.estimated_views || idea.hook) && (
+                    <div style={{ padding:"7px 18px", borderTop:"1px solid rgba(255,255,255,0.04)", display:"flex", alignItems:"center", gap:10 }}>
+                      {idea.aiScore?.estimated_views && (
+                        <span style={{ fontSize:12, fontWeight:700, color:scoreC }}>{idea.aiScore.estimated_views}</span>
+                      )}
+                      {idea.hook && (
+                        <span style={{ fontSize:11, color:"rgba(255,255,255,0.35)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>"{idea.hook}"</span>
+                      )}
                     </div>
                   )}
 
-                  {/* Actions */}
-                  <div style={{ padding:"12px 20px", borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
-                    {/* Pipeline stage cycling */}
+                  {/* ── ACTIONS — clear hierarchy ── */}
+                  <div style={{ padding:"10px 14px", borderTop:"1px solid rgba(255,255,255,0.05)", display:"flex", gap:6, alignItems:"center" }}>
+
+                    {/* Primary CTA: score or re-score — solid gradient, most weight */}
+                    <button onClick={()=>scoreIdea&&scoreIdea(idea)} disabled={!!isScoring}
+                      style={{ padding:"8px 16px", borderRadius:10, border:"none", fontFamily:C.fontBody, fontWeight:700, fontSize:12, cursor:isScoring?"wait":"pointer", letterSpacing:"0.06em", flexShrink:0, transition:"opacity 0.15s",
+                        background: isScoring ? "rgba(197,102,255,0.2)" : hasScore ? `linear-gradient(135deg,${C.purple}cc,${C.pink}99)` : `linear-gradient(135deg,${C.purple},${C.pink})`,
+                        color: isScoring ? C.purple : "#fff",
+                        boxShadow: isScoring||hasScore ? "none" : `0 4px 16px ${C.purple}40`,
+                        opacity: isScoring ? 0.7 : 1,
+                      }}>
+                      {isScoring ? "SCORING..." : hasScore ? "RE-SCORE" : "SCORE IT"}
+                    </button>
+
+                    {/* Secondary: caption + script — outlined */}
+                    <button onClick={()=>genCaption&&genCaption(idea)}
+                      style={{ padding:"8px 12px", borderRadius:10, border:`1px solid ${C.pink}35`, background:"transparent", color:C.pink, fontFamily:C.fontBody, fontWeight:700, fontSize:12, cursor:"pointer" }}>
+                      CAPTION
+                    </button>
+                    {onBuildScript && (
+                      <button onClick={()=>onBuildScript(idea)}
+                        style={{ padding:"8px 12px", borderRadius:10, border:`1px solid ${C.cyan}35`, background:"transparent", color:C.cyan, fontFamily:C.fontBody, fontWeight:700, fontSize:12, cursor:"pointer" }}>
+                        SCRIPT
+                      </button>
+                    )}
+
+                    {/* Pipeline stage pill */}
                     {idea.status !== "posted" ? (
                       <button onClick={()=>{
                         const stages = ["idea","script_ready","filming","posted"];
                         const cur = stages.indexOf(idea.status||"idea");
                         setIdeaStage(idea, stages[Math.min(cur+1, stages.length-1)]);
-                      }} style={{
-                        padding:"8px 14px", borderRadius:10, cursor:"pointer", fontFamily:C.fontBody, fontWeight:700, fontSize:11, letterSpacing:"0.10em",
-                        border: idea.status==="filming" ? `1px solid ${C.orange}35` : idea.status==="script_ready" ? `1px solid ${C.yellow}35` : "1px solid rgba(255,255,255,0.15)",
-                        background: idea.status==="filming" ? `${C.orange}10` : idea.status==="script_ready" ? `${C.yellow}10` : "transparent",
-                        color: idea.status==="filming" ? C.orange : idea.status==="script_ready" ? C.yellow : "rgba(255,255,255,0.4)"
-                      }}>
+                      }} style={{ padding:"7px 10px", borderRadius:9, cursor:"pointer", fontFamily:C.fontBody, fontWeight:700, fontSize:11, letterSpacing:"0.08em",
+                        border:`1px solid ${stageColor}35`, background:`${stageColor}0e`, color:stageColor }}>
                         {({idea:"IDEA →",script_ready:"SCRIPTED →",filming:"FILMING →"})[idea.status||"idea"]}
                       </button>
                     ) : postingId===idea.id ? (
-                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                        <input
-                          autoFocus
-                          value={postViews}
+                      <div style={{ display:"flex", alignItems:"center", gap:5, flex:1 }}>
+                        <input autoFocus value={postViews}
                           onChange={e=>setPostViews(e.target.value.replace(/[^0-9]/g,""))}
                           onKeyDown={e=>{ if(e.key==="Enter"){ markPosted&&markPosted(idea,parseInt(postViews)||0); setPostingId(null); setPostViews(""); } if(e.key==="Escape"){ setPostingId(null); setPostViews(""); } }}
                           placeholder="views e.g. 12000"
-                          style={{ width:120, background:"rgba(255,255,255,0.07)", border:`1px solid ${C.green}40`, borderRadius:9, color:"#fff", padding:"7px 10px", fontSize:12, fontFamily:C.fontBody, outline:"none" }}
+                          style={{ flex:1, minWidth:0, background:"rgba(255,255,255,0.07)", border:`1px solid ${C.green}40`, borderRadius:8, color:"#fff", padding:"6px 10px", fontSize:12, fontFamily:C.fontBody, outline:"none" }}
                         />
-                        <button onClick={()=>{ markPosted&&markPosted(idea,parseInt(postViews)||0); setPostingId(null); setPostViews(""); }} style={{ padding:"7px 12px", borderRadius:9, border:"none", background:C.green, color:"#000", fontFamily:C.fontBody, fontWeight:700, fontSize:12, cursor:"pointer" }}>✓</button>
-                        <button onClick={()=>{ setPostingId(null); setPostViews(""); }} style={{ padding:"7px 10px", borderRadius:9, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"rgba(255,255,255,0.4)", fontSize:13, cursor:"pointer" }}>✕</button>
+                        <button onClick={()=>{ markPosted&&markPosted(idea,parseInt(postViews)||0); setPostingId(null); setPostViews(""); }}
+                          style={{ padding:"6px 11px", borderRadius:8, border:"none", background:C.green, color:"#000", fontFamily:C.fontBody, fontWeight:700, fontSize:12, cursor:"pointer" }}>✓</button>
+                        <button onClick={()=>{ setPostingId(null); setPostViews(""); }}
+                          style={{ padding:"6px 9px", borderRadius:8, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"rgba(255,255,255,0.4)", fontSize:13, cursor:"pointer" }}>✕</button>
                       </div>
                     ) : (
-                      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 14px", borderRadius:10, background:`${C.green}12`, border:`1px solid ${C.green}30` }}>
-                        <div style={{ width:7, height:7, borderRadius:"50%", background:C.green, boxShadow:`0 0 6px ${C.green}` }}/>
-                        <span style={{ fontSize:13, fontWeight:700, color:C.green }}>POSTED{idea.postedViews>0?` · ${fmt(idea.postedViews)} views`:""}</span>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:9, background:`${C.green}10`, border:`1px solid ${C.green}28` }}>
+                        <div style={{ width:6, height:6, borderRadius:"50%", background:C.green, boxShadow:`0 0 6px ${C.green}` }}/>
+                        <span style={{ fontSize:11, fontWeight:700, color:C.green }}>POSTED{idea.postedViews>0?` · ${fmt(idea.postedViews)}`:""}</span>
                       </div>
                     )}
-                    {onBuildScript && (
-                      <button onClick={()=>onBuildScript(idea)} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.cyan}35`, background:`${C.cyan}14`, color:C.cyan, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>BUILD SCRIPT</button>
-                    )}
-                    <button onClick={()=>scoreIdea&&scoreIdea(idea)} disabled={aiLoad&&aiLoad["s"+idea.id]} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.purple}30`, background:`${C.purple}12`, color:C.purple, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer", opacity:aiLoad&&aiLoad["s"+idea.id]?0.5:1 }}>
-                      {aiLoad&&aiLoad["s"+idea.id]?"SCORING...":idea.viral?"RE-SCORE":"SCORE IT"}
-                    </button>
-                    <button onClick={()=>genCaption&&genCaption(idea)} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.pink}30`, background:`${C.pink}12`, color:C.pink, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>CAPTION</button>
-                    <button onClick={()=>{ setSub("CALENDAR"); openModal&&openModal("addCal"); }} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.cyan}30`, background:`${C.cyan}12`, color:C.cyan, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>SCHEDULE</button>
-                    <button onClick={()=>{ setEditIdeaTarget&&setEditIdeaTarget(idea); setModals&&setModals(m=>({...m,editIdea:true})); }} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.yellow}30`, background:`${C.yellow}12`, color:C.yellow, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>EDIT</button>
-                    <button onClick={()=>setExpanded(expanded===idea.id?null:idea.id)} style={{ padding:"8px 12px", borderRadius:10, border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.04)", color:"rgba(255,255,255,0.6)", fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>
-                      {isExpanded?"▲":"▼"}
-                    </button>
-                    <button onClick={()=>setIdeas(is=>is.filter(x=>x.id!==idea.id))} style={{ marginLeft:"auto", padding:"8px 10px", borderRadius:10, border:`1px solid ${C.pink}20`, background:`${C.pink}08`, color:C.pink, fontFamily:C.fontBody, cursor:"pointer" }}>{I.trash(13,C.pink)}</button>
+
+                    {/* Utility icons — right side */}
+                    <div style={{ marginLeft:"auto", display:"flex", gap:4, alignItems:"center" }}>
+                      <button title="Edit" onClick={()=>{ setEditIdeaTarget&&setEditIdeaTarget(idea); setModals&&setModals(m=>({...m,editIdea:true})); }}
+                        style={{ padding:"7px 9px", borderRadius:9, border:"1px solid rgba(255,255,255,0.08)", background:"transparent", color:"rgba(255,255,255,0.35)", cursor:"pointer", fontSize:13 }}>✎</button>
+                      <button title="Schedule" onClick={()=>{ setSub("CALENDAR"); openModal&&openModal("addCal"); }}
+                        style={{ padding:"7px 9px", borderRadius:9, border:"1px solid rgba(255,255,255,0.08)", background:"transparent", color:"rgba(255,255,255,0.35)", cursor:"pointer", fontSize:13 }}>📅</button>
+                      <button onClick={()=>setExpanded(expanded===idea.id?null:idea.id)}
+                        style={{ padding:"7px 9px", borderRadius:9, border:"1px solid rgba(255,255,255,0.08)", background:isExpanded?"rgba(255,255,255,0.06)":"transparent", color:"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:12, fontWeight:700 }}>
+                        {isExpanded?"▲":"▼"}
+                      </button>
+                      <button onClick={()=>setIdeas(is=>is.filter(x=>x.id!==idea.id))}
+                        style={{ padding:"7px 9px", borderRadius:9, border:`1px solid ${C.pink}18`, background:"transparent", color:`${C.pink}70`, cursor:"pointer" }}>{I.trash(12,C.pink)}</button>
+                    </div>
                   </div>
                 </div>
               );
@@ -6302,7 +6369,14 @@ Return JSON:
                 }}>
                   {n.ic(18, active ? C.pink : "rgba(255,255,255,0.5)")}
                 </div>
-                <span style={{ fontSize:14, fontWeight:active?700:500, letterSpacing:"0.05em", textTransform:"uppercase" }}>{n.label}</span>
+                <span style={{ fontSize:14, fontWeight:active?700:500, letterSpacing:"0.05em", textTransform:"uppercase", flex:1 }}>{n.label}</span>
+                {/* Badge: unscored ideas on content tab */}
+                {n.id==="content" && !active && (() => {
+                  const unscored = (ideas||[]).filter(i=>!(i.viral>0)&&i.status!=="posted").length;
+                  return unscored > 0 ? (
+                    <div style={{ minWidth:18, height:18, borderRadius:9, background:C.pink, color:"#fff", fontSize:10, fontWeight:900, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 5px" }}>{unscored}</div>
+                  ) : null;
+                })()}
               </button>
             );
           })}
