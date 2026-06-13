@@ -3451,12 +3451,14 @@ const buildMemoryContext = () => {
   const hooks      = mem.entries.filter(e=>["HOOKS","VIDEO_READ","HOOK_LEARNING"].includes(e.type));
   const recent     = mem.entries.slice(-5); // last 5 regardless of type for recency
 
-  let ctx = "CHANNEL MEMORY (structured learnings — use as calibration, not just FYI):\n";
+  const outcomeCount = outcomes.length;
+  const confidenceNote = outcomeCount >= 10 ? "HIGH CONFIDENCE" : outcomeCount >= 4 ? "MEDIUM CONFIDENCE" : `LOW CONFIDENCE (only ${outcomeCount} outcome${outcomeCount!==1?"s":""} — weight external niche knowledge more heavily than these learnings)`;
+  let ctx = `CHANNEL MEMORY [${confidenceNote}] (structured learnings — calibrate scoring accordingly):\n`;
 
   if(outcomes.length) {
     ctx += "\n[OUTCOMES — what actually happened after posting]\n";
     outcomes.slice(-6).forEach(e=>{
-      ctx += `• ${e.date}: ${e.recommendation}${e.outcome?" → "+e.outcome:""}\n`;
+      ctx += `• ${e.date} [${e.type}]: ${e.recommendation}${e.outcome?" → "+e.outcome:""}\n`;
     });
   }
   if(hooks.length) {
@@ -3647,7 +3649,13 @@ const buildChannelInsights = (videos=[]) => {
 const formatChannelInsights = (insights) => {
   if(!insights) return "";
   const fmt = (n) => n>=1000 ? `${(n/1000).toFixed(1)}k` : String(n);
-  let out = `CHANNEL STATISTICS (computed from ${insights.totalVideos} real videos — treat as ground truth, not estimates):\n`;
+  const confidence = insights.totalVideos >= 20 ? "HIGH CONFIDENCE" : insights.totalVideos >= 8 ? "MEDIUM CONFIDENCE" : "LOW CONFIDENCE";
+  const weightNote = insights.totalVideos < 8
+    ? ` — IMPORTANT: only ${insights.totalVideos} videos logged. Weight niche benchmarks and competitor data MORE than this channel data. Do not override strong niche signals with weak channel patterns.`
+    : insights.totalVideos < 20
+    ? ` — moderate sample, patterns are directional but not definitive`
+    : ` — solid sample, treat patterns as reliable`;
+  let out = `CHANNEL STATISTICS [${confidence}${weightNote}] (${insights.totalVideos} videos):\n`;
   out += `• Channel avg views: ${fmt(insights.channelAvgViews)}\n`;
   if(insights.trendPct !== null) {
     const dir = insights.trendPct >= 0 ? "↑ up" : "↓ down";
@@ -3751,12 +3759,17 @@ const buildAuditRubric = (videos=[]) => {
 const formatAuditRubric = (rubric) => {
   if(!rubric || rubric.sampleSize < 4) return "";
   const fmt = n => n>=1000?`${(n/1000).toFixed(1)}k`:String(n);
-  let out = `AUDIT RUBRIC (top 25% avg ${fmt(rubric.topAvg)} vs bottom 25% avg ${fmt(rubric.botAvg)} — derived from real data):\n`;
-  if(rubric.winningHooks.length) out += `• Hooks that WIN on this channel: ${rubric.winningHooks.join(", ")} → SCORE HIGHER\n`;
-  if(rubric.losingHooks.length)  out += `• Hooks that LOSE on this channel: ${rubric.losingHooks.join(", ")} → SCORE LOWER\n`;
-  if(rubric.winningTypes.length) out += `• Content types that WIN: ${rubric.winningTypes.join(", ")} → SCORE HIGHER\n`;
-  if(rubric.losingTypes.length)  out += `• Content types that LOSE: ${rubric.losingTypes.join(", ")} → SCORE LOWER\n`;
-  out += `These are non-negotiable adjustments — apply them even if the idea "looks" strong on other factors.\n`;
+  // Confidence: low (<8 videos), medium (8-19), high (20+)
+  const confidence = rubric.sampleSize >= 20 ? "HIGH CONFIDENCE" : rubric.sampleSize >= 8 ? "MEDIUM CONFIDENCE" : "LOW CONFIDENCE — directional only, do not treat as definitive";
+  const instruction = rubric.sampleSize >= 8
+    ? "Apply these as non-negotiable scoring adjustments."
+    : "Treat as early signal only — weight niche benchmarks and competitor data more heavily than this channel data until you have 8+ videos.";
+  let out = `AUDIT RUBRIC [${confidence}, n=${rubric.sampleSize}] (top 25% avg ${fmt(rubric.topAvg)} vs bottom 25% avg ${fmt(rubric.botAvg)}):\n`;
+  if(rubric.winningHooks.length) out += `• Hooks that WIN on this channel: ${rubric.winningHooks.join(", ")} → score higher\n`;
+  if(rubric.losingHooks.length)  out += `• Hooks that LOSE on this channel: ${rubric.losingHooks.join(", ")} → score lower\n`;
+  if(rubric.winningTypes.length) out += `• Content types that WIN: ${rubric.winningTypes.join(", ")} → score higher\n`;
+  if(rubric.losingTypes.length)  out += `• Content types that LOSE: ${rubric.losingTypes.join(", ")} → score lower\n`;
+  out += `${instruction}\n`;
   return out;
 };
 
@@ -3783,8 +3796,11 @@ const detectSeriesMomentum = (idea, videos=[], ideas=[]) => {
     return ideaWords.filter(w=>iWords.includes(w)).length >= 2;
   });
 
-  if(matchedVideo) return `SERIES MOMENTUM: This idea continues the theme of "${matchedVideo.title}" which got ${(matchedVideo.views/1000).toFixed(1)}k views — existing audience is already primed for this topic. Score HIGHER on niche fit.`;
-  if(postedSuccess) return `SERIES MOMENTUM: Similar topic to "${postedSuccess.title}" which got ${(postedSuccess.postedViews/1000).toFixed(1)}k views after posting — proven concept. Score HIGHER on share trigger.`;
+  // Only flag series momentum if sample is large enough to be meaningful
+  const minVideosForMomentum = 5;
+  if(vidsAboveAvg.length === 0 || videos.length < minVideosForMomentum) return null;
+  if(matchedVideo) return `SERIES MOMENTUM [confirmed — n=${videos.length} videos]: This idea continues the theme of "${matchedVideo.title}" which got ${(matchedVideo.views/1000).toFixed(1)}k views — existing audience is primed for this topic. Apply a modest niche fit boost.`;
+  if(postedSuccess) return `SERIES MOMENTUM [confirmed — from posted outcome]: Similar topic to "${postedSuccess.title}" which got ${(postedSuccess.postedViews/1000).toFixed(1)}k views — proven concept with this audience. Apply a modest share trigger boost.`;
   return null;
 };
 
