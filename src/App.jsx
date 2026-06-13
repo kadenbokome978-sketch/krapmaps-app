@@ -3645,6 +3645,158 @@ const buildChannelInsights = (videos=[]) => {
   };
 };
 
+// ── ENGAGEMENT DEPTH SIGNALS ─────────────────────────────────────
+// Computes quality signals from likes/comments/shares — not just views
+const buildEngagementSignals = (videos=[]) => {
+  const v = videos.filter(vid => vid.views > 0 && (vid.likes || vid.comments || vid.shares));
+  if(v.length < 2) return null;
+
+  const likeRates   = v.map(vid => vid.views > 0 ? (vid.likes||0)/vid.views*100 : 0);
+  const commentRates = v.map(vid => vid.views > 0 ? (vid.comments||0)/vid.views*100 : 0);
+  const shareRates  = v.map(vid => vid.views > 0 ? (vid.shares||0)/vid.views*100 : 0);
+  const avg = (arr) => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
+
+  const channelLikeRate    = parseFloat(avg(likeRates).toFixed(2));
+  const channelCommentRate = parseFloat(avg(commentRates).toFixed(3));
+  const channelShareRate   = parseFloat(avg(shareRates).toFixed(3));
+
+  // Hook type engagement depth — which hooks earn real engagement not just views
+  const hookEngMap = {};
+  v.forEach(vid => {
+    if(!vid.hook) return;
+    if(!hookEngMap[vid.hook]) hookEngMap[vid.hook] = { likes:[], comments:[], shares:[], views:[] };
+    hookEngMap[vid.hook].likes.push((vid.likes||0)/vid.views*100);
+    hookEngMap[vid.hook].comments.push((vid.comments||0)/vid.views*100);
+    hookEngMap[vid.hook].shares.push((vid.shares||0)/vid.views*100);
+    hookEngMap[vid.hook].views.push(vid.views);
+  });
+  const hookEngTable = Object.entries(hookEngMap).filter(([,d])=>d.views.length>=2).map(([hook,d])=>({
+    hook,
+    avgLikeRate: parseFloat(avg(d.likes).toFixed(2)),
+    avgShareRate: parseFloat(avg(d.shares).toFixed(3)),
+    count: d.views.length,
+  })).sort((a,b)=>b.avgLikeRate-a.avgLikeRate);
+
+  // Top videos by engagement rate (not views) — reveals quality content that may have been underserved by algo
+  const byEng = [...v].sort((a,b)=>{
+    const eA = (a.likes||0)/a.views + (a.shares||0)/a.views*2;
+    const eB = (b.likes||0)/b.views + (b.shares||0)/b.views*2;
+    return eB - eA;
+  }).slice(0,3).map(vid=>({ title:vid.title, views:vid.views, likeRate:parseFloat(((vid.likes||0)/vid.views*100).toFixed(1)), hook:vid.hook }));
+
+  return { channelLikeRate, channelCommentRate, channelShareRate, hookEngTable, topByEngagement:byEng, sampleSize:v.length };
+};
+
+const formatEngagementSignals = (eng) => {
+  if(!eng || eng.sampleSize < 2) return "";
+  let out = `ENGAGEMENT DEPTH [n=${eng.sampleSize} — engagement rates can't be faked by algo, treat as quality signal]:\n`;
+  out += `• Channel avg like rate: ${eng.channelLikeRate}% | comment rate: ${eng.channelCommentRate}% | share rate: ${eng.channelShareRate}%\n`;
+  if(eng.hookEngTable.length) {
+    out += `• Hooks that earn real engagement (like rate):\n`;
+    eng.hookEngTable.slice(0,4).forEach(h=>{
+      out += `  - "${h.hook}": ${h.avgLikeRate}% like rate, ${h.avgShareRate}% share rate (n=${h.count})\n`;
+    });
+  }
+  if(eng.topByEngagement.length) {
+    out += `• Highest quality content (by engagement rate, not views):\n`;
+    eng.topByEngagement.forEach(v=>{
+      out += `  - "${v.title}": ${v.likeRate}% like rate, ${(v.views/1000).toFixed(1)}k views, hook: ${v.hook||"unknown"}\n`;
+    });
+    out += `  → If these differ from top-viewed videos, the algo underserved quality content — factor this into scoring.\n`;
+  }
+  return out;
+};
+
+// ── COMBINATION MATRIX ────────────────────────────────────────────
+// Finds winning Hook+Type+Pillar combos — individual factors alone don't predict virality
+const buildComboMatrix = (videos=[]) => {
+  const v = videos.filter(vid => vid.views > 0 && vid.hook && vid.type);
+  if(v.length < 5) return null;
+
+  const avg = v.reduce((s,vid)=>s+(vid.views||0),0)/v.length;
+  const comboMap = {};
+
+  v.forEach(vid => {
+    const key = `${vid.hook}|${vid.type}`;
+    if(!comboMap[key]) comboMap[key] = { hook:vid.hook, type:vid.type, views:[], count:0 };
+    comboMap[key].views.push(vid.views||0);
+    comboMap[key].count++;
+  });
+
+  const combos = Object.values(comboMap)
+    .filter(c => c.count >= 2)
+    .map(c => {
+      const a = Math.round(c.views.reduce((s,x)=>s+x,0)/c.count);
+      return { hook:c.hook, type:c.type, avgViews:a, count:c.count, vsAvg:Math.round((a/avg-1)*100) };
+    })
+    .sort((a,b)=>b.avgViews-a.avgViews);
+
+  return { combos: combos.slice(0,6), totalVideos:v.length, channelAvg:Math.round(avg) };
+};
+
+const formatComboMatrix = (matrix) => {
+  if(!matrix || !matrix.combos.length) return "";
+  const fmt = n => n>=1000?`${(n/1000).toFixed(1)}k`:String(n);
+  let out = `WINNING COMBINATIONS [hook+type together — more predictive than individual factors alone]:\n`;
+  matrix.combos.forEach(c => {
+    const sign = c.vsAvg >= 0 ? "+" : "";
+    out += `  • ${c.hook} + ${c.type}: avg ${fmt(c.avgViews)} (${sign}${c.vsAvg}% vs channel avg, n=${c.count})\n`;
+  });
+  out += `  → When scoring, check if this idea's hook+type combo appears above. Winning combos override weak individual factor scores.\n`;
+  return out;
+};
+
+// ── PREDICTION ACCURACY TRACKER ───────────────────────────────────
+// Measures how far off AI predictions have been — used to calibrate future estimates
+const buildPredictionAccuracy = (ideas=[]) => {
+  const posted = ideas.filter(i =>
+    i.status === "posted" &&
+    i.postedViews > 0 &&
+    i.aiScore?.estimated_views
+  );
+  if(posted.length < 2) return null;
+
+  const parseEstimate = (str) => {
+    if(!str) return null;
+    const nums = str.match(/[\d,]+/g);
+    if(!nums) return null;
+    const parsed = nums.map(n=>parseInt(n.replace(/,/g,""))).filter(n=>n>0);
+    return parsed.length ? Math.round(parsed.reduce((a,b)=>a+b,0)/parsed.length) : null;
+  };
+
+  const pairs = posted.map(i => {
+    const predicted = parseEstimate(i.aiScore.estimated_views);
+    const actual = i.postedViews;
+    if(!predicted) return null;
+    const errorPct = Math.round((actual/predicted-1)*100);
+    return { title:i.title.slice(0,40), predicted, actual, errorPct };
+  }).filter(Boolean);
+
+  if(!pairs.length) return null;
+
+  const avgError = Math.round(pairs.reduce((s,p)=>s+p.errorPct,0)/pairs.length);
+  const overestimates = pairs.filter(p=>p.errorPct<-10).length;
+  const underestimates = pairs.filter(p=>p.errorPct>10).length;
+  const accurate = pairs.filter(p=>Math.abs(p.errorPct)<=10).length;
+
+  return { pairs, avgError, overestimates, underestimates, accurate, sampleSize:pairs.length };
+};
+
+const formatPredictionAccuracy = (acc) => {
+  if(!acc || acc.sampleSize < 2) return "";
+  const bias = acc.avgError > 10 ? `tends to UNDERESTIMATE by ~${acc.avgError}% on average — adjust estimates UP`
+             : acc.avgError < -10 ? `tends to OVERESTIMATE by ~${Math.abs(acc.avgError)}% on average — adjust estimates DOWN`
+             : `predictions are well-calibrated (avg error: ${acc.avgError}%)`;
+  let out = `PREDICTION ACCURACY [n=${acc.sampleSize} posted ideas with tracked views]:\n`;
+  out += `• AI ${bias}\n`;
+  out += `• ${acc.accurate} accurate (within 10%), ${acc.overestimates} overestimates, ${acc.underestimates} underestimates\n`;
+  if(acc.pairs.length) {
+    out += `• Recent: ${acc.pairs.slice(-3).map(p=>`"${p.title}" predicted ${(p.predicted/1000).toFixed(1)}k got ${(p.actual/1000).toFixed(1)}k (${p.errorPct>0?"+":""}${p.errorPct}%)`).join(" | ")}\n`;
+  }
+  out += `→ Apply this bias correction to your estimated_views output.\n`;
+  return out;
+};
+
 // Formats channel insights as a text block for AI injection
 const formatChannelInsights = (insights) => {
   if(!insights) return "";
@@ -4310,11 +4462,19 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
       const avgViewsForAnalysis = organicForAnalysis.length ? Math.round(organicForAnalysis.reduce((s,v)=>s+(v.views||0),0)/organicForAnalysis.length) : 0;
       const channelInsightsForAnalysis = buildChannelInsights(organicForAnalysis.length?organicForAnalysis:videos);
       const channelStatsForAnalysis = formatChannelInsights(channelInsightsForAnalysis);
+      const engForAnalysis = buildEngagementSignals(organicForAnalysis.length?organicForAnalysis:videos);
+      const engBlockForAnalysis = formatEngagementSignals(engForAnalysis);
+      const comboForAnalysis = buildComboMatrix(organicForAnalysis.length?organicForAnalysis:videos);
+      const comboBlockForAnalysis = formatComboMatrix(comboForAnalysis);
+      const channelTheoryForAnalysis = loadJSON(CHANNEL_THEORY_KEY,"");
       const trendsForAnalysis = loadJSON(CUR_TRENDS_KEY,"");
 
       const prompt = `You are the world's best viral video analyst — combining expertise in social psychology, the 2026 TikTok/Reels algorithm, and environmental travel content. You are analysing a clip for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia, creators BK + Harley).
 
+${channelTheoryForAnalysis ? `━━ CHANNEL VIRAL THEORY ━━\n${channelTheoryForAnalysis}\n` : ""}
 ${channelStatsForAnalysis || `CHANNEL: organic avg views ${avgViewsForAnalysis} | limited data — use niche benchmarks`}
+${engBlockForAnalysis}
+${comboBlockForAnalysis}
 ("good" = 3x channel avg = ${fmt(avgViewsForAnalysis*3)}, "viral" = 10x+ = ${fmt(avgViewsForAnalysis*10)})
 - Many early videos were paid/boosted — weight content patterns over raw view counts
 ${trendsForAnalysis ? `\nCURRENT TRENDS (use these in editing + sound recommendations):\n${trendsForAnalysis}` : ""}
@@ -5376,13 +5536,28 @@ LEARNING: [one sentence]`}]})
       // Channel theory — the deep "why this channel goes viral" model
       const channelTheory = loadJSON(CHANNEL_THEORY_KEY,"");
 
+      // Engagement depth — quality signals beyond views
+      const engSignals = buildEngagementSignals(organicVids.length?organicVids:videos);
+      const engBlock = formatEngagementSignals(engSignals);
+
+      // Combo matrix — which hook+type combos actually win
+      const comboMatrix = buildComboMatrix(organicVids.length?organicVids:videos);
+      const comboBlock = formatComboMatrix(comboMatrix);
+
+      // Prediction accuracy — how biased have past estimates been
+      const predAcc = buildPredictionAccuracy(ideas);
+      const predAccBlock = formatPredictionAccuracy(predAcc);
+
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
       const r = await callAI(`You are the world's best viral content strategist. Score this TikTok/Reels idea for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia, niche: environmental travel / backpacker culture).
 
 ${channelTheory ? `━━ CHANNEL VIRAL THEORY (why this channel specifically goes viral — anchor ALL scoring to this) ━━\n${channelTheory}\n` : ""}
 ━━ CHANNEL INTELLIGENCE (real data — treat as ground truth) ━━
 ${channelStatsBlock || "Limited data — use niche benchmarks as proxy"}
+${engBlock}
+${comboBlock}
 ${auditBlock}
+${predAccBlock}
 ${calibration ? `CALIBRATION: ${calibration}` : ""}
 ${ideaOutcomes.length ? `RECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
 ${seriesMomentum ? `\n${seriesMomentum}` : ""}
