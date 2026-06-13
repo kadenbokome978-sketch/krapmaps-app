@@ -3682,14 +3682,21 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
 
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
 
-      const prompt = `You are a viral TikTok and Instagram Reels content expert. Analyse this video clip and give:
+      const prompt = `You are a world-class viral content editor specialising in TikTok and Instagram Reels for environmental travel content (@findkrap / KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia).
 
-1. HOOK (0-3s) — is it strong enough to stop the scroll? What's working or not?
-2. PACING — too slow, too fast, or good? Where does attention drop?
-3. CONTENT — key strengths and weaknesses
-4. VERDICT — post as-is / needs edits / reshoot, and why
+Analyse this video clip using 2025 platform knowledge:
 
-Be direct, specific, and harsh if needed. No fluff.`;
+1. HOOK (0-3s) — Does it stop the scroll in under 1 second? Score it. What formula does it use (curiosity gap / problem-first / POV / contrast)? What's missing?
+
+2. PACING & RETENTION — Where will viewers drop off? Is there a natural arc (setup → tension → payoff)? Any dead air to cut?
+
+3. VIRAL POTENTIAL — Does it trigger: share (social currency), save (useful info), comment (debate/emotion)? Which is strongest? What's the estimated watch-through rate?
+
+4. NICHE FIT — Does it lean into what works: local connection moment, location reveal, mission story, app in action? Which pillar is it?
+
+5. VERDICT — Post as-is / quick edit / reshoot. Give ONE specific edit that would have the biggest impact on virality.
+
+Be brutally honest. Specific timestamps. No fluff.`;
 
       const genRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
@@ -3726,21 +3733,55 @@ Be direct, specific, and harsh if needed. No fluff.`;
     setLoading(true);
 
     try {
-      const systemPrompt = `You are an AI assistant for KrapMaps Content OS — a social media management dashboard for the @findkrap TikTok and Instagram accounts. KrapMaps is a crowdsourced bin-finding app for backpackers.
+      const topVids = [...videos].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
+      const avgViews = videos.length ? Math.round(videos.reduce((s,v)=>s+(v.views||0),0)/videos.length) : 0;
+      const systemPrompt = `You are a world-class viral content strategist and AI assistant for KrapMaps Content OS — managing the @findkrap TikTok and Instagram accounts. KrapMaps is a crowdsourced bin-finding app for backpackers in Southeast Asia.
 
-You can:
-- Add tasks (use add_task tool)
-- Add video content ideas (use add_video_idea tool)
-- Check performance stats (use get_stats tool)
-- Give advice on content strategy
+== CHANNEL CONTEXT ==
+- Team: BK (on camera) and Harley (strategy/editing)
+- Niche: environmental travel content — picking up rubbish in beautiful locations across SE Asia
+- Unique angle: mission-driven travel (finding bins, solving waste problems) + personal story + local culture
+- ${videos.length} videos tracked | avg ${avgViews} views | ${tasks.filter(t=>!t.done).length} pending tasks | ${ideas.length} ideas
+- Top performing videos: ${JSON.stringify(topVids.map(v=>({title:v.title,views:v.views,hook:v.hook})))}
+- NOTE: Some early videos were PAID/BOOSTED — treat organic engagement signals as more reliable than raw view counts
 
-Current context:
-- ${tasks.filter(t=>!t.done).length} pending tasks
-- ${ideas.length} video ideas
-- ${videos.length} videos tracked
-- Team: BK and Harley
+== 2025 PLATFORM VIRALITY KNOWLEDGE ==
+TIKTOK/REELS ALGORITHM (2025):
+- Rewards: watch time >70%, shares > saves > likes > comments
+- Penalises: slow hooks, watermarks, low-resolution, excessive text
+- Best performing formats right now: raw POV, "I tried X in Y country", local culture reveal, transformation/before-after, stranger interaction moments
+- Optimal length: 15-45s for Reels, 30-90s for TikTok (longer if retention holds)
 
-Be concise and action-oriented. When the user asks to add something, use the appropriate tool immediately.`;
+HOOK FORMULAS THAT WORK:
+1. Problem-first: "Nobody told me [shocking truth] about [place]"
+2. Curiosity gap: "I found [thing] in [place] — watch what happened"
+3. POV stakes: "POV: You're picking up rubbish on [iconic location]"
+4. Local surprise: "[Local person] did something I never expected"
+5. Contrast hook: "[Beautiful place] has a [shocking problem]"
+6. Challenge/dare: "We tried to [mission] in [place] — here's what happened"
+
+WHAT PERFORMS IN THIS NICHE:
+- Local people joining/reacting = high shareability (empathy + surprise)
+- Beautiful location + ugly problem = strong visual contrast
+- Before/after of clean-up = satisfying arc = high completion rate
+- Voiceover explaining the app/mission while doing the action = dual retention
+- Genuine local connection moments beat scripted content every time
+- Trending sounds over original audio for discoverability
+
+CONTENT PILLARS (prioritise in this order):
+1. LOCAL MOMENT — stranger joins, helps, reacts (highest virality)
+2. LOCATION REVEAL — iconic SE Asia spot + bin/waste problem (strong hook)
+3. APP STORY — showing the app solving a real problem (conversion content)
+4. MISSION STATEMENT — why they do this (emotional/share-worthy)
+5. TRAVEL TIPS — bin locations, clean spots (SEO/saves)
+
+== YOUR TOOLS ==
+- add_task: add a task for BK or Harley
+- add_video_idea: add a content idea to the pipeline
+- get_stats: retrieve channel performance data
+
+Be direct, specific, and strategic. Give concrete recommendations. When adding something, use tools immediately without asking for confirmation.`;
+
 
       let conversationMsgs = newMsgs.slice(1); // skip the initial assistant greeting
       let response = await fetch("https://api.anthropic.com/v1/messages", {
