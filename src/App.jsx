@@ -612,11 +612,11 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                   <div style={{ padding:"18px 20px", flex:1 }}>
                     {/* Header */}
                     <div style={{ display:"flex", alignItems:"flex-start", gap:14, marginBottom:14 }}>
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontSize:16, fontWeight:700, color:"#fff", lineHeight:1.35, marginBottom:10 }}>{idea.title}</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:15, fontWeight:700, color:"#fff", lineHeight:1.35, marginBottom:10, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{idea.title}</div>
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                           {idea.type && <Tag color={C.pink} sm>{idea.type}</Tag>}
-                          {idea.hook && <Tag color={C.cyan} sm>{idea.hook}</Tag>}
+                          {idea.hook && <span style={{ background:`${C.cyan}18`, border:`1px solid ${C.cyan}40`, color:C.cyan, borderRadius:6, padding:"3px 10px", fontSize:11, fontWeight:700, display:"inline-block", maxWidth:"100%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{idea.hook}</span>}
                           <Tag color={scoreC} sm>{perfLabel(idea.viral||0)}</Tag>
                         </div>
                       </div>
@@ -4488,13 +4488,21 @@ function Dashboard({ keys, onEditKeys }) {
     const key = "s"+idea.id;
     setAiLoad(l=>({...l,[key]:true}));
     try {
-      const topV = [...videos].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,3);
+      const topV = [...videos].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
         const avgV = videos.length?Math.round(videos.reduce((s,v)=>s+(v.views||0),0)/videos.length):0;
-        const r = await callAI(`Score this content idea for ${WL?.appName||"KrapMaps"}. Be brutally honest.
-Channel context: avg ${avgV} views per video. Top performers: ${JSON.stringify(topV.map(v=>({title:v.title,views:v.views,hook:v.hook,type:v.type})))}.
-Idea to score: "${idea.title}" | type:${idea.type} | hook:${idea.hook}
-Does this idea match what actually performs well on this channel? Would it beat the ${avgV} view average?
-Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 sentence verdict referencing channel data","viralityReason":"string","hookFeedback":"string","improvedHook":"string under 10 words","recommendations":[{"action":"string","impact":"high|medium"}],"estimated_views":"e.g. 20K-80K"}`, 1200);
+        const r = await callAI(`Score this TikTok/Reels content idea for ${WL?.appName||"KrapMaps"}. Be brutally honest.
+
+IMPORTANT SCORING RULES:
+- Many early videos were PAID/BOOSTED — do NOT let high view counts from boosted videos inflate the benchmark. Weight ORGANIC engagement signals more than raw view counts.
+- Score based on 3 equally weighted factors:
+  1. ORGANIC CHANNEL PATTERNS (33%) — what hooks/formats earned views WITHOUT paid boost. Ignore outlier spikes that look paid.
+  2. CURRENT PLATFORM TRENDS (33%) — what is TikTok/Reels algorithm favouring RIGHT NOW in 2025: raw POV, location content, transformation arcs, local culture, environmental/social hooks.
+  3. UNIVERSAL VIRALITY PRINCIPLES (33%) — strong hook in 0-3s, emotional trigger, shareability, retention.
+
+Channel data (treat boosted outliers with scepticism): avg ${avgV} views. Reference videos: ${JSON.stringify(topV.map(v=>({title:v.title,views:v.views,hook:v.hook,type:v.type})))}.
+Idea: "${idea.title}" | type:${idea.type} | hook:${idea.hook}
+
+Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 2 sentence verdict — mention which of the 3 factors scored highest/lowest","viralityReason":"string","hookFeedback":"string","improvedHook":"string under 10 words","recommendations":[{"action":"string","impact":"high|medium"}],"estimated_views":"organic estimate e.g. 20K-80K"}`, 1400);
       setIdeas(is=>is.map(i=>i.id===idea.id?{...i,aiScore:r,viral:r.viralityScore,hookScore:r.hookScore,verdict:r.verdict,viralReason:r.viralityReason,hookFeedback:r.hookFeedback,improvedHook:r.improvedHook,recs:r.recommendations?.map(x=>({a:x.action,impact:x.impact?.toUpperCase()}))}:i));
     } catch(e) { setAiErr("Score failed: "+e.message); }
     setAiLoad(l=>({...l,[key]:false}));
