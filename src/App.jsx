@@ -654,6 +654,82 @@ const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDi
         );
       })()}
 
+      {/* Posting Cadence Tracker */}
+      {(() => {
+        const postedWithDate = (ideas||[]).filter(i=>i.status==="posted"&&i.postedDate);
+        if(postedWithDate.length < 3) return null;
+        const sorted = [...postedWithDate].sort((a,b)=>new Date(b.postedDate)-new Date(a.postedDate));
+        const gaps = [];
+        for(let i=0;i<Math.min(sorted.length-1,8);i++) {
+          const a = new Date(sorted[i].postedDate), b = new Date(sorted[i+1].postedDate);
+          gaps.push(Math.floor((a-b)/86400000));
+        }
+        const avgGap = Math.round(gaps.reduce((s,g)=>s+g,0)/gaps.length);
+        const lastPosted = new Date(sorted[0].postedDate);
+        const daysSinceLast = Math.floor((new Date()-lastPosted)/86400000);
+        const onTrack = daysSinceLast <= avgGap + 1;
+        const statusColor = onTrack ? C.green : daysSinceLast > avgGap * 2 ? C.pink : C.yellow;
+        const videosThisWeek = postedWithDate.filter(i=>Math.floor((new Date()-new Date(i.postedDate))/86400000)<=7).length;
+        return (
+          <div style={{ borderRadius:18, padding:"16px 20px", background:"rgba(255,255,255,0.02)", border:`1px solid ${statusColor}20`, display:"flex", alignItems:"center", gap:16 }}>
+            <div style={{ width:8, height:8, borderRadius:"50%", background:statusColor, boxShadow:`0 0 8px ${statusColor}`, flexShrink:0 }}/>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:statusColor, letterSpacing:"0.1em", textTransform:"uppercase" }}>Posting Cadence</div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginTop:2 }}>Avg every {avgGap}d · last posted {daysSinceLast===0?"today":`${daysSinceLast}d ago`} · {videosThisWeek} this week</div>
+            </div>
+            <div style={{ fontSize:13, fontWeight:700, color:statusColor }}>{onTrack ? "ON TRACK" : daysSinceLast > avgGap * 2 ? "OVERDUE" : "SLOWING"}</div>
+          </div>
+        );
+      })()}
+
+      {/* Stale Ideas Alert */}
+      {(() => {
+        const staleIdeas = (ideas||[]).filter(i=>{
+          if(["posted","filmed"].includes(i.status)) return false;
+          const daysOld = i.createdAt ? Math.floor((Date.now()-new Date(i.createdAt).getTime())/(1000*60*60*24)) : null;
+          return daysOld!==null && daysOld > 30;
+        });
+        if(!staleIdeas.length) return null;
+        return (
+          <div style={{ borderRadius:18, padding:"14px 20px", background:`${C.pink}08`, border:`1px solid ${C.pink}20` }}>
+            <div style={{ fontSize:11, color:C.pink, letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:6 }}>⚠ Stale Ideas ({staleIdeas.length})</div>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)" }}>
+              {staleIdeas.length} idea{staleIdeas.length>1?"s":""} {staleIdeas.length>1?"have":"has"} been sitting unfilmed for 30+ days. Film them or archive.
+            </div>
+            <div style={{ marginTop:6, display:"flex", gap:6, flexWrap:"wrap" }}>
+              {staleIdeas.slice(0,3).map(i=><span key={i.id} style={{ fontSize:11, color:C.pink, background:`${C.pink}10`, border:`1px solid ${C.pink}25`, borderRadius:6, padding:"2px 8px" }}>{i.title?.slice(0,30)||"Untitled"}</span>)}
+              {staleIdeas.length>3 && <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>+{staleIdeas.length-3} more</span>}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Idea → Outcome Gap */}
+      {(() => {
+        const scored80 = (ideas||[]).filter(i=>(i.viral||0)>=80);
+        const filmed = scored80.filter(i=>["filming","posted"].includes(i.status));
+        const posted = scored80.filter(i=>i.status==="posted");
+        if(scored80.length < 3) return null;
+        const filmRate = Math.round(filmed.length/scored80.length*100);
+        const postRate = Math.round(posted.length/scored80.length*100);
+        const bottleneck = filmRate < 50 ? "Filming" : postRate < filmRate - 20 ? "Editing" : "None identified";
+        return (
+          <div style={{ borderRadius:18, padding:"16px 20px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:10 }}>Idea → Outcome Pipeline</div>
+            <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
+              {[
+                { label:`${scored80.length} scored 80+`, color:C.purple },
+                { label:`${filmed.length} filmed (${filmRate}%)`, color:C.yellow },
+                { label:`${posted.length} posted (${postRate}%)`, color:C.green },
+              ].map((s,i)=>(
+                <div key={i} style={{ fontSize:13, fontWeight:700, color:s.color }}>{s.label}</div>
+              ))}
+            </div>
+            {bottleneck !== "None identified" && <div style={{ fontSize:12, color:C.orange, marginTop:8 }}>Bottleneck: {bottleneck} — most high-score ideas die here</div>}
+          </div>
+        );
+      })()}
+
     </div>
   );
 };
@@ -703,6 +779,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
         contentPillar: result.contentPillar,
         status: "idea",
         created: new Date().toISOString().slice(0,10),
+        createdAt: new Date().toISOString(),
       };
       setIdeas(is=>[newIdea,...is]);
       setQuickExpand("");
@@ -759,8 +836,10 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
             : sorted.map(idea=>{
               const scoreC = ic(idea.viral||0);
               const isExpanded = expanded===idea.id;
+              const daysOld = idea.createdAt ? Math.floor((Date.now()-new Date(idea.createdAt).getTime())/(1000*60*60*24)) : null;
+              const isStale = daysOld!==null && daysOld>30 && idea.status!=="posted" && idea.status!=="filmed";
               return (
-                <div key={idea.id} style={{ borderRadius:20, background:`linear-gradient(145deg,${scoreC}08,rgba(10,6,20,0.95))`, border:`1px solid ${scoreC}25`, position:"relative", overflow:"hidden", display:"flex", flexDirection:"column" }}>
+                <div key={idea.id} style={{ borderRadius:20, background:`linear-gradient(145deg,${scoreC}08,rgba(10,6,20,0.95))`, border:`1px solid ${isStale?C.pink+"50":scoreC+"25"}`, position:"relative", overflow:"hidden", display:"flex", flexDirection:"column" }}>
                   <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${scoreC},${scoreC}00)` }}/>
 
                   {/* Score bar */}
@@ -777,12 +856,16 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                           {idea.type && <Tag color={C.pink} sm>{idea.type}</Tag>}
                           {idea.hook && <span style={{ background:`${C.cyan}18`, border:`1px solid ${C.cyan}40`, color:C.cyan, borderRadius:6, padding:"3px 10px", fontSize:11, fontWeight:700, display:"inline-block", maxWidth:"100%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{idea.hook}</span>}
                           <Tag color={scoreC} sm>{perfLabel(idea.viral||0)}</Tag>
+                          {isStale && <Tag color={C.pink} sm>⚠ {daysOld}d STALE</Tag>}
                         </div>
                       </div>
                       <div style={{ display:"flex", gap:10, flexShrink:0, alignItems:"flex-start" }}>
                         <div style={{ textAlign:"center" }}>
                           <div style={{ fontSize:36, fontWeight:400, fontFamily:C.fontHead, color:scoreC, lineHeight:1, textShadow:`0 0 20px ${scoreC}50` }}>{idea.viral||0}</div>
                           <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginTop:3 }}>VIRAL</div>
+                          {idea.scoreDelta!=null && idea.scoreDelta!==0 && (
+                            <div style={{ fontSize:10, fontWeight:700, color:idea.scoreDelta>0?C.green:C.pink, marginTop:2 }}>{idea.scoreDelta>0?`+${idea.scoreDelta}`:idea.scoreDelta}</div>
+                          )}
                         </div>
                         {(idea.hookScore||0)>0 && (
                           <div style={{ textAlign:"center" }}>
@@ -1037,7 +1120,15 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                         <div key={i} style={{ marginBottom:8, padding:"10px 12px", borderRadius:10, background:`${C.pink}08`, border:`1px solid ${C.pink}20` }}>
                           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
                             <span style={{ fontSize:10, fontWeight:700, color:C.pink, letterSpacing:"0.10em", textTransform:"uppercase" }}>{v.hook_type}</span>
-                            <button onClick={()=>navigator.clipboard.writeText(v.caption+(v.hashtags?" "+v.hashtags.map(h=>"#"+h).join(" "):"")+"\n\n"+v.hashtags?.map(h=>"#"+h).join(" "))} style={{ padding:"3px 10px", borderRadius:6, border:`1px solid ${C.pink}30`, background:"transparent", color:C.pink, fontFamily:C.fontBody, fontSize:10, fontWeight:700, cursor:"pointer" }}>COPY</button>
+                            <div style={{ display:"flex", gap:6 }}>
+                              <button onClick={()=>{
+                                const mem = loadJSON(MEMORY_KEY,{entries:[]});
+                                mem.entries.push({ type:"HOOK_LEARNING", recommendation:`Hook split test winner: "${v.hook_type}" for idea "${captionIdea?.title?.slice(0,40)||"unknown"}". Caption: ${v.caption?.slice(0,80)}`, date:new Date().toISOString().slice(0,10), id:Date.now() });
+                                saveJSON(MEMORY_KEY,mem);
+                                alert(`✓ "${v.hook_type}" marked as winner — saved to memory`);
+                              }} style={{ padding:"3px 10px", borderRadius:6, border:`1px solid ${C.green}30`, background:`${C.green}10`, color:C.green, fontFamily:C.fontBody, fontSize:10, fontWeight:700, cursor:"pointer" }}>🏆 WIN</button>
+                              <button onClick={()=>navigator.clipboard.writeText(v.caption+(v.hashtags?" "+v.hashtags.map(h=>"#"+h).join(" "):"")+"\n\n"+v.hashtags?.map(h=>"#"+h).join(" "))} style={{ padding:"3px 10px", borderRadius:6, border:`1px solid ${C.pink}30`, background:"transparent", color:C.pink, fontFamily:C.fontBody, fontSize:10, fontWeight:700, cursor:"pointer" }}>COPY</button>
+                            </div>
                           </div>
                           <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)", lineHeight:1.5 }}>{v.caption}</div>
                           {v.hashtags && <div style={{ fontSize:11, color:`${C.pink}99`, marginTop:4 }}>{v.hashtags.map(h=>"#"+h).join(" ")}</div>}
@@ -1158,12 +1249,18 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                         {v.platform==="instagram" && <Tag color={C.purple} sm>IG</Tag>}
                       </div>
                       {/* Stats grid */}
+                      {(() => {
+                        const watchProxy = v.views48h&&v.views48h>0&&v.likes>0 ? parseFloat(((v.likes/v.views48h)*100).toFixed(1)) : null;
+                        const avgLikeRate = videos.filter(x=>x.views>0).reduce((s,x)=>s+(x.likes/x.views*100),0)/(videos.filter(x=>x.views>0).length||1);
+                        const watchLabel = watchProxy!==null ? (watchProxy>avgLikeRate*1.3?"STRONG":watchProxy<avgLikeRate*0.7?"WEAK":"AVG") : null;
+                        return null;
+                      })()}
                       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
                         {[
                           {l:"VIEWS", v:fmt(v.views||0), c:C.cyan},
                           {l:"LIKES", v:fmt(v.likes||0), c:C.pink},
                           {l:"RATIO", v:r.toFixed(1)+"%", c:r>=10?C.green:r>=5?C.yellow:C.orange},
-                          {l:"COMMENTS", v:v.comments||0, c:C.purple},
+                          ...(v.views48h>0 ? [{l:"48HR/LIKE", v:(v.views48h>0&&v.likes>0?((v.likes/v.views48h)*100).toFixed(1)+"%":"—"), c:(v.views48h>0&&v.likes>0&&((v.likes/v.views48h)*100)>=(r*1.3))?C.green:C.orange}] : [{l:"COMMENTS", v:v.comments||0, c:C.purple}]),
                         ].map((s,j)=>(
                           <div key={j} style={{ padding:"8px 6px", background:`${s.c}08`, borderRadius:10, border:`1px solid ${s.c}18`, textAlign:"center" }}>
                             <div style={{ fontSize:16, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
@@ -3090,7 +3187,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
   );
 };
 
-const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[] }) => {
+const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[], onBulkImport }) => {
   const [editing, setEditing] = useState(null);
   const [draftKey, setDraftKey] = useState("");
   const [wlDraft, setWlDraft] = useState(null);
@@ -3099,6 +3196,8 @@ const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onS
   const [theoryDraft, setTheoryDraft] = useState(()=>loadJSON(CHANNEL_THEORY_KEY,""));
   const [theorySaved, setTheorySaved] = useState(false);
   const [theoryLoading, setTheoryLoading] = useState(false);
+  const [csvDraft, setCsvDraft] = useState("");
+  const [csvMsg, setCsvMsg] = useState("");
   const saveTrends = () => { saveJSON(CUR_TRENDS_KEY, trendsDraft); setTrendsSaved(true); setTimeout(()=>setTrendsSaved(false),2000); };
   const saveTheory = () => { saveJSON(CHANNEL_THEORY_KEY, theoryDraft); setTheorySaved(true); setTimeout(()=>setTheorySaved(false),2000); };
   const saveKey = (field) => { onEditKeys&&onEditKeys({...keys,[field]:draftKey.trim()}); setEditing(null); setDraftKey(""); };
@@ -3382,6 +3481,83 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
           rows={8}
           style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.purple}25`, borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:13, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box", resize:"vertical", lineHeight:1.6 }}
         />
+      </div>
+
+      {/* Bulk Video Import (CSV) */}
+      <div style={{ padding:"20px 24px", borderRadius:16, border:`1px solid ${C.yellow}20`, background:`${C.yellow}05` }}>
+        <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:4 }}>Bulk Video Import (CSV)</div>
+        <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginBottom:12 }}>Paste rows: <span style={{color:C.yellow}}>title, views, likes, type, hook, platform</span> (one per line, comma-separated). Header row optional.</div>
+        <textarea value={csvDraft} onChange={e=>setCsvDraft(e.target.value)} rows={5} placeholder={"title,views,likes,type,hook,platform\nMy first video,12000,900,facecam,achievement,tiktok\n..."} style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.yellow}25`, borderRadius:12, color:"#fff", padding:"12px 14px", fontSize:12, fontFamily:"monospace", outline:"none", boxSizing:"border-box", resize:"vertical" }}/>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10 }}>
+          <button onClick={()=>{
+            const lines = csvDraft.trim().split("\n").filter(l=>l.trim());
+            const start = lines[0]?.toLowerCase().includes("title") ? 1 : 0;
+            const parsed = lines.slice(start).map(line=>{
+              const cols = line.split(",").map(c=>c.trim());
+              if(!cols[0]) return null;
+              return { title:cols[0], views:parseInt(cols[1])||0, likes:parseInt(cols[2])||0, type:cols[3]||"facecam", hook:cols[4]||"achievement", platform:cols[5]||"tiktok", comments:0, shares:0 };
+            }).filter(Boolean);
+            if(!parsed.length){ setCsvMsg("No valid rows found."); return; }
+            onBulkImport&&onBulkImport(parsed);
+            setCsvMsg(`✓ Imported ${parsed.length} videos`);
+            setCsvDraft("");
+            setTimeout(()=>setCsvMsg(""),3000);
+          }} style={{ padding:"9px 18px", borderRadius:11, border:`1px solid ${C.yellow}40`, background:`${C.yellow}15`, color:C.yellow, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>IMPORT</button>
+          {csvMsg && <span style={{ fontSize:13, color:csvMsg.startsWith("✓")?C.green:C.pink }}>{csvMsg}</span>}
+        </div>
+      </div>
+
+      {/* Channel Intelligence Export */}
+      <div style={{ padding:"20px 24px", borderRadius:16, border:`1px solid ${C.cyan}20`, background:`${C.cyan}05` }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+          <div>
+            <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>Channel Intelligence Export</div>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:3 }}>Download a full snapshot of your channel data, insights, and viral theory for sharing or backup.</div>
+          </div>
+          <button onClick={()=>{
+            const insights = buildChannelInsights(videos);
+            const theory = loadJSON(CHANNEL_THEORY_KEY,"");
+            const mem = loadJSON(MEMORY_KEY, {entries:[]});
+            const topV = [...videos].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
+            const postedIdeas = ideas.filter(i=>i.status==="posted"&&i.postedViews>0).slice(0,10);
+            const lines = [
+              "═══════════════════════════════════════",
+              " KRAPMAPS CHANNEL INTELLIGENCE REPORT",
+              ` Generated: ${new Date().toLocaleString()}`,
+              "═══════════════════════════════════════",
+              "",
+              "── CHANNEL VIRAL THEORY ──",
+              theory || "(Not generated yet — go to Settings > Channel Viral Theory)",
+              "",
+              "── KEY METRICS ──",
+              `Total Videos: ${insights.totalVideos}`,
+              `Average Views: ${Math.round(insights.avgViews||0).toLocaleString()}`,
+              `Top Video Views: ${(insights.topVideo?.views||0).toLocaleString()} — "${insights.topVideo?.title||"N/A"}"`,
+              `p50 (median): ${Math.round(insights.p50||0).toLocaleString()} views`,
+              `p90 (top 10%): ${Math.round(insights.p90||0).toLocaleString()} views`,
+              `Collab Multiplier: ${insights.collabMultiplier||"N/A"}x`,
+              `Avg Velocity (24hr/total): ${insights.avgVelocity||"N/A"}%`,
+              "",
+              "── TOP 5 VIDEOS ──",
+              ...topV.map((v,i)=>`${i+1}. ${v.title?.slice(0,60)||"Untitled"} — ${(v.views||0).toLocaleString()} views | hook: ${v.hook||"?"} | type: ${v.type||"?"}`),
+              "",
+              "── POSTED OUTCOMES ──",
+              ...(postedIdeas.length ? postedIdeas.map(i=>`• "${i.title?.slice(0,50)}" → ${(i.postedViews||0).toLocaleString()} views (scored ${i.viral||"?"})`): ["(No posted outcomes yet)"]),
+              "",
+              "── RECENT MEMORY ──",
+              ...(mem.entries||[]).slice(-15).reverse().map(e=>`[${e.type}] ${e.recommendation||e.outcome||""}`.slice(0,100)),
+              "",
+              "═══════════════════════════════════════",
+            ];
+            const blob = new Blob([lines.join("\n")], {type:"text/plain"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url; a.download = `krapmaps-intel-${new Date().toISOString().slice(0,10)}.txt`;
+            a.click(); URL.revokeObjectURL(url);
+          }} style={{ padding:"10px 18px", borderRadius:11, border:`1px solid ${C.cyan}40`, background:`${C.cyan}15`, color:C.cyan, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer", whiteSpace:"nowrap" }}>
+            ↓ EXPORT
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -5734,22 +5910,30 @@ Score each factor with this rigour:
 
 Return ONLY valid JSON:
 {"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","retentionFix":"the single biggest retention improvement","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic organic ceiling e.g. 20K-80K — anchored to calibration data above","contentPillar":"Local Connection|Location Contrast|Mission Reveal|App In Action|Travel Utility","competitorAngle":"how to differentiate from what competitors are already doing in this niche"}`, 2000);
-      setIdeas(is=>is.map(i=>i.id===idea.id?{...i,
-        aiScore:r,
-        viral:r.viralityScore,
-        hookScore:r.hookScore,
-        retentionScore:r.retentionScore,
-        shareScore:r.shareScore,
-        algoScore:r.algoScore,
-        nicheScore:r.nicheScore,
-        verdict:r.verdict,
-        viralReason:r.viralityReason,
-        hookFeedback:r.hookFeedback,
-        improvedHook:r.improvedHook,
-        retentionFix:r.retentionFix,
-        competitorAngle:r.competitorAngle,
-        recs:r.recommendations?.map(x=>({a:x.action,impact:x.impact?.toUpperCase()}))
-      }:i));
+      setIdeas(is=>is.map(i=>{
+        if(i.id!==idea.id) return i;
+        const prevScore = i.viral||null;
+        const scoreDelta = prevScore!==null ? r.viralityScore - prevScore : null;
+        return {...i,
+          aiScore:r,
+          viral:r.viralityScore,
+          hookScore:r.hookScore,
+          retentionScore:r.retentionScore,
+          shareScore:r.shareScore,
+          algoScore:r.algoScore,
+          nicheScore:r.nicheScore,
+          verdict:r.verdict,
+          viralReason:r.viralityReason,
+          hookFeedback:r.hookFeedback,
+          improvedHook:r.improvedHook,
+          retentionFix:r.retentionFix,
+          competitorAngle:r.competitorAngle,
+          recs:r.recommendations?.map(x=>({a:x.action,impact:x.impact?.toUpperCase()})),
+          scoreDelta,
+          prevScore,
+          lastScoredAt: new Date().toISOString().slice(0,10),
+        };
+      }));
     } catch(e) { setAiErr("Score failed: "+e.message); }
     setAiLoad(l=>({...l,[key]:false}));
   };
@@ -5928,7 +6112,7 @@ Return JSON:
           <label htmlFor="collab-toggle-idea" style={{ color:"rgba(255,255,255,0.7)", fontSize:14, fontFamily:C.fontBody }}>Collab with local/partner account?</label>
         </div>
         <MLabel>Notes (optional)</MLabel><MInput value={form.notes} onChange={set("notes")} placeholder="Extra context..." />
-        <MBtn onClick={()=>{ if(!form.title.trim()) return; setIdeas(is=>[{id:Date.now(),title:form.title.trim(),type:form.type,hook:form.hook,thumbnail:form.thumbnail,notes:form.notes,collab:form.collab,viral:0,hookScore:0,created:today()},...is]); closeModal("addIdea"); }}>Add Idea</MBtn>
+        <MBtn onClick={()=>{ if(!form.title.trim()) return; const now = new Date().toISOString(); setIdeas(is=>[{id:Date.now(),title:form.title.trim(),type:form.type,hook:form.hook,thumbnail:form.thumbnail,notes:form.notes,collab:form.collab,viral:0,hookScore:0,created:today(),createdAt:now},...is]); closeModal("addIdea"); }}>Add Idea</MBtn>
       </ModalBase>
     );
   };
@@ -6221,7 +6405,20 @@ Return JSON:
               } catch(e) { setSyncMsg("Sync failed: "+e.message); }
               setTimeout(()=>setSyncMsg(null), 4000);
             }}
-            syncMsg={syncMsg} videos={videos} ideas={ideas} />}
+            syncMsg={syncMsg} videos={videos} ideas={ideas}
+            onBulkImport={newVids=>{
+              setVideos(vs=>{
+                const merged=[...vs];
+                newVids.forEach(nv=>{
+                  if(!merged.find(v=>v.title===nv.title)){
+                    merged.unshift({...nv,id:Date.now().toString()+Math.random().toString(36).slice(2),created_at:new Date().toISOString()});
+                  }
+                });
+                saveJSON(VIDEOS_KEY,merged);
+                return merged;
+              });
+            }}
+            />}
 
           </div>{/* end page content padding */}
 
