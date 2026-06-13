@@ -594,7 +594,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
       {/* ── IDEAS ─────────────────────────────────────────────── */}
       {sub==="IDEAS" && (
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:14 }}>
           {sorted.length===0
             ? <div style={{ gridColumn:"1/-1", padding:"48px", textAlign:"center", borderRadius:18, border:"1px solid rgba(255,255,255,0.07)", fontSize:16, color:"rgba(255,255,255,0.3)" }}>No ideas yet — tap Add Idea to get started</div>
             : sorted.map(idea=>{
@@ -622,7 +622,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                       </div>
                       <div style={{ display:"flex", gap:10, flexShrink:0, alignItems:"flex-start" }}>
                         <div style={{ textAlign:"center" }}>
-                          <div style={{ fontSize:44, fontWeight:400, fontFamily:C.fontHead, color:scoreC, lineHeight:1, textShadow:`0 0 20px ${scoreC}50` }}>{idea.viral||0}</div>
+                          <div style={{ fontSize:36, fontWeight:400, fontFamily:C.fontHead, color:scoreC, lineHeight:1, textShadow:`0 0 20px ${scoreC}50` }}>{idea.viral||0}</div>
                           <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginTop:3 }}>VIRAL</div>
                         </div>
                         {(idea.hookScore||0)>0 && (
