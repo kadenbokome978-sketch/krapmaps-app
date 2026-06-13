@@ -567,7 +567,7 @@ const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDi
   );
 };
 
-const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCaption, aiLoad, captionResult, captionIdea, copied, copyText, openModal, setEditIdeaTarget, setModals, setNavSub }) => {
+const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCaption, aiLoad, captionResult, captionIdea, copied, copyText, openModal, setEditIdeaTarget, setModals, setNavSub, onBuildScript }) => {
   const [sub, setSub]         = useState("IDEAS");
   const [expanded, setExpanded] = useState(null);
   const [calFilter, setCalFilter] = useState("ALL");
@@ -691,8 +691,20 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                     )}
                   </div>
 
+                  {/* Estimated views + pipeline status */}
+                  {idea.aiScore?.estimated_views && (
+                    <div style={{ padding:"8px 20px", borderTop:"1px solid rgba(255,255,255,0.04)", display:"flex", alignItems:"center", gap:10 }}>
+                      <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", fontWeight:700, letterSpacing:"0.1em" }}>EST. ORGANIC REACH</div>
+                      <div style={{ fontSize:14, fontWeight:700, color:scoreC, letterSpacing:"0.04em" }}>{idea.aiScore.estimated_views}</div>
+                      {idea.aiScore.contentPillar && <Tag color={C.purple} sm>{idea.aiScore.contentPillar}</Tag>}
+                    </div>
+                  )}
+
                   {/* Actions */}
                   <div style={{ padding:"12px 20px", borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
+                    {onBuildScript && (
+                      <button onClick={()=>onBuildScript(idea)} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.green}35`, background:`${C.green}14`, color:C.green, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>BUILD SCRIPT</button>
+                    )}
                     <button onClick={()=>scoreIdea&&scoreIdea(idea)} disabled={aiLoad&&aiLoad["s"+idea.id]} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.purple}30`, background:`${C.purple}12`, color:C.purple, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer", opacity:aiLoad&&aiLoad["s"+idea.id]?0.5:1 }}>
                       {aiLoad&&aiLoad["s"+idea.id]?"SCORING...":idea.viral?"RE-SCORE":"SCORE IT"}
                     </button>
@@ -2829,6 +2841,9 @@ const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onS
   const [editing, setEditing] = useState(null);
   const [draftKey, setDraftKey] = useState("");
   const [wlDraft, setWlDraft] = useState(null);
+  const [trendsDraft, setTrendsDraft] = useState(()=>loadJSON(CUR_TRENDS_KEY,""));
+  const [trendsSaved, setTrendsSaved] = useState(false);
+  const saveTrends = () => { saveJSON(CUR_TRENDS_KEY, trendsDraft); setTrendsSaved(true); setTimeout(()=>setTrendsSaved(false),2000); };
   const saveKey = (field) => { onEditKeys&&onEditKeys({...keys,[field]:draftKey.trim()}); setEditing(null); setDraftKey(""); };
   const startWL = () => setWlDraft({...WL});
   const saveWLEdit = () => { onEditWL&&onEditWL(wlDraft); setWlDraft(null); };
@@ -3030,6 +3045,25 @@ const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onS
           </div>
         </div>
       </div>
+
+      {/* Current Trends — injected into every AI call */}
+      <div style={{ borderRadius:20, padding:"22px 24px", background:`linear-gradient(145deg,rgba(255,107,53,0.08),rgba(10,6,20,0.95))`, border:`1px solid ${C.orange}25`, position:"relative", overflow:"hidden" }}>
+        <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.orange},${C.orange}00)` }}/>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+          <div>
+            <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>Current Trends</div>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:3 }}>Injected into every AI call — update weekly</div>
+          </div>
+          <button onClick={saveTrends} style={{ padding:"9px 20px", borderRadius:11, border:`1px solid ${trendsSaved?C.green:C.orange}50`, background:trendsSaved?`${C.green}20`:`${C.orange}18`, color:trendsSaved?C.green:C.orange, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{trendsSaved?"SAVED ✓":"SAVE"}</button>
+        </div>
+        <textarea
+          value={trendsDraft}
+          onChange={e=>setTrendsDraft(e.target.value)}
+          placeholder={`What's trending right now? Paste audio names, formats, topics, anything the AI should know.\n\nExamples:\n- "Sabrina Carpenter - Espresso" is peak on TikTok this week\n- POV format getting 3x normal reach\n- SE Asia travel content spiking post-monsoon season\n- Competitor @travelfromtheheart posting daily cleanup challenges`}
+          rows={7}
+          style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.orange}25`, borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:13, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box", resize:"vertical", lineHeight:1.6 }}
+        />
+      </div>
     </div>
   );
 };
@@ -3055,10 +3089,11 @@ try { const flt=loadJSON("krapmaps_v1_igfollowers_last",0); if(flt && flt < 1749
 // Invalidate old reels cache if it was set before API swap
 try { const t=loadJSON("krapmaps_v1_igreels_last",0); if(t && t < 1749500000000) localStorage.removeItem("krapmaps_v1_igreels_last"); } catch(e){}
 
-const MEMORY_KEY   = "krapmaps_v1_memory";
-const COMPETE_KEY  = "krapmaps_v1_competitors";
-const PREDICT_KEY  = "krapmaps_v1_predictions";
-const SCORES_KEY   = "krapmaps_v1_scores";
+const MEMORY_KEY      = "krapmaps_v1_memory";
+const COMPETE_KEY     = "krapmaps_v1_competitors";
+const PREDICT_KEY     = "krapmaps_v1_predictions";
+const SCORES_KEY      = "krapmaps_v1_scores";
+const CUR_TRENDS_KEY  = "krapmaps_v1_cur_trends";
 const HOOK_DB_KEY  = "krapmaps_v1_hookdb";
 const PATTERN_KEY  = "krapmaps_v1_patterns";
 const GAP_KEY      = "krapmaps_v1_gaps";
@@ -3500,7 +3535,7 @@ const NAV = [
 ];
 
 // ── AI CHAT VIEW ──────────────────────────────────────────────────
-function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) {
+function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, preloadMsg }) {
   const CHAT_KEY = "krapmaps_v1_chat";
   const [msgs, setMsgs] = useState(()=>{
     const saved = loadJSON(CHAT_KEY, null);
@@ -3511,6 +3546,7 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [videoFile, setVideoFile] = useState(null);
+  const [videoContext, setVideoContext] = useState("");
   const [uploading, setUploading] = useState(false);
   const [lastFileUri, setLastFileUri] = useState(null);
   const [lastFileB64, setLastFileB64] = useState(null);
@@ -3518,10 +3554,19 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const fileRef = useRef(null);
+  const preloadRef = useRef(null);
 
   useEffect(() => {
     setTimeout(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); inputRef.current?.focus(); }, 100);
   }, [msgs]);
+
+  // Auto-send preloaded message (from "Build Script" on idea cards)
+  useEffect(() => {
+    if(!preloadMsg || preloadRef.current===preloadMsg.id) return;
+    preloadRef.current = preloadMsg.id;
+    setInput(preloadMsg.text);
+    setTimeout(()=>{ inputRef.current?.focus(); }, 120);
+  }, [preloadMsg]);
 
   const TOOLS = [
     {
@@ -3682,7 +3727,19 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos }) 
 
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
 
+      const avgViewsForAnalysis = videos.length ? Math.round(videos.filter(v=>!v.boosted).reduce((s,v)=>s+(v.views||0),0) / (videos.filter(v=>!v.boosted).length||1)) : 0;
+      const topVidsForAnalysis = [...videos].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,3).map(v=>v.title);
+      const trendsForAnalysis = loadJSON(CUR_TRENDS_KEY,"");
+
       const prompt = `You are the world's best viral video analyst — combining expertise in social psychology, the 2025 TikTok/Reels algorithm, and environmental travel content. You are analysing a clip for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia, creators BK + Harley).
+
+CHANNEL CALIBRATION:
+- Organic avg views: ${avgViewsForAnalysis} (use this as baseline for virality estimates — "good" = 3x this, "viral" = 10x+)
+- Top performers: ${topVidsForAnalysis.join(" | ")||"not tracked yet"}
+- Many early videos were paid/boosted — weight content patterns over raw numbers
+${trendsForAnalysis ? `\nCURRENT TRENDS (use these in your editing + sound recommendations):\n${trendsForAnalysis}` : ""}
+${videoContext ? `\nCREATOR CONTEXT FOR THIS CLIP:\n${videoContext}` : ""}
+
 
 Analyse this clip with full virality science:
 
@@ -3757,7 +3814,10 @@ Be specific with timestamps. Harsh but constructive. No generic advice.`;
 
     try {
       const topVids = [...videos].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
-      const avgViews = videos.length ? Math.round(videos.reduce((s,v)=>s+(v.views||0),0)/videos.length) : 0;
+      const organicVids = videos.filter(v=>!v.boosted);
+      const avgViews = organicVids.length ? Math.round(organicVids.reduce((s,v)=>s+(v.views||0),0)/organicVids.length) : (videos.length ? Math.round(videos.reduce((s,v)=>s+(v.views||0),0)/videos.length) : 0);
+      const memCtx = buildMemoryContext();
+      const currentTrends = loadJSON(CUR_TRENDS_KEY,"");
       const systemPrompt = `You are the world's best viral content strategist — you combine the expertise of a top TikTok growth hacker, a social psychology researcher, and an experienced travel/environmental content creator. You manage the @findkrap TikTok and Instagram accounts through KrapMaps Content OS.
 
 ━━ BRAND & MISSION ━━
@@ -3822,7 +3882,11 @@ For this channel specifically:
 - get_stats: pull channel performance data
 
 ━━ RESPONSE STYLE ━━
-Be brutally honest, specific, and strategic. Give concrete next actions, not vague advice. Reference the virality science above when explaining WHY something will or won't work. When adding tasks or ideas, do it immediately with tools — no confirmation needed.`;
+Be brutally honest, specific, and strategic. Give concrete next actions, not vague advice. Reference the virality science above when explaining WHY something will or won't work. When adding tasks or ideas, do it immediately with tools — no confirmation needed.
+
+${currentTrends ? `━━ CURRENT TRENDS (updated by Harley) ━━\n${currentTrends}` : ""}
+
+${memCtx ? `━━ AI MEMORY LOG ━━\n${memCtx}` : ""}`;
 
 
       let conversationMsgs = newMsgs.slice(1); // skip the initial assistant greeting
@@ -3944,6 +4008,12 @@ Be extremely specific with timestamps. This is for someone who is not confident 
   };
 
   const clearChat = () => {
+    // Save a memory snapshot of the session before clearing
+    const userMsgs = msgs.filter(m=>m.role==="user" && typeof m.content==="string");
+    if(userMsgs.length > 0) {
+      const topics = userMsgs.map(m=>m.content.slice(0,60)).join(" | ");
+      addMemoryEntry("CHAT_SESSION", `Session topics: ${topics.slice(0,200)}`);
+    }
     const fresh = [{ role:"assistant", content:"Hey! I'm your KrapMaps AI assistant. I can add tasks, create video ideas, answer questions about your content — or upload a clip and I'll analyse it and tell you how to edit it." }];
     setMsgs(fresh);
     setLastFileUri(null);
@@ -4039,14 +4109,24 @@ Be extremely specific with timestamps. This is for someone who is not confident 
 
       {/* Video preview pill */}
       {videoFile && (
-        <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:`${C.purple}14`, border:`1px solid ${C.purple}40`, borderRadius:16, marginTop:12, flexShrink:0 }}>
-          <div style={{ width:30, height:30, borderRadius:9, background:`${C.purple}35`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{I.vid(14,C.purple)}</div>
-          <span style={{ fontSize:12, color:"rgba(255,255,255,0.65)", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{videoFile.name}</span>
-          <button onClick={()=>{ setVideoFile(null); if(fileRef.current) fileRef.current.value=""; }} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.3)", cursor:"pointer", fontSize:20, lineHeight:1, padding:"0 4px", flexShrink:0 }}>×</button>
-          <button onClick={()=>analyseVideo(videoFile)} disabled={uploading}
-            style={{ padding:"7px 18px", borderRadius:11, border:"none", cursor:uploading?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontSize:12, fontFamily:C.fontHead, fontWeight:700, opacity:uploading?0.6:1, whiteSpace:"nowrap", flexShrink:0, boxShadow:`0 4px 16px ${C.purple}35` }}>
-            {uploading?"Uploading...":"Analyse clip"}
-          </button>
+        <div style={{ background:`${C.purple}10`, border:`1px solid ${C.purple}35`, borderRadius:18, marginTop:12, flexShrink:0, overflow:"hidden" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px" }}>
+            <div style={{ width:30, height:30, borderRadius:9, background:`${C.purple}35`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{I.vid(14,C.purple)}</div>
+            <span style={{ fontSize:12, color:"rgba(255,255,255,0.65)", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{videoFile.name}</span>
+            <button onClick={()=>{ setVideoFile(null); setVideoContext(""); if(fileRef.current) fileRef.current.value=""; }} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.3)", cursor:"pointer", fontSize:20, lineHeight:1, padding:"0 4px", flexShrink:0 }}>×</button>
+          </div>
+          <div style={{ padding:"0 14px 12px" }}>
+            <input
+              value={videoContext}
+              onChange={e=>setVideoContext(e.target.value)}
+              placeholder="Optional: what's the goal? e.g. local connection hook, testing a new format, want to improve retention..."
+              style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1px solid ${C.purple}25`, borderRadius:10, color:"rgba(255,255,255,0.8)", padding:"9px 12px", fontSize:12, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box" }}
+            />
+            <button onClick={()=>analyseVideo(videoFile)} disabled={uploading}
+              style={{ marginTop:10, width:"100%", padding:"11px", borderRadius:12, border:"none", cursor:uploading?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontSize:13, fontFamily:C.fontHead, fontWeight:700, opacity:uploading?0.6:1, boxShadow:`0 4px 16px ${C.purple}35` }}>
+              {uploading?"Uploading...":"Analyse clip →"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -4084,6 +4164,14 @@ function Dashboard({ keys, onEditKeys }) {
   const [nav, setNav]   = useState("home");
   const [sub, setSub]   = useState(null);
   const [aiErr, setAiErr] = useState(null);
+  const [assistPreload, setAssistPreload] = useState(null);
+
+  const handleBuildScript = (idea) => {
+    const msg = `Build me a full script for this idea:\n\nTitle: "${idea.title}"\nType: ${idea.type||"facecam"}\nHook: ${idea.hook||""}\n${idea.improvedHook?`Improved hook: "${idea.improvedHook}"\n`:""}\nInclude: opening hook (exact words to say), main body (what to show + say at each moment), and a closing CTA. Give timestamps and CapCut text overlay suggestions. Make it optimised for maximum virality.`;
+    setAssistPreload({ text: msg, id: Date.now() });
+    setNav("ai");
+    setSub(null);
+  };
   const [wlConfig, setWlConfig] = useState(()=>loadWL());
   const [videoScores, setVideoScores] = useState(()=>loadJSON(SCORES_KEY,{}));
   const onEditWL = (newWL) => { saveWL(newWL); setWlConfig({...WL_DEFAULTS,...newWL}); };
@@ -5018,10 +5106,10 @@ Return ONLY valid JSON:
 
         {/* VIEWS */}
         {nav==="home"      && <HomeView ideas={topIdeas} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} />}
-        {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} />}
+        {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} />}
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
-        {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} />}
+        {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} preloadMsg={assistPreload} />}
         {nav==="growth"    && <GrowthView m={m} ttViewsDisplay={ttViewsDisplay} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} scrapedStats={scrapedStats} saveManual={saveManual} setManualData={setManualData} videos={videos} />}
         {nav==="settings"  && <SettingsView keys={keys} onEditKeys={onEditKeys} scrapedStats={scrapedStats} hasIG={hasIG} WL={activeWL} onEditWL={onEditWL} onSyncTikTok={async()=>{
               setSyncMsg("Syncing...");
