@@ -567,7 +567,7 @@ const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDi
   );
 };
 
-const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCaption, aiLoad, captionResult, captionIdea, copied, copyText, openModal, setEditIdeaTarget, setModals, setNavSub, onBuildScript }) => {
+const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCaption, aiLoad, captionResult, captionIdea, copied, copyText, openModal, setEditIdeaTarget, setModals, setNavSub, onBuildScript, markPosted }) => {
   const [sub, setSub]         = useState("IDEAS");
   const [expanded, setExpanded] = useState(null);
   const [calFilter, setCalFilter] = useState("ALL");
@@ -702,8 +702,16 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
                   {/* Actions */}
                   <div style={{ padding:"12px 20px", borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
+                    {idea.status==="posted" ? (
+                      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 14px", borderRadius:10, background:`${C.green}12`, border:`1px solid ${C.green}30` }}>
+                        <div style={{ width:7, height:7, borderRadius:"50%", background:C.green, boxShadow:`0 0 6px ${C.green}` }}/>
+                        <span style={{ fontSize:13, fontWeight:700, color:C.green }}>POSTED{idea.postedViews>0?` · ${fmt(idea.postedViews)} views`:""}</span>
+                      </div>
+                    ) : (
+                      markPosted && <button onClick={()=>markPosted(idea)} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.green}30`, background:`${C.green}10`, color:C.green, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>MARK POSTED</button>
+                    )}
                     {onBuildScript && (
-                      <button onClick={()=>onBuildScript(idea)} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.green}35`, background:`${C.green}14`, color:C.green, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>BUILD SCRIPT</button>
+                      <button onClick={()=>onBuildScript(idea)} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.cyan}35`, background:`${C.cyan}14`, color:C.cyan, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer" }}>BUILD SCRIPT</button>
                     )}
                     <button onClick={()=>scoreIdea&&scoreIdea(idea)} disabled={aiLoad&&aiLoad["s"+idea.id]} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.purple}30`, background:`${C.purple}12`, color:C.purple, fontFamily:C.fontBody, fontWeight:700, fontSize:13, cursor:"pointer", opacity:aiLoad&&aiLoad["s"+idea.id]?0.5:1 }}>
                       {aiLoad&&aiLoad["s"+idea.id]?"SCORING...":idea.viral?"RE-SCORE":"SCORE IT"}
@@ -4609,6 +4617,29 @@ function Dashboard({ keys, onEditKeys }) {
   },[]);
   useEffect(()=>{ if(!igFetchedRef.current){ igFetchedRef.current=true; fetchIGReels(); } },[]);
 
+  // Auto-fetch live trends via Perplexity on load (max once per 12hrs)
+  useEffect(()=>{
+    const lastTrendFetch = loadJSON("krapmaps_v1_trend_auto_last", 0);
+    if(Date.now() - lastTrendFetch < 12*60*60*1000) return;
+    const cfg = loadJSON(KEYS_KEY,{});
+    if(!cfg?.keys?.perplexity) return;
+    const wl = loadWL();
+    setTimeout(async()=>{
+      try {
+        const r = await callPerplexity(`It is June 2026. What is trending RIGHT NOW on TikTok and Instagram Reels for travel content in Southeast Asia? What sounds/audio are peaking? What formats are getting the highest reach? What topics are viral this week? Return JSON: { hot:[{topic,momentum:'rising|peak|fading',hook_example}], sounds:[string], formats:[string] }`, wl);
+        if(r?.hot?.length || r?.sounds?.length) {
+          const formatted = [
+            r.hot?.map(t=>`[${t.momentum?.toUpperCase()||"TRENDING"}] ${t.topic}${t.hook_example?` — hook: "${t.hook_example}"`:""}`).join("\n"),
+            r.sounds?.length ? "Trending sounds: "+r.sounds.join(", ") : "",
+            r.formats?.length ? "Hot formats: "+r.formats.join(", ") : "",
+          ].filter(Boolean).join("\n");
+          saveJSON(CUR_TRENDS_KEY, "AUTO-FETCHED "+new Date().toLocaleDateString()+":\n"+formatted);
+          saveJSON("krapmaps_v1_trend_auto_last", Date.now());
+        }
+      } catch(e) { /* silent */ }
+    }, 3000);
+  },[]);
+
   // ── AI FUNCTIONS ──────────────────────────────────────────────
   const runAI = async (mode) => {
     if(aiLoad[mode]) return;
@@ -4650,23 +4681,47 @@ function Dashboard({ keys, onEditKeys }) {
       if(mode==="analysis") { setAnalysis(r); addMemoryEntry("ANALYSIS", "Analysis run. Top: "+(r.whatIsWorking?.[0]?.insight||"N/A")); }
       if(mode==="nextVids") { setNextVids(r); addMemoryEntry("NEXT_VIDS", "Generated "+(r.tiktok?.length||0)+" video recs. Top: "+(r.tiktok?.[0]?.title||"N/A")); }
       if(mode==="weekly")   { setWeekly(r); }
-      if(mode==="trends")   { setTrends(r); addMemoryEntry("TRENDS", "Trend scan. Top: "+(r.trends?.[0]?.trend||"N/A")); }
+      if(mode==="trends")   {
+        setTrends(r);
+        addMemoryEntry("TRENDS", "Trend scan. Top: "+(r.trends?.[0]?.trend||"N/A"));
+        // Auto-update Current Trends field from live Perplexity data
+        if(r.trends?.length) {
+          const autoTrends = r.trends.map(t=>`[${t.urgency}] ${t.trend} — hook: "${t.hook||""}"`).join("\n");
+          saveJSON(CUR_TRENDS_KEY, autoTrends);
+        }
+      }
     } catch(e) { setAiErr("AI error: "+e.message); }
     setAiLoad(l=>({...l,[mode]:false}));
+  };
+
+  const markPosted = (idea) => {
+    const viewsStr = window.prompt(`How many views did "${idea.title.slice(0,40)}" get? (enter number, e.g. 12000)`);
+    if(viewsStr===null) return;
+    const actualViews = parseInt(viewsStr.replace(/[^0-9]/g,""))||0;
+    const predicted = idea.aiScore?.estimated_views||"unknown";
+    const outcome = actualViews>0 ? `Got ${fmt(actualViews)} views (AI predicted ${predicted})` : "Posted, views not tracked";
+    addMemoryEntry("IDEA_OUTCOME", `"${idea.title.slice(0,60)}" posted. ${outcome}. Pillar: ${idea.aiScore?.contentPillar||idea.type||"unknown"}. Score was: ${idea.viral||"unscored"}/100`, outcome);
+    setIdeas(is=>is.map(i=>i.id===idea.id?{...i,status:"posted",postedViews:actualViews,postedDate:new Date().toISOString().slice(0,10)}:i));
   };
 
   const scoreIdea = async (idea) => {
     const key = "s"+idea.id;
     setAiLoad(l=>({...l,[key]:true}));
     try {
-      const topV = [...videos].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
-        const avgV = videos.length?Math.round(videos.reduce((s,v)=>s+(v.views||0),0)/videos.length):0;
+      const organicVids = videos.filter(v=>!v.boosted);
+      const topV = [...(organicVids.length?organicVids:videos)].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
+      const postedIdeas = ideas.filter(i=>i.status==="posted"&&i.postedViews>0);
+      const ideaOutcomes = postedIdeas.slice(0,5).map(i=>`"${i.title.slice(0,40)}" → ${fmt(i.postedViews)} views (score was ${i.viral||"?"}/100)`);
+      const avgV = organicVids.length?Math.round(organicVids.reduce((s,v)=>s+(v.views||0),0)/organicVids.length):(videos.length?Math.round(videos.reduce((s,v)=>s+(v.views||0),0)/videos.length):0);
+        const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
         const r = await callAI(`You are the world's best viral content strategist. Score this TikTok/Reels idea for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia).
 
 CHANNEL CONTEXT:
 - Niche: environmental travel in SE Asia. Creators: BK (on camera) + Harley (strategy).
-- Organic avg: ${avgV} views. Reference organic performers (ignore boosted outliers): ${JSON.stringify(topV.map(v=>({title:v.title,views:v.views,hook:v.hook,type:v.type})))}
-- Many early videos were PAID/BOOSTED — ignore view count outliers, focus on content patterns.
+- Organic avg: ${avgV} views. Top organic performers: ${JSON.stringify(topV.map(v=>({title:v.title,views:v.views,hook:v.hook,type:v.type})))}
+- Many early videos were PAID/BOOSTED — ignore view count outliers, weight content patterns over raw numbers.
+${ideaOutcomes.length?`- REAL OUTCOMES (ideas already posted): ${ideaOutcomes.join(" | ")} — calibrate estimated_views against these real results.`:""}
+${currentTrendsForScore?`- CURRENT TRENDS (June 2026): ${currentTrendsForScore}`:"- NOTE: It is June 2026 — factor in current platform algorithm behaviour, not 2024 data."}
 
 IDEA TO SCORE:
 Title: "${idea.title}" | Type: ${idea.type} | Hook: ${idea.hook}
@@ -5106,7 +5161,7 @@ Return ONLY valid JSON:
 
         {/* VIEWS */}
         {nav==="home"      && <HomeView ideas={topIdeas} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} />}
-        {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} />}
+        {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} markPosted={markPosted} />}
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} preloadMsg={assistPreload} />}
