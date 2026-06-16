@@ -340,7 +340,7 @@ const Sparkline = ({ data=[], color=C.pink, height=40 }) => {
   );
 };
 
-const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDisplay, igViewsTotal=0, allViewsDisplay=0, m, scrapedStats, statsError, igData, videos=[] }) => {
+const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDisplay, igViewsTotal=0, allViewsDisplay=0, m, scrapedStats, statsError, igData, videos=[], weeklyDebrief, debriefLoading, runDebrief }) => {
   const topIdeas = [...(ideas||[])].sort((a,b)=>(Number(b.viral)||0)-(Number(a.viral)||0)).slice(0,3);
   const upcoming = (calItems||[]).slice(0,3);
   const streak = React.useMemo(()=>getStreak(),[]);
@@ -579,6 +579,55 @@ const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDi
           </div>
         );
       })()}
+
+      {/* ══ WEEKLY DEBRIEF ════════════════════════════════════════ */}
+      <div style={{ borderRadius:16, overflow:"hidden", border:"1px solid rgba(255,255,255,0.08)", background:"rgba(255,255,255,0.025)" }}>
+        <div style={{ padding:"14px 20px", borderBottom:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#fff", fontFamily:C.fontHead }}>Weekly Debrief</div>
+            {weeklyDebrief?.generatedAt && <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, marginTop:2 }}>Generated {new Date(weeklyDebrief.generatedAt).toLocaleDateString()}</div>}
+          </div>
+          <button onClick={runDebrief} disabled={debriefLoading} style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${C.purple}40`, background:debriefLoading?`${C.purple}15`:`linear-gradient(135deg,${C.purple}30,${C.pink}20)`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:debriefLoading?"wait":"pointer", opacity:debriefLoading?0.7:1 }}>
+            {debriefLoading?"GENERATING...":"↺ RUN DEBRIEF"}
+          </button>
+        </div>
+        {weeklyDebrief ? (
+          <div style={{ padding:"16px 20px", display:"flex", flexDirection:"column", gap:12 }}>
+            <div style={{ fontSize:15, fontWeight:700, color:"#fff", fontFamily:C.fontBody, lineHeight:1.5 }}>{weeklyDebrief.headline}</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:10 }}>
+              <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.green}08`, border:`1px solid ${C.green}18` }}>
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:8, fontFamily:C.fontHead }}>WHAT WORKED</div>
+                {weeklyDebrief.whatWorked?.map((w,i)=><div key={i} style={{ fontSize:12, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, marginBottom:4, lineHeight:1.5 }}>✓ {w}</div>)}
+              </div>
+              <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.pink}08`, border:`1px solid ${C.pink}18` }}>
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:8, fontFamily:C.fontHead }}>NEEDS WORK</div>
+                {weeklyDebrief.whatDidnt?.map((w,i)=><div key={i} style={{ fontSize:12, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, marginBottom:4, lineHeight:1.5 }}>✕ {w}</div>)}
+              </div>
+            </div>
+            {weeklyDebrief.focusThisWeek && <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.cyan}08`, border:`1px solid ${C.cyan}18` }}>
+              <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:8, fontFamily:C.fontHead }}>FOCUS THIS WEEK</div>
+              {weeklyDebrief.focusThisWeek.map((f,i)=>(
+                <div key={i} style={{ display:"flex", gap:8, alignItems:"flex-start", marginBottom:i<weeklyDebrief.focusThisWeek.length-1?6:0 }}>
+                  <span style={{ fontSize:11, fontWeight:700, color:C.cyan, background:`${C.cyan}15`, borderRadius:4, padding:"1px 6px", flexShrink:0, marginTop:2, fontFamily:C.fontHead }}>{i+1}</span>
+                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, lineHeight:1.5 }}>{f}</div>
+                </div>
+              ))}
+            </div>}
+            {weeklyDebrief.ideaToFilmNow && <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.yellow}08`, border:`1px solid ${C.yellow}20` }}>
+              <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:5, fontFamily:C.fontHead }}>FILM THIS WEEK</div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, lineHeight:1.5 }}>{weeklyDebrief.ideaToFilmNow}</div>
+            </div>}
+            {weeklyDebrief.watchOut && <div style={{ padding:"10px 14px", borderRadius:10, background:`${C.orange}08`, border:`1px solid ${C.orange}20`, display:"flex", gap:10, alignItems:"flex-start" }}>
+              <span style={{ fontSize:14 }}>⚠️</span>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, lineHeight:1.5 }}>{weeklyDebrief.watchOut}</div>
+            </div>}
+          </div>
+        ) : (
+          <div style={{ padding:"32px 20px", textAlign:"center" }}>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody }}>Run your weekly debrief to get a strategic summary of what's working and what to focus on</div>
+          </div>
+        )}
+      </div>
 
       {/* ══ UPCOMING + IDEAS ═══════════════════════════════════════ */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(280px,100%),1fr))", gap:14 }}>
@@ -826,6 +875,10 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
   const [postingId, setPostingId] = useState(null);
   const [postViews, setPostViews] = useState("");
   const [quickExpand, setQuickExpand] = useState("");
+  const [hookA, setHookA] = useState("");
+  const [hookB, setHookB] = useState("");
+  const [hookABResult, setHookABResult] = useState(null);
+  const [hookABLoading, setHookABLoading] = useState(false);
   const [expanding, setExpanding] = useState(false);
   const setIdeaStage = (idea, stage) => {
     if(stage === "posted") {
@@ -1186,6 +1239,57 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
               );
             })
           }
+        </div>
+
+        {/* ── HOOK A/B TESTER ─────────────────────────────────── */}
+        <div style={{ marginTop:20, borderRadius:16, padding:"20px 22px", background:`${C.purple}0a`, border:`1px solid ${C.purple}25` }}>
+          <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.14em", marginBottom:14 }}>HOOK A/B TESTER</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:10, marginBottom:12 }}>
+            {[["A", hookA, setHookA], ["B", hookB, setHookB]].map(([label, val, setter])=>(
+              <div key={label}>
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.12em", marginBottom:6, fontFamily:C.fontHead }}>HOOK {label}</div>
+                <textarea value={val} onChange={e=>setter(e.target.value)} placeholder={`Write hook ${label}...`} rows={2} style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, color:"#fff", padding:"10px 14px", fontSize:13, fontFamily:C.fontBody, outline:"none", resize:"none", boxSizing:"border-box", lineHeight:1.5 }}/>
+              </div>
+            ))}
+          </div>
+          <button onClick={async()=>{
+            if(!hookA.trim()||!hookB.trim()) return;
+            setHookABLoading(true); setHookABResult(null);
+            try {
+              const r = await callAI(`Compare these two TikTok hooks for @findkrap (KrapMaps — bin-finding app for backpackers in SE Asia). Score each on: pattern interrupt, open loop strength, identity trigger, curiosity gap. Return ONLY JSON: {"winner":"A","hookAScore":0,"hookBScore":0,"hookAAnalysis":"","hookBAnalysis":"","whyWinner":"","improvedWinner":""}\n\nHook A: "${hookA}"\nHook B: "${hookB}"`, 600);
+              setHookABResult(r); addXP(10);
+            } catch(e){}
+            setHookABLoading(false);
+          }} disabled={hookABLoading||!hookA.trim()||!hookB.trim()} style={{ padding:"10px 22px", borderRadius:11, border:"none", background:hookABLoading?`${C.purple}30`:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:hookABLoading?"wait":"pointer", marginBottom:hookABResult?14:0, opacity:(!hookA.trim()||!hookB.trim())?0.5:1 }}>
+            {hookABLoading?"ANALYSING...":"⚡ TEST HOOKS"}
+          </button>
+          {hookABResult && (
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:10 }}>
+                {[{label:"A",score:hookABResult.hookAScore,analysis:hookABResult.hookAAnalysis,hook:hookA},{label:"B",score:hookABResult.hookBScore,analysis:hookABResult.hookBAnalysis,hook:hookB}].map((h,i)=>(
+                  <div key={i} style={{ borderRadius:12, padding:"14px", background:hookABResult.winner===h.label?`${C.green}10`:"rgba(255,255,255,0.02)", border:`1px solid ${hookABResult.winner===h.label?C.green:"rgba(255,255,255,0.06)"}` }}>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+                      <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", fontFamily:C.fontHead }}>HOOK {h.label}</div>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        {hookABResult.winner===h.label && <span style={{ fontSize:10, fontWeight:700, color:C.green, fontFamily:C.fontHead }}>WINNER</span>}
+                        <span style={{ fontSize:16, fontWeight:700, color:hookABResult.winner===h.label?C.green:C.pink, fontFamily:C.fontHead }}>{h.score}</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody, marginBottom:5, fontStyle:"italic" }}>"{h.hook}"</div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, lineHeight:1.5 }}>{h.analysis}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.cyan}08`, border:`1px solid ${C.cyan}18` }}>
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.12em", marginBottom:5, fontFamily:C.fontHead }}>WHY HOOK {hookABResult.winner} WINS</div>
+                <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, lineHeight:1.5, marginBottom:8 }}>{hookABResult.whyWinner}</div>
+                {hookABResult.improvedWinner && <>
+                  <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.12em", marginBottom:4, fontFamily:C.fontHead }}>IMPROVED VERSION</div>
+                  <div style={{ fontSize:14, color:C.cyan, fontWeight:600, fontFamily:C.fontBody }}>"{hookABResult.improvedWinner}"</div>
+                </>}
+              </div>
+            </div>
+          )}
         </div>
         </>
       )}
@@ -4743,12 +4847,95 @@ async function callAI(prompt, maxTokens=2000) {
   }
 }
 
+// ── DEALS ─────────────────────────────────────────────────────────
+const DEALS_KEY = "krapmaps_v1_deals";
+const DealsView = () => {
+  const [deals, setDeals] = useState(()=>loadJSON(DEALS_KEY,[]));
+  const [form, setForm] = useState({ brand:"", type:"Sponsored Post", value:"", status:"Enquiry", platform:"TikTok", deliverable:"", deadline:"", notes:"" });
+  const [showForm, setShowForm] = useState(false);
+  useEffect(()=>saveJSON(DEALS_KEY,deals),[deals]);
+  const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
+  const addDeal = () => {
+    if(!form.brand.trim()) return;
+    setDeals(d=>[{id:Date.now(),...form,created:new Date().toISOString().slice(0,10)},...d]);
+    setForm({ brand:"", type:"Sponsored Post", value:"", status:"Enquiry", platform:"TikTok", deliverable:"", deadline:"", notes:"" });
+    setShowForm(false); addXP(25);
+  };
+  const STATUS_C = { Enquiry:C.cyan, Negotiating:C.yellow, Signed:C.green, Live:C.pink, Delivered:C.purple, Paid:C.green, Declined:"rgba(255,255,255,0.3)" };
+  const totalEarned = deals.filter(d=>["Paid","Delivered","Live"].includes(d.status)).reduce((s,d)=>s+parseFloat(d.value||0),0);
+  const pipeline = deals.filter(d=>["Enquiry","Negotiating","Signed"].includes(d.status)).reduce((s,d)=>s+parseFloat(d.value||0),0);
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(150px,100%),1fr))", gap:12 }}>
+        {[{l:"TOTAL EARNED",v:`£${totalEarned.toLocaleString()}`,c:C.green},{l:"IN PIPELINE",v:`£${pipeline.toLocaleString()}`,c:C.yellow},{l:"ACTIVE DEALS",v:deals.filter(d=>!["Paid","Declined"].includes(d.status)).length,c:C.cyan},{l:"ALL DEALS",v:deals.length,c:C.purple}].map((s,i)=>(
+          <div key={i} data-card style={{ borderRadius:16, padding:"18px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${s.c}25` }}>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700, marginBottom:8, fontFamily:C.fontHead }}>{s.l}</div>
+            <div style={{ fontSize:28, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display:"flex", justifyContent:"flex-end" }}>
+        <button onClick={()=>setShowForm(f=>!f)} style={{ padding:"10px 20px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${C.pink},${C.purple})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>{showForm?"CANCEL":"+ ADD DEAL"}</button>
+      </div>
+      {showForm && (
+        <div style={{ borderRadius:16, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.pink}25` }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:12, marginBottom:12 }}>
+            {[["Brand Name","brand","text"],["Value (£)","value","number"],["Deliverable","deliverable","text"],["Deadline","deadline","date"]].map(([l,k,t])=>(
+              <div key={k}>
+                <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:6, fontFamily:C.fontHead }}>{l.toUpperCase()}</div>
+                <input type={t} value={form[k]} onChange={set(k)} placeholder={l} style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, color:"#fff", padding:"10px 14px", fontSize:14, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box" }}/>
+              </div>
+            ))}
+            {[["Type",["Sponsored Post","UGC","Affiliate","Gifted","Ambassador"],"type"],["Status",["Enquiry","Negotiating","Signed","Live","Delivered","Paid","Declined"],"status"],["Platform",["TikTok","Instagram","Both","YouTube"],"platform"]].map(([l,opts,k])=>(
+              <div key={k}>
+                <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:6, fontFamily:C.fontHead }}>{l.toUpperCase()}</div>
+                <select value={form[k]} onChange={set(k)} style={{ width:"100%", background:"rgba(12,8,24,0.95)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, color:"#fff", padding:"10px 14px", fontSize:14, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box" }}>
+                  {opts.map(o=><option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+            ))}
+          </div>
+          <textarea value={form.notes} onChange={set("notes")} placeholder="Notes, contact details, requirements..." rows={2} style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, color:"#fff", padding:"10px 14px", fontSize:13, fontFamily:C.fontBody, outline:"none", resize:"none", boxSizing:"border-box", lineHeight:1.6, marginBottom:12 }}/>
+          <button onClick={addDeal} style={{ padding:"11px 24px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${C.pink},${C.purple})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>SAVE DEAL</button>
+        </div>
+      )}
+      {deals.length===0 ? (
+        <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
+          <div style={{ fontSize:32 }}>🤝</div>
+          <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>No deals yet</div>
+          <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Track brand deals, sponsorships and collaborations here</div>
+        </div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {deals.map(deal=>(
+            <div key={deal.id} data-card style={{ borderRadius:16, padding:"16px 20px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.08)", display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
+              <div style={{ flex:1, minWidth:160 }}>
+                <div style={{ fontSize:15, fontWeight:700, color:"#fff", fontFamily:C.fontHead, marginBottom:4 }}>{deal.brand}</div>
+                <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody }}>{deal.type} · {deal.platform}{deal.deadline?` · Due ${deal.deadline}`:""}</div>
+                {deal.deliverable && <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", fontFamily:C.fontBody, marginTop:4 }}>{deal.deliverable}</div>}
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                {deal.value && <div style={{ fontSize:20, fontWeight:400, fontFamily:C.fontHead, color:C.green }}>£{parseFloat(deal.value).toLocaleString()}</div>}
+                <select value={deal.status} onChange={e=>setDeals(ds=>ds.map(d=>d.id===deal.id?{...d,status:e.target.value}:d))} style={{ background:"rgba(12,8,24,0.95)", border:`1px solid ${STATUS_C[deal.status]||C.dim}40`, borderRadius:8, color:STATUS_C[deal.status]||"#fff", padding:"6px 10px", fontSize:12, fontFamily:C.fontHead, fontWeight:700, cursor:"pointer", outline:"none" }}>
+                  {["Enquiry","Negotiating","Signed","Live","Delivered","Paid","Declined"].map(s=><option key={s} value={s}>{s}</option>)}
+                </select>
+                <button onClick={()=>setDeals(ds=>ds.filter(d=>d.id!==deal.id))} style={{ padding:"6px 8px", borderRadius:8, border:`1px solid ${C.pink}20`, background:"transparent", color:`${C.pink}70`, cursor:"pointer" }}>{I.trash(12,C.pink)}</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── NAV ───────────────────────────────────────────────────────────
 const NAV = [
   { id:"home",      label:"HOME",      ic:I.home      },
   { id:"content",   label:"CONTENT",   ic:I.write     },
   { id:"analytics", label:"ANALYTICS", ic:I.bar       },
   { id:"tasks",     label:"TASKS",     ic:I.check     },
+  { id:"deals",     label:"DEALS",     ic:I.star      },
   { id:"ai",        label:"ASSIST",    ic:I.brain     },
   { id:"growth",    label:"GROWTH",    ic:I.rocket    },
   { id:"settings",  label:"SETTINGS",  ic:I.settings  },
@@ -5423,6 +5610,25 @@ function Dashboard({ keys, onEditKeys }) {
       setTimeout(()=>scoreIdea(idea), 500);
     }
   };
+
+  const runDebrief = async () => {
+    if(!keys?.anthropic) return;
+    setDebriefLoading(true);
+    try {
+      const vids = loadJSON(VIDEOS_KEY,[]);
+      const idList = loadJSON(IDEAS_KEY,[]);
+      const topVids = [...vids].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
+      const postedThisWeek = idList.filter(i=>i.status==="posted"&&i.postedDate&&(Date.now()-new Date(i.postedDate).getTime())<604800000);
+      const recentIdeas = idList.slice(0,5).map(i=>`"${(i.title||"").slice(0,40)}" (scored ${i.viral||"unscored"})`).join(", ");
+      const r = await callAI(`You are the strategist for @findkrap (KrapMaps — bin-finding app, SE Asia backpacker content). Generate a weekly debrief.\n\nChannel data:\n- Total videos: ${vids.length}, avg views: ${Math.round(vids.reduce((s,v)=>s+(v.views||0),0)/(vids.length||1))}\n- Posted this week: ${postedThisWeek.length} videos\n- Top 5 videos: ${topVids.map(v=>`${(v.title||"").slice(0,30)} (${(v.views||0).toLocaleString()} views)`).join(", ")}\n- Recent ideas: ${recentIdeas}\n- Unscored ideas: ${idList.filter(i=>!(i.viral>0)).length}\n\nReturn ONLY JSON: {"headline":"","whatWorked":["",""],"whatDidnt":[""],"focusThisWeek":["","",""],"ideaToFilmNow":"title and why","watchOut":"one risk to avoid"}`, 800);
+      const result = {...r, generatedAt: new Date().toISOString()};
+      saveJSON("krapmaps_v1_debrief", result);
+      setWeeklyDebrief(result);
+      addXP(30);
+    } catch(e){}
+    setDebriefLoading(false);
+  };
+
   const [wlConfig, setWlConfig] = useState(()=>loadWL());
   const [videoScores, setVideoScores] = useState(()=>loadJSON(SCORES_KEY,{}));
   const onEditWL = (newWL) => { saveWL(newWL); setWlConfig({...WL_DEFAULTS,...newWL}); };
@@ -5457,6 +5663,8 @@ function Dashboard({ keys, onEditKeys }) {
   const [modals, setModals]   = useState({});
   const [updateTarget, setUpdateTarget]   = useState(null);
   const [editIdeaTarget, setEditIdeaTarget]       = useState(null);
+  const [weeklyDebrief, setWeeklyDebrief] = useState(()=>loadJSON("krapmaps_v1_debrief",null));
+  const [debriefLoading, setDebriefLoading] = useState(false);
   const [editAppIdeaTarget, setEditAppIdeaTarget] = useState(null);
 
   const openModal  = (id,data) => { setModals(m=>({...m,[id]:true})); };
@@ -6616,7 +6824,7 @@ Return JSON:
             <div style={{ marginBottom:32, display:"flex", alignItems:"flex-end", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:600, marginBottom:6 }}>
-                  {nav==="home"?"Dashboard":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="growth"?"Growth":"Settings"}
+                  {nav==="home"?"Dashboard":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":"Settings"}
                 </div>
                 <div style={{ fontSize:34, fontWeight:400, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:6 }}>
                   {nav==="home" && <span><span style={{color:C.pink}}>Content</span> OS</span>}
@@ -6624,6 +6832,7 @@ Return JSON:
                   {nav==="analytics" && <span>Track <span style={{color:C.yellow}}>Performance</span></span>}
                   {nav==="tasks" && <span>Your <span style={{color:C.green}}>Workflow</span></span>}
                   {nav==="growth" && <span>Monitor <span style={{color:C.orange}}>Growth</span></span>}
+                  {nav==="deals" && <span>Brand <span style={{color:C.pink}}>Deals</span></span>}
                   {nav==="settings" && <span>Configure <span style={{color:C.purple}}>Workspace</span></span>}
                   {nav==="ai" && <span><span style={{color:C.pink}}>AI</span> Assistant</span>}
                 </div>
@@ -6633,6 +6842,7 @@ Return JSON:
                   {nav==="analytics"&&"Deep performance data across all your content"}
                   {nav==="tasks"&&"Keep BK and Harley aligned on what to do next"}
                   {nav==="growth"&&"TikTok, Instagram and KrapMaps app metrics"}
+                  {nav==="deals"&&"Track sponsorships, collabs and brand partnerships"}
                   {nav==="settings"&&"API keys, creator config and sync controls"}
                   {nav==="ai"&&"Add tasks, ideas and get content advice"}
                 </div>
@@ -6641,10 +6851,11 @@ Return JSON:
             </div>
 
         {/* VIEWS */}
-        {nav==="home"      && <HomeView ideas={topIdeas} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} />}
+        {nav==="home"      && <HomeView ideas={topIdeas} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} weeklyDebrief={weeklyDebrief} debriefLoading={debriefLoading} runDebrief={runDebrief} />}
         {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} markPosted={markPosted} />}
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
+        {nav==="deals"     && <DealsView />}
         {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} preloadMsg={assistPreload} />}
         {nav==="growth"    && <GrowthView m={m} ttViewsDisplay={ttViewsDisplay} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} scrapedStats={scrapedStats} saveManual={saveManual} setManualData={setManualData} videos={videos} />}
         {nav==="settings"  && <SettingsView keys={keys} onEditKeys={onEditKeys} scrapedStats={scrapedStats} hasIG={hasIG} WL={activeWL} onEditWL={onEditWL} onSyncTikTok={async()=>{
