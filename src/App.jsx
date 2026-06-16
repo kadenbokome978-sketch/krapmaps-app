@@ -343,6 +343,11 @@ const Sparkline = ({ data=[], color=C.pink, height=40 }) => {
 const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDisplay, igViewsTotal=0, allViewsDisplay=0, m, scrapedStats, statsError, igData, videos=[] }) => {
   const topIdeas = [...(ideas||[])].sort((a,b)=>(Number(b.viral)||0)-(Number(a.viral)||0)).slice(0,3);
   const upcoming = (calItems||[]).slice(0,3);
+  const streak = React.useMemo(()=>getStreak(),[]);
+  const xp = React.useMemo(()=>getXP(),[]);
+  const intelLevel = React.useMemo(()=>getIntelligenceLevel(videos, ideas||[], loadJSON(MEMORY_KEY,{entries:[]}), loadJSON(CHANNEL_THEORY_KEY,"")),[videos, ideas]);
+  const xpToNext = 100 * (xp.level * xp.level);
+  const xpProgress = Math.min(((xp.total - 100*(xp.level-1)*(xp.level-1)) / (xpToNext - 100*(xp.level-1)*(xp.level-1))) * 100, 100);
   // Build chart data from videos
   const last7 = [...Array(7)].map((_,i) => {
     const d = new Date(); d.setDate(d.getDate()-6+i);
@@ -372,6 +377,61 @@ const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDi
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+
+      {/* ══ RETENTION BAR — streak, XP, intelligence ══════════════ */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(160px,100%),1fr))", gap:10 }}>
+        {/* Daily Streak */}
+        <div data-card style={{ borderRadius:16, padding:"16px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${streak.count>=7?C.orange:"rgba(255,255,255,0.08)"}`, display:"flex", alignItems:"center", gap:14 }}>
+          <div style={{ fontSize:28 }}>{streak.count>=7?"🔥":streak.count>=3?"⚡":"📅"}</div>
+          <div>
+            <div style={{ fontSize:24, fontWeight:400, fontFamily:C.fontHead, color:streak.count>=7?C.orange:streak.count>=3?C.yellow:"#fff", lineHeight:1 }}>{streak.count}<span style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginLeft:4 }}>day{streak.count!==1?"s":""}</span></div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700, marginTop:2 }}>STREAK{streak.best>streak.count?` · BEST ${streak.best}`:""}</div>
+          </div>
+        </div>
+        {/* XP Level */}
+        <div data-card style={{ borderRadius:16, padding:"16px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.purple}25` }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700 }}>CREATOR LEVEL</div>
+            <div style={{ fontSize:11, fontWeight:700, color:C.purple, background:`${C.purple}15`, border:`1px solid ${C.purple}30`, borderRadius:6, padding:"2px 8px" }}>LVL {xp.level}</div>
+          </div>
+          <div style={{ fontSize:22, fontWeight:400, fontFamily:C.fontHead, color:"#fff", lineHeight:1, marginBottom:8 }}>{xp.total.toLocaleString()} <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>XP</span></div>
+          <div style={{ height:4, borderRadius:2, background:"rgba(255,255,255,0.06)" }}>
+            <div style={{ height:"100%", width:`${xpProgress}%`, borderRadius:2, background:`linear-gradient(90deg,${C.purple},${C.pink})`, transition:"width 0.6s ease" }}/>
+          </div>
+        </div>
+        {/* Channel Intelligence */}
+        <div data-card style={{ borderRadius:16, padding:"16px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.cyan}25` }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700 }}>AI INTELLIGENCE</div>
+            <div style={{ fontSize:11, fontWeight:700, color:C.cyan, background:`${C.cyan}12`, border:`1px solid ${C.cyan}25`, borderRadius:6, padding:"2px 8px" }}>{intelLevel<30?"LEARNING":intelLevel<60?"BUILDING":intelLevel<80?"SHARP":"ELITE"}</div>
+          </div>
+          <div style={{ fontSize:22, fontWeight:400, fontFamily:C.fontHead, color:C.cyan, lineHeight:1, marginBottom:8 }}>{intelLevel}<span style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginLeft:2 }}>/100</span></div>
+          <div style={{ height:4, borderRadius:2, background:"rgba(255,255,255,0.06)" }}>
+            <div style={{ height:"100%", width:`${intelLevel}%`, borderRadius:2, background:`linear-gradient(90deg,${C.cyan},${C.purple})`, transition:"width 0.6s ease" }}/>
+          </div>
+        </div>
+        {/* Open loops — Zeigarnik effect */}
+        {(() => {
+          const unscored = (ideas||[]).filter(i=>!(i.viral>0)&&i.status!=="posted").length;
+          const stale = (ideas||[]).filter(i=>{ if(["posted","filmed"].includes(i.status)) return false; const d=i.createdAt?Math.floor((Date.now()-new Date(i.createdAt).getTime())/86400000):null; return d&&d>30; }).length;
+          const urgent = unscored + stale;
+          return urgent > 0 ? (
+            <div data-card style={{ borderRadius:16, padding:"16px 20px", background:`${C.pink}08`, border:`1px solid ${C.pink}25`, cursor:"pointer" }} onClick={()=>setNav("content")}>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700, marginBottom:8 }}>NEEDS ATTENTION</div>
+              <div style={{ fontSize:22, fontWeight:400, fontFamily:C.fontHead, color:C.pink, lineHeight:1, marginBottom:6 }}>{urgent} <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>open loop{urgent!==1?"s":""}</span></div>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody }}>
+                {unscored>0&&`${unscored} unscored`}{unscored>0&&stale>0?" · ":" "}{stale>0&&`${stale} stale`}
+              </div>
+            </div>
+          ) : (
+            <div data-card style={{ borderRadius:16, padding:"16px 20px", background:`${C.green}08`, border:`1px solid ${C.green}25` }}>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700, marginBottom:8 }}>STATUS</div>
+              <div style={{ fontSize:22, fontWeight:400, fontFamily:C.fontHead, color:C.green, lineHeight:1, marginBottom:4 }}>All clear ✓</div>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", fontFamily:C.fontBody }}>No open loops</div>
+            </div>
+          );
+        })()}
+      </div>
 
       {/* ══ HERO BANNER ══════════════════════════════════════════ */}
       <div style={{ borderRadius:24, overflow:"hidden", position:"relative", background:"linear-gradient(135deg,#0A0614 0%,#120820 50%,#0A0614 100%)", border:"1px solid rgba(255,255,255,0.06)" }}>
@@ -969,6 +1029,34 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                               <div key={hi} style={{ padding:"7px 10px", borderRadius:8, background:`${C.purple}06`, border:`1px solid ${C.purple}12`, marginBottom:hi<idea.altHooks.length-1?6:0 }}>
                                 <div style={{ fontSize:13, fontWeight:600, color:"#fff", marginBottom:2 }}>"{h.hook}"</div>
                                 <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>{h.type} · {h.why}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {/* Retention theory panels */}
+                        {(idea.openLoopStrength||idea.emotionalArc) && (
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                            {idea.openLoopStrength && (
+                              <div style={{ padding:"10px 12px", background:`${C.pink}06`, borderRadius:10, border:`1px solid ${C.pink}18` }}>
+                                <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", fontWeight:700, letterSpacing:"0.1em", marginBottom:5 }}>OPEN LOOP <span style={{ color:C.pink, fontSize:12 }}>{idea.openLoopStrength}/10</span></div>
+                                <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)", lineHeight:1.5, fontFamily:C.fontBody }}>{typeof idea.openLoopStrength==="string"?idea.openLoopStrength:""}</div>
+                              </div>
+                            )}
+                            {idea.emotionalArc && (
+                              <div style={{ padding:"10px 12px", background:`${C.yellow}06`, borderRadius:10, border:`1px solid ${C.yellow}18` }}>
+                                <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", fontWeight:700, letterSpacing:"0.1em", marginBottom:5 }}>EMOTIONAL ARC</div>
+                                <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)", lineHeight:1.5, fontFamily:C.fontBody }}>{idea.emotionalArc}</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {idea.reHookMoments?.length>0 && (
+                          <div style={{ padding:"10px 12px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:"1px solid rgba(255,255,255,0.05)" }}>
+                            <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>RE-HOOK MOMENTS</div>
+                            {idea.reHookMoments.map((m,mi)=>(
+                              <div key={mi} style={{ display:"flex", gap:8, alignItems:"flex-start", marginBottom:mi<idea.reHookMoments.length-1?6:0 }}>
+                                <span style={{ fontSize:10, fontWeight:700, color:C.orange, background:`${C.orange}15`, borderRadius:4, padding:"1px 6px", flexShrink:0, marginTop:2 }}>{mi===0?"3s":mi===1?"15s":"30s"}</span>
+                                <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)", lineHeight:1.5, fontFamily:C.fontBody }}>{m}</div>
                               </div>
                             ))}
                           </div>
@@ -3695,6 +3783,8 @@ const SYNC_KEY     = "krapmaps_v1_syncurl";
 const SB_URL_KEY   = "krapmaps_sb_url";
 const SB_KEY_KEY   = "krapmaps_sb_key";
 const SCRAPE_KEY   = "krapmaps_v1_scrape";
+const STREAK_KEY   = "krapmaps_v1_streak";
+const XP_KEY       = "krapmaps_v1_xp";
 // Clear old follower/reels cache from previous API versions
 try { const flt=loadJSON("krapmaps_v1_igfollowers_last",0); if(flt && flt < 1749500000000) localStorage.removeItem("krapmaps_v1_igfollowers_last"); } catch(e){}
 // Invalidate old reels cache if it was set before API swap
@@ -3710,6 +3800,38 @@ const HOOK_DB_KEY  = "krapmaps_v1_hookdb";
 const PATTERN_KEY  = "krapmaps_v1_patterns";
 const GAP_KEY      = "krapmaps_v1_gaps";
 const GPT_KEY_ID   = "gpt4o";
+
+// ── STREAK & XP SYSTEM ─────────────────────────────────────────────
+const getStreak = () => {
+  const s = loadJSON(STREAK_KEY, { count:0, lastDate:null, best:0 });
+  const today = new Date().toISOString().slice(0,10);
+  const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+  if(s.lastDate === today) return s;
+  if(s.lastDate === yesterday) {
+    const updated = { count: s.count+1, lastDate: today, best: Math.max(s.best||0, s.count+1) };
+    saveJSON(STREAK_KEY, updated); return updated;
+  }
+  // streak broken
+  const reset = { count:1, lastDate:today, best: Math.max(s.best||0, s.count||0) };
+  saveJSON(STREAK_KEY, reset); return reset;
+};
+const addXP = (amount) => {
+  const xp = loadJSON(XP_KEY, { total:0, level:1 });
+  const newTotal = (xp.total||0) + amount;
+  const newLevel = Math.floor(Math.sqrt(newTotal/100)) + 1;
+  saveJSON(XP_KEY, { total:newTotal, level:newLevel });
+  return { total:newTotal, level:newLevel };
+};
+const getXP = () => loadJSON(XP_KEY, { total:0, level:1 });
+const getIntelligenceLevel = (videos=[], ideas=[], memory={}, theory="") => {
+  let score = 0;
+  score += Math.min(videos.length * 3, 30);        // up to 30pts for videos
+  score += Math.min((ideas.filter(i=>i.viral>0).length) * 4, 20); // scored ideas
+  score += theory?.length > 200 ? 20 : 0;          // channel theory
+  score += Math.min((memory?.entries?.length||0) * 2, 20); // memory
+  score += ideas.filter(i=>i.status==="posted").length * 2; // posted content
+  return Math.min(Math.round(score), 100);
+};
 
 const DEFAULT_SB_URL = "https://xiudsyiinkqtmowkiqxh.supabase.co";
 const ANTHROPIC_KEY  = ""; // Add your key in Settings tab
@@ -5852,6 +5974,7 @@ function Dashboard({ keys, onEditKeys }) {
     const score = idea.viral||0;
     addMemoryEntry("IDEA_OUTCOME", `"${idea.title.slice(0,60)}" posted. ${outcome}. Pillar: ${pillar}. Score: ${score}/100`, outcome);
     setIdeas(is=>is.map(i=>i.id===idea.id?{...i,status:"posted",postedViews:actualViews,postedDate:new Date().toISOString().slice(0,10)}:i));
+    addXP(50); // XP for posting
 
     // Background: counterfactual reasoning + structured learning
     if(actualViews > 0) {
@@ -6025,7 +6148,7 @@ Score each factor with this rigour:
 5. NICHE FIT (${weights.niche}%) — Score against the channel's 5 proven pillars IN PRIORITY ORDER based on your channel data: Local Connection (authentic relationship with SE Asian community) > Location Contrast (unexpected setting reveal) > Mission Reveal (environmental/litter mission story) > App In Action (using KrapMaps to solve a real problem) > Travel Utility (backpacker tips). If this idea doesn't clearly belong to a pillar, score low. If it sits at the intersection of two pillars, score high.
 
 Return ONLY valid JSON:
-{"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","retentionFix":"the single biggest retention improvement","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic organic ceiling e.g. 20K-80K — anchored to calibration data above","contentPillar":"Local Connection|Location Contrast|Mission Reveal|App In Action|Travel Utility","competitorAngle":"how to differentiate from what competitors are already doing in this niche"}`, 2000);
+{"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","retentionFix":"the single biggest retention improvement","openLoopStrength":"rate 1-10 how well this video creates and sustains curiosity gaps — what is the open loop and when does it close?","reHookMoments":["specific moment at ~3s to re-engage","specific moment at ~15s","specific moment at ~30s if video is longer"],"emotionalArc":"setup→tension→payoff analysis — what emotion does viewer feel at start, middle, end? Where does it escalate?","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic organic ceiling e.g. 20K-80K — anchored to calibration data above","contentPillar":"Local Connection|Location Contrast|Mission Reveal|App In Action|Travel Utility","competitorAngle":"how to differentiate from what competitors are already doing in this niche"}`, 2000);
       setIdeas(is=>is.map(i=>{
         if(i.id!==idea.id) return i;
         const prevScore = i.viral||null;
@@ -6044,6 +6167,9 @@ Return ONLY valid JSON:
           improvedHook:r.improvedHook,
           retentionFix:r.retentionFix,
           competitorAngle:r.competitorAngle,
+          openLoopStrength:r.openLoopStrength,
+          reHookMoments:r.reHookMoments,
+          emotionalArc:r.emotionalArc,
           recs:r.recommendations?.map(x=>({a:x.action,impact:x.impact?.toUpperCase()})),
           scoreDelta,
           prevScore,
@@ -6051,6 +6177,7 @@ Return ONLY valid JSON:
         };
       }));
     } catch(e) { setAiErr("Score failed: "+e.message); }
+    addXP(20); // XP for scoring an idea
     setAiLoad(l=>({...l,[key]:false}));
   };
 
@@ -6228,7 +6355,7 @@ Return JSON:
           <label htmlFor="collab-toggle-idea" style={{ color:"rgba(255,255,255,0.85)", fontSize:14, fontFamily:C.fontHead }}>Collab with local/partner account?</label>
         </div>
         <MLabel>Notes (optional)</MLabel><MInput value={form.notes} onChange={set("notes")} placeholder="Extra context..." />
-        <MBtn onClick={()=>{ if(!form.title.trim()) return; const now = new Date().toISOString(); setIdeas(is=>[{id:Date.now(),title:form.title.trim(),type:form.type,hook:form.hook,thumbnail:form.thumbnail,notes:form.notes,collab:form.collab,viral:0,hookScore:0,created:today(),createdAt:now},...is]); closeModal("addIdea"); }}>Add Idea</MBtn>
+        <MBtn onClick={()=>{ if(!form.title.trim()) return; const now = new Date().toISOString(); setIdeas(is=>[{id:Date.now(),title:form.title.trim(),type:form.type,hook:form.hook,thumbnail:form.thumbnail,notes:form.notes,collab:form.collab,viral:0,hookScore:0,created:today(),createdAt:now},...is]); addXP(10); closeModal("addIdea"); }}>Add Idea</MBtn>
       </ModalBase>
     );
   };
