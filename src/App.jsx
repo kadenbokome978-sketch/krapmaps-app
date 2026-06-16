@@ -5665,6 +5665,10 @@ function Dashboard({ keys, onEditKeys }) {
   const [editIdeaTarget, setEditIdeaTarget]       = useState(null);
   const [weeklyDebrief, setWeeklyDebrief] = useState(()=>loadJSON("krapmaps_v1_debrief",null));
   const [debriefLoading, setDebriefLoading] = useState(false);
+  const [onboarded, setOnboarded] = useState(()=>!!loadJSON("krapmaps_v1_onboarded",false));
+  const [obStep, setObStep] = useState(0);
+  const [obHandle, setObHandle] = useState("");
+  const [obKey, setObKey] = useState("");
   const [editAppIdeaTarget, setEditAppIdeaTarget] = useState(null);
 
   const openModal  = (id,data) => { setModals(m=>({...m,[id]:true})); };
@@ -6711,6 +6715,50 @@ Return JSON:
     );
   };
 
+  const finishOnboarding = () => {
+    if(obHandle.trim()) {
+      const cfg = loadJSON(KEYS_KEY,{});
+      saveJSON(KEYS_KEY,{ ...cfg, handle: obHandle.trim() });
+    }
+    if(obKey.trim()) {
+      onEditKeys({ ...(keys||{}), anthropic: obKey.trim() });
+    }
+    saveJSON("krapmaps_v1_onboarded", true);
+    setOnboarded(true);
+    addXP(50);
+  };
+
+  const OB_STEPS = [
+    {
+      icon:"🗑️",
+      title:<>Welcome to <span style={{color:C.pink}}>KrapMaps</span></>,
+      sub:"Your Content OS for @findkrap",
+      body:"Track videos, score ideas, manage brand deals and get AI-powered strategy — all in one place. Takes 60 seconds to set up.",
+      cta:"Let's go →",
+      onNext:()=>setObStep(1),
+    },
+    {
+      icon:"📲",
+      title:<>Your <span style={{color:C.cyan}}>Channel</span></>,
+      sub:"Step 1 of 2",
+      body:"What's your TikTok handle? This personalises your AI content strategy.",
+      field:<input value={obHandle} onChange={e=>setObHandle(e.target.value)} placeholder="@findkrap" style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`1px solid ${C.cyan}40`, borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:16, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box", marginTop:4 }}/>,
+      cta:"Next →",
+      onNext:()=>setObStep(2),
+      skip:()=>setObStep(2),
+    },
+    {
+      icon:"🤖",
+      title:<>Add your <span style={{color:C.purple}}>AI Key</span></>,
+      sub:"Step 2 of 2 — optional but recommended",
+      body:"Paste your Anthropic API key to unlock AI scoring, Script Builder, Hook A/B Tester and Weekly Debrief. You can add it later in Settings.",
+      field:<input value={obKey} onChange={e=>setObKey(e.target.value)} placeholder="sk-ant-api03-..." type="password" style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`1px solid ${C.purple}40`, borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:14, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box", marginTop:4 }}/>,
+      cta:"Finish setup →",
+      onNext:finishOnboarding,
+      skip:finishOnboarding,
+    },
+  ];
+
   // ── RENDER ────────────────────────────────────────────────────
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:C.fontHead, position:"relative" }}>
@@ -6913,6 +6961,42 @@ Return JSON:
       {modals.editAppIdea && editAppIdeaTarget && <EditAppIdeaModal />}
       {modals.addCal      && <AddCalModal />}
       {modals.editStats   && <EditStatsModal />}
+
+      {/* ONBOARDING */}
+      {!onboarded && (() => {
+        const step = OB_STEPS[obStep];
+        return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(7,5,15,0.92)", backdropFilter:"blur(24px)", WebkitBackdropFilter:"blur(24px)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+            <div style={{ width:"100%", maxWidth:460, borderRadius:28, background:"rgba(14,10,28,0.98)", border:"1px solid rgba(255,255,255,0.1)", padding:"40px 36px", position:"relative", boxShadow:"0 32px 80px rgba(0,0,0,0.7)" }}>
+              {/* Progress dots */}
+              <div style={{ display:"flex", gap:6, justifyContent:"center", marginBottom:32 }}>
+                {OB_STEPS.map((_,i)=>(
+                  <div key={i} style={{ width:i===obStep?24:6, height:6, borderRadius:3, background:i===obStep?C.pink:i<obStep?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.1)", transition:"all 0.3s" }}/>
+                ))}
+              </div>
+              {/* Icon */}
+              <div style={{ fontSize:48, textAlign:"center", marginBottom:16, lineHeight:1 }}>{step.icon}</div>
+              {/* Title */}
+              <div style={{ fontSize:28, fontWeight:400, fontFamily:C.fontHead, color:"#fff", textAlign:"center", lineHeight:1.2, marginBottom:6 }}>{step.title}</div>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.35)", textAlign:"center", fontFamily:C.fontHead, letterSpacing:"0.1em", marginBottom:20 }}>{step.sub}</div>
+              {/* Body */}
+              <div style={{ fontSize:14, color:"rgba(255,255,255,0.65)", fontFamily:C.fontBody, lineHeight:1.65, textAlign:"center", marginBottom:24 }}>{step.body}</div>
+              {/* Field */}
+              {step.field && <div style={{ marginBottom:24 }}>{step.field}</div>}
+              {/* CTA */}
+              <button onClick={step.onNext} style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${C.pink},${C.purple})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 24px ${C.pink}40`, letterSpacing:"0.04em" }}>
+                {step.cta}
+              </button>
+              {/* Skip */}
+              {step.skip && (
+                <button onClick={step.skip} style={{ width:"100%", marginTop:12, padding:"10px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.3)", fontFamily:C.fontHead, fontSize:13, cursor:"pointer" }}>
+                  Skip for now
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );
