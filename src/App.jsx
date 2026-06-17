@@ -3561,7 +3561,7 @@ const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onS
       const res = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
         headers:{"x-api-key":keys.anthropic,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:600,messages:[{role:"user",content:`You are a media psychologist analysing why a specific TikTok channel goes viral. Channel: @findkrap (KrapMaps — crowdsourced bin-finding app, environmental travel in SE Asia, creators BK + Harley).
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:600,messages:[{role:"user",content:`You are a media psychologist analysing why a specific social media channel goes viral. Channel: ${loadWL().handle} (${loadWL().appName} — ${loadWL().niche}, creator${loadWL().creator2?`s: ${loadWL().creator1} + ${loadWL().creator2}`:`: ${loadWL().creator1}`}).
 
 TOP PERFORMING VIDEOS: ${JSON.stringify(top5)}
 BOTTOM PERFORMING VIDEOS: ${JSON.stringify(bot5)}
@@ -4790,36 +4790,31 @@ const sbUpsert = async (table,data) => {
 };
 
 // ── AI ────────────────────────────────────────────────────────────
-const buildSystem = (wl=WL) => `You are the AI content strategist for ${wl.appName} (@findkrap on TikTok + Instagram).
+const buildSystem = (wl=WL) => `You are the AI content strategist for ${wl.appName} (${wl.handle}).
 
-WHAT KRAPMAPS IS: ${wl.appDescription}
+WHAT ${(wl.appName||"").toUpperCase()} IS: ${wl.appDescription||wl.niche}
 
-CONTENT TEAM:
-- ${wl.creator1} (UK): strategy, editing, captions, posting
-- ${wl.creator2} (Thailand/SE Asia): filming, on-ground content, founder face
+CONTENT TEAM: ${wl.creator1}${wl.creator2?` + ${wl.creator2}`:""}
 
 NICHE: ${wl.niche}
 
 PROVEN CONTENT FORMULA: ${wl.bestFormula}
 
-CONTENT PILLARS (in order of priority):
-1. Founder journey — building in public, milestones, partnerships (Mad Monkey etc)
-2. On-the-ground impact — real cleanup, real bins, real travellers reacting
-3. Product demos — app verification flow, gamification moments, leaderboard reveals
-4. Partnerships — Mad Monkey collab content, hostel reactions, sticker placements
-5. Community wins — top mappers, leaderboard stories, user submissions
+CONTENT STYLE: ${wl.contentStyle||wl.niche}
 
 TARGET AUDIENCE: ${wl.targetAudience}
 
 PLATFORMS: ${wl.platforms}
 
-TONE: Genuine, slightly self-deprecating founder energy. Not preachy eco-content. The humour is in the absurdity of hunting bins as a serious mission.
+BRAND VALUES: ${wl.brandValues||"authenticity, consistency"}
 
-CURRENT CONTEXT: App is live v1.3.34, 230+ users, 654+ bins mapped. Both creators currently in UK. Mad Monkey Hostels partnership (24 properties), Revolution Hostels (2 properties Pai Thailand). Pre-seed raise of £275K in progress.
+BIGGEST CHALLENGE: ${wl.biggestChallenge||"content consistency"}
 
 COMPETITORS: ${wl.competitors}
 
-Always give brutally specific, actionable advice tailored to KrapMaps' exact stage and voice. No generic social media advice.
+${wl.nicheLogic ? `NICHE-SPECIFIC PRINCIPLES:\n${wl.nicheLogic}` : ""}
+
+Always give brutally specific, actionable advice tailored to ${wl.appName}'s exact niche and voice. No generic social media advice.
 Respond ONLY with valid JSON.`;
 const SYSTEM = buildSystem(WL);
 
@@ -5195,44 +5190,43 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
       const channelTheoryForAnalysis = loadJSON(CHANNEL_THEORY_KEY,"");
       const trendsForAnalysis = loadJSON(CUR_TRENDS_KEY,"");
 
-      const prompt = `You are the world's best viral video analyst — combining expertise in social psychology, the 2026 TikTok/Reels algorithm, and environmental travel content. You are analysing a clip for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia, creators BK + Harley).
+      const _anlWL = loadWL();
+      const prompt = `You are the world's best viral video analyst — combining expertise in social psychology, the 2026 TikTok/Reels algorithm, and ${_anlWL.niche}. You are analysing a clip for ${_anlWL.handle} (${_anlWL.appName} — ${_anlWL.appDescription||_anlWL.niche}).
 
 ${channelTheoryForAnalysis ? `━━ CHANNEL VIRAL THEORY ━━\n${channelTheoryForAnalysis}\n` : ""}
 ${channelStatsForAnalysis || `CHANNEL: organic avg views ${avgViewsForAnalysis} | limited data — use niche benchmarks`}
 ${engBlockForAnalysis}
 ${comboBlockForAnalysis}
 ("good" = 3x channel avg = ${fmt(avgViewsForAnalysis*3)}, "viral" = 10x+ = ${fmt(avgViewsForAnalysis*10)})
-- Many early videos were paid/boosted — weight content patterns over raw view counts
 ${trendsForAnalysis ? `\nCURRENT TRENDS (use these in editing + sound recommendations):\n${trendsForAnalysis}` : ""}
 ${videoContext ? `\nCREATOR CONTEXT FOR THIS CLIP:\n${videoContext}` : ""}
-
+${_anlWL.nicheLogic ? `\nNICHE INTELLIGENCE:\n${_anlWL.nicheLogic}` : ""}
 
 Analyse this clip with full virality science:
 
 ━━ 1. SCROLL-STOP AUDIT (0-0.5s) ━━
 - Does the very first frame stop the scroll? (brain decides in 400ms)
-- Which hook type is being used: visual disruption / open loop / identity trigger / social proof / pattern interrupt / none?
+- Which hook type: visual disruption / open loop / identity trigger / social proof / pattern interrupt / none?
 - Hook score: /10 — what specifically makes it strong or weak?
 
 ━━ 2. RETENTION CURVE PREDICTION ━━
-- Identify the exact timestamp where viewers will drop off and WHY
+- Exact timestamp where viewers will drop off and WHY
 - Is there a setup → tension → payoff arc?
 - Any dead air, slow sections, or unnecessary footage to cut?
 - Predicted watch-through rate: X% — reasoning?
 
 ━━ 3. ENGAGEMENT TRIGGER ANALYSIS ━━
-- SHARE trigger: does it give viewers social currency (makes them look good sharing it)?
-- SAVE trigger: is there bookmark-worthy info or a satisfying moment people want to revisit?
-- COMMENT trigger: does it prompt "what country?", "I'd do this", debate, or emotional response?
+- SHARE trigger: does it give viewers social currency?
+- SAVE trigger: bookmark-worthy info or satisfying moment?
+- COMMENT trigger: does it prompt debate or emotional response?
 - Which trigger is strongest? Which is weakest?
 
 ━━ 4. CONTENT PILLAR & AUDIENCE ━━
-- Which pillar: Local Connection / Location Contrast / Mission Reveal / App In Action / Travel Utility?
-- Which audience does it hit hardest: backpackers (identity) / armchair viewers (emotion) / local SE Asians (pride)?
-- Cross-cultural share potential: high / medium / low — why?
+- Which content pillar from ${_anlWL.contentStyle||_anlWL.niche}?
+- Which audience segment does it hit hardest?
+- Share potential: high / medium / low — why?
 
 ━━ 5. EDITING FIXES (priority order) ━━
-List the top 3 edits by impact:
 1. [HIGHEST IMPACT] — specific timestamp and what to change
 2. [MEDIUM IMPACT] — specific change
 3. [QUICK WIN] — easiest change with solid return
@@ -5240,7 +5234,7 @@ List the top 3 edits by impact:
 ━━ 6. VERDICT ━━
 - Post as-is / quick edit needed / reshoot — and exactly why
 - Virality ceiling estimate: X-Xk views organic — reasoning
-- ONE sentence summary a non-editor could act on immediately
+- ONE sentence a non-editor could act on immediately
 
 Be specific with timestamps. Harsh but constructive. No generic advice.`;
 
@@ -5293,17 +5287,21 @@ Be specific with timestamps. Harsh but constructive. No generic advice.`;
       const chatPredAcc = formatPredictionAccuracy(buildPredictionAccuracy(ideas));
       const compDataChat = loadCompetitorData();
       const chatCompHooks = compDataChat?.data?.steal_these_hooks?.slice(0,3).map(h=>`"${h.hook}" (${h.from_creator})`).join(", ")||"";
-      const systemPrompt = `You are the world's best viral content strategist — you combine the expertise of a top TikTok growth hacker, a social psychology researcher, and an experienced travel/environmental content creator. You manage the @findkrap TikTok and Instagram accounts through CreatorOS.
+      const _chatWL = loadWL();
+      const systemPrompt = `You are the world's best viral content strategist for ${_chatWL.platforms?.toUpperCase()?.split(",").join(" & ")||"social media"}. You manage ${_chatWL.handle} through ${_chatWL.appName}.
 
 ━━ BRAND & MISSION ━━
-The channel niche: ${wl.niche}.
-Creators: BK (on camera, charismatic, genuine) + Harley (strategy, editing, system-builder).
-Core identity: "We pick up rubbish in the world's most beautiful places because there are no bins — so we built an app to fix it."
-This is a DUAL product: entertainment (travel + environmental) AND utility (the app). Every video should serve both.
+${_chatWL.creator1}${_chatWL.creator2?` + ${_chatWL.creator2}`:""} — ${_chatWL.niche}.
+Core identity: ${_chatWL.appDescription||_chatWL.niche}.
+Best performing formula: ${_chatWL.bestFormula||"hook → story → CTA"}.
+Brand values: ${_chatWL.brandValues||"authenticity, consistency"}.
+Biggest challenge to solve: ${_chatWL.biggestChallenge||"content consistency"}.
+Goals: ${_chatWL.goals||"grow audience and engagement"}.
+Target audience: ${_chatWL.targetAudience||"18-35 social media users"}.
+Key competitors to study: ${_chatWL.competitors||"top creators in niche"}.
 
 ━━ CHANNEL DATA (real numbers — treat as ground truth) ━━
 - ${videos.length} videos tracked | ${tasks.filter(t=>!t.done).length} open tasks | ${ideas.length} ideas in pipeline
-- CRITICAL: Many early videos were paid/boosted — never use boosted view counts as organic benchmark.
 ${chatInsightsBlock}
 ${chatEngBlock}
 ${chatComboBlock}
@@ -5311,52 +5309,32 @@ ${chatAuditBlock}
 ${chatPredAcc}
 ${chatCompHooks ? `Competitor hooks proven in niche: ${chatCompHooks}` : ""}
 
-━━ AUDIENCE PSYCHOLOGY ━━
-PRIMARY: Backpackers aged 18-30 who travel SE Asia — they want the app, relate to the rubbish problem, share because it validates their experience.
-SECONDARY: Armchair travellers / environmentally conscious people — they watch for the beauty + mission story, share because it makes them look good (social currency).
-TERTIARY: Local SE Asians — share when local people/culture are shown respectfully, massive reach multiplier.
-
-What makes each audience share:
-- Backpackers: "this is exactly what I experienced" → identity validation
-- Armchair viewers: "this made me feel something" → emotional currency
-- Locals: "they're treating our country with respect" → pride/dignity
-
 ━━ 2025 ALGORITHM INTELLIGENCE ━━
-TIKTOK: Prioritises "satisfaction loops" — videos where the viewer feels something resolved. Shares 3× more valuable than likes. Comment bait ("what country is this?", "would you do this?") drives reach. Watch loops (rewatchable endings) add 20-40% to effective watch time score.
+TIKTOK: Prioritises "satisfaction loops" — videos where the viewer feels something resolved. Shares 3× more valuable than likes. Comment bait drives reach. Watch loops (rewatchable endings) add 20-40% to effective watch time score.
 REELS: Favours saves (bookmark-worthy info) and shares to Stories. Collab posts with local accounts get 2-3× organic reach. Audio trending within 48hrs of a sound peaking = algorithm boost window.
 BOTH: First 0.5 seconds is the ONLY thing that matters for stopping the scroll. Native-feeling content (vertical, no heavy graphics, authentic audio) outperforms produced content 4:1 in 2025.
 
 ━━ SCROLL-STOPPING HOOK SCIENCE ━━
 The brain decides to scroll in 400ms. Effective hooks use ONE of:
-1. VISUAL DISRUPTION — something unexpected in frame immediately (animal, confrontation, beautiful/ugly contrast)
-2. OPEN LOOP — a statement that can't be resolved without watching ("She said something that changed everything")
-3. IDENTITY TRIGGER — makes the viewer see themselves ("POV: you're the only foreigner...")
-4. SOCIAL PROOF IN MOTION — other people reacting/gathered creates FOMO
+1. VISUAL DISRUPTION — something unexpected in frame immediately
+2. OPEN LOOP — a statement that can't be resolved without watching
+3. IDENTITY TRIGGER — makes the viewer see themselves ("POV: you're...")
+4. SOCIAL PROOF IN MOTION — other people reacting creates FOMO
 5. PATTERN INTERRUPT — sudden sound, cut, or movement that breaks visual flow
 
-For this channel specifically:
-- Local person joining unexpectedly = identity trigger + social proof + surprise = highest combo
-- Beautiful scenic shot with visible rubbish in foreground = visual disruption + contrast
-- "Nobody told me about the bin problem in [iconic place]" = open loop + curiosity gap
-- Never start on a walking shot, talking-to-camera explanation, or establishing b-roll
-
-━━ CONTENT PILLARS (ranked by virality ceiling) ━━
-🥇 LOCAL CONNECTION — local stranger joins, helps, or has genuine reaction. Drives cross-cultural shares. Ceiling: 500K+
-🥈 LOCATION CONTRAST — iconic beautiful SE Asia location + shocking waste/no-bin problem. Drives saves + comments. Ceiling: 200K+
-🥉 MISSION REVEAL — the "why" story, app origin, what we're building. Emotional, drives follows. Ceiling: 100K+
-4. APP IN ACTION — real problem → app → solution shown. Conversion content. Ceiling: 50K
-5. TRAVEL UTILITY — specific bin tips, clean spots. High saves, lower viral ceiling. Ceiling: 30K
+━━ NICHE-SPECIFIC INTELLIGENCE ━━
+${_chatWL.nicheLogic || _chatWL.contentStyle || `Apply all hook science and algorithm principles to ${_chatWL.niche}. Study what works for ${_chatWL.competitors} and find gaps.`}
 
 ━━ EDITING PRINCIPLES FOR MAX RETENTION ━━
 - Cut on movement, not on pauses
-- Text overlays: max 5 words, appear within first 3s, disappear before 5s
-- Pacing: cut every 2-4 seconds in first 15s, can slow after emotional peak
+- Text overlays: max 5 words, appear within first 3s
+- Pacing: cut every 2-4 seconds in first 15s
 - End on either: resolution (satisfying) OR open question (drives comments)
-- Captions: always on, white with black outline, 85% of viewers watch muted
-- Music: trending audio within its peak window; volume at 30% under voiceover
+- Captions always on — 85% of viewers watch muted
+- Music: trending audio within its peak window; 30% volume under voiceover
 
 ━━ TOOLS ━━
-- add_task: add actionable task for BK or Harley
+- add_task: add actionable task for ${_chatWL.creator1}${_chatWL.creator2?` or ${_chatWL.creator2}`:""}
 - add_video_idea: add content idea to pipeline
 - get_stats: pull channel performance data
 
@@ -5722,7 +5700,8 @@ function Dashboard({ keys, onEditKeys }) {
   const m = manualData;
 
   // ── PERSIST TO LOCALSTORAGE ────────────────────────────────────
-  useEffect(()=>{ saveJSON(VIDEOS_KEY,videos); },[videos]);
+  // Strip ephemeral TikTok CDN URLs before saving — they expire and bloat localStorage
+  useEffect(()=>{ saveJSON(VIDEOS_KEY, videos.map(v=>{ const {videoUrl,...rest}=v; return rest; })); },[videos]);
   useEffect(()=>{ saveJSON(IDEAS_KEY,ideas); },[ideas]);
   useEffect(()=>{ saveJSON(CAL_KEY,calItems); },[calItems]);
   useEffect(()=>{ saveJSON(TASKS_KEY,tasks); },[tasks]);
@@ -5847,13 +5826,13 @@ function Dashboard({ keys, onEditKeys }) {
       if(data.code !== 0 || !data.data?.videos) return;
       
       let tikVideos = data.data.videos;
-      
-      // Paginate if more videos available
+
+      // Paginate — hasMore can be boolean or 1/0
       let ttCursor = data.data.cursor;
-      let ttMore = data.data.hasMore;
+      let ttMore = !!data.data.hasMore;
       let ttPages = 1;
-      while(ttMore && ttCursor && ttPages < 5) {
-        await new Promise(res => setTimeout(res, 800));
+      while(ttMore && ttCursor && ttPages < 10) {
+        await new Promise(res => setTimeout(res, 600));
         const r2 = await fetch(
           "https://tiktok-scraper7.p.rapidapi.com/user/posts?unique_id="+handle+"&count=35&cursor="+ttCursor+"&sort_type=0",
           { headers: { "x-rapidapi-host":"tiktok-scraper7.p.rapidapi.com", "x-rapidapi-key":tikwmKey, "Content-Type":"application/json" }}
@@ -5863,7 +5842,7 @@ function Dashboard({ keys, onEditKeys }) {
         if(d2.code !== 0 || !d2.data?.videos?.length) break;
         tikVideos = tikVideos.concat(d2.data.videos);
         ttCursor = d2.data.cursor;
-        ttMore = d2.data.hasMore;
+        ttMore = !!d2.data.hasMore;
         ttPages++;
         console.log("TT page", ttPages, "total:", tikVideos.length, "more:", ttMore);
       }
@@ -6394,18 +6373,18 @@ ${weightsLine}
 
 Score each factor with this rigour:
 
-1. HOOK STRENGTH (${weights.hook}%) — The first 0.5 seconds is won or lost here. Classify: visual disruption (unexpected image), open loop (question unanswered), identity trigger ("if you're a backpacker..."), contrast (before/after or unexpected juxtaposition), social proof (others react). Score against your channel data: does this hook type outperform or underperform the channel average? Be specific about what frame/word earns the scroll-stop.
+1. HOOK STRENGTH (${weights.hook}%) — The first 0.5 seconds is won or lost here. Classify: visual disruption (unexpected image), open loop (question unanswered), identity trigger, contrast (before/after or unexpected juxtaposition), social proof (others react). Score against your channel data: does this hook type outperform or underperform the channel average? Be specific about what frame/word earns the scroll-stop.
 
 2. RETENTION ARC (${weights.retention}%) — Map the arc: what is the SETUP (creates curiosity or stakes), what is the TENSION (maintains suspense), what is the PAYOFF (satisfying resolution that makes watch-through worth it)? If any element is missing the video will lose viewers early. Predict the drop-off timestamp and why. Check: is there dead air, filler, unnecessary explanation, or a weak ending?
 
-3. SHARE TRIGGER (${weights.share}%) — Shares are the only metric that breaks the algorithm ceiling. Score which trigger applies: SOCIAL CURRENCY (makes the sharer look good/knowledgeable — backpacker status), EMOTIONAL RESONANCE (makes armchair viewers feel something strong enough to share), CULTURAL PRIDE (SE Asian locals share it to their community). A strong share trigger is worth 5-10x in reach. Score honestly — most content fails here.
+3. SHARE TRIGGER (${weights.share}%) — Shares are the only metric that breaks the algorithm ceiling. Score which trigger applies: SOCIAL CURRENCY (makes the sharer look good/knowledgeable), EMOTIONAL RESONANCE (makes viewers feel something strong enough to share), IDENTITY VALIDATION (validates the viewer's self-image). A strong share trigger is worth 5-10x in reach. Score honestly — most content fails here.
 
-4. ALGORITHM FIT (${weights.algo}%) — In 2026 the TikTok/Reels algorithm rewards: (a) POV and first-person raw footage over produced content, (b) genuine stranger interactions over scripted scenes, (c) location contrast — unexpected setting reveals, (d) local culture moments non-locals haven't seen. PENALISE: talking-to-camera explaining, over-produced visuals, no clear scene context. Cross-reference competitor data: what formats are getting pushed in this niche right now?
+4. ALGORITHM FIT (${weights.algo}%) — In 2026 the TikTok/Reels algorithm rewards: (a) POV and first-person raw footage over produced content, (b) genuine authentic moments over scripted scenes, (c) unexpected setting/context reveals, (d) niche culture moments outsiders haven't seen. PENALISE: talking-to-camera explaining, over-produced visuals, no clear scene context. Cross-reference competitor data: what formats are getting pushed in this niche right now?
 
-5. NICHE FIT (${weights.niche}%) — Score against the channel's 5 proven pillars IN PRIORITY ORDER based on your channel data: Local Connection (authentic relationship with SE Asian community) > Location Contrast (unexpected setting reveal) > Mission Reveal (environmental/litter mission story) > App In Action (using KrapMaps to solve a real problem) > Travel Utility (backpacker tips). If this idea doesn't clearly belong to a pillar, score low. If it sits at the intersection of two pillars, score high.
+5. NICHE FIT (${weights.niche}%) — Score against ${wl.appName}'s content pillars based on: ${wl.contentStyle||wl.niche}. Core formula: ${wl.bestFormula}. If this idea doesn't clearly fit the niche and formula, score low. If it sits at the intersection of the best-performing content types, score high.
 
 Return ONLY valid JSON:
-{"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","retentionFix":"the single biggest retention improvement","openLoopStrength":"rate 1-10 how well this video creates and sustains curiosity gaps — what is the open loop and when does it close?","reHookMoments":["specific moment at ~3s to re-engage","specific moment at ~15s","specific moment at ~30s if video is longer"],"emotionalArc":"setup→tension→payoff analysis — what emotion does viewer feel at start, middle, end? Where does it escalate?","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic organic ceiling e.g. 20K-80K — anchored to calibration data above","contentPillar":"Local Connection|Location Contrast|Mission Reveal|App In Action|Travel Utility","competitorAngle":"how to differentiate from what competitors are already doing in this niche"}`, 2000);
+{"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","retentionFix":"the single biggest retention improvement","openLoopStrength":"rate 1-10 how well this video creates and sustains curiosity gaps — what is the open loop and when does it close?","reHookMoments":["specific moment at ~3s to re-engage","specific moment at ~15s","specific moment at ~30s if video is longer"],"emotionalArc":"setup→tension→payoff analysis — what emotion does viewer feel at start, middle, end? Where does it escalate?","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic organic ceiling e.g. 20K-80K — anchored to calibration data above","contentPillar":"niche-specific pillar name","competitorAngle":"how to differentiate from what competitors are already doing in this niche"}`, 2000);
       setIdeas(is=>is.map(i=>{
         if(i.id!==idea.id) return i;
         const prevScore = i.viral||null;
