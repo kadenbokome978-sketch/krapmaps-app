@@ -488,8 +488,8 @@ const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDi
             <div style={{ marginTop:24, display:"flex", alignItems:"center", gap:24 }}>
               <div style={{ height:40, width:1, background:"rgba(255,255,255,0.08)" }}/>
               {[
-                {l:"Followers",v:m?.tt_followers||0,c:C.pink},
-                {l:"Bins",v:m?.bins||0,c:C.yellow},
+                {l:WL.statLabels?.followers||"Followers",v:m?.tt_followers||0,c:C.pink},
+                {l:WL.statLabels?.custom1Label||"Stat",v:m?.[WL.statLabels?.custom1Key||"bins"]||0,c:C.yellow},
               ].map((s,i)=>(
                 <div key={i}>
                   <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", letterSpacing:"0.14em", textTransform:"uppercase" }}>{s.l}</div>
@@ -777,7 +777,7 @@ const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDi
 
       {/* Pillar Health */}
       {(() => {
-        const PILLARS = ["Local Connection","Location Contrast","Mission Reveal","App In Action","Travel Utility"];
+        const PILLARS = WL.pillars || ["Local Connection","Location Contrast","Mission Reveal","App In Action","Travel Utility"];
         const PILLAR_COLORS = {
           "Local Connection": C.green,
           "Location Contrast": C.cyan,
@@ -932,7 +932,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
       const r = await fetch("https://api.anthropic.com/v1/messages", {
         method:"POST",
         headers:{ "x-api-key":key, "anthropic-version":"2023-06-01", "content-type":"application/json", "anthropic-dangerous-direct-browser-access":"true" },
-        body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:800, messages:[{role:"user",content:`Expand this rough content concept into a full video idea for ${WL.handle} (${WL.appName} — ${WL.niche}).\n\nConcept: "${quickExpand}"\n\nReturn ONLY valid JSON:\n{"title":"compelling title under 12 words","type":"facecam|broll|voiceover|collab","hook":"hook type: achievement|contrast|challenge|curiosity|emotion|location|local|story","hookLine":"exact opening line under 10 words","body":"2 sentences on what happens in the video","cta":"what to say at the end","viralityScore":0-100,"contentPillar":"Local Connection|Location Contrast|Mission Reveal|App In Action|Travel Utility","estimated_views":"e.g. 20K-80K"}`}] })
+        body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:800, messages:[{role:"user",content:`Expand this rough content concept into a full video idea for ${WL.handle} (${WL.appName} — ${WL.niche}).\n\nConcept: "${quickExpand}"\n\nReturn ONLY valid JSON:\n{"title":"compelling title under 12 words","type":"facecam|broll|voiceover|collab","hook":"hook type: achievement|contrast|challenge|curiosity|emotion|location|local|story","hookLine":"exact opening line under 10 words","body":"2 sentences on what happens in the video","cta":"what to say at the end","viralityScore":0-100,"contentPillar":"niche-specific pillar name","estimated_views":"e.g. 20K-80K"}`}] })
       });
       const d = await r.json();
       const text = (d.content||[]).map(b=>b.text||"").join("").trim();
@@ -1939,8 +1939,10 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
   const [taskFilter, setTaskFilter] = useState("ALL");
   const [ideaInput, setIdeaInput] = useState("");
 
-  const ac = a => a==="HARLEY"?C.cyan:a==="BOTH"?C.yellow:C.pink;
-  const acLabel = a => a==="HARLEY"?"H":a==="BOTH"?"B":"BK";
+  const _c1 = WL.creator1||"Me";
+  const _c2 = WL.creator2||"";
+  const ac = a => a===_c2.toUpperCase()?C.cyan:a==="BOTH"?C.yellow:C.pink;
+  const acLabel = a => a===_c2.toUpperCase()?(_c2[0]||"2"):a==="BOTH"?"B":(_c1.slice(0,2)||"Me");
 
   const pending = tasks.filter(t=>!t.done&&(taskFilter==="ALL"||t.assignee===taskFilter));
   const done    = tasks.filter(t=> t.done&&(taskFilter==="ALL"||t.assignee===taskFilter));
@@ -1956,7 +1958,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
     setIdeaInput("");
   };
 
-  const assignees = ["ALL","BK","HARLEY","BOTH"];
+  const assignees = ["ALL",_c1.toUpperCase(),...(_c2?[_c2.toUpperCase()]:["BOTH"]),"BOTH"].filter((v,i,a)=>a.indexOf(v)===i);
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
@@ -1989,7 +1991,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                 {/* Assignee picker */}
                 <div style={{ display:"flex", gap:6 }}>
-                  {["BK","HARLEY","BOTH"].map(a=>(
+                  {[_c1.toUpperCase(),...(_c2?[_c2.toUpperCase()]:["BOTH"]),"BOTH"].filter((v,i,a)=>a.indexOf(v)===i).map(a=>(
                     <button key={a} onClick={()=>setAssign(a)} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${assign===a?ac(a):"rgba(255,255,255,0.1)"}`, background:assign===a?`${ac(a)}20`:"transparent", color:assign===a?ac(a):"rgba(255,255,255,0.45)", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>
                       {a}
                     </button>
@@ -2055,7 +2057,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
             {/* Assignee breakdown */}
             <div style={{ borderRadius:16, padding:"16px 18px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)" }}>
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:14 }}>By Assignee</div>
-              {["BK","HARLEY","BOTH"].map(a=>{
+              {[_c1.toUpperCase(),...(_c2?[_c2.toUpperCase()]:["BOTH"]),"BOTH"].filter((v,i,a)=>a.indexOf(v)===i).map(a=>{
                 const count = tasks.filter(t=>!t.done&&t.assignee===a).length;
                 const total = tasks.filter(t=>t.assignee===a).length;
                 return (
@@ -2148,7 +2150,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                     </div>
                     <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                       <button onClick={()=>{ setEditAppIdeaTarget&&setEditAppIdeaTarget(idea); setModals&&setModals(m=>({...m,editAppIdea:true})); }} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.yellow}30`, background:`${C.yellow}10`, color:C.yellow, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>EDIT</button>
-                      <button onClick={()=>setTasks(ts=>[{id:Date.now(),text:idea.text,assignee:"BK",done:false},...ts])} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.cyan}30`, background:`${C.cyan}10`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>→ TO DO</button>
+                      <button onClick={()=>setTasks(ts=>[{id:Date.now(),text:idea.text,assignee:WL.creator1||"Me",done:false},...ts])} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.cyan}30`, background:`${C.cyan}10`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>→ TO DO</button>
                       <button onClick={()=>setAppIdeas(is=>is.filter(x=>x.id!==idea.id))} style={{ padding:"8px 12px", borderRadius:10, border:`1px solid ${C.pink}20`, background:`${C.pink}08`, color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>{I.trash(13,C.pink)}</button>
                     </div>
                   </div>
@@ -2888,7 +2890,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
                     <div style={{ fontSize:14, fontWeight:700, color:"#fff", lineHeight:1.3 }}>{o.gap}</div>
                     <Tag color={o.urgency==="HIGH"?C.green:o.urgency==="MEDIUM"?C.yellow:C.dim} sm>{o.urgency}</Tag>
                   </div>
-                  <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.5, fontFamily:C.fontBody, marginBottom:6 }}>{o.why_krapmaps_can_win||o.suggested_angle}</div>
+                  <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.5, fontFamily:C.fontBody, marginBottom:6 }}>{o[`why_${WL.clientId}_can_win`]||o.why_krapmaps_can_win||o.suggested_angle}</div>
                 </div>
               ))}
             </div>
@@ -2902,7 +2904,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
                 <div key={i} style={{ marginBottom:8, padding:"12px 14px", borderRadius:12, background:"rgba(255,255,255,0.025)", border:`1px solid rgba(255,255,255,0.07)` }}>
                   <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:4 }}>From {h.from_creator}</div>
                   <div style={{ fontSize:13, color:C.yellow, fontStyle:"italic", marginBottom:4, lineHeight:1.5 }}>"{h.hook}"</div>
-                  <div style={{ fontSize:13, color:C.cyan, lineHeight:1.5 }}>→ Adapt as: "{h.adapt_for_krapmaps||Object.values(h).find(v=>typeof v==="string"&&v.length>20&&v!==h.hook&&v!==h.from_creator)}"</div>
+                  <div style={{ fontSize:13, color:C.cyan, lineHeight:1.5 }}>→ Adapt as: "{h[`adapt_for_${WL.clientId}`]||h.adapt_for_krapmaps||h.adapt_for_channel||Object.values(h).find(v=>typeof v==="string"&&v.length>20&&v!==h.hook&&v!==h.from_creator)}"</div>
                 </div>
               ))}
             </div>
@@ -3474,7 +3476,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
         {l:WL.statLabels?.custom2Label||"STAT 2", v:m?.[WL.statLabels?.custom2Key||"downloads"]?fmtG(m[WL.statLabels.custom2Key]):"--", c:C.cyan},
       ],
       charts:[
-        {label:"Bins Growth", data:days.map((l,i)=>({label:l,value:Math.round((m?.bins||0)*[0.6,0.68,0.75,0.82,0.88,0.94,1][i])})), color:C.green},
+        {label:`${WL.statLabels?.custom1Label||"Stat 1"} Growth`, data:days.map((l,i)=>({label:l,value:Math.round((m?.[WL.statLabels?.custom1Key||"bins"]||0)*[0.6,0.68,0.75,0.82,0.88,0.94,1][i])})), color:C.green},
       ]
     },
   ];
@@ -5028,7 +5030,7 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
         type:"object",
         properties: {
           text: { type:"string", description:"The task text" },
-          assignee: { type:"string", enum:["BK","Harley","Both"], description:"Who the task is assigned to" },
+          assignee: { type:"string", enum:[WL.creator1||"Creator",WL.creator2||"Both","Both"], description:"Who the task is assigned to" },
           priority: { type:"string", enum:["urgent","normal","low"], description:"Task priority" }
         },
         required:["text","assignee"]
@@ -5057,7 +5059,7 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
 
   const executeTool = (name, inp) => {
     if(name === "add_task") {
-      const newTask = { id:Date.now(), text:inp.text, assignee:inp.assignee||"BK", done:false, priority:inp.priority||"normal", created:new Date().toISOString() };
+      const newTask = { id:Date.now(), text:inp.text, assignee:inp.assignee||WL.creator1||"Me", done:false, priority:inp.priority||"normal", created:new Date().toISOString() };
       setTasks(ts=>[newTask,...ts]);
       saveJSON(TASKS_KEY, [newTask,...tasks]);
       return `Task added: "${inp.text}" assigned to ${inp.assignee}`;
@@ -5975,10 +5977,28 @@ function Dashboard({ keys, onEditKeys }) {
 
     try {
       const wl = loadWL();
-      const handle = (wl.handle||"@findkrap").replace("@","");
+      const handle = (wl.handle||"").replace("@","");
+      if(!handle) return;
+
+      // Look up user ID from handle (cached to avoid extra API calls)
+      const cachedUserId = loadJSON("krapmaps_v1_ig_userid_"+handle, null);
+      let userId = cachedUserId;
+      if(!userId) {
+        try {
+          const infoRes = await fetch(
+            "https://instagram-scraper-api2.p.rapidapi.com/v1/info?username_or_id_or_url="+handle,
+            { headers:{ "x-rapidapi-host":"instagram-scraper-api2.p.rapidapi.com", "x-rapidapi-key":rapidKey } }
+          );
+          if(infoRes.ok) {
+            const infoData = await infoRes.json();
+            userId = infoData?.data?.id || infoData?.data?.user?.pk;
+            if(userId) saveJSON("krapmaps_v1_ig_userid_"+handle, userId);
+          }
+        } catch(e) { console.warn("IG user ID lookup failed:", e.message); }
+      }
+      if(!userId) return;
 
       // Fetch ALL reels via pagination using max_id cursor
-      const userId = "78520217622"; // findkrap user ID
       const baseUrl = "https://instagram-scraper-api2.p.rapidapi.com/v1/clips?user_id=" + userId;
       const headers = { "x-rapidapi-host": "instagram-scraper-api2.p.rapidapi.com", "x-rapidapi-key": rapidKey };
       
@@ -6324,7 +6344,7 @@ LEARNING: [one sentence]`}]})
 
       // Pillar gap boost — if a pillar hasn't been posted in X days, ideas in that pillar get a strategic bonus
       const pillarGapBoost = (() => {
-        const PILLARS = ["Local Connection","Location Contrast","Mission Reveal","App In Action","Travel Utility"];
+        const PILLARS = WL.pillars || ["Local Connection","Location Contrast","Mission Reveal","App In Action","Travel Utility"];
         const posted = ideas.filter(i=>i.status==="posted"&&i.postedDate&&i.aiScore?.contentPillar);
         const lastByPillar = {};
         posted.forEach(i=>{ const p=i.aiScore.contentPillar; const d=new Date(i.postedDate); if(!lastByPillar[p]||d>lastByPillar[p]) lastByPillar[p]=d; });
@@ -6743,7 +6763,7 @@ Return JSON:
     return (
       <ModalBase onClose={()=>closeModal("editStats")}>
         <div style={{ fontSize:20,fontWeight:700,color:C.text,marginBottom:16 }}>Update Stats</div>
-        {[["TT Followers","tt_followers","Your TikTok follower count"],["TT Total Views","tt_views","All-time TikTok views"],["TT Total Likes","tt_likes","All-time TikTok likes"],["Bins Mapped","bins","Current bin count (now 654)"],["IG Followers","ig_followers","Enter manually from Instagram app"],["Downloads","downloads","App downloads (App Store + Play Store)"]].map(([l,k])=>(
+        {[["TT Followers","tt_followers","Your TikTok follower count"],["TT Total Views","tt_views","All-time TikTok views"],["TT Total Likes","tt_likes","All-time TikTok likes"],[WL.statLabels?.custom1Label||"Custom Stat 1",WL.statLabels?.custom1Key||"custom1",""],[WL.statLabels?.custom2Label||"Custom Stat 2",WL.statLabels?.custom2Key||"custom2",""],["IG Followers","ig_followers","Enter manually from Instagram app"],["Spotify Monthly Listeners","monthly_listeners","From Spotify for Artists"]].filter(([l,k])=>k).map(([l,k])=>(
           <div key={k}><MLabel>{l}</MLabel><MInput value={form[k]||""} onChange={set(k)} placeholder="0" type="number" /></div>
         ))}
         <MBtn onClick={()=>{ saveManual(form); closeModal("editStats"); }}>Save Stats</MBtn>
@@ -6901,7 +6921,7 @@ Return JSON:
                   {nav==="home"&&`${WL.handle} · ${WL.platforms.split(",").map(p=>p[0].toUpperCase()+p.slice(1)).join(" & ")}`}
                   {nav==="content"&&"All your TikTok and Instagram content in one view"}
                   {nav==="analytics"&&"Deep performance data across all your content"}
-                  {nav==="tasks"&&"Keep BK and Harley aligned on what to do next"}
+                  {nav==="tasks"&&`Keep ${WL.creator1}${WL.creator2?` and ${WL.creator2}`:""} aligned on what to do next`}
                   {nav==="growth"&&`TikTok, Instagram and ${WL.appName} app metrics`}
                   {nav==="deals"&&"Track sponsorships, collabs and brand partnerships"}
                   {nav==="settings"&&"API keys, creator config and sync controls"}
