@@ -7179,98 +7179,163 @@ function OnboardingPage({ onComplete }) {
                       ))}
                     </div>
 
-                    {/* Main grid */}
-                    <div style={{ flex:1, padding:"16px", display:"grid", gridTemplateRows:"1fr 1fr 1fr", gridTemplateColumns:"1fr 1fr 1fr", gap:10, overflow:"hidden" }}>
+                    {/* Main grid — 2 rows, top row 3 panels, bottom row 2 panels */}
+                    <div style={{ flex:1, padding:"14px", display:"flex", flexDirection:"column", gap:10, overflow:"hidden" }}>
 
-                      {/* Virality Score */}
-                      <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px", display:"flex", flexDirection:"column" }}>
-                        <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:8 }}>VIRALITY SCORE</div>
-                        <div style={{ fontSize:52, fontWeight:900, color:"#fff", lineHeight:1, letterSpacing:"-0.04em", fontFamily:"Inter,sans-serif", flex:1 }}>87</div>
-                        <div style={{ fontSize:8, color:"rgba(255,255,255,0.28)", fontFamily:"Courier New,monospace", marginBottom:8 }}>HIGH POTENTIAL</div>
-                        <div style={{ height:2, background:"rgba(255,255,255,0.06)", borderRadius:1 }}>
-                          <div style={{ height:"100%", width:"87%", background:"rgba(255,255,255,0.6)", borderRadius:1 }}/>
-                        </div>
-                      </div>
+                      {/* TOP ROW — 3 equal panels */}
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1.4fr 1fr", gap:10, flex:"0 0 auto" }}>
 
-                      {/* Hook A/B Test */}
-                      <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px" }}>
-                        <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:10 }}>HOOK A/B TEST</div>
-                        {[["A","POV: no bin in sight anywhere in Bali",94,true],["B","This is why travellers litter (not their fault)",71,false]].map(([lbl,txt,sc,win])=>(
-                          <div key={lbl} style={{ background:win?"rgba(255,255,255,0.07)":"transparent", border:`1px solid rgba(255,255,255,${win?0.12:0.05})`, borderRadius:6, padding:"7px 9px", marginBottom:5 }}>
-                            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
-                              <div style={{ fontSize:7, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", fontWeight:700 }}>{lbl} {win?"· WINNER":""}</div>
-                              <div style={{ fontSize:9, fontWeight:700, color:win?"#fff":"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace" }}>{sc}</div>
-                            </div>
-                            <div style={{ fontSize:8, color:"rgba(255,255,255,0.5)", lineHeight:1.4 }}>{txt}</div>
+                        {/* Virality Score */}
+                        <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"16px 14px", display:"flex", flexDirection:"column" }}>
+                          <div style={{ fontSize:8, letterSpacing:"0.18em", color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:10, fontWeight:600 }}>VIRALITY SCORE</div>
+                          <div style={{ display:"flex", alignItems:"flex-end", gap:8, marginBottom:8 }}>
+                            <div style={{ fontSize:56, fontWeight:900, color:"#fff", lineHeight:1, letterSpacing:"-0.05em", fontFamily:"Inter,sans-serif" }}>87</div>
+                            <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontFamily:"Courier New,monospace", marginBottom:8 }}>/100</div>
                           </div>
-                        ))}
-                      </div>
+                          <div style={{ fontSize:9, color:"rgba(255,255,255,0.35)", fontFamily:"Courier New,monospace", marginBottom:10, letterSpacing:"0.08em" }}>HIGH POTENTIAL</div>
+                          <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+                            {[["Hook strength","92%"],["Trend match","84%"],["Niche fit","88%"]].map(([label,val])=>(
+                              <div key={label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                                <div style={{ fontSize:8, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace" }}>{label}</div>
+                                <div style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:"Courier New,monospace" }}>{val}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
 
-                      {/* Analytics bar chart */}
-                      <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px", display:"flex", flexDirection:"column" }}>
-                        <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:6 }}>WEEKLY VIEWS</div>
-                        <div style={{ fontSize:20, fontWeight:800, color:"#fff", fontFamily:"Inter,sans-serif", letterSpacing:"-0.02em", marginBottom:10 }}>↑ 12.4K</div>
-                        <div style={{ display:"flex", alignItems:"flex-end", gap:4, flex:1 }}>
-                          {[0.32,0.55,0.38,0.78,0.62,1.0,0.7].map((h,i)=>(
-                            <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3, height:"100%", justifyContent:"flex-end" }}>
-                              <div style={{ width:"100%", background:i===5?"rgba(255,255,255,0.8)":"rgba(255,255,255,0.16)", borderRadius:"2px 2px 0 0", height:`${h*100}%` }}/>
-                              <div style={{ fontSize:6, color:"rgba(255,255,255,0.18)", fontFamily:"Courier New,monospace" }}>{["M","T","W","T","F","S","S"][i]}</div>
+                        {/* Hook A/B Test */}
+                        <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"16px 14px" }}>
+                          <div style={{ fontSize:8, letterSpacing:"0.18em", color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:12, fontWeight:600 }}>HOOK A/B TEST</div>
+                          {[
+                            {lbl:"A",txt:`"POV: you can't find a single bin in all of Bali 🤯"`,sc:94,win:true,note:"Strong emotion + location"},
+                            {lbl:"B",txt:`"This is why travellers litter — it's not their fault"`,sc:71,win:false,note:"Good premise, weaker hook"}
+                          ].map(({lbl,txt,sc,win,note})=>(
+                            <div key={lbl} style={{ background:win?"rgba(255,255,255,0.07)":"transparent", border:`1px solid rgba(255,255,255,${win?0.14:0.05})`, borderRadius:7, padding:"10px 12px", marginBottom:8 }}>
+                              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                                  <div style={{ fontSize:8, color:"rgba(255,255,255,0.35)", fontFamily:"Courier New,monospace", fontWeight:700 }}>HOOK {lbl}</div>
+                                  {win && <div style={{ fontSize:7, color:"rgba(255,255,255,0.6)", fontFamily:"Courier New,monospace", border:"1px solid rgba(255,255,255,0.2)", borderRadius:2, padding:"1px 5px", letterSpacing:"0.1em" }}>WINNER</div>}
+                                </div>
+                                <div style={{ fontSize:14, fontWeight:800, color:win?"#fff":"rgba(255,255,255,0.3)", fontFamily:"Inter,sans-serif" }}>{sc}<span style={{ fontSize:9, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace" }}> pts</span></div>
+                              </div>
+                              <div style={{ fontSize:9, color:`rgba(255,255,255,${win?0.65:0.35})`, lineHeight:1.45, marginBottom:5 }}>{txt}</div>
+                              <div style={{ fontSize:8, color:"rgba(255,255,255,0.22)", fontFamily:"Courier New,monospace", fontStyle:"italic" }}>{note}</div>
                             </div>
                           ))}
                         </div>
+
+                        {/* Analytics */}
+                        <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"16px 14px", display:"flex", flexDirection:"column" }}>
+                          <div style={{ fontSize:8, letterSpacing:"0.18em", color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:8, fontWeight:600 }}>THIS WEEK</div>
+                          <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:12 }}>
+                            {[["Views","12.4K","↑ 38%"],["Followers","+847","↑ best wk"],["Likes","3.2K","↑ 21%"]].map(([label,val,change])=>(
+                              <div key={label}>
+                                <div style={{ fontSize:8, color:"rgba(255,255,255,0.28)", fontFamily:"Courier New,monospace", marginBottom:2 }}>{label}</div>
+                                <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
+                                  <div style={{ fontSize:18, fontWeight:800, color:"#fff", fontFamily:"Inter,sans-serif", letterSpacing:"-0.02em" }}>{val}</div>
+                                  <div style={{ fontSize:9, color:"rgba(255,255,255,0.4)", fontFamily:"Courier New,monospace" }}>{change}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display:"flex", alignItems:"flex-end", gap:3, flex:1 }}>
+                            {[0.32,0.55,0.38,0.78,0.62,1.0,0.7].map((h,i)=>(
+                              <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3, height:"100%", justifyContent:"flex-end" }}>
+                                <div style={{ width:"100%", background:i===5?"rgba(255,255,255,0.75)":"rgba(255,255,255,0.14)", borderRadius:"2px 2px 0 0", height:`${h*100}%` }}/>
+                                <div style={{ fontSize:6, color:"rgba(255,255,255,0.18)", fontFamily:"Courier New,monospace" }}>{["M","T","W","T","F","S","S"][i]}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Brand deals — spans 2 cols */}
-                      <div style={{ gridColumn:"span 2", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px" }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                          <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace" }}>BRAND DEALS</div>
-                          <div style={{ fontSize:18, fontWeight:800, color:"#fff", fontFamily:"Inter,sans-serif", letterSpacing:"-0.02em" }}>£4,400</div>
-                        </div>
-                        {[["Patagonia","£2,400","SIGNED",1],["Osprey","£1,200","NEGOTIATING",0.65],["HostelWorld","£800","OUTREACH",0.3]].map(([brand,val,status,prog])=>(
-                          <div key={brand} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
-                            <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", fontFamily:"Inter,sans-serif", fontWeight:600, width:90, flexShrink:0 }}>{brand}</div>
-                            <div style={{ flex:1, height:2, background:"rgba(255,255,255,0.06)", borderRadius:1 }}>
-                              <div style={{ height:"100%", width:`${prog*100}%`, background:"rgba(255,255,255,0.45)", borderRadius:1 }}/>
+                      {/* BOTTOM ROW — 3 panels */}
+                      <div style={{ display:"grid", gridTemplateColumns:"1.3fr 1fr 1fr", gap:10, flex:1, minHeight:0 }}>
+
+                        {/* Brand Deals */}
+                        <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px", display:"flex", flexDirection:"column" }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
+                            <div>
+                              <div style={{ fontSize:8, letterSpacing:"0.18em", color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", fontWeight:600, marginBottom:4 }}>BRAND DEALS</div>
+                              <div style={{ fontSize:26, fontWeight:900, color:"#fff", fontFamily:"Inter,sans-serif", letterSpacing:"-0.03em", lineHeight:1 }}>£4,400</div>
                             </div>
-                            <div style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.8)", fontFamily:"Courier New,monospace", width:46, textAlign:"right" }}>{val}</div>
-                            <div style={{ fontSize:6, color:status==="SIGNED"?"rgba(255,255,255,0.5)":"rgba(255,255,255,0.18)", fontFamily:"Courier New,monospace", letterSpacing:"0.08em", border:"1px solid rgba(255,255,255,0.1)", borderRadius:2, padding:"2px 5px", flexShrink:0 }}>{status}</div>
+                            <div style={{ textAlign:"right" }}>
+                              <div style={{ fontSize:8, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace", marginBottom:2 }}>PIPELINE</div>
+                              <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.5)", fontFamily:"Courier New,monospace" }}>£2,400 signed</div>
+                            </div>
                           </div>
-                        ))}
-                      </div>
-
-                      {/* AI Debrief */}
-                      <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px", display:"flex", flexDirection:"column" }}>
-                        <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:10 }}>AI DEBRIEF</div>
-                        <div style={{ fontSize:9, color:"rgba(255,255,255,0.45)", fontFamily:"Courier New,monospace", lineHeight:1.8, flex:1 }}>
-                          Hook vids up 3×.<br/>
-                          Best: Thu 6pm.<br/>
-                          <span style={{ color:"rgba(255,255,255,0.88)", fontWeight:700 }}>Film the contrast idea this week.</span>
+                          {[
+                            {brand:"Patagonia",val:"£2,400",status:"SIGNED",prog:1,notes:"Brief sent ✓"},
+                            {brand:"Osprey",val:"£1,200",status:"NEGOTIATING",prog:0.6,notes:"Counter offer sent"},
+                            {brand:"HostelWorld",val:"£800",status:"OUTREACH",prog:0.25,notes:"Awaiting reply"},
+                          ].map(({brand,val,status,prog,notes})=>(
+                            <div key={brand} style={{ marginBottom:10 }}>
+                              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                                <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", fontFamily:"Inter,sans-serif", fontWeight:600 }}>{brand}</div>
+                                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                                  <div style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.8)", fontFamily:"Courier New,monospace" }}>{val}</div>
+                                  <div style={{ fontSize:6, color:status==="SIGNED"?"rgba(255,255,255,0.55)":"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace", letterSpacing:"0.08em", border:"1px solid rgba(255,255,255,0.1)", borderRadius:2, padding:"2px 5px" }}>{status}</div>
+                                </div>
+                              </div>
+                              <div style={{ height:2, background:"rgba(255,255,255,0.06)", borderRadius:1, marginBottom:3 }}>
+                                <div style={{ height:"100%", width:`${prog*100}%`, background:"rgba(255,255,255,0.4)", borderRadius:1 }}/>
+                              </div>
+                              <div style={{ fontSize:8, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace" }}>{notes}</div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
 
-                      {/* Script Builder */}
-                      <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px" }}>
-                        <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:10 }}>SCRIPT BUILDER</div>
-                        {[["HOOK","POV: you can't find a bin..."],["PROBLEM","Bali streets, beautiful but..."],["APP","KrapMaps shows nearest bin"],["CTA","Download + map your street"]].map(([label,text])=>(
-                          <div key={label} style={{ display:"flex", gap:7, marginBottom:5, alignItems:"flex-start" }}>
-                            <div style={{ fontSize:6, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace", fontWeight:700, letterSpacing:"0.1em", marginTop:1, flexShrink:0, width:44 }}>{label}</div>
-                            <div style={{ fontSize:8, color:"rgba(255,255,255,0.45)", lineHeight:1.4 }}>{text}</div>
+                        {/* AI Debrief */}
+                        <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px", display:"flex", flexDirection:"column" }}>
+                          <div style={{ fontSize:8, letterSpacing:"0.18em", color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:12, fontWeight:600 }}>AI WEEKLY DEBRIEF</div>
+                          <div style={{ display:"flex", flexDirection:"column", gap:10, flex:1 }}>
+                            {[
+                              {label:"What worked",text:"Hook-first vids up 3× avg. Thursday 6pm slot is your golden window."},
+                              {label:"What to film",text:"The contrast angle — beautiful place + trash problem. Film this week."},
+                              {label:"Growth lever",text:"Reply to every comment in first 30 min. Your engagement rate is low."},
+                            ].map(({label,text})=>(
+                              <div key={label}>
+                                <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", letterSpacing:"0.12em", marginBottom:3 }}>{label.toUpperCase()}</div>
+                                <div style={{ fontSize:9, color:"rgba(255,255,255,0.6)", lineHeight:1.5 }}>{text}</div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </div>
 
-                      {/* Tasks */}
-                      <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px" }}>
-                        <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:10 }}>TASKS</div>
-                        {[["Film contrast reel","TODAY",true],["Email Osprey brief","WED",false],["Post Monday hook","MON",false],["Debrief review","FRI",false]].map(([task,due,done])=>(
-                          <div key={task} style={{ display:"flex", alignItems:"center", gap:7, marginBottom:6 }}>
-                            <div style={{ width:8, height:8, borderRadius:2, border:`1px solid rgba(255,255,255,${done?0.5:0.15})`, background:done?"rgba(255,255,255,0.4)":"transparent", flexShrink:0 }}/>
-                            <div style={{ flex:1, fontSize:8, color:`rgba(255,255,255,${done?0.3:0.55})`, textDecoration:done?"line-through":"none" }}>{task}</div>
-                            <div style={{ fontSize:6, color:"rgba(255,255,255,0.18)", fontFamily:"Courier New,monospace" }}>{due}</div>
+                        {/* Script Builder + Tasks stacked */}
+                        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                          <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px", flex:1 }}>
+                            <div style={{ fontSize:8, letterSpacing:"0.18em", color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:10, fontWeight:600 }}>SCRIPT</div>
+                            {[
+                              {step:"HOOK","text":"POV: zero bins in all of Bali"},
+                              {step:"BUILD","text":"Show the pile-up. Real footage."},
+                              {step:"APP","text":"Open KrapMaps. Nearest bin 80m."},
+                              {step:"CTA","text":"Map yours. Link in bio."},
+                            ].map(({step:s,text})=>(
+                              <div key={s} style={{ display:"flex", gap:8, marginBottom:6, alignItems:"flex-start" }}>
+                                <div style={{ fontSize:7, color:"rgba(255,255,255,0.22)", fontFamily:"Courier New,monospace", fontWeight:700, letterSpacing:"0.1em", marginTop:1, flexShrink:0, width:36 }}>{s}</div>
+                                <div style={{ fontSize:9, color:"rgba(255,255,255,0.55)", lineHeight:1.35 }}>{text}</div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                          <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px", flex:1 }}>
+                            <div style={{ fontSize:8, letterSpacing:"0.18em", color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:10, fontWeight:600 }}>TASKS</div>
+                            {[
+                              {task:"Film contrast reel",due:"TODAY",done:false,urgent:true},
+                              {task:"Send Osprey counter-offer",due:"TUE",done:false,urgent:false},
+                              {task:"Post Thursday hook",due:"THU",done:false,urgent:false},
+                              {task:"Map 3 new bins",due:"WED",done:true,urgent:false},
+                            ].map(({task,due,done,urgent})=>(
+                              <div key={task} style={{ display:"flex", alignItems:"center", gap:7, marginBottom:6 }}>
+                                <div style={{ width:8, height:8, borderRadius:2, border:`1px solid rgba(255,255,255,${done?0.5:urgent?0.4:0.15})`, background:done?"rgba(255,255,255,0.35)":"transparent", flexShrink:0 }}/>
+                                <div style={{ flex:1, fontSize:8, color:`rgba(255,255,255,${done?0.25:0.6})`, textDecoration:done?"line-through":"none", lineHeight:1.3 }}>{task}</div>
+                                <div style={{ fontSize:7, color:urgent?"rgba(255,255,255,0.55)":"rgba(255,255,255,0.18)", fontFamily:"Courier New,monospace", fontWeight:urgent?700:400 }}>{due}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
 
+                      </div>
                     </div>
                   </div>
                 </div>
