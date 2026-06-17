@@ -6945,7 +6945,9 @@ Return JSON:
 }
 // ── ONBOARDING PAGE ──────────────────────────────────────────────
 function OnboardingPage({ onComplete }) {
-  const [step, setStep] = useState(0);
+  const _pendingStep = parseInt(localStorage.getItem("krapmaps_v1_pending_step")||"0",10);
+  if(_pendingStep) { localStorage.removeItem("krapmaps_v1_pending_step"); }
+  const [step, setStep] = useState(_pendingStep||0);
   const [handle, setHandle] = useState(WL.handle || "");
   const [apiKey, setApiKey] = useState("");
   const [codeInput, setCodeInput] = useState("");
@@ -7002,7 +7004,10 @@ function OnboardingPage({ onComplete }) {
       BOOT_LINES.forEach(l => {
         setTimeout(() => setLoadLines(prev => [...prev, l]), l.delay);
       });
-      setTimeout(() => setStep(1), 3800);
+      setTimeout(() => {
+        localStorage.setItem("krapmaps_v1_pending_step", "1");
+        window.location.reload();
+      }, 3800);
     } else {
       setCodeError(true);
       setCodeShake(true);
