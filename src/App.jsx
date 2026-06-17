@@ -993,7 +993,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
               value={quickExpand}
               onChange={e=>setQuickExpand(e.target.value)}
               onKeyDown={e=>e.key==="Enter"&&doQuickExpand()}
-              placeholder="Rough concept e.g. 'BK finds illegal dump site in Bali' ..."
+              placeholder={`Rough concept e.g. '${WL.creator1} ${WL.niche?.split(" ").slice(0,4).join(" ")}...' `}
               style={{ flex:1, background:"rgba(255,255,255,0.05)", border:`1px solid ${C.purple}30`, borderRadius:11, color:"#fff", padding:"10px 14px", fontSize:13, fontFamily:C.fontHead, outline:"none" }}
             />
             <button onClick={doQuickExpand} disabled={!quickExpand.trim()||expanding}
@@ -3988,6 +3988,7 @@ const _resolveClientConfig = () => {
 };
 const _CC = _resolveClientConfig();
 const WL_DEFAULTS = {
+  clientId: _CC.clientId || "krapmaps",
   appName: _CC.appName || "Content OS",
   appTagline: _CC.appTagline || "Content OS",
   handle: _CC.handle || "@yourchannel",
@@ -4004,8 +4005,13 @@ const WL_DEFAULTS = {
   accentColor2: _CC.accentColor2 || C.cyan,
   currency: _CC.currency || "£",
   onboardingTagline: _CC.onboardingTagline || "Score ideas, track growth, close brand deals — all in one place.",
-  aiGreeting: _CC.aiGreeting || "Hey! I'm your content OS AI assistant.",
+  aiGreeting: _CC.aiGreeting || "Hey! I'm your AI assistant.",
   statLabels: _CC.statLabels || {},
+  nicheLogic: _CC.nicheLogic || "",
+  pillars: _CC.pillars || [],
+  brandValues: _CC.brandValues || "",
+  biggestChallenge: _CC.biggestChallenge || "",
+  goals: _CC.goals || "",
 };
 const loadWL = () => { try { const s=JSON.parse(localStorage.getItem(WL_KEY)); return s?{...WL_DEFAULTS,...s}:WL_DEFAULTS; } catch { return WL_DEFAULTS; } };
 const saveWL = (wl) => { try { localStorage.setItem(WL_KEY,JSON.stringify(wl)); } catch {} };
