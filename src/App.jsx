@@ -4492,7 +4492,7 @@ const formatChannelInsights = (insights) => {
 
 // ── DYNAMIC SCORING WEIGHTS ─────────────────────────────────────
 // Adjusts the 5 scoring factor weights based on what actually drives views on THIS channel
-const buildDynamicWeights = (insights) => {
+const buildDynamicWeights = (insights, outcomeLearning=null) => {
   // Base weights (must sum to 100)
   let w = { hook:25, retention:20, share:25, algo:15, niche:15 };
   if(!insights || insights.totalVideos < 5) return w;
@@ -4513,6 +4513,13 @@ const buildDynamicWeights = (insights) => {
 
   // If channel is trending up → algo fit matters more (algorithm is already rewarding)
   if(insights.trendPct !== null && insights.trendPct > 20) { w.algo += 5; w.share -= 5; }
+
+  // Outcome learning: if hooks are the most variable predictor, up the hook weight
+  if(outcomeLearning && outcomeLearning.sampleSize >= 5 && outcomeLearning.hookAdjust.length >= 2) {
+    const ratios = outcomeLearning.hookAdjust.map(h=>h.avgRatio);
+    const hookVariance = Math.max(...ratios) / Math.min(...ratios);
+    if(hookVariance > 2) { w.hook += 5; w.retention -= 5; }
+  }
 
   return w;
 };
@@ -4604,6 +4611,116 @@ const detectSeriesMomentum = (idea, videos=[], ideas=[]) => {
   if(matchedVideo) return `SERIES MOMENTUM [confirmed — n=${videos.length} videos]: This idea continues the theme of "${matchedVideo.title}" which got ${(matchedVideo.views/1000).toFixed(1)}k views — existing audience is primed for this topic. Apply a modest niche fit boost.`;
   if(postedSuccess) return `SERIES MOMENTUM [confirmed — from posted outcome]: Similar topic to "${postedSuccess.title}" which got ${(postedSuccess.postedViews/1000).toFixed(1)}k views — proven concept with this audience. Apply a modest share trigger boost.`;
   return null;
+};
+
+// ── OUTCOME LEARNING ENGINE ──────────────────────────────────────
+// Learns which hooks/types/pillars consistently beat or miss AI predictions
+const buildOutcomeLearning = (ideas=[]) => {
+  const parseEst = (str) => {
+    if(!str) return null;
+    const nums = (str.match(/[\d,]+/g)||[]).map(n=>parseInt(n.replace(/,/g,""))).filter(n=>n>0);
+    return nums.length ? Math.round(nums.reduce((a,b)=>a+b,0)/nums.length) : null;
+  };
+  const posted = ideas.filter(i => i.status==="posted" && i.postedViews>0 && i.aiScore?.estimated_views);
+  if(posted.length < 3) return null;
+  const hookL={}, typeL={}, pillarL={};
+  posted.forEach(i => {
+    const pred = parseEst(i.aiScore.estimated_views);
+    if(!pred) return;
+    const r = i.postedViews / pred;
+    if(i.hook) { if(!hookL[i.hook]) hookL[i.hook]=[]; hookL[i.hook].push(r); }
+    if(i.type) { if(!typeL[i.type]) typeL[i.type]=[]; typeL[i.type].push(r); }
+    const p = i.aiScore?.contentPillar;
+    if(p) { if(!pillarL[p]) pillarL[p]=[]; pillarL[p].push(r); }
+  });
+  const avg = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
+  const hookAdjust   = Object.entries(hookL).filter(([,a])=>a.length>=2).map(([hook,a])=>({ hook, avgRatio:parseFloat(avg(a).toFixed(2)), count:a.length })).sort((a,b)=>b.avgRatio-a.avgRatio);
+  const typeAdjust   = Object.entries(typeL).filter(([,a])=>a.length>=2).map(([type,a])=>({ type, avgRatio:parseFloat(avg(a).toFixed(2)), count:a.length })).sort((a,b)=>b.avgRatio-a.avgRatio);
+  const pillarAdjust = Object.entries(pillarL).filter(([,a])=>a.length>=2).map(([pillar,a])=>({ pillar, avgRatio:parseFloat(avg(a).toFixed(2)), count:a.length })).sort((a,b)=>b.avgRatio-a.avgRatio);
+  return { hookAdjust, typeAdjust, pillarAdjust, sampleSize:posted.length };
+};
+
+const formatOutcomeLearning = (learning) => {
+  if(!learning || learning.sampleSize < 3) return "";
+  const sig = r => r > 1.25 ? "consistently BEATS predictions — AI underestimates this" : r < 0.75 ? "consistently MISSES — AI overestimates this" : "roughly on-target";
+  let out = `OUTCOME LEARNING [self-calibrated from ${learning.sampleSize} posted ideas with real results — ratio = actual÷predicted]:\n`;
+  if(learning.hookAdjust.length) {
+    out += `• Hook outcome multipliers:\n`;
+    learning.hookAdjust.forEach(h => out += `  - "${h.hook}": ${h.avgRatio}x (n=${h.count}) — ${sig(h.avgRatio)}\n`);
+  }
+  if(learning.typeAdjust.length) {
+    out += `• Content type outcome multipliers:\n`;
+    learning.typeAdjust.forEach(t => out += `  - "${t.type}": ${t.avgRatio}x (n=${t.count}) — ${sig(t.avgRatio)}\n`);
+  }
+  if(learning.pillarAdjust.length) {
+    out += `• Pillar outcome multipliers:\n`;
+    learning.pillarAdjust.forEach(p => out += `  - "${p.pillar}": ${p.avgRatio}x (n=${p.count}) — ${sig(p.avgRatio)}\n`);
+  }
+  out += `→ MANDATORY: multiply your estimated_views by the matching hook+type ratio. If hook ratio is 1.6x, multiply estimate by 1.6. If 0.6x, reduce by 40%. This is empirical data — it overrides your priors.\n`;
+  return out;
+};
+
+// ── HOOK FATIGUE DETECTOR ─────────────────────────────────────────
+// Audience desensitises to the same hook format — detects oversaturation
+const buildHookFatigue = (ideas=[], videos=[]) => {
+  const WINDOW = 21;
+  const cutoff = new Date(Date.now() - WINDOW * 86400000);
+  const recentIdeas  = ideas.filter(i => i.status==="posted" && i.postedDate && new Date(i.postedDate) > cutoff);
+  const recentVideos = videos.filter(v => v.created_at && new Date(v.created_at) > cutoff);
+  const hookCount={}, typeCount={};
+  [...recentIdeas, ...recentVideos].forEach(x => {
+    if(x.hook) hookCount[x.hook]=(hookCount[x.hook]||0)+1;
+    if(x.type) typeCount[x.type]=(typeCount[x.type]||0)+1;
+  });
+  const fatigued        = Object.entries(hookCount).filter(([,c])=>c>=3).sort((a,b)=>b[1]-a[1]).map(([hook,count])=>({ hook, count }));
+  const saturatedTypes  = Object.entries(typeCount).filter(([,c])=>c>=4).sort((a,b)=>b[1]-a[1]).map(([type,count])=>({ type, count }));
+  const freshHooks      = Object.entries(hookCount).filter(([,c])=>c<=1).map(([h])=>h);
+  if(!fatigued.length && !saturatedTypes.length) return null;
+  return { fatigued, saturatedTypes, freshHooks, windowDays:WINDOW };
+};
+
+const formatHookFatigue = (fatigue, ideaHook, ideaType) => {
+  if(!fatigue) return "";
+  let out = "";
+  const hf = fatigue.fatigued.find(f=>f.hook===ideaHook);
+  const tf = fatigue.saturatedTypes.find(t=>t.type===ideaType);
+  if(hf || tf) {
+    out += `AUDIENCE FATIGUE [last ${fatigue.windowDays} days]:\n`;
+    if(hf) out += `• "${ideaHook}" hook used ${hf.count}× recently — audience desensitised. Deduct 5-10pts from hook score unless this idea has a major novel twist.\n`;
+    if(tf) out += `• "${ideaType}" format posted ${tf.count}× recently — deduct from algo fit for format repetition.\n`;
+    if(fatigue.freshHooks.length) out += `• Fresh hooks (not overused): ${fatigue.freshHooks.slice(0,4).join(", ")} — consider recommending a switch.\n`;
+  }
+  return out;
+};
+
+// ── RECENT TRACK RECORD ───────────────────────────────────────────
+// Last 5 posted outcomes — real-time context for what's working THIS week
+const buildRecentTrackRecord = (ideas=[]) => {
+  const posted = ideas
+    .filter(i => i.status==="posted" && i.postedViews>0)
+    .sort((a,b) => new Date(b.postedDate||0) - new Date(a.postedDate||0))
+    .slice(0,5);
+  if(posted.length < 2) return null;
+  return posted.map(i => ({
+    title:(i.title||"").slice(0,40), hook:i.hook, type:i.type,
+    pillar:i.aiScore?.contentPillar, predicted:i.aiScore?.estimated_views, actual:i.postedViews,
+  }));
+};
+
+const formatRecentTrackRecord = (record) => {
+  if(!record || record.length < 2) return "";
+  const fmt = n => n>=1000?`${(n/1000).toFixed(1)}k`:String(n);
+  let out = `RECENT MOMENTUM [last ${record.length} posted — actual outcomes this channel]:\n`;
+  record.forEach(r => {
+    const pred = r.predicted ? ` | AI predicted: ${r.predicted}` : "";
+    out += `  • "${r.title}" [${r.hook||"?"}/${r.type||"?"}${r.pillar?`/${r.pillar}`:""} ] → ${fmt(r.actual)} actual${pred}\n`;
+  });
+  const views = record.map(r=>r.actual);
+  const allAvg = views.reduce((a,b)=>a+b,0)/views.length;
+  const last2 = views.slice(0,2).reduce((a,b)=>a+b,0)/2;
+  if(last2 > allAvg*1.5) out += `  → MOMENTUM SIGNAL: last 2 posts outperforming recent avg by 50%+ — channel is gaining traction, use this in scoring context.\n`;
+  else if(last2 < allAvg*0.5) out += `  → SLUMP SIGNAL: last 2 posts below recent avg — weight novelty and hook freshness harder in your score.\n`;
+  return out;
 };
 
 // ── VIDEO SCORE ENGINE ──────────────────────────────────────────
@@ -6338,7 +6455,9 @@ LEARNING: [one sentence]`}]})
       // Hard channel statistics from real video data
       const channelInsights = buildChannelInsights(organicVids.length?organicVids:videos);
       const channelStatsBlock = formatChannelInsights(channelInsights);
-      const weights = buildDynamicWeights(channelInsights);
+      // Outcome learning computed before weights so it can influence weight calibration
+      const _outcomeLearningEarly = buildOutcomeLearning(ideas);
+      const weights = buildDynamicWeights(channelInsights, _outcomeLearningEarly);
       const weightsLine = formatDynamicWeights(weights, channelInsights);
 
       // Audit rubric — proven winners/losers from this channel's history
@@ -6383,6 +6502,18 @@ LEARNING: [one sentence]`}]})
       const predAcc = buildPredictionAccuracy(ideas);
       const predAccBlock = formatPredictionAccuracy(predAcc);
 
+      // Outcome learning — which hooks/types/pillars beat or miss predictions empirically
+      const outcomeLearning = _outcomeLearningEarly;
+      const outcomeLearningBlock = formatOutcomeLearning(outcomeLearning);
+
+      // Hook fatigue — audience desensitisation from repeated hook/format use
+      const hookFatigue = buildHookFatigue(ideas, organicVids.length?organicVids:videos);
+      const hookFatigueBlock = formatHookFatigue(hookFatigue, idea.hook, idea.type);
+
+      // Recent track record — last 5 actual posted results for live context
+      const recentTrack = buildRecentTrackRecord(ideas);
+      const recentTrackBlock = formatRecentTrackRecord(recentTrack);
+
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
       const r = await callAI(`You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
 
@@ -6393,6 +6524,9 @@ ${engBlock}
 ${comboBlock}
 ${auditBlock}
 ${predAccBlock}
+${outcomeLearningBlock}
+${recentTrackBlock}
+${hookFatigueBlock}
 ${calibration ? `CALIBRATION: ${calibration}` : ""}
 ${ideaOutcomes.length ? `RECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
 ${seriesMomentum ? `\n${seriesMomentum}` : ""}
@@ -6421,8 +6555,15 @@ Score each factor with this rigour:
 
 5. NICHE FIT (${weights.niche}%) — Score against ${wl.appName}'s content pillars based on: ${wl.contentStyle||wl.niche}. Core formula: ${wl.bestFormula}. If this idea doesn't clearly fit the niche and formula, score low. If it sits at the intersection of the best-performing content types, score high.
 
+ESTIMATED VIEWS — MANDATORY CALIBRATION PROTOCOL:
+Step 1: Start with your raw estimate based on hook+share trigger strength.
+Step 2: Apply the OUTCOME LEARNING multipliers above (if this idea's hook/type has a ratio of 1.5x, multiply by 1.5; if 0.7x, reduce by 30%).
+Step 3: Apply PREDICTION ACCURACY bias correction (if AI has historically over/underestimated by X%, correct your output accordingly).
+Step 4: Anchor to the CALIBRATION percentiles above — score 85+ ideas should target top 10%, score 70-84 top 25%.
+Your estimated_views must reflect all 4 steps. Do not output a raw uncorrected estimate.
+
 Return ONLY valid JSON:
-{"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","retentionFix":"the single biggest retention improvement","openLoopStrength":"rate 1-10 how well this video creates and sustains curiosity gaps — what is the open loop and when does it close?","reHookMoments":["specific moment at ~3s to re-engage","specific moment at ~15s","specific moment at ~30s if video is longer"],"emotionalArc":"setup→tension→payoff analysis — what emotion does viewer feel at start, middle, end? Where does it escalate?","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic organic ceiling e.g. 20K-80K — anchored to calibration data above","contentPillar":"niche-specific pillar name","competitorAngle":"how to differentiate from what competitors are already doing in this niche"}`, 2000);
+{"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","retentionFix":"the single biggest retention improvement","openLoopStrength":"rate 1-10 how well this video creates and sustains curiosity gaps — what is the open loop and when does it close?","reHookMoments":["specific moment at ~3s to re-engage","specific moment at ~15s","specific moment at ~30s if video is longer"],"emotionalArc":"setup→tension→payoff analysis — what emotion does viewer feel at start, middle, end? Where does it escalate?","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic range corrected by outcome learning + bias data e.g. 20K-80K","contentPillar":"niche-specific pillar name","competitorAngle":"how to differentiate from what competitors are already doing in this niche","confidenceLevel":"HIGH|MEDIUM|LOW — based on how much real data backs this score","scoreRationale":"1 sentence: which data signals drove this specific score up or down vs a generic idea"}`, 2000);
       setIdeas(is=>is.map(i=>{
         if(i.id!==idea.id) return i;
         const prevScore = i.viral||null;
@@ -6445,6 +6586,8 @@ Return ONLY valid JSON:
           reHookMoments:r.reHookMoments,
           emotionalArc:r.emotionalArc,
           recs:r.recommendations?.map(x=>({a:x.action,impact:x.impact?.toUpperCase()})),
+          confidenceLevel:r.confidenceLevel,
+          scoreRationale:r.scoreRationale,
           scoreDelta,
           prevScore,
           lastScoredAt: new Date().toISOString().slice(0,10),
