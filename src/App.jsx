@@ -6931,6 +6931,22 @@ function OnboardingPage({ onComplete }) {
   const [step, setStep] = useState(0);
   const [handle, setHandle] = useState(WL.handle || "");
   const [apiKey, setApiKey] = useState("");
+  const [codeInput, setCodeInput] = useState("");
+  const [codeError, setCodeError] = useState(false);
+  const [codeShake, setCodeShake] = useState(false);
+
+  const VALID_CODE = (CLIENT_CONFIG.activationCode || "").toUpperCase();
+
+  const submitCode = () => {
+    if(codeInput.trim().toUpperCase() === VALID_CODE) {
+      setCodeError(false);
+      setStep(1);
+    } else {
+      setCodeError(true);
+      setCodeShake(true);
+      setTimeout(()=>setCodeShake(false), 600);
+    }
+  };
 
   const finish = (key) => {
     const h = handle.trim();
@@ -6990,8 +7006,36 @@ function OnboardingPage({ onComplete }) {
       <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"32px 20px", overflowY:"auto" }}>
         <div style={{ width:"100%", maxWidth:440 }}>
 
-          {/* Step 0 — Welcome */}
+          {/* Step 0 — Activation code */}
           {step === 0 && (
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
+              <div style={{ width:56, height:56, borderRadius:18, background:`linear-gradient(135deg,${ac},${ac2})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:24, boxShadow:`0 8px 24px ${ac}40` }}>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="#fff" strokeWidth="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
+              </div>
+              <div style={{ fontSize:26, fontWeight:700, color:"#fff", marginBottom:8, letterSpacing:"-0.01em", textAlign:"center" }}>Enter your activation code</div>
+              <div style={{ fontSize:14, color:"rgba(255,255,255,0.4)", lineHeight:1.6, textAlign:"center", marginBottom:32, maxWidth:320 }}>You should have received this by email when you signed up. Contact support if you need help.</div>
+              <div style={{ width:"100%", marginBottom:16 }}>
+                <input
+                  value={codeInput}
+                  onChange={e=>{ setCodeInput(e.target.value.toUpperCase()); setCodeError(false); }}
+                  onKeyDown={e=>e.key==="Enter"&&submitCode()}
+                  placeholder="XXXX-0000"
+                  autoFocus
+                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`2px solid ${codeError?"#EF4444":codeInput?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.08)"}`, borderRadius:14, color:"#fff", padding:"18px 20px", fontSize:22, fontWeight:700, letterSpacing:"0.15em", outline:"none", boxSizing:"border-box", textAlign:"center", transition:"border-color 0.2s", fontFamily:"monospace", animation:codeShake?"shake 0.5s ease":"none" }}
+                />
+                {codeError && <div style={{ fontSize:13, color:"#EF4444", textAlign:"center", marginTop:8 }}>Invalid code — check your email and try again</div>}
+              </div>
+              <button onClick={submitCode} disabled={!codeInput.trim()} style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", background:codeInput.trim()?`linear-gradient(135deg,${ac},${ac2})`:"rgba(255,255,255,0.08)", color:codeInput.trim()?"#fff":"rgba(255,255,255,0.3)", fontWeight:700, fontSize:15, cursor:codeInput.trim()?"pointer":"not-allowed", boxShadow:codeInput.trim()?`0 8px 24px ${ac}40`:"none", transition:"all 0.2s" }}>
+                Activate →
+              </button>
+              <div style={{ marginTop:20, fontSize:13, color:"rgba(255,255,255,0.2)", textAlign:"center" }}>
+                Don't have a code? <a href="mailto:hello@contentOS.io" style={{ color:ac, textDecoration:"none" }}>Get in touch →</a>
+              </div>
+            </div>
+          )}
+
+          {/* Step 1 — Welcome */}
+          {step === 1 && (
             <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
               <div style={{ marginBottom:32 }}>
                 <div style={{ width:52, height:52, borderRadius:16, background:`linear-gradient(135deg,${ac},${ac2})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20, boxShadow:`0 8px 24px ${ac}40` }}>
@@ -7011,7 +7055,7 @@ function OnboardingPage({ onComplete }) {
                   </div>
                 ))}
               </div>
-              <button onClick={()=>setStep(1)} style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${ac},${ac2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 28px ${ac}45`, letterSpacing:"0.01em" }}>
+              <button onClick={()=>setStep(2)} style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${ac},${ac2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 28px ${ac}45`, letterSpacing:"0.01em" }}>
                 Get started →
               </button>
               <button onClick={()=>finish("")} style={{ width:"100%", marginTop:10, padding:"12px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontSize:13, cursor:"pointer" }}>
@@ -7020,11 +7064,11 @@ function OnboardingPage({ onComplete }) {
             </div>
           )}
 
-          {/* Step 1 — Channel */}
-          {step === 1 && (
+          {/* Step 2 — Channel */}
+          {step === 2 && (
             <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
               <div style={{ display:"flex", gap:6, marginBottom:32 }}>
-                {[0,1,2].map(i=><div key={i} style={{ height:3, borderRadius:2, flex:i<=1?1.5:1, background:i<=0?ac:"rgba(255,255,255,0.1)", transition:"all 0.3s" }}/>)}
+                {[0,1,2,3].map(i=><div key={i} style={{ height:3, borderRadius:2, flex:i<=2?1.5:1, background:i<=1?ac:"rgba(255,255,255,0.1)", transition:"all 0.3s" }}/>)}
               </div>
               <div style={{ marginBottom:28 }}>
                 <div style={{ fontSize:24, fontWeight:700, color:"#fff", marginBottom:8, letterSpacing:"-0.01em" }}>Your channel</div>
@@ -7044,18 +7088,18 @@ function OnboardingPage({ onComplete }) {
               <div style={{ padding:"14px 16px", borderRadius:12, background:`${ac}0f`, border:`1px solid ${ac}20`, marginBottom:28 }}>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.55)", lineHeight:1.55 }}>💡 This gets baked into every AI prompt — idea scoring, hook testing, weekly debrief. The more specific your niche, the better the advice.</div>
               </div>
-              <button onClick={()=>setStep(2)} style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${ac},${ac2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 24px ${ac}35`, marginBottom:10 }}>
+              <button onClick={()=>setStep(3)} style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${ac},${ac2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 24px ${ac}35`, marginBottom:10 }}>
                 Continue →
               </button>
-              <button onClick={()=>setStep(2)} style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontSize:13, cursor:"pointer" }}>Skip for now</button>
+              <button onClick={()=>setStep(3)} style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontSize:13, cursor:"pointer" }}>Skip for now</button>
             </div>
           )}
 
-          {/* Step 2 — AI Key */}
-          {step === 2 && (
+          {/* Step 3 — AI Key */}
+          {step === 3 && (
             <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
               <div style={{ display:"flex", gap:6, marginBottom:32 }}>
-                {[0,1,2].map(i=><div key={i} style={{ height:3, borderRadius:2, flex:i<=2?1.5:1, background:i<=1?ac:"rgba(255,255,255,0.1)", transition:"all 0.3s" }}/>)}
+                {[0,1,2,3].map(i=><div key={i} style={{ height:3, borderRadius:2, flex:i<=3?1.5:1, background:i<=2?ac:"rgba(255,255,255,0.1)", transition:"all 0.3s" }}/>)}
               </div>
               <div style={{ marginBottom:24 }}>
                 <div style={{ fontSize:24, fontWeight:700, color:"#fff", marginBottom:8, letterSpacing:"-0.01em" }}>Connect AI</div>
@@ -7090,7 +7134,7 @@ function OnboardingPage({ onComplete }) {
               <button onClick={()=>finish(apiKey)} style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${ac},${ac2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 28px ${ac}40`, marginBottom:10 }}>
                 {apiKey.trim() ? "Launch →" : "Launch without AI →"}
               </button>
-              <button onClick={()=>setStep(1)} style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontSize:13, cursor:"pointer" }}>← Back</button>
+              <button onClick={()=>setStep(2)} style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontSize:13, cursor:"pointer" }}>← Back</button>
             </div>
           )}
 
@@ -7099,6 +7143,7 @@ function OnboardingPage({ onComplete }) {
 
       <style>{`
         @media(min-width:780px){ .ob-left{ display:flex !important; } }
+        @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
       `}</style>
     </div>
   );
