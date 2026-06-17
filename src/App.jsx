@@ -5672,10 +5672,6 @@ function Dashboard({ keys, onEditKeys }) {
   const [editIdeaTarget, setEditIdeaTarget]       = useState(null);
   const [weeklyDebrief, setWeeklyDebrief] = useState(()=>loadJSON("krapmaps_v1_debrief",null));
   const [debriefLoading, setDebriefLoading] = useState(false);
-  const [onboarded, setOnboarded] = useState(()=>!!loadJSON("krapmaps_v1_onboarded",false));
-  const [obStep, setObStep] = useState(0);
-  const [obHandle, setObHandle] = useState("");
-  const [obKey, setObKey] = useState("");
   const [editAppIdeaTarget, setEditAppIdeaTarget] = useState(null);
 
   const openModal  = (id,data) => { setModals(m=>({...m,[id]:true})); };
@@ -6722,113 +6718,6 @@ Return JSON:
     );
   };
 
-  const finishOnboarding = () => {
-    if(obHandle.trim()) {
-      const cfg = loadJSON(KEYS_KEY,{});
-      saveJSON(KEYS_KEY,{ ...cfg, handle: obHandle.trim() });
-    }
-    if(obKey.trim()) {
-      onEditKeys({ ...(keys||{}), anthropic: obKey.trim() });
-    }
-    saveJSON("krapmaps_v1_onboarded", true);
-    setOnboarded(true);
-    addXP(50);
-  };
-
-  const FEATURES = [
-    { icon:"🎬", label:"Score Ideas", desc:"AI virality scores 0-100" },
-    { icon:"📈", label:"Track Growth", desc:"TikTok + Instagram analytics" },
-    { icon:"⚡", label:"Hook Tester", desc:"A/B test hooks instantly" },
-    { icon:"🤝", label:"Brand Deals", desc:"Pipeline & earnings tracker" },
-    { icon:"📋", label:"Script Builder", desc:"Scene-by-scene film scripts" },
-    { icon:"📊", label:"Weekly Debrief", desc:"AI strategy every week" },
-  ];
-
-  const OB_STEPS = [
-    {
-      key:"welcome",
-      render:()=>(
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0 }}>
-          {/* Logo */}
-          <div style={{ width:72, height:72, borderRadius:24, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:24, boxShadow:`0 0 40px ${C.pink}50` }}>
-            {I.bin(32,"#fff")}
-          </div>
-          <div style={{ fontSize:32, fontWeight:400, fontFamily:C.fontHead, color:"#fff", marginBottom:6, textAlign:"center" }}>{WL.appName} <span style={{color:C.pink}}>{WL.appTagline}</span></div>
-          <div style={{ fontSize:14, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody, marginBottom:28, textAlign:"center", lineHeight:1.6 }}>{WL.onboardingTagline.split("\n").map((l,i)=><React.Fragment key={i}>{l}{i<WL.onboardingTagline.split("\n").length-1&&<br/>}</React.Fragment>)}</div>
-          {/* Feature grid */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, width:"100%", marginBottom:28 }}>
-            {FEATURES.map((f,i)=>(
-              <div key={i} style={{ borderRadius:14, padding:"14px 12px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)", textAlign:"center" }}>
-                <div style={{ fontSize:22, marginBottom:6 }}>{f.icon}</div>
-                <div style={{ fontSize:12, fontWeight:700, color:"#fff", fontFamily:C.fontHead, marginBottom:3 }}>{f.label}</div>
-                <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontFamily:C.fontBody, lineHeight:1.4 }}>{f.desc}</div>
-              </div>
-            ))}
-          </div>
-          <button onClick={()=>setObStep(1)} style={{ width:"100%", padding:"16px", borderRadius:16, border:"none", background:`linear-gradient(135deg,${C.pink},${C.purple})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:16, cursor:"pointer", boxShadow:`0 8px 32px ${C.pink}40`, letterSpacing:"0.04em" }}>
-            Set up in 60 seconds →
-          </button>
-        </div>
-      ),
-    },
-    {
-      key:"channel",
-      render:()=>(
-        <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
-          <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:"0.14em", textAlign:"center", marginBottom:20 }}>STEP 1 OF 2</div>
-          <div style={{ fontSize:28, fontWeight:400, fontFamily:C.fontHead, color:"#fff", textAlign:"center", marginBottom:8 }}>Your <span style={{color:C.cyan}}>Channel</span></div>
-          <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody, textAlign:"center", lineHeight:1.6, marginBottom:28 }}>What's your TikTok handle? This lets the AI personalise content strategy specifically for your niche and audience.</div>
-          <div style={{ marginBottom:10 }}>
-            <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:8, fontFamily:C.fontHead }}>TIKTOK HANDLE</div>
-            <input value={obHandle} onChange={e=>setObHandle(e.target.value)} onKeyDown={e=>e.key==="Enter"&&setObStep(2)} placeholder="@findkrap" autoFocus style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`2px solid ${obHandle?C.cyan:"rgba(255,255,255,0.1)"}`, borderRadius:14, color:"#fff", padding:"16px 18px", fontSize:18, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s" }}/>
-          </div>
-          <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.cyan}08`, border:`1px solid ${C.cyan}15`, marginBottom:24 }}>
-            <div style={{ fontSize:12, color:"rgba(255,255,255,0.55)", fontFamily:C.fontBody, lineHeight:1.5 }}>💡 All AI prompts, content strategy and scoring will be calibrated to your channel and niche automatically.</div>
-          </div>
-          <button onClick={()=>setObStep(2)} style={{ width:"100%", padding:"16px", borderRadius:16, border:"none", background:`linear-gradient(135deg,${C.cyan}cc,${C.purple})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 24px ${C.cyan}30`, letterSpacing:"0.04em", marginBottom:10 }}>
-            Continue →
-          </button>
-          <button onClick={()=>setObStep(2)} style={{ width:"100%", padding:"10px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontFamily:C.fontHead, fontSize:13, cursor:"pointer" }}>Skip for now</button>
-        </div>
-      ),
-    },
-    {
-      key:"apikey",
-      render:()=>(
-        <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
-          <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:"0.14em", textAlign:"center", marginBottom:20 }}>STEP 2 OF 2</div>
-          <div style={{ fontSize:28, fontWeight:400, fontFamily:C.fontHead, color:"#fff", textAlign:"center", marginBottom:8 }}>Add your <span style={{color:C.purple}}>AI Key</span></div>
-          <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody, textAlign:"center", lineHeight:1.6, marginBottom:24 }}>Unlocks AI idea scoring, Script Builder, Hook A/B Tester and Weekly Debrief. Your key is stored only on this device — never sent to our servers.</div>
-          {/* What you unlock */}
-          <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
-            {[["⚡","Hook A/B Tester","Compare two hooks, AI picks the winner"],["🎬","Script Builder","Full scene-by-scene filming scripts"],["📊","Idea Scoring","Virality scores 0-100 with reasoning"],["🗓️","Weekly Debrief","Strategic AI summary every week"]].map(([ic,l,d],i)=>(
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:12, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)" }}>
-                <span style={{ fontSize:18 }}>{ic}</span>
-                <div>
-                  <div style={{ fontSize:13, fontWeight:700, color:"#fff", fontFamily:C.fontHead }}>{l}</div>
-                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", fontFamily:C.fontBody }}>{d}</div>
-                </div>
-                <div style={{ marginLeft:"auto", fontSize:11, color:C.green, fontFamily:C.fontHead, fontWeight:700 }}>UNLOCKED</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ marginBottom:10 }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", fontFamily:C.fontHead }}>ANTHROPIC API KEY</div>
-              <a href="https://console.anthropic.com/keys" target="_blank" rel="noreferrer" style={{ fontSize:11, color:C.purple, fontFamily:C.fontHead, textDecoration:"none" }}>Get a key →</a>
-            </div>
-            <input value={obKey} onChange={e=>setObKey(e.target.value)} placeholder="sk-ant-api03-..." type="password" style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`2px solid ${obKey?C.purple:"rgba(255,255,255,0.1)"}`, borderRadius:14, color:"#fff", padding:"16px 18px", fontSize:14, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s", marginBottom:4 }}/>
-            <div style={{ fontSize:11, color:"rgba(255,255,255,0.25)", fontFamily:C.fontBody }}>You can also add this later in Settings</div>
-          </div>
-          <div style={{ height:16 }}/>
-          <button onClick={finishOnboarding} style={{ width:"100%", padding:"16px", borderRadius:16, border:"none", background:`linear-gradient(135deg,${C.pink},${C.purple})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 32px ${C.pink}40`, letterSpacing:"0.04em", marginBottom:10 }}>
-            {obKey.trim()?"Launch KrapMaps 🚀":"Launch without AI →"}
-          </button>
-          <button onClick={()=>setObStep(1)} style={{ width:"100%", padding:"10px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontFamily:C.fontHead, fontSize:13, cursor:"pointer" }}>← Back</button>
-        </div>
-      ),
-    },
-  ];
 
   // ── RENDER ────────────────────────────────────────────────────
   return (
@@ -7033,24 +6922,184 @@ Return JSON:
       {modals.addCal      && <AddCalModal />}
       {modals.editStats   && <EditStatsModal />}
 
-      {/* ONBOARDING */}
-      {!onboarded && (
-        <div style={{ position:"fixed", inset:0, background:`linear-gradient(145deg,rgba(7,5,15,0.97),rgba(14,6,28,0.99))`, backdropFilter:"blur(32px)", WebkitBackdropFilter:"blur(32px)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px 16px", overflowY:"auto" }}>
-          {/* Ambient glows */}
-          <div style={{ position:"fixed", top:"10%", left:"5%", width:320, height:320, borderRadius:"50%", background:`radial-gradient(circle,${C.pink}18 0%,transparent 70%)`, pointerEvents:"none" }}/>
-          <div style={{ position:"fixed", bottom:"10%", right:"5%", width:280, height:280, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}14 0%,transparent 70%)`, pointerEvents:"none" }}/>
-          <div style={{ width:"100%", maxWidth:480, borderRadius:28, background:"rgba(12,8,24,0.98)", border:"1px solid rgba(255,255,255,0.09)", padding:"36px 32px", position:"relative", boxShadow:"0 40px 100px rgba(0,0,0,0.8), 0 0 0 0.5px rgba(255,255,255,0.05)" }}>
-            {/* Progress bar */}
-            <div style={{ display:"flex", gap:6, justifyContent:"center", marginBottom:28 }}>
-              {OB_STEPS.map((_,i)=>(
-                <div key={i} style={{ height:4, borderRadius:2, flex:i===obStep?2:1, background:i===obStep?C.pink:i<obStep?`${C.pink}50`:"rgba(255,255,255,0.08)", transition:"all 0.35s ease" }}/>
-              ))}
-            </div>
-            {OB_STEPS[obStep]?.render()}
-          </div>
-        </div>
-      )}
 
+    </div>
+  );
+}
+// ── ONBOARDING PAGE ──────────────────────────────────────────────
+function OnboardingPage({ onComplete }) {
+  const [step, setStep] = useState(0);
+  const [handle, setHandle] = useState(WL.handle || "");
+  const [apiKey, setApiKey] = useState("");
+
+  const finish = (key) => {
+    const h = handle.trim();
+    if(h) {
+      const cfg = loadJSON(KEYS_KEY,{});
+      saveJSON(KEYS_KEY,{ ...cfg, handle: h });
+      const wlSaved = loadJSON(WL_KEY, {});
+      saveWL({ ...wlSaved, handle: h });
+    }
+    if(key && key.trim()) {
+      const cfg = loadJSON(KEYS_KEY,{});
+      saveJSON(KEYS_KEY,{ ...cfg, keys:{ ...(cfg.keys||{}), anthropic: key.trim() } });
+    }
+    saveJSON("krapmaps_v1_onboarded", true);
+    addXP(50);
+    onComplete();
+  };
+
+  const ac = WL.accentColor || "#6366F1";
+  const ac2 = WL.accentColor2 || "#8B5CF6";
+
+  const FEATURES = [
+    { icon:"🎯", label:"Score Ideas", desc:"AI virality scores 0–100" },
+    { icon:"📈", label:"Track Growth", desc:"Analytics across platforms" },
+    { icon:"⚡", label:"Hook Tester", desc:"A/B test hooks instantly" },
+    { icon:"🤝", label:"Brand Deals", desc:"Pipeline & earnings tracker" },
+    { icon:"📋", label:"Script Builder", desc:"Scene-by-scene scripts" },
+    { icon:"📊", label:"Weekly Debrief", desc:"AI strategy every week" },
+  ];
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#09090B", display:"flex", fontFamily:"'Inter',system-ui,sans-serif", position:"relative", overflow:"hidden" }}>
+      {/* Background gradient blobs */}
+      <div style={{ position:"fixed", top:"-20%", right:"-10%", width:600, height:600, borderRadius:"50%", background:`radial-gradient(circle,${ac}22 0%,transparent 65%)`, pointerEvents:"none" }}/>
+      <div style={{ position:"fixed", bottom:"-20%", left:"-10%", width:500, height:500, borderRadius:"50%", background:`radial-gradient(circle,${ac2}18 0%,transparent 65%)`, pointerEvents:"none" }}/>
+
+      {/* Left panel — branding */}
+      <div style={{ flex:"0 0 420px", display:"none", flexDirection:"column", justifyContent:"center", padding:"60px 52px", borderRight:"1px solid rgba(255,255,255,0.06)", position:"relative" }} className="ob-left">
+        <div style={{ marginBottom:48 }}>
+          <div style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"6px 14px", borderRadius:100, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", marginBottom:32 }}>
+            <div style={{ width:6, height:6, borderRadius:"50%", background:ac, boxShadow:`0 0 6px ${ac}` }}/>
+            <span style={{ fontSize:12, color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", fontWeight:500 }}>CONTENT OS</span>
+          </div>
+          <div style={{ fontSize:40, fontWeight:700, color:"#fff", lineHeight:1.15, marginBottom:16, letterSpacing:"-0.02em" }}>
+            The content system<br/><span style={{ color:ac }}>serious creators</span><br/>actually use.
+          </div>
+          <div style={{ fontSize:16, color:"rgba(255,255,255,0.45)", lineHeight:1.7 }}>Score ideas before filming. Track every deal. Get AI strategy that knows your niche. All in one place.</div>
+        </div>
+        {/* Testimonial */}
+        <div style={{ padding:"20px 24px", borderRadius:16, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)" }}>
+          <div style={{ fontSize:14, color:"rgba(255,255,255,0.75)", lineHeight:1.6, marginBottom:12, fontStyle:"italic" }}>"This replaced four different apps. My ideas are actually getting scored now instead of sitting in Notes."</div>
+          <div style={{ fontSize:12, color:"rgba(255,255,255,0.35)" }}>— Content creator, 180K followers</div>
+        </div>
+      </div>
+
+      {/* Right panel — steps */}
+      <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"32px 20px", overflowY:"auto" }}>
+        <div style={{ width:"100%", maxWidth:440 }}>
+
+          {/* Step 0 — Welcome */}
+          {step === 0 && (
+            <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+              <div style={{ marginBottom:32 }}>
+                <div style={{ width:52, height:52, borderRadius:16, background:`linear-gradient(135deg,${ac},${ac2})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20, boxShadow:`0 8px 24px ${ac}40` }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div style={{ fontSize:30, fontWeight:700, color:"#fff", lineHeight:1.2, marginBottom:8, letterSpacing:"-0.02em" }}>Welcome to {WL.appName}</div>
+                <div style={{ fontSize:15, color:"rgba(255,255,255,0.45)", lineHeight:1.6 }}>Your content OS is ready. Set it up in 60 seconds.</div>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:32 }}>
+                {FEATURES.map((f,i)=>(
+                  <div key={i} style={{ padding:"16px", borderRadius:14, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)", display:"flex", gap:12, alignItems:"flex-start" }}>
+                    <span style={{ fontSize:20, lineHeight:1, flexShrink:0 }}>{f.icon}</span>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:600, color:"#fff", marginBottom:2 }}>{f.label}</div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.38)", lineHeight:1.4 }}>{f.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button onClick={()=>setStep(1)} style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${ac},${ac2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 28px ${ac}45`, letterSpacing:"0.01em" }}>
+                Get started →
+              </button>
+              <button onClick={()=>finish("")} style={{ width:"100%", marginTop:10, padding:"12px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontSize:13, cursor:"pointer" }}>
+                Skip setup, take me to the app
+              </button>
+            </div>
+          )}
+
+          {/* Step 1 — Channel */}
+          {step === 1 && (
+            <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+              <div style={{ display:"flex", gap:6, marginBottom:32 }}>
+                {[0,1,2].map(i=><div key={i} style={{ height:3, borderRadius:2, flex:i<=1?1.5:1, background:i<=0?ac:"rgba(255,255,255,0.1)", transition:"all 0.3s" }}/>)}
+              </div>
+              <div style={{ marginBottom:28 }}>
+                <div style={{ fontSize:24, fontWeight:700, color:"#fff", marginBottom:8, letterSpacing:"-0.01em" }}>Your channel</div>
+                <div style={{ fontSize:14, color:"rgba(255,255,255,0.45)", lineHeight:1.6 }}>Tell us your handle so the AI can personalise every prompt, score and strategy to your exact niche.</div>
+              </div>
+              <div style={{ marginBottom:20 }}>
+                <label style={{ display:"block", fontSize:12, color:"rgba(255,255,255,0.4)", fontWeight:600, letterSpacing:"0.08em", marginBottom:8 }}>TIKTOK HANDLE</label>
+                <input
+                  value={handle}
+                  onChange={e=>setHandle(e.target.value)}
+                  onKeyDown={e=>e.key==="Enter"&&setStep(2)}
+                  placeholder="@yourchannel"
+                  autoFocus
+                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`2px solid ${handle?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.08)"}`, borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:16, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s" }}
+                />
+              </div>
+              <div style={{ padding:"14px 16px", borderRadius:12, background:`${ac}0f`, border:`1px solid ${ac}20`, marginBottom:28 }}>
+                <div style={{ fontSize:13, color:"rgba(255,255,255,0.55)", lineHeight:1.55 }}>💡 This gets baked into every AI prompt — idea scoring, hook testing, weekly debrief. The more specific your niche, the better the advice.</div>
+              </div>
+              <button onClick={()=>setStep(2)} style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${ac},${ac2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 24px ${ac}35`, marginBottom:10 }}>
+                Continue →
+              </button>
+              <button onClick={()=>setStep(2)} style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontSize:13, cursor:"pointer" }}>Skip for now</button>
+            </div>
+          )}
+
+          {/* Step 2 — AI Key */}
+          {step === 2 && (
+            <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+              <div style={{ display:"flex", gap:6, marginBottom:32 }}>
+                {[0,1,2].map(i=><div key={i} style={{ height:3, borderRadius:2, flex:i<=2?1.5:1, background:i<=1?ac:"rgba(255,255,255,0.1)", transition:"all 0.3s" }}/>)}
+              </div>
+              <div style={{ marginBottom:24 }}>
+                <div style={{ fontSize:24, fontWeight:700, color:"#fff", marginBottom:8, letterSpacing:"-0.01em" }}>Connect AI</div>
+                <div style={{ fontSize:14, color:"rgba(255,255,255,0.45)", lineHeight:1.6 }}>Add your Anthropic API key to unlock AI scoring, scripts, hook testing and weekly strategy. Stored on your device only.</div>
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:24 }}>
+                {[["🎯","Idea Scoring","Virality scores with detailed reasoning"],["⚡","Hook A/B Tester","AI picks the winner every time"],["📋","Script Builder","Full filming scripts from any idea"],["📊","Weekly Debrief","Strategic summary of what's working"]].map(([ic,l,d],i)=>(
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 14px", borderRadius:12, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)" }}>
+                    <span style={{ fontSize:18, flexShrink:0 }}>{ic}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:"#fff" }}>{l}</div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>{d}</div>
+                    </div>
+                    <div style={{ fontSize:10, fontWeight:700, color:"#4ADE80", background:"rgba(74,222,128,0.1)", borderRadius:6, padding:"2px 8px", flexShrink:0 }}>UNLOCKED</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginBottom:20 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                  <label style={{ fontSize:12, color:"rgba(255,255,255,0.4)", fontWeight:600, letterSpacing:"0.08em" }}>ANTHROPIC API KEY</label>
+                  <a href="https://console.anthropic.com/keys" target="_blank" rel="noreferrer" style={{ fontSize:12, color:ac, textDecoration:"none", fontWeight:500 }}>Get a free key →</a>
+                </div>
+                <input
+                  value={apiKey}
+                  onChange={e=>setApiKey(e.target.value)}
+                  placeholder="sk-ant-api03-..."
+                  type="password"
+                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`2px solid ${apiKey?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.08)"}`, borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:14, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s" }}
+                />
+                <div style={{ fontSize:12, color:"rgba(255,255,255,0.2)", marginTop:6 }}>You can add or change this later in Settings</div>
+              </div>
+              <button onClick={()=>finish(apiKey)} style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${ac},${ac2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 28px ${ac}40`, marginBottom:10 }}>
+                {apiKey.trim() ? "Launch →" : "Launch without AI →"}
+              </button>
+              <button onClick={()=>setStep(1)} style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontSize:13, cursor:"pointer" }}>← Back</button>
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      <style>{`
+        @media(min-width:780px){ .ob-left{ display:flex !important; } }
+      `}</style>
     </div>
   );
 }
@@ -7058,7 +7107,17 @@ Return JSON:
 // ROOT
 export default function App() {
   const [config, setConfig] = useState(()=>loadJSON(KEYS_KEY,{}));
-  return <Dashboard keys={config.keys||{}} onEditKeys={keys=>{ const u={...config,keys}; setConfig(u); saveJSON(KEYS_KEY,u); }} />;
+  const [onboarded, setOnboarded] = useState(()=>!!loadJSON("krapmaps_v1_onboarded",false));
+
+  const handleEditKeys = (keys) => {
+    const u={...config,keys};
+    setConfig(u);
+    saveJSON(KEYS_KEY,u);
+  };
+
+  if(!onboarded) {
+    return <OnboardingPage onComplete={()=>setOnboarded(true)} />;
+  }
+
+  return <Dashboard keys={config.keys||{}} onEditKeys={handleEditKeys} />;
 }
-
-
