@@ -7004,7 +7004,7 @@ function OnboardingPage({ onComplete }) {
       {step>0 && <div style={{ position:"fixed", bottom:"-20%", left:"-10%", width:500, height:500, borderRadius:"50%", background:`radial-gradient(circle,${ac2}18 0%,transparent 65%)`, pointerEvents:"none" }}/>}
 
       {/* Left panel — branding, hidden on terminal step */}
-      <div style={{ flex:"0 0 420px", display:step===0?"none":"none", flexDirection:"column", justifyContent:"center", padding:"60px 52px", borderRight:"1px solid rgba(255,255,255,0.06)", position:"relative" }} className={step===0?"":"ob-left"}>
+      <div style={{ flex:"0 0 420px", display:"none" }}>
         <div style={{ marginBottom:48 }}>
           <div style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"6px 14px", borderRadius:100, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", marginBottom:32 }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:ac, boxShadow:`0 0 6px ${ac}` }}/>
@@ -7085,30 +7085,40 @@ function OnboardingPage({ onComplete }) {
 
           {/* Step 1 — Welcome */}
           {step === 1 && (
-            <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
-              <div style={{ marginBottom:32 }}>
-                <div style={{ width:52, height:52, borderRadius:16, background:`linear-gradient(135deg,${ac},${ac2})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20, boxShadow:`0 8px 24px ${ac}40` }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0 }}>
+              {/* Label */}
+              <div style={{ fontSize:10, color:"rgba(255,255,255,0.2)", letterSpacing:"0.3em", fontFamily:"Courier New,monospace", marginBottom:32, fontWeight:700 }}>CREAT<span style={{color:"rgba(255,255,255,0.08)"}}>OROS</span></div>
+
+              {/* Headline */}
+              <div style={{ textAlign:"center", marginBottom:36 }}>
+                <div style={{ fontSize:36, fontWeight:800, color:"#fff", lineHeight:1.15, letterSpacing:"-0.02em", marginBottom:12 }}>
+                  The Content System<br/>
+                  <span style={{ color:ac }}>Serious Creators</span><br/>
+                  Actually Use.
                 </div>
-                <div style={{ fontSize:30, fontWeight:700, color:"#fff", lineHeight:1.2, marginBottom:8, letterSpacing:"-0.02em" }}>Welcome to {WL.appName}</div>
-                <div style={{ fontSize:15, color:"rgba(255,255,255,0.45)", lineHeight:1.6 }}>Your content OS is ready. Set it up in 60 seconds.</div>
+                <div style={{ fontSize:14, color:"rgba(255,255,255,0.35)", lineHeight:1.6, fontWeight:400 }}>
+                  Score ideas. Close deals. Get AI strategy<br/>that knows your niche.
+                </div>
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:32 }}>
+
+              {/* Feature grid — 3 cols */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, width:"100%", marginBottom:32 }}>
                 {FEATURES.map((f,i)=>(
-                  <div key={i} style={{ padding:"16px", borderRadius:14, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)", display:"flex", gap:12, alignItems:"flex-start" }}>
-                    <span style={{ fontSize:20, lineHeight:1, flexShrink:0 }}>{f.icon}</span>
+                  <div key={i} style={{ padding:"14px 10px", borderRadius:12, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", display:"flex", flexDirection:"column", alignItems:"center", gap:8, textAlign:"center" }}>
+                    <span style={{ fontSize:22 }}>{f.icon}</span>
                     <div>
-                      <div style={{ fontSize:13, fontWeight:600, color:"#fff", marginBottom:2 }}>{f.label}</div>
-                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.38)", lineHeight:1.4 }}>{f.desc}</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.75)", letterSpacing:"0.04em", textTransform:"uppercase" }}>{f.label}</div>
                     </div>
                   </div>
                 ))}
               </div>
-              <button onClick={()=>setStep(2)} style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${ac},${ac2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 28px ${ac}45`, letterSpacing:"0.01em" }}>
-                Get started →
+
+              {/* CTA */}
+              <button onClick={()=>setStep(2)} style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${ac},${ac2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 32px ${ac}40`, letterSpacing:"0.06em", textTransform:"uppercase" }}>
+                Get Started →
               </button>
-              <button onClick={()=>finish("")} style={{ width:"100%", marginTop:10, padding:"12px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontSize:13, cursor:"pointer" }}>
-                Skip setup, take me to the app
+              <button onClick={()=>finish("")} style={{ width:"100%", marginTop:10, padding:"12px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.18)", fontSize:12, cursor:"pointer", letterSpacing:"0.04em" }}>
+                Skip — Take Me To The App
               </button>
             </div>
           )}
@@ -7191,7 +7201,7 @@ function OnboardingPage({ onComplete }) {
       </div>
 
       <style>{`
-        @media(min-width:780px){ .ob-left{ display:flex !important; } }
+        
         @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
         @keyframes fadeInLine{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
         @keyframes blink{0%,100%{opacity:0.2}50%{opacity:1}}
