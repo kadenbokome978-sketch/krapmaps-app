@@ -7119,7 +7119,19 @@ function OnboardingPage({ onComplete }) {
     const matched = CLIENTS[entered];
     if(matched) {
       // Persist client config so WL loads correctly after reload
-      try { localStorage.setItem(CLIENT_KEY, JSON.stringify(matched)); localStorage.removeItem(WL_KEY); } catch {}
+      // For new clients (not KrapMaps), wipe all data so they start clean
+      try {
+        localStorage.setItem(CLIENT_KEY, JSON.stringify(matched));
+        localStorage.removeItem(WL_KEY);
+        if(matched.clientId !== "krapmaps") {
+          [VIDEOS_KEY,IDEAS_KEY,CAL_KEY,TASKS_KEY,APPIDEAS_KEY,ANALYSIS_KEY,
+           NEXTVIDS_KEY,WEEKLY_KEY,TRENDS_KEY,SCRAPE_KEY,SCORES_KEY,MEMORY_KEY,
+           COMPETE_KEY,PREDICT_KEY,CUR_TRENDS_KEY,CHANNEL_THEORY_KEY,HOOK_DB_KEY,
+           PATTERN_KEY,GAP_KEY,MANUAL_KEY,STREAK_KEY,XP_KEY,
+           "krapmaps_v1_tikwm_last","krapmaps_v1_debrief"
+          ].forEach(k=>{ try{localStorage.removeItem(k);}catch{} });
+        }
+      } catch {}
       setCodeError(false);
       setLoading(true);
       setLoadLines([]);
