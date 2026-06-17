@@ -9,7 +9,32 @@ const CLIENTS = {
 };
 
 
-const C = {
+// Detect active client at module load (before React)
+const _activeCfg = (()=>{ try { const s=localStorage.getItem("krapmaps_v1_client"); return s?JSON.parse(s):CLIENT_CONFIG; } catch { return CLIENT_CONFIG; } })();
+const _isThiernoClient = _activeCfg.clientId === "thierno";
+
+const C = _isThiernoClient ? {
+  // ── Thierno "Bras" — deluxe vinyl / late-night studio ──
+  pink:"#00f085",    // green as primary accent (CTAs, key numbers)
+  cyan:"#5cb8ff",    // blue — secondary, info
+  yellow:"#b58dff",  // purple — highlights, top-performer
+  green:"#00f085",
+  orange:"#5cb8ff",  // map orange → blue for info states
+  purple:"#b58dff",
+  bg:"#08070d",
+  card:"rgba(17,14,28,0.85)",
+  cardSolid:"#110e1c",
+  cardAlt:"rgba(26,21,40,0.6)",
+  border:"#2a2240",
+  borderMed:"#3d3060",
+  dim:"#7a7392",
+  text:"#f0ebd8",
+  textMed:"#a89fc0",
+  fontHead:"'Instrument Serif', Georgia, serif",
+  fontBody:"'Bricolage Grotesque', system-ui, sans-serif",
+  fontMono:"'DM Mono', 'SF Mono', monospace",
+} : {
+  // ── KrapMaps / CreatorOS ──
   pink:"#FF2D78", cyan:"#00E5FF", yellow:"#FFD50A",
   green:"#39FF14", orange:"#FF6B1A", purple:"#C566FF",
   bg:"#07050F", card:"rgba(255,255,255,0.025)",
@@ -6737,10 +6762,30 @@ Return JSON:
 
   // ── RENDER ────────────────────────────────────────────────────
   return (
-    <div style={{ background:C.bg, minHeight:"100vh", fontFamily:C.fontHead, position:"relative" }}>
-      <div style={{ position:"fixed", top:"-8%", left:"-12%", width:380, height:380, borderRadius:"50%", background:`radial-gradient(circle,${WL.accentColor}12 0%,transparent 70%)`, pointerEvents:"none", zIndex:0 }} />
-      <div style={{ position:"fixed", top:"45%", right:"-12%", width:300, height:300, borderRadius:"50%", background:`radial-gradient(circle,${WL.accentColor2}09 0%,transparent 70%)`, pointerEvents:"none", zIndex:0 }} />
-      <div style={{ position:"fixed", bottom:"5%", left:"15%", width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}09 0%,transparent 70%)`, pointerEvents:"none", zIndex:0 }} />
+    <div style={{ background:C.bg, minHeight:"100vh", fontFamily:C.fontBody||C.fontHead, position:"relative" }}>
+      {_isThiernoClient && <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=DM+Mono:wght@300;400;500&display=swap');
+        @keyframes orbDrift { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(18px,-22px) scale(1.06)} 66%{transform:translate(-14px,16px) scale(0.96)} }
+        @keyframes grainShift { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-2%,-2%)} 50%{transform:translate(2%,2%)} 75%{transform:translate(-1%,1%)} }
+        @keyframes dotPulse { 0%,100%{opacity:0.4;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.2)} }
+        .thierno-card { transition: border-color 0.2s ease !important; }
+        .thierno-card:hover { border-color: #00f085 !important; }
+        .thierno-btn-primary { background:#00f085 !important; color:#08070d !important; font-family:'DM Mono',monospace !important; font-size:11px !important; letter-spacing:0.12em !important; text-transform:uppercase !important; border-radius:4px !important; border:none !important; cursor:pointer; padding:10px 20px !important; font-weight:500 !important; }
+        .thierno-btn-primary:hover { background:#00d970 !important; }
+        [data-card] { transition: border-color 0.2s ease; }
+        [data-card]:hover { border-color: #00f085 !important; }
+      `}</style>}
+      {_isThiernoClient && <>
+        <div style={{ position:"fixed", inset:0, backgroundImage:"url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")", backgroundRepeat:"repeat", backgroundSize:"200px 200px", opacity:0.055, mixBlendMode:"overlay", pointerEvents:"none", zIndex:1, animation:"grainShift 8s steps(1) infinite" }} />
+        <div style={{ position:"fixed", top:"-8%", left:"-12%", width:420, height:420, borderRadius:"50%", background:"radial-gradient(circle,#00f08518 0%,transparent 70%)", pointerEvents:"none", zIndex:0, animation:"orbDrift 14s ease-in-out infinite" }} />
+        <div style={{ position:"fixed", top:"45%", right:"-12%", width:320, height:320, borderRadius:"50%", background:"radial-gradient(circle,#5cb8ff10 0%,transparent 70%)", pointerEvents:"none", zIndex:0, animation:"orbDrift 18s ease-in-out infinite reverse" }} />
+        <div style={{ position:"fixed", bottom:"5%", left:"15%", width:240, height:240, borderRadius:"50%", background:"radial-gradient(circle,#b58dff0d 0%,transparent 70%)", pointerEvents:"none", zIndex:0, animation:"orbDrift 22s ease-in-out infinite 4s" }} />
+      </>}
+      {!_isThiernoClient && <>
+        <div style={{ position:"fixed", top:"-8%", left:"-12%", width:380, height:380, borderRadius:"50%", background:`radial-gradient(circle,${WL.accentColor}12 0%,transparent 70%)`, pointerEvents:"none", zIndex:0 }} />
+        <div style={{ position:"fixed", top:"45%", right:"-12%", width:300, height:300, borderRadius:"50%", background:`radial-gradient(circle,${WL.accentColor2}09 0%,transparent 70%)`, pointerEvents:"none", zIndex:0 }} />
+        <div style={{ position:"fixed", bottom:"5%", left:"15%", width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}09 0%,transparent 70%)`, pointerEvents:"none", zIndex:0 }} />
+      </>}
 
       {/* SIDEBAR — desktop only */}
       {/* ── SIDEBAR ───────────────────────────────────────────── */}
