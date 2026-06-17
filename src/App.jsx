@@ -7032,7 +7032,7 @@ function OnboardingPage({ onComplete }) {
               {!loading ? (
                 /* ── ACTIVATE SCREEN ── */
                 <div style={{ width:"100%", display:"flex", flexDirection:"column", alignItems:"center", gap:0 }}>
-                  <div style={{ fontSize:38, color:"#39FF14", letterSpacing:"0.15em", marginBottom:40, opacity:0.9, fontWeight:700 }}>CreatorOS</div>
+                  <div style={{ fontSize:42, color:"#39FF14", letterSpacing:"0.08em", marginBottom:40, fontWeight:900, fontFamily:"Inter,system-ui,sans-serif", textShadow:"0 0 40px #39FF1480, 0 0 80px #39FF1430, 0 0 120px #39FF1415" }}>CreatorOS</div>
                   <div style={{ fontSize:13, color:"#39FF14", letterSpacing:"0.15em", marginBottom:10, opacity:0.7 }}>ENTER ACTIVATION CODE</div>
                   <input
                     value={codeInput}
@@ -7060,7 +7060,7 @@ function OnboardingPage({ onComplete }) {
               ) : (
                 /* ── LOADING SCREEN ── */
                 <div style={{ width:"100%", maxWidth:420 }}>
-                  <div style={{ fontSize:38, color:"#39FF14", letterSpacing:"0.15em", marginBottom:32, opacity:0.9, fontWeight:700 }}>CreatorOS</div>
+                  <div style={{ fontSize:42, color:"#39FF14", letterSpacing:"0.08em", marginBottom:32, fontWeight:900, fontFamily:"Inter,system-ui,sans-serif", textShadow:"0 0 40px #39FF1480, 0 0 80px #39FF1430, 0 0 120px #39FF1415" }}>CreatorOS</div>
                   <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                     {loadLines.map((l,i)=>(
                       <div key={i} style={{ fontSize:13, color:l.green?"#39FF14":"#555", letterSpacing:"0.08em", fontWeight:l.bold?700:400, opacity: l.bold ? 1 : 0.85, animation:"fadeInLine 0.3s ease" }}>
