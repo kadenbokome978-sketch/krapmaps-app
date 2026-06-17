@@ -5878,6 +5878,16 @@ function Dashboard({ keys, onEditKeys }) {
         return [...nonTT, ...fresh];
       });
 
+      // Persist total TikTok views to manualData so it survives if scraper data is lost
+      const totalTTViews = tikVideos.reduce((s,tv)=>s+(tv.play_count||0),0);
+      if(totalTTViews > 0) {
+        setManualData(prev => {
+          const updated = { ...prev, tt_views: totalTTViews };
+          saveJSON(MANUAL_KEY, updated);
+          return updated;
+        });
+      }
+
       // Also update manual stats store
       const scraped = {
         scraped_at: new Date().toISOString(),
