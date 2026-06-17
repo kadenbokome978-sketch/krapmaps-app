@@ -1511,7 +1511,7 @@ Gemini video analysis: ${JSON.stringify(gResult)}`;
         } catch(e) { console.warn("Gemini failed:", e.message); }
       }
 
-      const prompt = `Analyse this ${platform} for ${wl.handle} (${wl.niche}).${geminiCtx}
+      const prompt = `Analyse this ${platform} for ${WL.handle} (${WL.niche}).${geminiCtx}
 VIDEO STATS: ${videoData}
 Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|average|below_avg|flopped","biggest_factor":"string","why_it_performed":"string","what_worked":["string"],"what_didnt":["string"],"replicate_these":["string"],"never_again":["string"],"refilm_brief":{"concept":"string","hook":"string","key_changes":["string"],"predicted_views":"string"}}`;
       const result = await callAI(prompt, 2000);
@@ -6762,7 +6762,7 @@ Return JSON:
 
   // ── RENDER ────────────────────────────────────────────────────
   return (
-    <div style={{ background:C.bg, minHeight:"100vh", fontFamily:C.fontBody||C.fontHead, position:"relative" }}>
+    <div style={{ background:C.bg, minHeight:"100vh", fontFamily:C.fontHead, position:"relative" }}>
       {_isThiernoClient && <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=DM+Mono:wght@300;400;500&display=swap');
         @keyframes orbDrift { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(18px,-22px) scale(1.06)} 66%{transform:translate(-14px,16px) scale(0.96)} }
