@@ -1,0 +1,46 @@
+{
+  "clientId": "thierno",
+  "activationCode": "BRAS-2025",
+  "appName": "ArtistOS",
+  "appTagline": "Music OS",
+  "handle": "@officialthierno",
+  "creator1": "Thierno",
+  "creator2": "Bras",
+  "niche": "R&B, Afrobeats and Hip-Hop artist — authentic vocal-led music with feel-good and moody late-night energy, influenced by Chris Brown, Tory Lanez and Justin Bieber",
+  "contentStyle": "Raw vocal clips perform best. Mix of feel-good energy and moody atmospheric moments. Behind-the-scenes studio life, reaction moments, snippet drops before release, personal storytelling. Formula: emotional hook (raw vocal or relatable line) → story/context → build anticipation → call to stream or follow. Seasons matter — summer bangers vs moody autumn/winter late-night vibes.",
+  "platforms": "tiktok,instagram,spotify,youtube",
+  "targetAudience": "16-28 R&B and Afrobeats fans in the UK, people discovering new artists, fans of Chris Brown / Tory Lanez / Justin Bieber energy, young Black British music lovers",
+  "competitors": "@chrisbrownofficial,@torylanez,@justinbieber",
+  "appDescription": "Content and growth OS for Thierno (Bras) — R&B, Afrobeats and Hip-Hop artist from Portsmouth, Northampton and London. Manages content strategy, release pipeline, stream tracking and fan engagement.",
+  "bestFormula": "Raw vocal or emotional moment → personal story → build anticipation → stream / follow CTA",
+  "accentColor": "#00C853",
+  "accentColor2": "#64B5F6",
+  "accentColor3": "#CE93D8",
+  "currency": "£",
+  "onboardingTagline": "The system serious artists actually use.\nScore ideas, plan releases, grow your fanbase — all in one place.",
+  "aiGreeting": "Hey Thierno! I'm your ArtistOS AI. I know your sound — R&B, Afrobeats, Hip-Hop. Ask me for content ideas, release strategy, caption help, or upload a clip and I'll tell you how to make it hit.",
+  "releases": [
+    { "title": "Flaws", "status": "out", "platform": "everywhere via DistroKid" },
+    { "title": "Can't Imagine", "status": "out", "platform": "everywhere via DistroKid", "note": "strongest performer — discovery-driven" },
+    { "title": "Single 3", "status": "dropping in 3 weeks" }
+  ],
+  "currentStats": {
+    "spotify_monthly_listeners": 37,
+    "tiktok_followers": 784,
+    "tiktok_views": 12900,
+    "instagram_followers": 1566,
+    "youtube_subscribers": 20
+  },
+  "goals": "Consistent posting, 3-4 new songs released in 6 months, growing streams and engagement, building a genuine core fanbase. National growth first, then continental, then global.",
+  "brandValues": "Authenticity, delivery, feel-good energy. Listeners should be fully absorbed in the vibe.",
+  "biggestChallenge": "Content quality and consistency. Raw vocals perform best but not posting enough of them. Self-managed — the outward creative side is draining when the heart is really in the music.",
+  "statLabels": {
+    "followers": "Followers",
+    "views": "Streams",
+    "likes": "Saves",
+    "custom1Label": "Monthly Listeners",
+    "custom1Key": "monthly_listeners",
+    "custom2Label": "Releases Out",
+    "custom2Key": "releases"
+  }
+}
