@@ -7271,7 +7271,114 @@ function OnboardingPage({ onComplete }) {
               {/* DIVIDER */}
               <div style={{ width:1, background:"linear-gradient(180deg,transparent,rgba(255,255,255,0.08) 20%,rgba(255,255,255,0.08) 80%,transparent)", flexShrink:0, zIndex:2 }}/>
 
-              {/* RIGHT PANEL — 58% wide, full height, dashboard fills it */}
+              {/* RIGHT PANEL */}
+              {isBraz ? (
+                /* ── THIERNO — editorial artist brief ── */
+                <div style={{ flex:1, overflowY:"auto", padding:"48px 52px", position:"relative", zIndex:2, animation:"slideInRight 0.9s cubic-bezier(0.16,1,0.3,1) forwards" }}>
+                  <style>{`
+                    @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,700;0,900;1,300;1,700&display=swap');
+                    .braz-section { margin-bottom: 36px; }
+                    .braz-section:last-child { margin-bottom: 0; }
+                  `}</style>
+
+                  {/* Identity */}
+                  <div className="braz-section">
+                    <div style={{ fontSize:9, color:"#00C853", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>IDENTITY</div>
+                    <div style={{ fontSize:"clamp(36px,3.6vw,58px)", fontFamily:"'Fraunces',Georgia,serif", fontWeight:900, color:"#fff", lineHeight:0.95, letterSpacing:"-0.02em", marginBottom:10 }}>
+                      Thierno<span style={{color:"rgba(255,255,255,0.18)"}}>.</span>
+                    </div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.35)", fontFamily:"Courier New,monospace", letterSpacing:"0.1em", marginBottom:6 }}>aka Bras &nbsp;·&nbsp; @officialthierno</div>
+                    <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", lineHeight:1.65, maxWidth:420 }}>R&B · Afrobeats · Hip-Hop. Portsmouth, Northampton, London. Influenced by Chris Brown, Tory Lanez, Justin Bieber.</div>
+                  </div>
+
+                  <div style={{ width:"100%", height:1, background:"rgba(255,255,255,0.06)", marginBottom:36 }}/>
+
+                  {/* Countdown to Single 03 */}
+                  <div className="braz-section">
+                    <div style={{ fontSize:9, color:"#64B5F6", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>NEXT DROP</div>
+                    <div style={{ display:"flex", alignItems:"baseline", gap:12, marginBottom:8 }}>
+                      <div style={{ fontSize:"clamp(48px,4.8vw,72px)", fontFamily:"'Fraunces',Georgia,serif", fontWeight:900, color:"#fff", lineHeight:1 }}>21</div>
+                      <div style={{ fontSize:14, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>DAYS</div>
+                    </div>
+                    <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)" }}>Until <span style={{color:"#64B5F6"}}>Single 03</span> — summer banger. Pipeline behind it: moody autumn/winter late-night already lined up.</div>
+                  </div>
+
+                  <div style={{ width:"100%", height:1, background:"rgba(255,255,255,0.06)", marginBottom:36 }}/>
+
+                  {/* Stats */}
+                  <div className="braz-section">
+                    <div style={{ fontSize:9, color:"#00C853", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:14 }}>CURRENT NUMBERS</div>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:16 }}>
+                      {[
+                        {platform:"Spotify",val:"37",label:"monthly listeners",col:"#00C853"},
+                        {platform:"TikTok",val:"784",label:"followers · 12.9K views",col:"#64B5F6"},
+                        {platform:"Instagram",val:"1,566",label:"followers",col:"#CE93D8"},
+                        {platform:"YouTube",val:"~20",label:"subscribers",col:"rgba(255,255,255,0.3)"},
+                      ].map(({platform,val,label,col})=>(
+                        <div key={platform}>
+                          <div style={{ fontSize:9, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace", marginBottom:4 }}>{platform.toUpperCase()}</div>
+                          <div style={{ fontSize:22, fontFamily:"'Fraunces',Georgia,serif", fontWeight:700, color:col, lineHeight:1, marginBottom:3 }}>{val}</div>
+                          <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", lineHeight:1.4 }}>{label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ width:"100%", height:1, background:"rgba(255,255,255,0.06)", marginBottom:36 }}/>
+
+                  {/* Discography */}
+                  <div className="braz-section">
+                    <div style={{ fontSize:9, color:"#CE93D8", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:14 }}>DISCOGRAPHY</div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                      {[
+                        {title:"Flaws",status:"OUT NOW",col:"rgba(255,255,255,0.25)"},
+                        {title:"Can't Imagine",status:"OUT NOW · TOP PERFORMER",col:"#00C853"},
+                        {title:"Single 03",status:"3 WEEKS",col:"#64B5F6"},
+                      ].map(({title,status,col})=>(
+                        <div key={title} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
+                          <div style={{ fontSize:15, fontFamily:"'Fraunces',Georgia,serif", fontWeight:700, color:"rgba(255,255,255,0.8)", fontStyle:"italic" }}>{title}</div>
+                          <div style={{ fontSize:8, color:col, fontFamily:"Courier New,monospace", letterSpacing:"0.12em" }}>{status}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ width:"100%", height:1, background:"rgba(255,255,255,0.06)", marginBottom:36 }}/>
+
+                  {/* 6-month horizon */}
+                  <div className="braz-section">
+                    <div style={{ fontSize:9, color:"#64B5F6", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>6-MONTH HORIZON</div>
+                    <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", lineHeight:1.7 }}>
+                      Consistent posting. 3–4 new songs out. Growing streams and engagement. Building a genuine core fanbase. <span style={{color:"rgba(255,255,255,0.7)"}}>National → continental → global.</span>
+                    </div>
+                  </div>
+
+                  <div style={{ width:"100%", height:1, background:"rgba(255,255,255,0.06)", marginBottom:36 }}/>
+
+                  {/* Brand */}
+                  <div className="braz-section" style={{ display:"flex", gap:40 }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:9, color:"#CE93D8", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>BRAND</div>
+                      <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", lineHeight:1.7 }}>Authenticity. Delivery. Feel-good energy. Listeners fully absorbed in the vibe.</div>
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:9, color:"#FF6B6B", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>BOTTLENECK</div>
+                      <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", lineHeight:1.7 }}>Raw vocals perform best — not posting enough. Self-managed. Outward creative side drains when the heart is in the music.</div>
+                    </div>
+                  </div>
+
+                  <div style={{ width:"100%", height:1, background:"rgba(255,255,255,0.06)", marginBottom:36 }}/>
+
+                  {/* Origin */}
+                  <div className="braz-section">
+                    <div style={{ fontSize:9, color:"rgba(255,255,255,0.18)", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>ORIGIN</div>
+                    <div style={{ fontSize:"clamp(14px,1.3vw,17px)", fontFamily:"'Fraunces',Georgia,serif", fontStyle:"italic", fontWeight:300, color:"rgba(255,255,255,0.35)", lineHeight:1.7 }}>
+                      "Started at school when his friend Tate spotted his vocal talent, got him in the studio — and it snowballed from there."
+                    </div>
+                  </div>
+                </div>
+              ) : (
+              /* ── KRAPMAS — dashboard carousel ── */
               <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px 40px 32px", position:"relative", zIndex:2, gap:16 }}>
                 {/* Tagline above dashboard */}
                 <div style={{ textAlign:"center", animation:"fadeLeft 0.7s ease forwards" }}>
@@ -7625,6 +7732,7 @@ function OnboardingPage({ onComplete }) {
                   </div>
                 </div>
               </div>
+              )} {/* end KrapMaps right panel */}
 
             </div>
           )}
