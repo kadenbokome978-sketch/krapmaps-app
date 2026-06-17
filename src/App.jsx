@@ -6934,13 +6934,31 @@ function OnboardingPage({ onComplete }) {
   const [codeInput, setCodeInput] = useState("");
   const [codeError, setCodeError] = useState(false);
   const [codeShake, setCodeShake] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadLines, setLoadLines] = useState([]);
 
   const VALID_CODE = (CLIENT_CONFIG.activationCode || "").toUpperCase();
+
+  const BOOT_LINES = [
+    { text:"Verifying licence key...", delay:0 },
+    { text:"KEY ACCEPTED ✓", delay:500, green:true },
+    { text:"Connecting to content intelligence...", delay:900 },
+    { text:"Loading AI modules...", delay:1400 },
+    { text:"Syncing channel config...", delay:1800 },
+    { text:"Calibrating virality engine...", delay:2200 },
+    { text:"All systems ready ✓", delay:2700, green:true },
+    { text:"ACCESS GRANTED — Welcome.", delay:3100, green:true, bold:true },
+  ];
 
   const submitCode = () => {
     if(codeInput.trim().toUpperCase() === VALID_CODE) {
       setCodeError(false);
-      setStep(1);
+      setLoading(true);
+      setLoadLines([]);
+      BOOT_LINES.forEach(l => {
+        setTimeout(() => setLoadLines(prev => [...prev, l]), l.delay);
+      });
+      setTimeout(() => setStep(1), 3800);
     } else {
       setCodeError(true);
       setCodeShake(true);
@@ -6978,9 +6996,9 @@ function OnboardingPage({ onComplete }) {
   ];
 
   return (
-    <div style={{ minHeight:"100vh", background:step===0?"#080808":"#09090B", display:"flex", fontFamily:"'Inter',system-ui,sans-serif", position:"relative", overflow:"hidden", transition:"background 0.5s" }}>
-      {/* Scanlines overlay for terminal step */}
-      {step===0 && <div style={{ position:"fixed", inset:0, backgroundImage:"repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.15) 2px,rgba(0,0,0,0.15) 4px)", pointerEvents:"none", zIndex:0 }}/>}
+    <div style={{ minHeight:"100vh", background:step===0?"#000":"#09090B", display:"flex", fontFamily:"'Inter',system-ui,sans-serif", position:"relative", overflow:"hidden", transition:"background 0.6s" }}>
+      {/* Subtle green glow on activate screen */}
+      {step===0 && <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,#39FF1406 0%,transparent 65%)", pointerEvents:"none" }}/>}
       {/* Background gradient blobs — hidden on terminal step */}
       {step>0 && <div style={{ position:"fixed", top:"-20%", right:"-10%", width:600, height:600, borderRadius:"50%", background:`radial-gradient(circle,${ac}22 0%,transparent 65%)`, pointerEvents:"none" }}/>}
       {step>0 && <div style={{ position:"fixed", bottom:"-20%", left:"-10%", width:500, height:500, borderRadius:"50%", background:`radial-gradient(circle,${ac2}18 0%,transparent 65%)`, pointerEvents:"none" }}/>}
@@ -7008,57 +7026,60 @@ function OnboardingPage({ onComplete }) {
       <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"32px 20px", overflowY:"auto" }}>
         <div style={{ width:"100%", maxWidth:440 }}>
 
-          {/* Step 0 — Terminal activation */}
+          {/* Step 0 — Activation / Loading */}
           {step === 0 && (
-            <div style={{ fontFamily:"'Courier New',Courier,monospace", width:"100%" }}>
-              {/* Terminal window chrome */}
-              <div style={{ borderRadius:"12px 12px 0 0", background:"#1C1C1C", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, borderBottom:"1px solid #333" }}>
-                <div style={{ width:12, height:12, borderRadius:"50%", background:"#FF5F57" }}/>
-                <div style={{ width:12, height:12, borderRadius:"50%", background:"#FFBD2E" }}/>
-                <div style={{ width:12, height:12, borderRadius:"50%", background:"#28C840" }}/>
-                <span style={{ marginLeft:8, fontSize:12, color:"#666", letterSpacing:"0.05em" }}>content-os — activate</span>
-              </div>
-              {/* Terminal body */}
-              <div style={{ background:"#0D0D0D", borderRadius:"0 0 12px 12px", padding:"28px 24px", border:"1px solid #222", borderTop:"none", minHeight:380 }}>
-                <div style={{ color:"#39FF14", fontSize:13, lineHeight:2, marginBottom:8 }}>
-                  <span style={{ color:"#666" }}>$</span> ./content-os --activate<br/>
-                  <span style={{ color:"#555" }}>Initialising Content OS v2.1 ...</span><br/>
-                  <span style={{ color:"#555" }}>Loading modules </span><span style={{ color:"#39FF14" }}>✓</span><br/>
-                  <span style={{ color:"#555" }}>Checking licence </span><span style={{ color:"#FFD50A" }}>awaiting key</span><br/>
-                </div>
-                <div style={{ color:"#39FF14", fontSize:13, marginBottom:16, marginTop:8 }}>
-                  <span style={{ color:"#666" }}>$</span> <span style={{ color:"#fff" }}>Enter activation code to continue:</span>
-                </div>
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                  <span style={{ color:"#39FF14", fontSize:14, flexShrink:0 }}>&gt;</span>
+            <div style={{ fontFamily:"'Courier New',Courier,monospace", width:"100%", display:"flex", flexDirection:"column", alignItems:"center" }}>
+              {!loading ? (
+                /* ── ACTIVATE SCREEN ── */
+                <div style={{ width:"100%", display:"flex", flexDirection:"column", alignItems:"center", gap:0 }}>
+                  <div style={{ fontSize:11, color:"#39FF14", letterSpacing:"0.3em", marginBottom:40, opacity:0.5 }}>CONTENT OS</div>
+                  <div style={{ fontSize:13, color:"#39FF14", letterSpacing:"0.15em", marginBottom:10, opacity:0.7 }}>ENTER ACTIVATION CODE</div>
                   <input
                     value={codeInput}
                     onChange={e=>{ setCodeInput(e.target.value.toUpperCase()); setCodeError(false); }}
                     onKeyDown={e=>e.key==="Enter"&&submitCode()}
-                    placeholder="XXXX-0000_"
+                    placeholder="_ _ _ _ - _ _ _ _"
                     autoFocus
-                    style={{ flex:1, background:"transparent", border:"none", borderBottom:`1px solid ${codeError?"#EF4444":"#39FF14"}`, color:"#39FF14", padding:"8px 4px", fontSize:20, fontWeight:700, letterSpacing:"0.2em", outline:"none", fontFamily:"'Courier New',Courier,monospace", caretColor:"#39FF14", animation:codeShake?"shake 0.5s ease":"none" }}
+                    style={{ background:"transparent", border:"none", borderBottom:`1px solid ${codeError?"#EF4444":"#39FF14"}`, color:"#39FF14", padding:"12px 4px", fontSize:28, fontWeight:400, letterSpacing:"0.25em", outline:"none", fontFamily:"'Courier New',Courier,monospace", caretColor:"#39FF14", textAlign:"center", width:"100%", maxWidth:320, marginBottom:8, animation:codeShake?"shake 0.5s ease":"none", boxSizing:"border-box", boxShadow:codeError?"none":`0 4px 20px #39FF1415` }}
                   />
-                </div>
-                {codeError && (
-                  <div style={{ color:"#EF4444", fontSize:12, marginBottom:12, paddingLeft:20, lineHeight:1.6 }}>
-                    ERROR: Invalid activation code<br/>
-                    <span style={{ color:"#666" }}>Check your email and try again, or contact support.</span>
+                  {codeError
+                    ? <div style={{ fontSize:11, color:"#EF4444", letterSpacing:"0.12em", marginBottom:32, marginTop:4 }}>ACCESS DENIED — INVALID CODE</div>
+                    : <div style={{ fontSize:11, color:"#39FF1440", letterSpacing:"0.1em", marginBottom:32, marginTop:4 }}>PRESS ENTER OR CLICK BELOW</div>
+                  }
+                  <button
+                    onClick={submitCode}
+                    disabled={!codeInput.trim()}
+                    style={{ background:"transparent", border:`1px solid ${codeInput.trim()?"#39FF14":"#1a1a1a"}`, color:codeInput.trim()?"#39FF14":"#222", padding:"12px 40px", fontFamily:"'Courier New',Courier,monospace", fontSize:12, fontWeight:700, letterSpacing:"0.2em", cursor:codeInput.trim()?"pointer":"default", transition:"all 0.2s", boxShadow:codeInput.trim()?"0 0 24px #39FF1425, inset 0 0 24px #39FF1408":"none" }}
+                  >
+                    [ ACTIVATE ]
+                  </button>
+                  <div style={{ marginTop:48, fontSize:11, color:"#1a1a1a", letterSpacing:"0.1em" }}>
+                    NO CODE? <a href="mailto:hello@contentOS.io" style={{ color:"#39FF1440", textDecoration:"none" }}>CONTACT SUPPORT</a>
                   </div>
-                )}
-                {!codeError && <div style={{ color:"#333", fontSize:12, marginBottom:20, paddingLeft:20 }}>Press ENTER or click EXECUTE to continue</div>}
-                <button
-                  onClick={submitCode}
-                  disabled={!codeInput.trim()}
-                  style={{ background:"transparent", border:`1px solid ${codeInput.trim()?"#39FF14":"#333"}`, color:codeInput.trim()?"#39FF14":"#444", padding:"10px 24px", fontFamily:"'Courier New',Courier,monospace", fontSize:13, fontWeight:700, letterSpacing:"0.1em", cursor:codeInput.trim()?"pointer":"not-allowed", borderRadius:4, transition:"all 0.2s", boxShadow:codeInput.trim()?"0 0 16px #39FF1430":"none" }}
-                >
-                  {codeInput.trim() ? "[ EXECUTE ]" : "[ EXECUTE ]"}
-                </button>
-                <div style={{ marginTop:28, borderTop:"1px solid #1A1A1A", paddingTop:16, color:"#333", fontSize:11, lineHeight:1.8 }}>
-                  <span style={{ color:"#555" }}>No code? </span>
-                  <a href="mailto:hello@contentOS.io" style={{ color:"#39FF14", textDecoration:"none", opacity:0.7 }}>contact support →</a>
                 </div>
-              </div>
+              ) : (
+                /* ── LOADING SCREEN ── */
+                <div style={{ width:"100%", maxWidth:420 }}>
+                  <div style={{ fontSize:11, color:"#39FF14", letterSpacing:"0.3em", marginBottom:32, opacity:0.5 }}>CONTENT OS</div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                    {loadLines.map((l,i)=>(
+                      <div key={i} style={{ fontSize:13, color:l.green?"#39FF14":"#555", letterSpacing:"0.08em", fontWeight:l.bold?700:400, opacity: l.bold ? 1 : 0.85, animation:"fadeInLine 0.3s ease" }}>
+                        {!l.green && <span style={{ color:"#333", marginRight:8 }}>&gt;</span>}{l.text}
+                      </div>
+                    ))}
+                    {loadLines.length < BOOT_LINES.length && (
+                      <div style={{ display:"flex", gap:6, marginTop:4 }}>
+                        {[0,1,2].map(i=>(
+                          <div key={i} style={{ width:4, height:4, borderRadius:"50%", background:"#39FF14", animation:`blink 1s ${i*0.2}s infinite` }}/>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {loadLines.length === BOOT_LINES.length && (
+                    <div style={{ marginTop:24, height:2, background:"linear-gradient(90deg,#39FF14,transparent)", animation:"expandBar 0.5s ease forwards" }}/>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -7172,6 +7193,9 @@ function OnboardingPage({ onComplete }) {
       <style>{`
         @media(min-width:780px){ .ob-left{ display:flex !important; } }
         @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+        @keyframes fadeInLine{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes blink{0%,100%{opacity:0.2}50%{opacity:1}}
+        @keyframes expandBar{from{width:0}to{width:100%}}
       `}</style>
     </div>
   );
