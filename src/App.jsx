@@ -1479,7 +1479,7 @@ Gemini video analysis: ${JSON.stringify(gResult)}`;
         } catch(e) { console.warn("Gemini failed:", e.message); }
       }
 
-      const prompt = `Analyse this ${platform} for KrapMaps (bin-finding app).${geminiCtx}
+      const prompt = `Analyse this ${platform} for ${wl.handle} (${wl.niche}).${geminiCtx}
 VIDEO STATS: ${videoData}
 Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|average|below_avg|flopped","biggest_factor":"string","why_it_performed":"string","what_worked":["string"],"what_didnt":["string"],"replicate_these":["string"],"never_again":["string"],"refilm_brief":{"concept":"string","hook":"string","key_changes":["string"],"predicted_views":"string"}}`;
       const result = await callAI(prompt, 2000);
@@ -3434,7 +3434,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
       ]
     },
     {
-      id:"app", icon:I.map, label:"KrapMaps App", handle:"iOS + Android", color:C.green,
+      id:"app", icon:I.map, label:`${WL.appName} App`, handle:"iOS + Android", color:C.green,
       live: !!(m?.bins),
       stats:[
         {l:"BINS MAPPED", v:fmtG(m?.bins||0), c:C.green},
@@ -5251,10 +5251,10 @@ Be specific with timestamps. Harsh but constructive. No generic advice.`;
       const chatPredAcc = formatPredictionAccuracy(buildPredictionAccuracy(ideas));
       const compDataChat = loadCompetitorData();
       const chatCompHooks = compDataChat?.data?.steal_these_hooks?.slice(0,3).map(h=>`"${h.hook}" (${h.from_creator})`).join(", ")||"";
-      const systemPrompt = `You are the world's best viral content strategist — you combine the expertise of a top TikTok growth hacker, a social psychology researcher, and an experienced travel/environmental content creator. You manage the @findkrap TikTok and Instagram accounts through KrapMaps Content OS.
+      const systemPrompt = `You are the world's best viral content strategist — you combine the expertise of a top TikTok growth hacker, a social psychology researcher, and an experienced travel/environmental content creator. You manage the @findkrap TikTok and Instagram accounts through CreatorOS.
 
 ━━ BRAND & MISSION ━━
-KrapMaps = crowdsourced bin-finding app for backpackers in Southeast Asia.
+The channel niche: ${wl.niche}.
 Creators: BK (on camera, charismatic, genuine) + Harley (strategy, editing, system-builder).
 Core identity: "We pick up rubbish in the world's most beautiful places because there are no bins — so we built an app to fix it."
 This is a DUAL product: entertainment (travel + environmental) AND utility (the app). Every video should serve both.
@@ -6207,7 +6207,7 @@ function Dashboard({ keys, onEditKeys }) {
             const res = await fetch("https://api.anthropic.com/v1/messages",{
               method:"POST",
               headers:{"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
-              body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:350,messages:[{role:"user",content:`A KrapMaps TikTok/Reels video was posted.
+              body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:350,messages:[{role:"user",content:`A ${WL.handle} TikTok/Reels video was posted.
 
 RESULT: ${fmt(actualViews)} views — ${performance} (${multiple})
 IDEA SCORE: ${score}/100 | Hook type: "${idea.hook||"unknown"}" | Pillar: "${pillar}"
@@ -6805,7 +6805,7 @@ Return JSON:
           {/* STICKY DESKTOP TOP BAR */}
           <div className="web-topbar" style={{ position:"sticky", top:0, zIndex:100, background:"rgba(6,4,14,0.92)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", borderBottom:"1px solid rgba(255,255,255,0.05)", padding:"0 40px", height:60, display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 1px 0 rgba(255,255,255,0.04)" }}>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <span style={{ fontSize:13, color:"rgba(255,255,255,0.35)" }}>KrapMaps</span>
+              <span style={{ fontSize:13, color:"rgba(255,255,255,0.35)" }}>{WL.appName}</span>
               <span style={{ fontSize:14, color:"rgba(255,255,255,0.2)" }}>/</span>
               <span style={{ fontSize:14, fontWeight:700, color:"#fff", letterSpacing:"0.02em" }}>{NAV.find(n=>n.id===nav)?.label||nav}</span>
             </div>
@@ -6849,7 +6849,7 @@ Return JSON:
                   {nav==="content"&&"All your TikTok and Instagram content in one view"}
                   {nav==="analytics"&&"Deep performance data across all your content"}
                   {nav==="tasks"&&"Keep BK and Harley aligned on what to do next"}
-                  {nav==="growth"&&"TikTok, Instagram and KrapMaps app metrics"}
+                  {nav==="growth"&&`TikTok, Instagram and ${WL.appName} app metrics`}
                   {nav==="deals"&&"Track sponsorships, collabs and brand partnerships"}
                   {nav==="settings"&&"API keys, creator config and sync controls"}
                   {nav==="ai"&&"Add tasks, ideas and get content advice"}
@@ -7008,7 +7008,7 @@ function OnboardingPage({ onComplete }) {
         <div style={{ marginBottom:48 }}>
           <div style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"6px 14px", borderRadius:100, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", marginBottom:32 }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:ac, boxShadow:`0 0 6px ${ac}` }}/>
-            <span style={{ fontSize:12, color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", fontWeight:500 }}>CONTENT OS</span>
+            <span style={{ fontSize:12, color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", fontWeight:500 }}>CreatorOS</span>
           </div>
           <div style={{ fontSize:40, fontWeight:700, color:"#fff", lineHeight:1.15, marginBottom:16, letterSpacing:"-0.02em" }}>
             The content system<br/><span style={{ color:ac }}>serious creators</span><br/>actually use.
@@ -7032,7 +7032,7 @@ function OnboardingPage({ onComplete }) {
               {!loading ? (
                 /* ── ACTIVATE SCREEN ── */
                 <div style={{ width:"100%", display:"flex", flexDirection:"column", alignItems:"center", gap:0 }}>
-                  <div style={{ fontSize:11, color:"#39FF14", letterSpacing:"0.3em", marginBottom:40, opacity:0.5 }}>CONTENT OS</div>
+                  <div style={{ fontSize:11, color:"#39FF14", letterSpacing:"0.3em", marginBottom:40, opacity:0.5 }}>CreatorOS</div>
                   <div style={{ fontSize:13, color:"#39FF14", letterSpacing:"0.15em", marginBottom:10, opacity:0.7 }}>ENTER ACTIVATION CODE</div>
                   <input
                     value={codeInput}
@@ -7060,7 +7060,7 @@ function OnboardingPage({ onComplete }) {
               ) : (
                 /* ── LOADING SCREEN ── */
                 <div style={{ width:"100%", maxWidth:420 }}>
-                  <div style={{ fontSize:11, color:"#39FF14", letterSpacing:"0.3em", marginBottom:32, opacity:0.5 }}>CONTENT OS</div>
+                  <div style={{ fontSize:11, color:"#39FF14", letterSpacing:"0.3em", marginBottom:32, opacity:0.5 }}>CreatorOS</div>
                   <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                     {loadLines.map((l,i)=>(
                       <div key={i} style={{ fontSize:13, color:l.green?"#39FF14":"#555", letterSpacing:"0.08em", fontWeight:l.bold?700:400, opacity: l.bold ? 1 : 0.85, animation:"fadeInLine 0.3s ease" }}>
