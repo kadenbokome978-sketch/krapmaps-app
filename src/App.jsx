@@ -7179,7 +7179,7 @@ function OnboardingPage({ onComplete }) {
 
                     {/* Sidebar — active item tracks slideIdx */}
                     <div style={{ width:52, borderRight:"1px solid rgba(255,255,255,0.06)", display:"flex", flexDirection:"column", alignItems:"center", padding:"20px 0", gap:18, flexShrink:0 }}>
-                      {[["⊞","HOME"],["◈","IDEAS"],["⚡","HOOKS"],["✦","DEALS"],["◎","AI"],["▲","STATS"]].map(([ic,lb],i)=>(
+                      {[["◈","SCORE"],["⚡","HOOKS"],["📋","SCRIPT"],["✦","DEALS"],["◎","DEBRIEF"],["▲","GROWTH"]].map(([ic,lb],i)=>(
                         <div key={i} onClick={()=>setSlideIdx(i)} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, opacity:i===slideIdx?1:0.2, cursor:"pointer", transition:"opacity 0.2s" }}>
                           <div style={{ fontSize:14, color:"rgba(255,255,255,0.9)" }}>{ic}</div>
                           <div style={{ fontSize:6, color:"rgba(255,255,255,0.35)", letterSpacing:"0.1em", fontFamily:"Courier New,monospace" }}>{lb}</div>
@@ -7236,41 +7236,8 @@ function OnboardingPage({ onComplete }) {
                         </div>
                       )}
 
-                      {/* Slide 1 — Content Calendar / Tasks */}
+                      {/* Slide 1 — Hook A/B Tester */}
                       {slideIdx===1 && (
-                        <div key="s1" style={{ position:"absolute", inset:0, padding:"16px 16px 40px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.4s ease" }}>
-                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                            <div>
-                              <div style={{ fontSize:9, letterSpacing:"0.2em", color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", fontWeight:600, marginBottom:2 }}>CONTENT BOARD</div>
-                              <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)" }}>Plan, track, and score every piece of content</div>
-                            </div>
-                            <div style={{ fontSize:8, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace" }}>Week of Jun 17</div>
-                          </div>
-                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, flex:1 }}>
-                            {[
-                              {status:"POSTED",color:0.5,items:[{t:"Bali bin POV",sc:87,views:"8.2K"},{t:"Hostel tour + app demo",sc:74,views:"4.1K"}]},
-                              {status:"FILMING",color:0.35,items:[{t:"Contrast reel — litter vs clean",sc:91,views:null},{t:"Chang Mai day-in-life",sc:68,views:null}]},
-                              {status:"IDEA",color:0.2,items:[{t:"What 1000 bins mapped looks like",sc:79,views:null},{t:"Backpacker reaction to app",sc:82,views:null}]},
-                            ].map(({status,color,items})=>(
-                              <div key={status} style={{ display:"flex", flexDirection:"column", gap:7 }}>
-                                <div style={{ fontSize:7, letterSpacing:"0.18em", color:`rgba(255,255,255,${color})`, fontFamily:"Courier New,monospace", fontWeight:700, paddingBottom:6, borderBottom:"1px solid rgba(255,255,255,0.06)" }}>{status}</div>
-                                {items.map(({t,sc,views},i)=>(
-                                  <div key={i} style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:7, padding:"10px" }}>
-                                    <div style={{ fontSize:9, color:"rgba(255,255,255,0.65)", lineHeight:1.35, marginBottom:7 }}>{t}</div>
-                                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                                      <div style={{ fontSize:8, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace" }}>Score <span style={{ color:"rgba(255,255,255,0.65)", fontWeight:700 }}>{sc}</span></div>
-                                      {views && <div style={{ fontSize:8, color:"rgba(255,255,255,0.4)", fontFamily:"Courier New,monospace" }}>{views} views</div>}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Slide 2 — Hook A/B Tester */}
-                      {slideIdx===2 && (
                         <div key="s2" style={{ position:"absolute", inset:0, padding:"16px 16px 40px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.4s ease" }}>
                           <div>
                             <div style={{ fontSize:9, letterSpacing:"0.2em", color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", fontWeight:600, marginBottom:2 }}>HOOK A/B TESTER</div>
@@ -7304,6 +7271,57 @@ function OnboardingPage({ onComplete }) {
                                 <div style={{ fontSize:8, color:"rgba(255,255,255,0.3)", lineHeight:1.5, borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:8 }}>{why}</div>
                               </div>
                             ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Slide 2 — Script Builder */}
+                      {slideIdx===2 && (
+                        <div key="s2b" style={{ position:"absolute", inset:0, padding:"16px 16px 40px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.4s ease" }}>
+                          <div>
+                            <div style={{ fontSize:9, letterSpacing:"0.2em", color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", fontWeight:600, marginBottom:2 }}>SCRIPT BUILDER</div>
+                            <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)" }}>Full filming scripts from your idea — scene by scene</div>
+                          </div>
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1.4fr", gap:10, flex:1 }}>
+                            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                              <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:9, padding:"12px" }}>
+                                <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:6, letterSpacing:"0.14em" }}>IDEA</div>
+                                <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", lineHeight:1.4 }}>POV: can't find a bin anywhere in Bali 🤯</div>
+                                <div style={{ marginTop:8, display:"flex", gap:6 }}>
+                                  <div style={{ fontSize:7, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", border:"1px solid rgba(255,255,255,0.09)", borderRadius:2, padding:"1px 5px" }}>Score: 87</div>
+                                  <div style={{ fontSize:7, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", border:"1px solid rgba(255,255,255,0.09)", borderRadius:2, padding:"1px 5px" }}>45 sec</div>
+                                </div>
+                              </div>
+                              <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:9, padding:"12px", flex:1 }}>
+                                <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:8, letterSpacing:"0.14em" }}>FORMULA</div>
+                                {[["HOOK","0–5s","Grab attention"],["PROBLEM","5–15s","Build tension"],["STRUGGLE","15–25s","Relatability"],["APP","25–35s","Solution reveal"],["CTA","35–45s","Community ask"]].map(([sc,t,d])=>(
+                                  <div key={sc} style={{ display:"flex", gap:7, marginBottom:6 }}>
+                                    <div style={{ fontSize:7, color:"rgba(255,255,255,0.22)", fontFamily:"Courier New,monospace", fontWeight:700, width:52, flexShrink:0 }}>{sc}</div>
+                                    <div style={{ fontSize:7, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace", width:30, flexShrink:0 }}>{t}</div>
+                                    <div style={{ fontSize:8, color:"rgba(255,255,255,0.4)" }}>{d}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:9, padding:"14px", display:"flex", flexDirection:"column", gap:10 }}>
+                              <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", letterSpacing:"0.14em" }}>FULL SCRIPT</div>
+                              {[
+                                {scene:"HOOK",time:"0–5s",shot:"Close-up: hands holding rubbish, no bin in sight",script:`"POV: you're in Bali, you've got a wrapper, and there is literally not a single bin anywhere."`,note:"Fast cut, phone vertical, pattern interrupt"},
+                                {scene:"PROBLEM",time:"5–15s",shot:"Wide shot of street litter",script:`"This is why streets look like this — not because travellers don't care, but because there's nowhere to put it."`,note:"B-roll from yesterday works here"},
+                                {scene:"APP",time:"15–35s",shot:"Screen record of KrapMaps",script:`"We built KrapMaps. Open it anywhere — nearest bin in seconds. Crowdsourced by travellers, for travellers."`,note:"Clean record, no notifications showing"},
+                                {scene:"CTA",time:"35–45s",shot:"To camera, natural",script:`"If you're in SE Asia, download it. Link in bio. And if you find a bin we don't have — map it. 10 seconds."`,note:"End on download screen"},
+                              ].map(({scene,time,shot,script,note})=>(
+                                <div key={scene} style={{ borderLeft:"2px solid rgba(255,255,255,0.09)", paddingLeft:10 }}>
+                                  <div style={{ display:"flex", gap:8, marginBottom:2 }}>
+                                    <div style={{ fontSize:7, color:"rgba(255,255,255,0.45)", fontFamily:"Courier New,monospace", fontWeight:700, letterSpacing:"0.1em" }}>{scene}</div>
+                                    <div style={{ fontSize:7, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace" }}>{time}</div>
+                                  </div>
+                                  <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", marginBottom:3, fontStyle:"italic" }}>Shot: {shot}</div>
+                                  <div style={{ fontSize:9, color:"rgba(255,255,255,0.62)", lineHeight:1.4, marginBottom:3 }}>{script}</div>
+                                  <div style={{ fontSize:7, color:"rgba(255,255,255,0.18)", fontFamily:"Courier New,monospace" }}>📌 {note}</div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -7403,52 +7421,70 @@ function OnboardingPage({ onComplete }) {
                         </div>
                       )}
 
-                      {/* Slide 5 — Script Builder */}
+                      {/* Slide 5 — Growth & Analytics */}
                       {slideIdx===5 && (
                         <div key="s5" style={{ position:"absolute", inset:0, padding:"16px 16px 40px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.4s ease" }}>
-                          <div>
-                            <div style={{ fontSize:9, letterSpacing:"0.2em", color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", fontWeight:600, marginBottom:2 }}>SCRIPT BUILDER</div>
-                            <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)" }}>Full filming scripts from your idea — scene by scene</div>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                            <div>
+                              <div style={{ fontSize:9, letterSpacing:"0.2em", color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", fontWeight:600, marginBottom:2 }}>GROWTH & ANALYTICS</div>
+                              <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)" }}>Track followers, views and likes across TikTok & Instagram</div>
+                            </div>
+                            <div style={{ fontSize:8, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace" }}>Last 7 days</div>
                           </div>
-                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1.4fr", gap:10, flex:1 }}>
-                            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                              <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:9, padding:"12px" }}>
-                                <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:6, letterSpacing:"0.14em" }}>IDEA</div>
-                                <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", lineHeight:1.4 }}>POV: can't find a bin anywhere in Bali 🤯</div>
-                                <div style={{ marginTop:8, display:"flex", gap:6 }}>
-                                  <div style={{ fontSize:7, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", border:"1px solid rgba(255,255,255,0.09)", borderRadius:2, padding:"1px 5px" }}>Score: 87</div>
-                                  <div style={{ fontSize:7, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", border:"1px solid rgba(255,255,255,0.09)", borderRadius:2, padding:"1px 5px" }}>45 sec</div>
-                                </div>
+
+                          {/* Big stat row */}
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:8 }}>
+                            {[["Followers","14.2K","↑ 847 this week"],["Total Views","284K","↑ 12.4K this week"],["Total Likes","31.6K","↑ 3.2K this week"],["Bins Mapped","1,847","↑ 94 this week"]].map(([label,val,sub])=>(
+                              <div key={label} style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:9, padding:"12px" }}>
+                                <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", letterSpacing:"0.12em", marginBottom:6 }}>{label.toUpperCase()}</div>
+                                <div style={{ fontSize:22, fontWeight:900, color:"#fff", fontFamily:"Inter,sans-serif", letterSpacing:"-0.03em", lineHeight:1, marginBottom:4 }}>{val}</div>
+                                <div style={{ fontSize:8, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace" }}>{sub}</div>
                               </div>
-                              <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:9, padding:"12px", flex:1 }}>
-                                <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:8, letterSpacing:"0.14em" }}>FORMAT GUIDE</div>
-                                {[["Hook","0–5s","Grab attention"],["Problem","5–15s","Build tension"],["Struggle","15–25s","Relatability"],["Solution","25–35s","App reveal"],["CTA","35–45s","Community ask"]].map(([sc,t,d])=>(
-                                  <div key={sc} style={{ display:"flex", gap:7, marginBottom:6 }}>
-                                    <div style={{ fontSize:7, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace", fontWeight:700, width:48, flexShrink:0 }}>{sc}</div>
-                                    <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", width:30, flexShrink:0 }}>{t}</div>
-                                    <div style={{ fontSize:8, color:"rgba(255,255,255,0.4)" }}>{d}</div>
+                            ))}
+                          </div>
+
+                          {/* Charts row */}
+                          <div style={{ display:"grid", gridTemplateColumns:"1.6fr 1fr", gap:8, flex:1, minHeight:0 }}>
+
+                            {/* Views bar chart */}
+                            <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:9, padding:"14px", display:"flex", flexDirection:"column" }}>
+                              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:14 }}>
+                                <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", letterSpacing:"0.14em" }}>VIEWS — LAST 14 DAYS</div>
+                                <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:"Inter,sans-serif" }}>↑ 38% vs prev</div>
+                              </div>
+                              <div style={{ display:"flex", alignItems:"flex-end", gap:5, flex:1 }}>
+                                {[0.28,0.42,0.35,0.5,0.32,0.55,0.38,0.78,0.62,0.55,0.7,0.85,1.0,0.72].map((h,i)=>(
+                                  <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3, height:"100%", justifyContent:"flex-end" }}>
+                                    <div style={{ width:"100%", background:i>=7?"rgba(255,255,255,0.6)":"rgba(255,255,255,0.14)", borderRadius:"2px 2px 0 0", height:`${h*100}%` }}/>
+                                    {(i===0||i===6||i===13) && <div style={{ fontSize:6, color:"rgba(255,255,255,0.18)", fontFamily:"Courier New,monospace" }}>{["J3","J9","J17"][i===0?0:i===6?1:2]}</div>}
                                   </div>
                                 ))}
                               </div>
                             </div>
-                            <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:9, padding:"14px", display:"flex", flexDirection:"column", gap:9 }}>
-                              <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", letterSpacing:"0.14em" }}>FULL SCRIPT</div>
-                              {[
-                                {scene:"HOOK",time:"0–5s",shot:"Close-up hands with rubbish, no bin in sight",script:`"POV: you're in Bali, you've got a wrapper, and there is literally not a single bin anywhere."`,note:"Film on phone, vertical, fast cut"},
-                                {scene:"PROBLEM",time:"5–15s",shot:"Wide shot of street. Zooms on litter.",script:`"This is why streets look like this. Not because people don't care — because there's nowhere to put it."`,note:"Use B-roll from yesterday"},
-                                {scene:"SOLUTION",time:"15–35s",shot:"Screen record of KrapMaps app",script:`"So we built KrapMaps. Open it anywhere — it shows you the nearest bin in seconds. Crowdsourced by travellers, for travellers."`,note:"Clean screen record, no notifications"},
-                                {scene:"CTA",time:"35–45s",shot:"Looking to camera, smile",script:`"If you're in SE Asia — download it. Link in bio. And if you know a bin we don't, map it. Takes 10 seconds."`,note:"End on app download screen"},
-                              ].map(({scene,time,shot,script,note})=>(
-                                <div key={scene} style={{ borderLeft:"2px solid rgba(255,255,255,0.1)", paddingLeft:10 }}>
-                                  <div style={{ display:"flex", gap:8, marginBottom:3 }}>
-                                    <div style={{ fontSize:7, color:"rgba(255,255,255,0.45)", fontFamily:"Courier New,monospace", fontWeight:700, letterSpacing:"0.1em" }}>{scene}</div>
-                                    <div style={{ fontSize:7, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace" }}>{time}</div>
+
+                            {/* Top videos + best times */}
+                            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                              <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:9, padding:"12px", flex:1 }}>
+                                <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", letterSpacing:"0.14em", marginBottom:8 }}>TOP VIDEOS</div>
+                                {[["Bali bin POV","8.2K views","87 score"],["Hostel app demo","4.1K views","74 score"],["Chang Mai map","2.8K views","68 score"]].map(([title,views,score])=>(
+                                  <div key={title} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingBottom:6, marginBottom:6, borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
+                                    <div style={{ flex:1 }}>
+                                      <div style={{ fontSize:9, color:"rgba(255,255,255,0.65)" }}>{title}</div>
+                                      <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace" }}>{views}</div>
+                                    </div>
+                                    <div style={{ fontSize:8, color:"rgba(255,255,255,0.35)", fontFamily:"Courier New,monospace" }}>{score}</div>
                                   </div>
-                                  <div style={{ fontSize:7, color:"rgba(255,255,255,0.3)", marginBottom:3, fontStyle:"italic" }}>Shot: {shot}</div>
-                                  <div style={{ fontSize:9, color:"rgba(255,255,255,0.65)", lineHeight:1.4, marginBottom:3 }}>{script}</div>
-                                  <div style={{ fontSize:7, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace" }}>📌 {note}</div>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
+                              <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:9, padding:"12px" }}>
+                                <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", letterSpacing:"0.14em", marginBottom:8 }}>BEST POST TIMES</div>
+                                {[["Thursday","6:00 pm","2.3× avg"],["Saturday","9:00 am","1.8× avg"],["Tuesday","7:00 pm","1.4× avg"]].map(([day,time,mult])=>(
+                                  <div key={day} style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
+                                    <div style={{ fontSize:9, color:"rgba(255,255,255,0.55)" }}>{day} <span style={{ color:"rgba(255,255,255,0.3)", fontSize:8 }}>{time}</span></div>
+                                    <div style={{ fontSize:8, fontWeight:700, color:"rgba(255,255,255,0.6)", fontFamily:"Courier New,monospace" }}>{mult}</div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           </div>
                         </div>
