@@ -7019,7 +7019,7 @@ function OnboardingPage({ onComplete }) {
   ];
 
   return (
-    <div style={{ minHeight:"100vh", background:step<=1?"#000":"#09090B", display:"flex", fontFamily:"'Inter',system-ui,sans-serif", position:"relative", overflow:"hidden", transition:"background 0.6s" }}>
+    <div style={{ minHeight:"100vh", background:"#000", display:"flex", fontFamily:"'Inter',system-ui,sans-serif", position:"relative", overflow:"hidden", transition:"background 0.6s" }}>
       {/* Subtle green glow on activate screen */}
       {step===0 && <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,#39FF1406 0%,transparent 65%)", pointerEvents:"none" }}/>}
       {/* Background gradient blobs — hidden on terminal/welcome steps */}
@@ -7550,75 +7550,79 @@ function OnboardingPage({ onComplete }) {
 
           {/* Step 2 — Channel */}
           {step === 2 && (
-            <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
-              <div style={{ display:"flex", gap:6, marginBottom:32 }}>
-                {[0,1,2,3].map(i=><div key={i} style={{ height:3, borderRadius:2, flex:i<=2?1.5:1, background:i<=1?ac:"rgba(255,255,255,0.1)", transition:"all 0.3s" }}/>)}
+            <div style={{ display:"flex", flexDirection:"column", gap:0, width:"100%", maxWidth:440, animation:"fadeLeft 0.4s ease" }}>
+              {/* Progress */}
+              <div style={{ display:"flex", gap:4, marginBottom:40 }}>
+                {[0,1,2,3].map(i=><div key={i} style={{ height:2, flex:1, background:i<=1?"#FF2D78":"rgba(255,255,255,0.08)", transition:"all 0.3s" }}/>)}
               </div>
-              <div style={{ marginBottom:28 }}>
-                <div style={{ fontSize:24, fontWeight:700, color:"#fff", marginBottom:8, letterSpacing:"-0.01em" }}>Your channel</div>
-                <div style={{ fontSize:14, color:"rgba(255,255,255,0.45)", lineHeight:1.6 }}>Tell us your handle so the AI can personalise every prompt, score and strategy to your exact niche.</div>
-              </div>
-              <div style={{ marginBottom:20 }}>
-                <label style={{ display:"block", fontSize:12, color:"rgba(255,255,255,0.4)", fontWeight:600, letterSpacing:"0.08em", marginBottom:8 }}>TIKTOK HANDLE</label>
+              <div style={{ fontSize:9, color:"rgba(255,255,255,0.25)", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", marginBottom:10 }}>YOUR CHANNEL</div>
+              <div style={{ fontSize:28, fontWeight:800, color:"#fff", marginBottom:6, lineHeight:1.1, letterSpacing:"-0.02em" }}>Your channel.<br/><span style={{ color:"rgba(255,255,255,0.25)" }}>Your strategy.</span></div>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.3)", lineHeight:1.7, marginBottom:32, fontFamily:"Courier New,monospace", letterSpacing:"0.04em" }}>Tell us your handle so every AI prompt, score and strategy is calibrated to your exact niche.</div>
+              <div style={{ marginBottom:24 }}>
+                <div style={{ fontSize:9, color:"rgba(255,255,255,0.22)", letterSpacing:"0.18em", fontFamily:"Courier New,monospace", marginBottom:10 }}>TIKTOK HANDLE</div>
                 <input
                   value={handle}
                   onChange={e=>setHandle(e.target.value)}
-                  onKeyDown={e=>e.key==="Enter"&&setStep(2)}
+                  onKeyDown={e=>e.key==="Enter"&&setStep(3)}
                   placeholder="@yourchannel"
                   autoFocus
-                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`2px solid ${handle?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.08)"}`, borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:16, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s" }}
+                  style={{ width:"100%", background:"transparent", border:"none", borderBottom:`1px solid ${handle?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.12)"}`, color:"#fff", padding:"10px 0", fontSize:18, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s", fontFamily:"Courier New,monospace", letterSpacing:"0.08em", caretColor:"#FF2D78" }}
                 />
               </div>
-              <div style={{ padding:"14px 16px", borderRadius:12, background:`${ac}0f`, border:`1px solid ${ac}20`, marginBottom:28 }}>
-                <div style={{ fontSize:13, color:"rgba(255,255,255,0.55)", lineHeight:1.55 }}>💡 This gets baked into every AI prompt — idea scoring, hook testing, weekly debrief. The more specific your niche, the better the advice.</div>
+              <div style={{ fontSize:10, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace", letterSpacing:"0.06em", lineHeight:1.7, marginBottom:36 }}>
+                ◈ &nbsp;Baked into every AI prompt — idea scoring, hook testing, debrief.<br/>
+                ◈ &nbsp;The more specific your niche, the sharper the advice.
               </div>
-              <button onClick={()=>setStep(3)} style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${ac},${ac2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 24px ${ac}35`, marginBottom:10 }}>
-                Continue →
-              </button>
-              <button onClick={()=>setStep(3)} style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontSize:13, cursor:"pointer" }}>Skip for now</button>
+              <button onClick={()=>setStep(3)} style={{ padding:"16px 0", border:"1px solid rgba(255,255,255,0.22)", borderRadius:2, background:"transparent", color:"#fff", fontWeight:700, fontSize:11, cursor:"pointer", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", transition:"all 0.2s", width:"100%", marginBottom:14 }}
+                onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.4)"; }}
+                onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(255,255,255,0.22)"; }}
+              >CONTINUE →</button>
+              <button onClick={()=>setStep(3)} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.1)", fontSize:10, cursor:"pointer", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", padding:0, textAlign:"center", width:"100%" }}>SKIP FOR NOW</button>
             </div>
           )}
 
           {/* Step 3 — AI Key */}
           {step === 3 && (
-            <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
-              <div style={{ display:"flex", gap:6, marginBottom:32 }}>
-                {[0,1,2,3].map(i=><div key={i} style={{ height:3, borderRadius:2, flex:i<=3?1.5:1, background:i<=2?ac:"rgba(255,255,255,0.1)", transition:"all 0.3s" }}/>)}
+            <div style={{ display:"flex", flexDirection:"column", gap:0, width:"100%", maxWidth:440, animation:"fadeLeft 0.4s ease" }}>
+              {/* Progress */}
+              <div style={{ display:"flex", gap:4, marginBottom:40 }}>
+                {[0,1,2,3].map(i=><div key={i} style={{ height:2, flex:1, background:i<=2?"#FF2D78":"rgba(255,255,255,0.08)", transition:"all 0.3s" }}/>)}
               </div>
-              <div style={{ marginBottom:24 }}>
-                <div style={{ fontSize:24, fontWeight:700, color:"#fff", marginBottom:8, letterSpacing:"-0.01em" }}>Connect AI</div>
-                <div style={{ fontSize:14, color:"rgba(255,255,255,0.45)", lineHeight:1.6 }}>Add your Anthropic API key to unlock AI scoring, scripts, hook testing and weekly strategy. Stored on your device only.</div>
-              </div>
-              <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:24 }}>
-                {[["🎯","Idea Scoring","Virality scores with detailed reasoning"],["⚡","Hook A/B Tester","AI picks the winner every time"],["📋","Script Builder","Full filming scripts from any idea"],["📊","Weekly Debrief","Strategic summary of what's working"]].map(([ic,l,d],i)=>(
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 14px", borderRadius:12, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)" }}>
-                    <span style={{ fontSize:18, flexShrink:0 }}>{ic}</span>
+              <div style={{ fontSize:9, color:"rgba(255,255,255,0.25)", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", marginBottom:10 }}>CONNECT AI</div>
+              <div style={{ fontSize:28, fontWeight:800, color:"#fff", marginBottom:6, lineHeight:1.1, letterSpacing:"-0.02em" }}>Unlock the<br/><span style={{ color:"rgba(255,255,255,0.25)" }}>full system.</span></div>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.3)", lineHeight:1.7, marginBottom:28, fontFamily:"Courier New,monospace", letterSpacing:"0.04em" }}>Add your Anthropic key to activate scoring, scripts, hook testing and weekly strategy. Stored on device only.</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:28 }}>
+                {[["◈","Idea Scoring","Virality scores before you film"],["◎","Script Builder","Full scripts from any idea"],["⊞","Weekly Debrief","Strategic summary of what's working"],["✦","Hook Tester","AI picks the winning hook"]].map(([ic,l,d])=>(
+                  <div key={l} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", border:"1px solid rgba(255,255,255,0.07)", borderRadius:2 }}>
+                    <div style={{ fontSize:12, color:"#FF2D78", width:16, textAlign:"center" }}>{ic}</div>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:13, fontWeight:600, color:"#fff" }}>{l}</div>
-                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>{d}</div>
+                      <div style={{ fontSize:11, fontWeight:600, color:"rgba(255,255,255,0.7)", fontFamily:"Courier New,monospace", letterSpacing:"0.06em" }}>{l}</div>
+                      <div style={{ fontSize:10, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace" }}>{d}</div>
                     </div>
-                    <div style={{ fontSize:10, fontWeight:700, color:"#4ADE80", background:"rgba(74,222,128,0.1)", borderRadius:6, padding:"2px 8px", flexShrink:0 }}>UNLOCKED</div>
+                    <div style={{ fontSize:8, color:"#39FF14", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>UNLOCKED</div>
                   </div>
                 ))}
               </div>
-              <div style={{ marginBottom:20 }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                  <label style={{ fontSize:12, color:"rgba(255,255,255,0.4)", fontWeight:600, letterSpacing:"0.08em" }}>ANTHROPIC API KEY</label>
-                  <a href="https://console.anthropic.com/keys" target="_blank" rel="noreferrer" style={{ fontSize:12, color:ac, textDecoration:"none", fontWeight:500 }}>Get a free key →</a>
+              <div style={{ marginBottom:8 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                  <div style={{ fontSize:9, color:"rgba(255,255,255,0.22)", letterSpacing:"0.18em", fontFamily:"Courier New,monospace" }}>ANTHROPIC API KEY</div>
+                  <a href="https://console.anthropic.com/keys" target="_blank" rel="noreferrer" style={{ fontSize:9, color:"rgba(255,255,255,0.3)", textDecoration:"none", fontFamily:"Courier New,monospace", letterSpacing:"0.08em" }}>GET KEY →</a>
                 </div>
                 <input
                   value={apiKey}
                   onChange={e=>setApiKey(e.target.value)}
                   placeholder="sk-ant-api03-..."
                   type="password"
-                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`2px solid ${apiKey?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.08)"}`, borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:14, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s" }}
+                  style={{ width:"100%", background:"transparent", border:"none", borderBottom:`1px solid ${apiKey?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.12)"}`, color:"#fff", padding:"10px 0", fontSize:14, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s", fontFamily:"Courier New,monospace", caretColor:"#FF2D78" }}
                 />
-                <div style={{ fontSize:12, color:"rgba(255,255,255,0.2)", marginTop:6 }}>You can add or change this later in Settings</div>
+                <div style={{ fontSize:9, color:"rgba(255,255,255,0.12)", marginTop:6, fontFamily:"Courier New,monospace", letterSpacing:"0.06em" }}>You can add or change this later in Settings</div>
               </div>
-              <button onClick={()=>finish(apiKey)} style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${ac},${ac2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 28px ${ac}40`, marginBottom:10 }}>
-                {apiKey.trim() ? "Launch →" : "Launch without AI →"}
-              </button>
-              <button onClick={()=>setStep(2)} style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontSize:13, cursor:"pointer" }}>← Back</button>
+              <div style={{ marginBottom:14 }}/>
+              <button onClick={()=>finish(apiKey)} style={{ padding:"16px 0", border:"1px solid rgba(255,255,255,0.22)", borderRadius:2, background:"transparent", color:"#fff", fontWeight:700, fontSize:11, cursor:"pointer", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", transition:"all 0.2s", width:"100%", marginBottom:14 }}
+                onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.4)"; }}
+                onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(255,255,255,0.22)"; }}
+              >{apiKey.trim() ? "LAUNCH →" : "LAUNCH WITHOUT AI →"}</button>
+              <button onClick={()=>setStep(2)} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.1)", fontSize:10, cursor:"pointer", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", padding:0, textAlign:"center", width:"100%" }}>← BACK</button>
             </div>
           )}
 
