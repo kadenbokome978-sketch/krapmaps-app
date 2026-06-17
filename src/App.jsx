@@ -7032,7 +7032,7 @@ function OnboardingPage({ onComplete }) {
               {!loading ? (
                 /* ── ACTIVATE SCREEN ── */
                 <div style={{ width:"100%", display:"flex", flexDirection:"column", alignItems:"center", gap:0 }}>
-                  <div style={{ position:"relative", marginBottom:40 }}><div style={{ position:"absolute", inset:"-40px -60px", background:"radial-gradient(ellipse,#39FF1412 0%,transparent 70%)", pointerEvents:"none", borderRadius:"50%", filter:"blur(10px)" }}/><div style={{ fontSize:46, color:"#39FF14", letterSpacing:"0.22em", marginBottom:0, fontWeight:800, fontFamily:"Courier New,Courier,monospace", textShadow:"0 0 30px #39FF1460, 0 0 60px #39FF1425, 0 0 100px #39FF1410", filter:"drop-shadow(0 0 18px #39FF1450)" }}>CREATOROS</div></div>
+                  <div style={{ position:"relative", marginBottom:40 }}><div style={{ position:"absolute", inset:"-100px -160px", background:"radial-gradient(ellipse,#39FF140e 0%,transparent 70%)", pointerEvents:"none", borderRadius:"50%", filter:"blur(40px)" }}/><div style={{ fontSize:46, color:"#39FF14", letterSpacing:"0.22em", marginBottom:0, fontWeight:800, fontFamily:"Courier New,Courier,monospace", textShadow:"0 0 60px #39FF1430, 0 0 120px #39FF1418, 0 0 200px #39FF1410" }}>Creator<span style={{opacity:0.6}}>OS</span></div></div>
                   <div style={{ fontSize:13, color:"#39FF14", letterSpacing:"0.15em", marginBottom:10, opacity:0.7 }}>ENTER ACTIVATION CODE</div>
                   <input
                     value={codeInput}
@@ -7060,7 +7060,7 @@ function OnboardingPage({ onComplete }) {
               ) : (
                 /* ── LOADING SCREEN ── */
                 <div style={{ width:"100%", maxWidth:420 }}>
-                  <div style={{ fontSize:46, color:"#39FF14", letterSpacing:"0.22em", marginBottom:32, fontWeight:800, fontFamily:"Courier New,Courier,monospace", textShadow:"0 0 30px #39FF1460, 0 0 60px #39FF1425, 0 0 100px #39FF1410", filter:"drop-shadow(0 0 18px #39FF1450)" }}>CreatorOS</div>
+                  <div style={{ fontSize:46, color:"#39FF14", letterSpacing:"0.22em", marginBottom:32, fontWeight:800, fontFamily:"Courier New,Courier,monospace", textShadow:"0 0 60px #39FF1430, 0 0 120px #39FF1418, 0 0 200px #39FF1410" }}>Creator<span style={{opacity:0.6}}>OS</span></div>
                   <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                     {loadLines.map((l,i)=>(
                       <div key={i} style={{ fontSize:13, color:l.green?"#39FF14":"#555", letterSpacing:"0.08em", fontWeight:l.bold?700:400, opacity: l.bold ? 1 : 0.85, animation:"fadeInLine 0.3s ease" }}>
