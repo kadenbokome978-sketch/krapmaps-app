@@ -7141,9 +7141,7 @@ function OnboardingPage({ onComplete }) {
 
                 <div style={{ width:36, height:1, background:"rgba(255,255,255,0.14)", marginBottom:24 }}/>
 
-                <div style={{ fontSize:10, color:"rgba(255,255,255,0.2)", letterSpacing:"0.18em", fontWeight:600, marginBottom:52, fontFamily:"Courier New,monospace", lineHeight:2 }}>
-                  6 TOOLS &nbsp;&middot;&nbsp; 1 SYSTEM<br/>BUILT FOR CREATORS WHO MEAN IT
-                </div>
+                <div style={{ marginBottom:52 }}/>
 
                 <button
                   onClick={()=>setStep(2)}
@@ -7162,8 +7160,13 @@ function OnboardingPage({ onComplete }) {
               <div style={{ width:1, background:"linear-gradient(180deg,transparent,rgba(255,255,255,0.08) 20%,rgba(255,255,255,0.08) 80%,transparent)", flexShrink:0, zIndex:2 }}/>
 
               {/* RIGHT PANEL — 58% wide, full height, dashboard fills it */}
-              <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"32px 40px", position:"relative", zIndex:2 }}>
-                <div style={{ width:"100%", height:"calc(100vh - 64px)", maxHeight:780, background:"rgba(7,7,7,0.98)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, overflow:"hidden", boxShadow:"0 60px 160px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,255,255,0.04)", animation:"slideInRight 0.9s cubic-bezier(0.16,1,0.3,1) forwards", display:"flex", flexDirection:"column" }}>
+              <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px 40px 32px", position:"relative", zIndex:2, gap:16 }}>
+                {/* Tagline above dashboard */}
+                <div style={{ textAlign:"center", animation:"fadeLeft 0.7s ease forwards" }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:"rgba(255,255,255,0.85)", letterSpacing:"0.22em", fontFamily:"Courier New,monospace" }}>6 TOOLS &nbsp;·&nbsp; 1 SYSTEM</div>
+                  <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)", letterSpacing:"0.18em", fontFamily:"Courier New,monospace", marginTop:5 }}>BUILT FOR CREATORS WHO MEAN IT</div>
+                </div>
+                <div style={{ width:"100%", height:"calc(100vh - 130px)", maxHeight:740, background:"rgba(7,7,7,0.98)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, overflow:"hidden", boxShadow:"0 60px 160px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,255,255,0.04)", animation:"slideInRight 0.9s cubic-bezier(0.16,1,0.3,1) forwards", display:"flex", flexDirection:"column" }}>
 
                   {/* Window chrome */}
                   <div style={{ display:"flex", alignItems:"center", gap:7, padding:"13px 18px", borderBottom:"1px solid rgba(255,255,255,0.07)", background:"rgba(255,255,255,0.02)", flexShrink:0 }}>
