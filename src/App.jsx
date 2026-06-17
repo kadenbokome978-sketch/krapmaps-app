@@ -7101,85 +7101,149 @@ function OnboardingPage({ onComplete }) {
 
           {/* Step 1 — Welcome */}
           {step === 1 && (
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center", position:"relative", minHeight:"100vh", justifyContent:"center", padding:"40px 20px", overflow:"hidden" }}>
+            <div style={{ position:"relative", minHeight:"100vh", overflow:"hidden", display:"flex", alignItems:"center" }}>
+
+              <style>{`
+                @keyframes slideInRight{from{opacity:0;transform:translateX(48px)}to{opacity:1;transform:translateX(0)}}
+                @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+              `}</style>
 
               {/* Scanline overlay */}
-              <div style={{ position:"fixed", inset:0, background:"repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.011) 2px,rgba(255,255,255,0.011) 4px)", pointerEvents:"none", zIndex:0 }}/>
-
+              <div style={{ position:"fixed", inset:0, background:"repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.009) 2px,rgba(255,255,255,0.009) 4px)", pointerEvents:"none", zIndex:0 }}/>
               {/* Dot grid */}
-              <div style={{ position:"fixed", inset:0, backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.055) 1px,transparent 1px)", backgroundSize:"32px 32px", pointerEvents:"none", zIndex:0 }}/>
-
-              {/* Stacked CREATOR / OS watermark */}
-              <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", pointerEvents:"none", zIndex:0, userSelect:"none", textAlign:"center", lineHeight:0.85 }}>
-                <div style={{ fontSize:"13vw", fontWeight:900, color:"rgba(255,255,255,0.032)", letterSpacing:"-0.04em", fontFamily:"Inter,system-ui,sans-serif" }}>CREATOR</div>
-                <div style={{ fontSize:"22vw", fontWeight:900, color:"rgba(255,255,255,0.026)", letterSpacing:"-0.06em", fontFamily:"Inter,system-ui,sans-serif", marginTop:"-0.05em" }}>OS</div>
-              </div>
-
+              <div style={{ position:"fixed", inset:0, backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.045) 1px,transparent 1px)", backgroundSize:"32px 32px", pointerEvents:"none", zIndex:0 }}/>
               {/* Edge rules */}
               <div style={{ position:"fixed", top:0, left:0, right:0, height:1, background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent)", pointerEvents:"none", zIndex:1 }}/>
               <div style={{ position:"fixed", bottom:0, left:0, right:0, height:1, background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent)", pointerEvents:"none", zIndex:1 }}/>
-
               {/* Corner marks */}
               {[{top:20,left:20},{top:20,right:20},{bottom:20,left:20},{bottom:20,right:20}].map((pos,i)=>(
                 <div key={i} style={{ position:"fixed", ...pos, width:14, height:14, borderTop:i<2?"1px solid rgba(255,255,255,0.1)":undefined, borderBottom:i>=2?"1px solid rgba(255,255,255,0.1)":undefined, borderLeft:i%2===0?"1px solid rgba(255,255,255,0.1)":undefined, borderRight:i%2===1?"1px solid rgba(255,255,255,0.1)":undefined, pointerEvents:"none", zIndex:1 }}/>
               ))}
 
-              {/* Cycling feature demo card — bottom left */}
-              {(()=>{
-                const card = DEMO_CARDS[demoIdx];
-                return (
-                  <div key={demoIdx} style={{ position:"fixed", bottom:40, left:32, width:200, pointerEvents:"none", zIndex:2, animation:"fadeInUp 0.5s ease forwards", opacity:0 }}>
-                    <style>{`@keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}`}</style>
-                    <div style={{ fontSize:8, letterSpacing:"0.22em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:8 }}>{card.label}</div>
-                    <div style={{ fontSize:20, fontWeight:800, color:"rgba(255,255,255,0.9)", fontFamily:"Inter,system-ui,sans-serif", letterSpacing:"-0.02em", marginBottom:4, lineHeight:1.2 }}>{card.content}</div>
-                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:10 }}>{card.sub}</div>
-                    <div style={{ height:1, background:"rgba(255,255,255,0.06)", borderRadius:1 }}>
-                      <div style={{ height:"100%", width:`${card.bar*100}%`, background:"rgba(255,255,255,0.3)", borderRadius:1, transition:"width 0.6s ease" }}/>
-                    </div>
-                    <div style={{ marginTop:8, display:"flex", gap:4 }}>
-                      {DEMO_CARDS.map((_,i)=>(
-                        <div key={i} style={{ height:2, flex:1, borderRadius:1, background:i===demoIdx?"rgba(255,255,255,0.4)":"rgba(255,255,255,0.08)", transition:"background 0.3s" }}/>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Content */}
-              <div style={{ position:"relative", zIndex:2, maxWidth:460 }}>
-
-                <div style={{ fontSize:10, color:"rgba(255,255,255,0.1)", letterSpacing:"0.5em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:44, display:"flex", alignItems:"center", justifyContent:"center", gap:16 }}>
-                  <div style={{ width:28, height:"1px", background:"rgba(255,255,255,0.07)" }}/>
+              {/* LEFT — headline copy */}
+              <div style={{ position:"relative", zIndex:2, flex:"0 0 auto", width:"min(440px,42vw)", padding:"0 0 0 clamp(24px,5vw,72px)", display:"flex", flexDirection:"column", justifyContent:"center" }}>
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.1)", letterSpacing:"0.5em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:40, display:"flex", alignItems:"center", gap:14 }}>
+                  <div style={{ width:24, height:"1px", background:"rgba(255,255,255,0.07)" }}/>
                   CREATOROS
-                  <div style={{ width:28, height:"1px", background:"rgba(255,255,255,0.07)" }}/>
                 </div>
-
-                <div style={{ marginBottom:20 }}>
-                  <div style={{ fontSize:54, fontWeight:900, color:"#fff", lineHeight:1.0, letterSpacing:"-0.035em", fontFamily:"Inter,system-ui,sans-serif" }}>
-                    Your channel.<br/>
-                    Your strategy.<br/>
-                    <span style={{ color:"rgba(255,255,255,0.12)" }}>Your rules.</span>
-                  </div>
+                <div style={{ fontSize:"clamp(34px,3.8vw,54px)", fontWeight:900, color:"#fff", lineHeight:1.0, letterSpacing:"-0.035em", fontFamily:"Inter,system-ui,sans-serif", marginBottom:20 }}>
+                  Your channel.<br/>
+                  Your strategy.<br/>
+                  <span style={{ color:"rgba(255,255,255,0.12)" }}>Your rules.</span>
                 </div>
-
-                <div style={{ width:36, height:1, background:"rgba(255,255,255,0.14)", margin:"0 auto 22px" }}/>
-
-                <div style={{ fontSize:10, color:"rgba(255,255,255,0.16)", letterSpacing:"0.22em", fontWeight:600, marginBottom:52, fontFamily:"Courier New,monospace" }}>
+                <div style={{ width:32, height:1, background:"rgba(255,255,255,0.14)", marginBottom:20 }}/>
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.16)", letterSpacing:"0.2em", fontWeight:600, marginBottom:44, fontFamily:"Courier New,monospace" }}>
                   6 TOOLS &nbsp;&middot;&nbsp; 1 SYSTEM &nbsp;&middot;&nbsp; BUILT FOR CREATORS WHO MEAN IT
                 </div>
-
                 <button
                   onClick={()=>setStep(2)}
-                  style={{ padding:"16px 0", borderRadius:2, border:"1px solid rgba(255,255,255,0.2)", background:"transparent", color:"#fff", fontWeight:700, fontSize:11, cursor:"pointer", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", transition:"all 0.2s", width:"100%" }}
+                  style={{ padding:"15px 0", borderRadius:2, border:"1px solid rgba(255,255,255,0.2)", background:"transparent", color:"#fff", fontWeight:700, fontSize:11, cursor:"pointer", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", transition:"all 0.2s", width:"100%", maxWidth:320 }}
                   onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.4)"; }}
                   onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(255,255,255,0.2)"; }}
                 >
                   ACTIVATE MY WORKSPACE
                 </button>
-
-                <button onClick={()=>finish("")} style={{ marginTop:18, background:"none", border:"none", color:"rgba(255,255,255,0.07)", fontSize:10, cursor:"pointer", letterSpacing:"0.2em", fontFamily:"Courier New,monospace" }}>
+                <button onClick={()=>finish("")} style={{ marginTop:14, background:"none", border:"none", color:"rgba(255,255,255,0.07)", fontSize:10, cursor:"pointer", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", textAlign:"left", padding:0 }}>
                   SKIP
                 </button>
+              </div>
+
+              {/* RIGHT — faux dashboard graphic */}
+              <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"32px clamp(16px,3vw,48px)", position:"relative", zIndex:2, minHeight:"100vh" }}>
+                <div style={{ width:"100%", maxWidth:520, background:"rgba(8,8,8,0.97)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, overflow:"hidden", boxShadow:"0 48px 120px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04)", animation:"slideInRight 0.8s cubic-bezier(0.16,1,0.3,1) forwards" }}>
+
+                  {/* Window chrome */}
+                  <div style={{ display:"flex", alignItems:"center", gap:6, padding:"11px 14px", borderBottom:"1px solid rgba(255,255,255,0.07)", background:"rgba(255,255,255,0.02)" }}>
+                    <div style={{ width:9, height:9, borderRadius:"50%", background:"rgba(255,255,255,0.15)" }}/>
+                    <div style={{ width:9, height:9, borderRadius:"50%", background:"rgba(255,255,255,0.07)" }}/>
+                    <div style={{ width:9, height:9, borderRadius:"50%", background:"rgba(255,255,255,0.04)" }}/>
+                    <div style={{ flex:1, textAlign:"center", fontSize:9, color:"rgba(255,255,255,0.13)", letterSpacing:"0.2em", fontFamily:"Courier New,monospace" }}>CREATOROS · DASHBOARD</div>
+                  </div>
+
+                  {/* Dashboard body */}
+                  <div style={{ display:"flex", height:400 }}>
+
+                    {/* Mini sidebar */}
+                    <div style={{ width:42, borderRight:"1px solid rgba(255,255,255,0.06)", display:"flex", flexDirection:"column", alignItems:"center", padding:"14px 0", gap:16, flexShrink:0 }}>
+                      {[["⊞",true],["◈",false],["▲",false],["✦",false],["◎",false],["⚙",false]].map(([ic,act],i)=>(
+                        <div key={i} style={{ fontSize:13, color:act?"rgba(255,255,255,0.8)":"rgba(255,255,255,0.15)", lineHeight:1 }}>{ic}</div>
+                      ))}
+                    </div>
+
+                    {/* Main panels */}
+                    <div style={{ flex:1, padding:"12px", display:"flex", flexDirection:"column", gap:9 }}>
+
+                      {/* Row 1: Virality + Hook tester */}
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1.1fr", gap:9 }}>
+
+                        <div style={{ background:"rgba(255,255,255,0.035)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:8, padding:"11px" }}>
+                          <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.28)", fontFamily:"Courier New,monospace", marginBottom:7 }}>VIRALITY SCORE</div>
+                          <div style={{ fontSize:40, fontWeight:900, color:"#fff", lineHeight:1, letterSpacing:"-0.03em", fontFamily:"Inter,sans-serif", marginBottom:3 }}>87</div>
+                          <div style={{ fontSize:8, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:7 }}>HIGH POTENTIAL</div>
+                          <div style={{ height:2, background:"rgba(255,255,255,0.06)", borderRadius:1 }}>
+                            <div style={{ height:"100%", width:"87%", background:"rgba(255,255,255,0.55)", borderRadius:1 }}/>
+                          </div>
+                        </div>
+
+                        <div style={{ background:"rgba(255,255,255,0.035)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:8, padding:"11px" }}>
+                          <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.28)", fontFamily:"Courier New,monospace", marginBottom:8 }}>HOOK A/B TEST</div>
+                          {[["A","POV: no bin in sight...",94,true],["B","This is why Bali has...",71,false]].map(([lbl,txt,sc,win])=>(
+                            <div key={lbl} style={{ background:win?"rgba(255,255,255,0.07)":"transparent", border:`1px solid rgba(255,255,255,${win?0.1:0.04})`, borderRadius:5, padding:"5px 7px", marginBottom:4 }}>
+                              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
+                                <div style={{ fontSize:7, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace" }}>{lbl}</div>
+                                <div style={{ fontSize:8, fontWeight:700, color:win?"#fff":"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace" }}>{sc} pts</div>
+                              </div>
+                              <div style={{ fontSize:8, color:"rgba(255,255,255,0.45)", fontFamily:"Courier New,monospace", lineHeight:1.3 }}>{txt}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Row 2: Brand deals */}
+                      <div style={{ background:"rgba(255,255,255,0.035)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:8, padding:"11px" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                          <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.28)", fontFamily:"Courier New,monospace" }}>BRAND DEALS</div>
+                          <div style={{ fontSize:7, color:"rgba(255,255,255,0.18)", fontFamily:"Courier New,monospace" }}>3 ACTIVE</div>
+                        </div>
+                        {[["Patagonia","£2,400","SIGNED"],["Osprey","£1,200","NEGOTIATING"],["HostelWorld","£800","OUTREACH"]].map(([brand,val,status])=>(
+                          <div key={brand} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"4px 0", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
+                            <div style={{ fontSize:9, color:"rgba(255,255,255,0.65)", fontFamily:"Inter,sans-serif", fontWeight:600 }}>{brand}</div>
+                            <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                              <div style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.9)", fontFamily:"Courier New,monospace" }}>{val}</div>
+                              <div style={{ fontSize:6, color:status==="SIGNED"?"rgba(255,255,255,0.45)":"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace", letterSpacing:"0.08em", border:"1px solid rgba(255,255,255,0.09)", borderRadius:2, padding:"1px 4px" }}>{status}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Row 3: Analytics + AI debrief */}
+                      <div style={{ display:"grid", gridTemplateColumns:"1.3fr 1fr", gap:9, flex:1 }}>
+
+                        <div style={{ background:"rgba(255,255,255,0.035)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:8, padding:"11px" }}>
+                          <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.28)", fontFamily:"Courier New,monospace", marginBottom:9 }}>WEEKLY VIEWS</div>
+                          <div style={{ display:"flex", alignItems:"flex-end", gap:3, height:50 }}>
+                            {[0.32,0.52,0.38,0.78,0.62,1.0,0.7].map((h,i)=>(
+                              <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3, height:"100%", justifyContent:"flex-end" }}>
+                                <div style={{ width:"100%", background:i===5?"rgba(255,255,255,0.75)":"rgba(255,255,255,0.18)", borderRadius:"2px 2px 0 0", height:`${h*100}%` }}/>
+                                <div style={{ fontSize:6, color:"rgba(255,255,255,0.18)", fontFamily:"Courier New,monospace" }}>{["M","T","W","T","F","S","S"][i]}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div style={{ background:"rgba(255,255,255,0.035)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:8, padding:"11px", display:"flex", flexDirection:"column" }}>
+                          <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.28)", fontFamily:"Courier New,monospace", marginBottom:8 }}>AI DEBRIEF</div>
+                          <div style={{ fontSize:8, color:"rgba(255,255,255,0.5)", fontFamily:"Courier New,monospace", lineHeight:1.7, flex:1 }}>
+                            Hook vids up 3×.<br/>
+                            Best: Thurs 6pm.<br/>
+                            <span style={{ color:"rgba(255,255,255,0.85)", fontWeight:700 }}>Film contrast<br/>idea this week.</span>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
               </div>
 
             </div>
