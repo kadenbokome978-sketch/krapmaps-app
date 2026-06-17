@@ -1077,6 +1077,30 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                     {/* Expanded detail panels — tabbed */}
                     {isExpanded && (
                       <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:4, padding:"12px", borderRadius:12, background:"rgba(255,255,255,0.015)", marginTop:4 }}>
+                        {(idea.confidenceLevel||idea.optimalPostSlot||idea.modelAgreement||idea.scoreRationale) && (
+                          <div style={{ padding:"10px 12px", background:`${C.green}06`, borderRadius:10, border:`1px solid ${C.green}18` }}>
+                            <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center", marginBottom:idea.scoreRationale?7:0 }}>
+                              {idea.confidenceLevel && (
+                                <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.08em", padding:"3px 8px", borderRadius:6, color:idea.confidenceLevel==="HIGH"?C.green:idea.confidenceLevel==="LOW"?C.pink:C.yellow, background:`${idea.confidenceLevel==="HIGH"?C.green:idea.confidenceLevel==="LOW"?C.pink:C.yellow}15` }}>{idea.confidenceLevel} CONFIDENCE</span>
+                              )}
+                              {idea.modelAgreement && (
+                                <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.06em", padding:"3px 8px", borderRadius:6, color:"rgba(255,255,255,0.6)", background:"rgba(255,255,255,0.05)" }}>🤝 {String(idea.modelAgreement).split("—")[0].trim()}</span>
+                              )}
+                              {idea.optimalPostSlot && (
+                                <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.06em", padding:"3px 8px", borderRadius:6, color:C.cyan, background:`${C.cyan}12` }}>⏰ {idea.optimalPostSlot}</span>
+                              )}
+                            </div>
+                            {idea.scoreRationale && (
+                              <div style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, fontFamily:C.fontBody }}>{idea.scoreRationale}</div>
+                            )}
+                            {idea.mostContestedFactor && (
+                              <div style={{ fontSize:11, color:C.yellow, marginTop:5, fontFamily:C.fontBody }}>⚠️ Models split on: {idea.mostContestedFactor}</div>
+                            )}
+                            {idea.secondOpinion && (
+                              <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", marginTop:5, lineHeight:1.5, fontFamily:C.fontBody }}>{idea.secondOpinion}</div>
+                            )}
+                          </div>
+                        )}
                         {(idea.viralReason||idea.hookFeedback) && (
                           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
                             {idea.viralReason && (
@@ -4375,6 +4399,24 @@ const formatComboMatrix = (matrix) => {
   return out;
 };
 
+// Robust view-estimate parser — handles "24K-56K", "1.2M", "24,000", plain numbers,
+// and ranges (averaged). K/M suffixes are scaled correctly so ratios stay sane.
+const parseViewEstimate = (str) => {
+  if(!str) return null;
+  const matches = String(str).toLowerCase().match(/\d[\d,.]*\s*[km]?/g);
+  if(!matches) return null;
+  const nums = matches.map(tok => {
+    const m = tok.match(/(\d[\d,.]*)\s*([km])?/);
+    if(!m) return null;
+    let n = parseFloat(m[1].replace(/,/g,""));
+    if(isNaN(n) || n<=0) return null;
+    if(m[2]==="k") n*=1000;
+    else if(m[2]==="m") n*=1000000;
+    return n;
+  }).filter(Boolean);
+  return nums.length ? Math.round(nums.reduce((a,b)=>a+b,0)/nums.length) : null;
+};
+
 // ── PREDICTION ACCURACY TRACKER ───────────────────────────────────
 // Measures how far off AI predictions have been — used to calibrate future estimates
 const buildPredictionAccuracy = (ideas=[]) => {
@@ -4385,13 +4427,7 @@ const buildPredictionAccuracy = (ideas=[]) => {
   );
   if(posted.length < 2) return null;
 
-  const parseEstimate = (str) => {
-    if(!str) return null;
-    const nums = str.match(/[\d,]+/g);
-    if(!nums) return null;
-    const parsed = nums.map(n=>parseInt(n.replace(/,/g,""))).filter(n=>n>0);
-    return parsed.length ? Math.round(parsed.reduce((a,b)=>a+b,0)/parsed.length) : null;
-  };
+  const parseEstimate = parseViewEstimate;
 
   const pairs = posted.map(i => {
     const predicted = parseEstimate(i.aiScore.estimated_views);
@@ -4407,8 +4443,11 @@ const buildPredictionAccuracy = (ideas=[]) => {
   const overestimates = pairs.filter(p=>p.errorPct<-10).length;
   const underestimates = pairs.filter(p=>p.errorPct>10).length;
   const accurate = pairs.filter(p=>Math.abs(p.errorPct)<=10).length;
+  // Standard deviation of error → the honest ±band to express estimates as a range, not a point.
+  const variance = pairs.reduce((s,p)=>s+Math.pow(p.errorPct-avgError,2),0)/pairs.length;
+  const errorStdDev = Math.round(Math.sqrt(variance));
 
-  return { pairs, avgError, overestimates, underestimates, accurate, sampleSize:pairs.length };
+  return { pairs, avgError, errorStdDev, overestimates, underestimates, accurate, sampleSize:pairs.length };
 };
 
 const formatPredictionAccuracy = (acc) => {
@@ -4419,6 +4458,7 @@ const formatPredictionAccuracy = (acc) => {
   let out = `PREDICTION ACCURACY [n=${acc.sampleSize} posted ideas with tracked views]:\n`;
   out += `• AI ${bias}\n`;
   out += `• ${acc.accurate} accurate (within 10%), ${acc.overestimates} overestimates, ${acc.underestimates} underestimates\n`;
+  if(acc.errorStdDev) out += `• Error spread: ±${acc.errorStdDev}% (1σ) — your estimated_views MUST be a range this wide, not a single number. A point estimate here is statistically dishonest.\n`;
   if(acc.pairs.length) {
     out += `• Recent: ${acc.pairs.slice(-3).map(p=>`"${p.title}" predicted ${(p.predicted/1000).toFixed(1)}k got ${(p.actual/1000).toFixed(1)}k (${p.errorPct>0?"+":""}${p.errorPct}%)`).join(" | ")}\n`;
   }
@@ -4616,27 +4656,37 @@ const detectSeriesMomentum = (idea, videos=[], ideas=[]) => {
 // ── OUTCOME LEARNING ENGINE ──────────────────────────────────────
 // Learns which hooks/types/pillars consistently beat or miss AI predictions
 const buildOutcomeLearning = (ideas=[]) => {
-  const parseEst = (str) => {
-    if(!str) return null;
-    const nums = (str.match(/[\d,]+/g)||[]).map(n=>parseInt(n.replace(/,/g,""))).filter(n=>n>0);
-    return nums.length ? Math.round(nums.reduce((a,b)=>a+b,0)/nums.length) : null;
-  };
+  const parseEst = parseViewEstimate;
   const posted = ideas.filter(i => i.status==="posted" && i.postedViews>0 && i.aiScore?.estimated_views);
   if(posted.length < 3) return null;
+  // Recency weighting — 30-day half-life so the model adapts to recent algorithm behaviour
+  // rather than being anchored to stale 3-month-old outcomes.
+  const now = Date.now();
+  const recencyWeight = (postedDate) => {
+    if(!postedDate) return 0.5;
+    const days = Math.max(0, (now - new Date(postedDate).getTime()) / 86400000);
+    return Math.pow(0.5, days / 30);
+  };
   const hookL={}, typeL={}, pillarL={};
   posted.forEach(i => {
     const pred = parseEst(i.aiScore.estimated_views);
     if(!pred) return;
     const r = i.postedViews / pred;
-    if(i.hook) { if(!hookL[i.hook]) hookL[i.hook]=[]; hookL[i.hook].push(r); }
-    if(i.type) { if(!typeL[i.type]) typeL[i.type]=[]; typeL[i.type].push(r); }
+    const w = recencyWeight(i.postedDate);
+    const push = (bucket, key) => { if(!bucket[key]) bucket[key]=[]; bucket[key].push({ r, w }); };
+    if(i.hook) push(hookL, i.hook);
+    if(i.type) push(typeL, i.type);
     const p = i.aiScore?.contentPillar;
-    if(p) { if(!pillarL[p]) pillarL[p]=[]; pillarL[p].push(r); }
+    if(p) push(pillarL, p);
   });
-  const avg = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
-  const hookAdjust   = Object.entries(hookL).filter(([,a])=>a.length>=2).map(([hook,a])=>({ hook, avgRatio:parseFloat(avg(a).toFixed(2)), count:a.length })).sort((a,b)=>b.avgRatio-a.avgRatio);
-  const typeAdjust   = Object.entries(typeL).filter(([,a])=>a.length>=2).map(([type,a])=>({ type, avgRatio:parseFloat(avg(a).toFixed(2)), count:a.length })).sort((a,b)=>b.avgRatio-a.avgRatio);
-  const pillarAdjust = Object.entries(pillarL).filter(([,a])=>a.length>=2).map(([pillar,a])=>({ pillar, avgRatio:parseFloat(avg(a).toFixed(2)), count:a.length })).sort((a,b)=>b.avgRatio-a.avgRatio);
+  // Weighted mean: recent results count more, but every sample still contributes.
+  const wAvg = arr => { const tw = arr.reduce((s,x)=>s+x.w,0)||1; return arr.reduce((s,x)=>s+x.r*x.w,0)/tw; };
+  const build = (bucket, label) => Object.entries(bucket).filter(([,a])=>a.length>=2)
+    .map(([k,a])=>({ [label]:k, avgRatio:parseFloat(wAvg(a).toFixed(2)), count:a.length }))
+    .sort((a,b)=>b.avgRatio-a.avgRatio);
+  const hookAdjust   = build(hookL, "hook");
+  const typeAdjust   = build(typeL, "type");
+  const pillarAdjust = build(pillarL, "pillar");
   return { hookAdjust, typeAdjust, pillarAdjust, sampleSize:posted.length };
 };
 
@@ -4721,6 +4771,27 @@ const formatRecentTrackRecord = (record) => {
   if(last2 > allAvg*1.5) out += `  → MOMENTUM SIGNAL: last 2 posts outperforming recent avg by 50%+ — channel is gaining traction, use this in scoring context.\n`;
   else if(last2 < allAvg*0.5) out += `  → SLUMP SIGNAL: last 2 posts below recent avg — weight novelty and hook freshness harder in your score.\n`;
   return out;
+};
+
+// ── PIPELINE SATURATION ───────────────────────────────────────────
+// Detects when the unposted backlog already contains near-duplicates of this idea —
+// posting 5 variants of the same topic fatigues the audience even with different hooks.
+const buildPipelineSaturation = (idea, ideas=[]) => {
+  const STOP = new Set(["this","that","with","from","your","what","when","where","they","them","were","have","about","into","over"]);
+  const words = (idea.title||"").toLowerCase().split(/\W+/).filter(w=>w.length>3 && !STOP.has(w));
+  if(words.length < 2) return null;
+  const pending = ideas.filter(i => i.id!==idea.id && i.status!=="posted");
+  const similar = pending.filter(i => {
+    const iw = (i.title||"").toLowerCase().split(/\W+/).filter(w=>w.length>3 && !STOP.has(w));
+    return words.filter(w=>iw.includes(w)).length >= 2;
+  });
+  if(similar.length < 2) return null;
+  return { count:similar.length, titles:similar.slice(0,3).map(i=>(i.title||"").slice(0,40)) };
+};
+
+const formatPipelineSaturation = (sat) => {
+  if(!sat) return "";
+  return `PIPELINE SATURATION: ${sat.count} other unposted ideas already cover this same topic (${sat.titles.join("; ")}). If the plan is to post all of them, deduct from niche fit — topic repetition burns the audience even when hooks differ. Recommend consolidating or spacing them out.\n`;
 };
 
 // ── VIDEO SCORE ENGINE ──────────────────────────────────────────
@@ -4875,6 +4946,41 @@ async function callConsensus(claudePrompt, gptPrompt, wl=WL) {
   const gptResult    = results[1].status==="fulfilled" ? results[1].value : null;
   return { claude:claudeResult, gpt:gptResult, bothSucceeded: !!(claudeResult && gptResult) };
 }
+
+// ── ENSEMBLE RECONCILIATION ───────────────────────────────────────
+// Two independent models scoring the same idea — averaging reduces variance,
+// and the size of their disagreement IS the uncertainty signal.
+const reconcileScores = (a, b) => {
+  if(a && !b) return { ...a, modelAgreement:"SINGLE — only one model responded", _ensemble:false };
+  if(b && !a) return { ...b, modelAgreement:"SINGLE — only one model responded", _ensemble:false };
+  if(!a && !b) return null;
+  const avg = (x,y) => (typeof x==="number"&&typeof y==="number") ? Math.round((x+y)/2) : (typeof x==="number"?x:(typeof y==="number"?y:null));
+  const disagreement = Math.abs((a.viralityScore||0)-(b.viralityScore||0));
+  // Per-factor disagreement reveals WHICH dimension is uncertain
+  const factorGap = (k) => Math.abs((a[k]||0)-(b[k]||0));
+  const gaps = { hook:factorGap("hookScore"), retention:factorGap("retentionScore"), share:factorGap("shareScore"), algo:factorGap("algoScore"), niche:factorGap("nicheScore") };
+  const mostContested = Object.entries(gaps).sort((x,y)=>y[1]-x[1])[0];
+  let confidenceLevel = a.confidenceLevel || b.confidenceLevel || "MEDIUM";
+  if(disagreement > 20) confidenceLevel = "LOW";
+  else if(disagreement > 10 && confidenceLevel === "HIGH") confidenceLevel = "MEDIUM";
+  const agreement = disagreement <= 8 ? "STRONG — both models converge, high trust"
+                  : disagreement <= 18 ? "MODERATE — minor divergence"
+                  : `WEAK — models disagree by ${disagreement}pts on virality, treat as uncertain`;
+  return {
+    ...a, // keep Claude's richer qualitative text (thinking-enabled)
+    viralityScore: avg(a.viralityScore, b.viralityScore),
+    hookScore: avg(a.hookScore, b.hookScore),
+    retentionScore: avg(a.retentionScore, b.retentionScore),
+    shareScore: avg(a.shareScore, b.shareScore),
+    algoScore: avg(a.algoScore, b.algoScore),
+    nicheScore: avg(a.nicheScore, b.nicheScore),
+    confidenceLevel,
+    modelAgreement: agreement,
+    mostContestedFactor: (mostContested && mostContested[1] > 15) ? `${mostContested[0]} (models differ by ${mostContested[1]}pts)` : null,
+    secondOpinion: (disagreement > 15 && b.verdict) ? `GPT-4o's take: ${b.verdict}` : null,
+    _ensemble: true,
+  };
+};
 
 const HOOK_TYPES       = ["edgy/controversial","problem->solution","gamification","achievement","reaction","challenge","pov","tutorial"];
 const VIDEO_TYPES      = ["facecam","street","screencap","voiceover","mixed"];
@@ -6514,8 +6620,12 @@ LEARNING: [one sentence]`}]})
       const recentTrack = buildRecentTrackRecord(ideas);
       const recentTrackBlock = formatRecentTrackRecord(recentTrack);
 
+      // Pipeline saturation — is the backlog already full of near-duplicates of this idea?
+      const pipelineSat = buildPipelineSaturation(idea, ideas);
+      const pipelineSatBlock = formatPipelineSaturation(pipelineSat);
+
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
-      const r = await callAI(`You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
+      const _scorePrompt = `You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
 
 ${channelTheory ? `━━ CHANNEL VIRAL THEORY (why this channel specifically goes viral — anchor ALL scoring to this) ━━\n${channelTheory}\n` : ""}
 ━━ CHANNEL INTELLIGENCE (real data — treat as ground truth) ━━
@@ -6527,6 +6637,7 @@ ${predAccBlock}
 ${outcomeLearningBlock}
 ${recentTrackBlock}
 ${hookFatigueBlock}
+${pipelineSatBlock}
 ${calibration ? `CALIBRATION: ${calibration}` : ""}
 ${ideaOutcomes.length ? `RECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
 ${seriesMomentum ? `\n${seriesMomentum}` : ""}
@@ -6560,10 +6671,16 @@ Step 1: Start with your raw estimate based on hook+share trigger strength.
 Step 2: Apply the OUTCOME LEARNING multipliers above (if this idea's hook/type has a ratio of 1.5x, multiply by 1.5; if 0.7x, reduce by 30%).
 Step 3: Apply PREDICTION ACCURACY bias correction (if AI has historically over/underestimated by X%, correct your output accordingly).
 Step 4: Anchor to the CALIBRATION percentiles above — score 85+ ideas should target top 10%, score 70-84 top 25%.
-Your estimated_views must reflect all 4 steps. Do not output a raw uncorrected estimate.
+Step 5: Express as a RANGE as wide as the prediction error σ stated above (e.g. if σ is ±40%, a 40K estimate becomes 24K-56K). A single number is statistically dishonest.
+Your estimated_views must reflect all 5 steps. Do not output a raw uncorrected estimate.
+
+REASONING DISCIPLINE: Before scoring, identify the 2-3 strongest data signals above that apply to THIS idea, and the single biggest risk. Let those drive the numbers. Do not regress every idea to a safe 70 — if the data says 45, score 45; if it says 90, score 90. Spread your scores honestly.
 
 Return ONLY valid JSON:
-{"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","retentionFix":"the single biggest retention improvement","openLoopStrength":"rate 1-10 how well this video creates and sustains curiosity gaps — what is the open loop and when does it close?","reHookMoments":["specific moment at ~3s to re-engage","specific moment at ~15s","specific moment at ~30s if video is longer"],"emotionalArc":"setup→tension→payoff analysis — what emotion does viewer feel at start, middle, end? Where does it escalate?","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic range corrected by outcome learning + bias data e.g. 20K-80K","contentPillar":"niche-specific pillar name","competitorAngle":"how to differentiate from what competitors are already doing in this niche","confidenceLevel":"HIGH|MEDIUM|LOW — based on how much real data backs this score","scoreRationale":"1 sentence: which data signals drove this specific score up or down vs a generic idea"}`, 2000);
+{"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","retentionFix":"the single biggest retention improvement","openLoopStrength":"rate 1-10 how well this video creates and sustains curiosity gaps — what is the open loop and when does it close?","reHookMoments":["specific moment at ~3s to re-engage","specific moment at ~15s","specific moment at ~30s if video is longer"],"emotionalArc":"setup→tension→payoff analysis — what emotion does viewer feel at start, middle, end? Where does it escalate?","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic RANGE corrected by outcome learning + bias σ e.g. 24K-56K","contentPillar":"niche-specific pillar name","competitorAngle":"how to differentiate from what competitors are already doing in this niche","optimalPostSlot":"best day+time to post this based on the channel's day/time performance data above, e.g. 'Saturday 6-9pm'","confidenceLevel":"HIGH|MEDIUM|LOW — based on how much real data backs this score","scoreRationale":"1 sentence: which 2-3 data signals drove this specific score up or down vs a generic idea"}`;
+      const _consensus = await callConsensus(_scorePrompt, _scorePrompt, wl);
+      if(!_consensus.claude && !_consensus.gpt) throw new Error("Both scoring models failed — check your Anthropic / GPT-4o keys in Settings");
+      const r = reconcileScores(_consensus.claude, _consensus.gpt);
       setIdeas(is=>is.map(i=>{
         if(i.id!==idea.id) return i;
         const prevScore = i.viral||null;
@@ -6588,6 +6705,10 @@ Return ONLY valid JSON:
           recs:r.recommendations?.map(x=>({a:x.action,impact:x.impact?.toUpperCase()})),
           confidenceLevel:r.confidenceLevel,
           scoreRationale:r.scoreRationale,
+          optimalPostSlot:r.optimalPostSlot,
+          modelAgreement:r.modelAgreement,
+          mostContestedFactor:r.mostContestedFactor,
+          secondOpinion:r.secondOpinion,
           scoreDelta,
           prevScore,
           lastScoredAt: new Date().toISOString().slice(0,10),
