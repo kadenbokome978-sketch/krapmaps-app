@@ -1634,10 +1634,10 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
               <div style={{ width:32, height:32, borderRadius:10, background:`${C.pink}20`, border:`1px solid ${C.pink}35`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.tt(15,C.pink)}</div>
               <span style={{ fontSize:15, fontWeight:700, color:"#fff" }}>TikTok</span>
-              <span style={{ fontSize:13, color:"rgba(255,255,255,0.4)" }}>@findkrap</span>
+              <span style={{ fontSize:13, color:"rgba(255,255,255,0.4)" }}>{WL.handle}</span>
               <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:5, padding:"4px 10px", borderRadius:20, background:`${C.pink}10`, border:`1px solid ${C.pink}20` }}>
                 <div style={{ width:5, height:5, borderRadius:"50%", background:C.pink }}/>
-                <span style={{ fontSize:11, color:C.pink, fontWeight:700, letterSpacing:"0.08em" }}>{ttVids.length} VIDEOS</span>
+                <span style={{ fontSize:11, color:WL.accentColor, fontWeight:700, letterSpacing:"0.08em" }}>{ttVids.length} VIDEOS</span>
               </div>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:12 }}>
@@ -1663,7 +1663,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
               <div style={{ width:32, height:32, borderRadius:10, background:`${C.purple}20`, border:`1px solid ${C.purple}35`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.ig(15,C.purple)}</div>
               <span style={{ fontSize:15, fontWeight:700, color:"#fff" }}>Instagram</span>
-              <span style={{ fontSize:13, color:"rgba(255,255,255,0.4)" }}>@findkrap</span>
+              <span style={{ fontSize:13, color:"rgba(255,255,255,0.4)" }}>{WL.handle}</span>
               <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:5, padding:"4px 10px", borderRadius:20, background:`${C.purple}10`, border:`1px solid ${C.purple}20` }}>
                 <div style={{ width:5, height:5, borderRadius:"50%", background:C.purple }}/>
                 <span style={{ fontSize:11, color:C.purple, fontWeight:700, letterSpacing:"0.08em" }}>{igVids.length} REELS</span>
@@ -2665,7 +2665,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
                   {strategy.channel_diagnosis.strengths?.map((s,i)=><div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:3 }}>✓ {s}</div>)}
                 </div>
                 <div style={{ padding:"10px 14px", borderRadius:10, background:`${C.pink}10`, border:`1px solid ${C.pink}20` }}>
-                  <div style={{ fontSize:17, color:C.pink, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>WEAKNESSES</div>
+                  <div style={{ fontSize:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>WEAKNESSES</div>
                   {strategy.channel_diagnosis.weaknesses?.map((s,i)=><div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:3 }}>✗ {s}</div>)}
                 </div>
               </div>
@@ -2678,7 +2678,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
           {(strategy.stop_doing?.length>0||strategy.start_doing?.length>0) && (
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(280px,100%),1fr))", gap:10, marginBottom:16 }}>
               {strategy.stop_doing?.length>0 && <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.pink}08`, border:`1px solid ${C.pink}20` }}>
-                <div style={{ fontSize:17, color:C.pink, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>STOP DOING</div>
+                <div style={{ fontSize:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>STOP DOING</div>
                 {strategy.stop_doing.map((s,i)=><div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:4 }}>✗ {s}</div>)}
               </div>}
               {strategy.start_doing?.length>0 && <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.green}08`, border:`1px solid ${C.green}20` }}>
@@ -2808,7 +2808,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
                 {predictResult.what_will_work?.map((w,i)=><div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:4 }}>✓ {w}</div>)}
               </div>
               <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.pink}08`, border:`1px solid ${C.pink}20` }}>
-                <div style={{ fontSize:17, color:C.pink, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>WATCH OUT</div>
+                <div style={{ fontSize:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>WATCH OUT</div>
                 {predictResult.what_will_fail?.map((w,i)=><div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:4 }}>✗ {w}</div>)}
               </div>
             </div>
@@ -2952,7 +2952,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
             {/* Best type */}
             {patterns.typePerf?.length>0 && (
               <div style={{ padding:"14px 16px", borderRadius:16, background:`${C.pink}08`, border:`1px solid ${C.pink}20` }}>
-                <div style={{ fontSize:11, color:C.pink, fontWeight:700, letterSpacing:"0.1em", marginBottom:10 }}>BEST VIDEO TYPE</div>
+                <div style={{ fontSize:11, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:10 }}>BEST VIDEO TYPE</div>
                 {patterns.typePerf.slice(0,3).map((t,i)=>(
                   <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
                     <div style={{ fontSize:14, color:i===0?"#fff":"rgba(255,255,255,0.8)", fontWeight:i===0?700:400, textTransform:"capitalize" }}>{t.type}</div>
@@ -3332,7 +3332,7 @@ Return ONLY JSON: {
           {/* Why it performed */}
           {result.why_it_performed && (
             <div style={{ padding:"14px 16px", borderRadius:12, background:"rgba(255,255,255,0.04)", border:`1px solid rgba(255,255,255,0.08)`, marginBottom:14 }}>
-              <div style={{ fontSize:17, color:C.pink, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>WHY IT PERFORMED THIS WAY</div>
+              <div style={{ fontSize:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>WHY IT PERFORMED THIS WAY</div>
               <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", lineHeight:1.6, fontFamily:C.fontBody, fontFamily:C.fontBody }}>{result.why_it_performed}</div>
               {result.biggest_factor && <div style={{ marginTop:8, fontSize:14, color:C.yellow }}>⚡ Biggest factor: {result.biggest_factor}</div>}
             </div>
@@ -3361,7 +3361,7 @@ Return ONLY JSON: {
             )}
             {result.never_again?.length>0 && (
               <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.pink}08`, border:`1px solid ${C.pink}20` }}>
-                <div style={{ fontSize:17, color:C.pink, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>NEVER AGAIN</div>
+                <div style={{ fontSize:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>NEVER AGAIN</div>
                 {result.never_again.map((r,i)=><div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:4 }}>✗ {r}</div>)}
               </div>
             )}
@@ -3444,9 +3444,8 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
       id:"app", icon:I.map, label:`${WL.appName} App`, handle:"iOS + Android", color:C.green,
       live: !!(m?.bins),
       stats:[
-        {l:"BINS MAPPED", v:fmtG(m?.bins||0), c:C.green},
-        {l:"CITIES", v:"1.2K+", c:C.yellow},
-        {l:"DOWNLOADS", v:m?.downloads?fmtG(m.downloads):"--", c:C.cyan},
+        {l:WL.statLabels?.custom1Label||"STAT 1", v:fmtG(m?.[WL.statLabels?.custom1Key||"bins"]||0), c:C.green},
+        {l:WL.statLabels?.custom2Label||"STAT 2", v:m?.[WL.statLabels?.custom2Key||"downloads"]?fmtG(m[WL.statLabels.custom2Key]):"--", c:C.cyan},
       ],
       charts:[
         {label:"Bins Growth", data:days.map((l,i)=>({label:l,value:Math.round((m?.bins||0)*[0.6,0.68,0.75,0.82,0.88,0.94,1][i])})), color:C.green},
@@ -6739,8 +6738,8 @@ Return JSON:
   // ── RENDER ────────────────────────────────────────────────────
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:C.fontHead, position:"relative" }}>
-      <div style={{ position:"fixed", top:"-8%", left:"-12%", width:380, height:380, borderRadius:"50%", background:`radial-gradient(circle,${C.pink}12 0%,transparent 70%)`, pointerEvents:"none", zIndex:0 }} />
-      <div style={{ position:"fixed", top:"45%", right:"-12%", width:300, height:300, borderRadius:"50%", background:`radial-gradient(circle,${C.cyan}09 0%,transparent 70%)`, pointerEvents:"none", zIndex:0 }} />
+      <div style={{ position:"fixed", top:"-8%", left:"-12%", width:380, height:380, borderRadius:"50%", background:`radial-gradient(circle,${WL.accentColor}12 0%,transparent 70%)`, pointerEvents:"none", zIndex:0 }} />
+      <div style={{ position:"fixed", top:"45%", right:"-12%", width:300, height:300, borderRadius:"50%", background:`radial-gradient(circle,${WL.accentColor2}09 0%,transparent 70%)`, pointerEvents:"none", zIndex:0 }} />
       <div style={{ position:"fixed", bottom:"5%", left:"15%", width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}09 0%,transparent 70%)`, pointerEvents:"none", zIndex:0 }} />
 
       {/* SIDEBAR — desktop only */}
@@ -6749,11 +6748,11 @@ Return JSON:
         {/* Logo */}
         <div style={{ marginBottom:36, paddingLeft:4 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <div style={{ width:40, height:40, borderRadius:16, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:`0 0 20px ${C.pink}40` }}>
-              {I.bin(18,"#fff")}
+            <div style={{ width:40, height:40, borderRadius:16, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:`0 0 20px ${WL.accentColor}40`, fontSize:18, fontWeight:900, color:"#fff", fontFamily:"Georgia,serif" }}>
+              {WL.appName[0]}
             </div>
             <div>
-              <div style={{ fontSize:20, fontWeight:900, color:"#fff", fontFamily:C.fontHead, lineHeight:1 }}>{WL.appName.slice(0,-4) || "Content"}<span style={{color:C.pink}}>{WL.appName.slice(-4) || " OS"}</span></div>
+              <div style={{ fontSize:20, fontWeight:900, color:"#fff", fontFamily:C.fontHead, lineHeight:1 }}>{WL.appName.slice(0,-2) || "Artist"}<span style={{color:WL.accentColor}}>{WL.appName.slice(-2) || "OS"}</span></div>
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.14em", marginTop:2, fontFamily:C.fontHead }}>{WL.appTagline.toUpperCase()}</div>
             </div>
           </div>
@@ -6794,14 +6793,14 @@ Return JSON:
         {/* Workspace */}
         <div>
           <div style={{ fontSize:10, color:"rgba(255,255,255,0.2)", letterSpacing:"0.18em", fontWeight:700, marginBottom:8, paddingLeft:12, textTransform:"uppercase" }}>Workspace</div>
-          <div style={{ padding:"14px 16px", borderRadius:16, background:"linear-gradient(135deg,rgba(255,45,120,0.08),rgba(197,102,255,0.05))", border:"1px solid rgba(255,45,120,0.15)", boxShadow:"inset 0 1px 0 rgba(255,255,255,0.06)" }}>
+          <div style={{ padding:"14px 16px", borderRadius:16, background:`linear-gradient(135deg,${WL.accentColor}14,${WL.accentColor2}0a)`, border:`1px solid ${WL.accentColor}25`, boxShadow:"inset 0 1px 0 rgba(255,255,255,0.06)" }}>
             <div style={{ display:"flex", alignItems:"center", gap:11 }}>
-              <div style={{ width:38, height:38, borderRadius:12, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:900, color:"#fff", flexShrink:0, boxShadow:`0 4px 14px ${C.pink}30` }}>B</div>
+              <div style={{ width:38, height:38, borderRadius:12, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:900, color:"#fff", flexShrink:0, boxShadow:`0 4px 14px ${C.pink}30` }}>{(WL.creator1||"B")[0]}</div>
               <div>
-                <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.02em" }}>BK + HARLEY</div>
+                <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.02em" }}>{WL.creator1}{WL.creator2?` + ${WL.creator2}`:""}</div>
                 <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:3 }}>
                   <div style={{ width:5, height:5, borderRadius:"50%", background:C.green, boxShadow:`0 0 8px ${C.green}` }} />
-                  <span style={{ fontSize:11, color:"rgba(255,255,255,0.85)" }}>@findkrap · Online</span>
+                  <span style={{ fontSize:11, color:"rgba(255,255,255,0.85)" }}>{WL.handle} · Online</span>
                 </div>
               </div>
             </div>
@@ -6834,9 +6833,9 @@ Return JSON:
                 </div>
               )}
               <div style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 14px 6px 8px", borderRadius:10, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)" }}>
-                <div style={{ width:30, height:30, borderRadius:9, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:900, color:"#fff" }}>B</div>
+                <div style={{ width:30, height:30, borderRadius:9, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:900, color:"#fff" }}>{(WL.creator1||"B")[0]}</div>
                 <div>
-                  <div style={{ fontSize:13, fontWeight:600, color:"#fff", lineHeight:1 }}>BK</div>
+                  <div style={{ fontSize:13, fontWeight:600, color:"#fff", lineHeight:1 }}>{WL.creator1}</div>
                   <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", marginTop:2 }}>Creator</div>
                 </div>
               </div>
@@ -6852,14 +6851,14 @@ Return JSON:
                   {nav==="home"?"Dashboard":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":"Settings"}
                 </div>
                 <div style={{ fontSize:34, fontWeight:400, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:6 }}>
-                  {nav==="home" && <span><span style={{color:C.pink}}>Content</span> OS</span>}
+                  {nav==="home" && <span><span style={{color:WL.accentColor}}>{WL.appName.slice(0,-2)||"Content"}</span>{WL.appName.slice(-2)||" OS"}</span>}
                   {nav==="content" && <span>Manage <span style={{color:C.cyan}}>Content</span></span>}
                   {nav==="analytics" && <span>Track <span style={{color:C.yellow}}>Performance</span></span>}
                   {nav==="tasks" && <span>Your <span style={{color:C.green}}>Workflow</span></span>}
                   {nav==="growth" && <span>Monitor <span style={{color:C.orange}}>Growth</span></span>}
-                  {nav==="deals" && <span>Brand <span style={{color:C.pink}}>Deals</span></span>}
+                  {nav==="deals" && <span>Brand <span style={{color:WL.accentColor}}>Deals</span></span>}
                   {nav==="settings" && <span>Configure <span style={{color:C.purple}}>Workspace</span></span>}
-                  {nav==="ai" && <span><span style={{color:C.pink}}>AI</span> Assistant</span>}
+                  {nav==="ai" && <span><span style={{color:WL.accentColor}}>AI</span> Assistant</span>}
                 </div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.38)", lineHeight:1.5 }}>
                   {nav==="home"&&`${WL.handle} · ${WL.platforms.split(",").map(p=>p[0].toUpperCase()+p.slice(1)).join(" & ")}`}
@@ -6911,7 +6910,7 @@ Return JSON:
           {/* AI ERROR */}
         {aiErr && (
           <div style={{ position:"fixed", top:54, left:14, right:14, background:"rgba(10,5,20,0.98)", border:`1px solid ${C.pink}60`, borderRadius:16, padding:"12px 16px", color:"#FF8888", fontSize:15, zIndex:999, display:"flex", gap:10, alignItems:"flex-start", backdropFilter:"blur(20px)", boxShadow:`0 8px 32px rgba(0,0,0,0.6)` }}>
-            <div style={{ flex:1, lineHeight:1.5 }}>{aiErr}{aiErr.includes("Settings")&&<span onClick={()=>{setAiErr(null);setNav("settings");}} style={{ color:C.pink, fontWeight:700, cursor:"pointer", display:"block", marginTop:6 }}>→ TAP TO GO TO SETTINGS</span>}</div>
+            <div style={{ flex:1, lineHeight:1.5 }}>{aiErr}{aiErr.includes("Settings")&&<span onClick={()=>{setAiErr(null);setNav("settings");}} style={{ color:WL.accentColor, fontWeight:700, cursor:"pointer", display:"block", marginTop:6 }}>→ TAP TO GO TO SETTINGS</span>}</div>
             <button onClick={()=>setAiErr(null)} style={{ background:"none",border:"none",color:"rgba(255,255,255,0.85)",cursor:"pointer",fontSize:18,lineHeight:1,flexShrink:0 }}>×</button>
           </div>
         )}
@@ -6921,11 +6920,11 @@ Return JSON:
       {/* NAV BAR */}
       <div className="mobile-nav" style={{ position:"fixed", bottom:20, left:"50%", transform:"translateX(-50%)", background:"rgba(10,6,20,0.92)", backdropFilter:"blur(32px)", WebkitBackdropFilter:"blur(32px)", borderRadius:40, border:"1px solid rgba(255,255,255,0.1)", display:"flex", padding:"8px", zIndex:99, gap:4, boxShadow:"0 8px 40px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.06)" }}>
         {NAV.map(n=>(
-          <button key={n.id} data-nav-btn onClick={()=>{ setNav(n.id); setSub(null); }} style={{ background:nav===n.id?`linear-gradient(135deg,${C.pink}30,${C.purple}15)`:"transparent", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:nav===n.id?3:0, padding:nav===n.id?"8px 14px":"8px 12px", borderRadius:32, transition:"all 0.2s", minWidth:nav===n.id?52:44 }}>
+          <button key={n.id} data-nav-btn onClick={()=>{ setNav(n.id); setSub(null); }} style={{ background:nav===n.id?`linear-gradient(135deg,${WL.accentColor}30,${WL.accentColor2}15)`:"transparent", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:nav===n.id?3:0, padding:nav===n.id?"8px 14px":"8px 12px", borderRadius:32, transition:"all 0.2s", minWidth:nav===n.id?52:44 }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
               {n.ic(18, nav===n.id?"#fff":"rgba(255,255,255,0.4)")}
             </div>
-            {nav===n.id && <span style={{ fontSize:10, fontWeight:700, color:C.pink, fontFamily:C.fontHead, letterSpacing:"0.02em", lineHeight:1 }}>{n.label}</span>}
+            {nav===n.id && <span style={{ fontSize:10, fontWeight:700, color:WL.accentColor, fontFamily:C.fontHead, letterSpacing:"0.02em", lineHeight:1 }}>{n.label}</span>}
           </button>
         ))}
       </div>
@@ -7083,7 +7082,7 @@ function OnboardingPage({ onComplete }) {
     const matched = CLIENTS[entered];
     if(matched) {
       // Persist client config so WL loads correctly after reload
-      try { localStorage.setItem(CLIENT_KEY, JSON.stringify(matched)); } catch {}
+      try { localStorage.setItem(CLIENT_KEY, JSON.stringify(matched)); localStorage.removeItem(WL_KEY); } catch {}
       setCodeError(false);
       setLoading(true);
       setLoadLines([]);
