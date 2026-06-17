@@ -7085,41 +7085,35 @@ function OnboardingPage({ onComplete }) {
 
           {/* Step 1 — Welcome */}
           {step === 1 && (
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0 }}>
-              {/* Label */}
-              <div style={{ fontSize:10, color:"rgba(255,255,255,0.2)", letterSpacing:"0.3em", fontFamily:"Courier New,monospace", marginBottom:32, fontWeight:700 }}>CREAT<span style={{color:"rgba(255,255,255,0.08)"}}>OROS</span></div>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center" }}>
 
-              {/* Headline */}
-              <div style={{ textAlign:"center", marginBottom:36 }}>
-                <div style={{ fontSize:36, fontWeight:800, color:"#fff", lineHeight:1.15, letterSpacing:"-0.02em", marginBottom:12 }}>
-                  The Content System<br/>
-                  <span style={{ color:ac }}>Serious Creators</span><br/>
-                  Actually Use.
-                </div>
-                <div style={{ fontSize:14, color:"rgba(255,255,255,0.35)", lineHeight:1.6, fontWeight:400 }}>
-                  Score ideas. Close deals. Get AI strategy<br/>that knows your niche.
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.12)", letterSpacing:"0.4em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:52 }}>CREATOROS</div>
+
+              <div style={{ marginBottom:24 }}>
+                <div style={{ fontSize:52, fontWeight:800, color:"#fff", lineHeight:1.05, letterSpacing:"-0.03em", fontFamily:"Inter,system-ui,sans-serif" }}>
+                  Your channel.<br/>
+                  Your strategy.<br/>
+                  <span style={{ color:"rgba(255,255,255,0.18)" }}>Your rules.</span>
                 </div>
               </div>
 
-              {/* Feature grid — 3 cols */}
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, width:"100%", marginBottom:32 }}>
-                {FEATURES.map((f,i)=>(
-                  <div key={i} style={{ padding:"14px 10px", borderRadius:12, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", display:"flex", flexDirection:"column", alignItems:"center", gap:8, textAlign:"center" }}>
-                    <span style={{ fontSize:22 }}>{f.icon}</span>
-                    <div>
-                      <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.75)", letterSpacing:"0.04em", textTransform:"uppercase" }}>{f.label}</div>
-                    </div>
-                  </div>
-                ))}
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.15)", letterSpacing:"0.18em", fontWeight:600, marginBottom:56, fontFamily:"Courier New,monospace" }}>
+                6 TOOLS &nbsp;&middot;&nbsp; 1 SYSTEM &nbsp;&middot;&nbsp; BUILT FOR CREATORS WHO MEAN IT
               </div>
 
-              {/* CTA */}
-              <button onClick={()=>setStep(2)} style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${ac},${ac2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 32px ${ac}40`, letterSpacing:"0.06em", textTransform:"uppercase" }}>
-                Get Started →
+              <button
+                onClick={()=>setStep(2)}
+                style={{ padding:"15px 40px", borderRadius:3, border:"1px solid rgba(255,255,255,0.18)", background:"transparent", color:"rgba(255,255,255,0.85)", fontWeight:700, fontSize:12, cursor:"pointer", letterSpacing:"0.18em", fontFamily:"Courier New,monospace", transition:"all 0.2s", width:"100%" }}
+                onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.35)"; e.currentTarget.style.color="#fff"; }}
+                onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(255,255,255,0.18)"; e.currentTarget.style.color="rgba(255,255,255,0.85)"; }}
+              >
+                ACTIVATE MY WORKSPACE
               </button>
-              <button onClick={()=>finish("")} style={{ width:"100%", marginTop:10, padding:"12px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.18)", fontSize:12, cursor:"pointer", letterSpacing:"0.04em" }}>
-                Skip — Take Me To The App
+
+              <button onClick={()=>finish("")} style={{ marginTop:18, background:"none", border:"none", color:"rgba(255,255,255,0.1)", fontSize:11, cursor:"pointer", letterSpacing:"0.14em", fontFamily:"Courier New,monospace" }}>
+                SKIP
               </button>
+
             </div>
           )}
 
