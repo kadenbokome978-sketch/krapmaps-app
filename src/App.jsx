@@ -5781,9 +5781,11 @@ function Dashboard({ keys, onEditKeys }) {
     const tikwmKey = cfg?.keys?.tikwm;
     if(!tikwmKey) return; // no key, skip silently
     
-    // Only fetch if >2hrs since last fetch (unless forced)
+    // Skip if fetched recently AND we already have video data
     const lastFetch = loadJSON("krapmaps_v1_tikwm_last", 0);
-    if(!force && Date.now() - lastFetch < 6 * 60 * 60 * 1000) return;
+    const cachedVideos = loadJSON(VIDEOS_KEY, []);
+    const hasData = cachedVideos.filter(v=>v.platform==="tiktok"||!v.platform).length > 0;
+    if(!force && hasData && Date.now() - lastFetch < 6 * 60 * 60 * 1000) return;
     
     // On force sync reset videos state to empty so no stale data accumulates
     if(force) { setVideos([]); try { localStorage.removeItem(VIDEOS_KEY); } catch(e){} }
