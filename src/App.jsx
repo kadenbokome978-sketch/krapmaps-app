@@ -6728,34 +6728,98 @@ Return JSON:
     addXP(50);
   };
 
+  const FEATURES = [
+    { icon:"🎬", label:"Score Ideas", desc:"AI virality scores 0-100" },
+    { icon:"📈", label:"Track Growth", desc:"TikTok + Instagram analytics" },
+    { icon:"⚡", label:"Hook Tester", desc:"A/B test hooks instantly" },
+    { icon:"🤝", label:"Brand Deals", desc:"Pipeline & earnings tracker" },
+    { icon:"📋", label:"Script Builder", desc:"Scene-by-scene film scripts" },
+    { icon:"📊", label:"Weekly Debrief", desc:"AI strategy every week" },
+  ];
+
   const OB_STEPS = [
     {
-      icon:"🗑️",
-      title:<>Welcome to <span style={{color:C.pink}}>KrapMaps</span></>,
-      sub:"Your Content OS for @findkrap",
-      body:"Track videos, score ideas, manage brand deals and get AI-powered strategy — all in one place. Takes 60 seconds to set up.",
-      cta:"Let's go →",
-      onNext:()=>setObStep(1),
+      key:"welcome",
+      render:()=>(
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0 }}>
+          {/* Logo */}
+          <div style={{ width:72, height:72, borderRadius:24, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:24, boxShadow:`0 0 40px ${C.pink}50` }}>
+            {I.bin(32,"#fff")}
+          </div>
+          <div style={{ fontSize:32, fontWeight:400, fontFamily:C.fontHead, color:"#fff", marginBottom:6, textAlign:"center" }}>Krap<span style={{color:C.pink}}>Maps</span> Content OS</div>
+          <div style={{ fontSize:14, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody, marginBottom:28, textAlign:"center", lineHeight:1.6 }}>The strategy system built for @findkrap.<br/>Score ideas, track growth, close brand deals — all in one place.</div>
+          {/* Feature grid */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, width:"100%", marginBottom:28 }}>
+            {FEATURES.map((f,i)=>(
+              <div key={i} style={{ borderRadius:14, padding:"14px 12px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)", textAlign:"center" }}>
+                <div style={{ fontSize:22, marginBottom:6 }}>{f.icon}</div>
+                <div style={{ fontSize:12, fontWeight:700, color:"#fff", fontFamily:C.fontHead, marginBottom:3 }}>{f.label}</div>
+                <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontFamily:C.fontBody, lineHeight:1.4 }}>{f.desc}</div>
+              </div>
+            ))}
+          </div>
+          <button onClick={()=>setObStep(1)} style={{ width:"100%", padding:"16px", borderRadius:16, border:"none", background:`linear-gradient(135deg,${C.pink},${C.purple})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:16, cursor:"pointer", boxShadow:`0 8px 32px ${C.pink}40`, letterSpacing:"0.04em" }}>
+            Set up in 60 seconds →
+          </button>
+        </div>
+      ),
     },
     {
-      icon:"📲",
-      title:<>Your <span style={{color:C.cyan}}>Channel</span></>,
-      sub:"Step 1 of 2",
-      body:"What's your TikTok handle? This personalises your AI content strategy.",
-      field:<input value={obHandle} onChange={e=>setObHandle(e.target.value)} placeholder="@findkrap" style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`1px solid ${C.cyan}40`, borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:16, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box", marginTop:4 }}/>,
-      cta:"Next →",
-      onNext:()=>setObStep(2),
-      skip:()=>setObStep(2),
+      key:"channel",
+      render:()=>(
+        <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+          <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:"0.14em", textAlign:"center", marginBottom:20 }}>STEP 1 OF 2</div>
+          <div style={{ fontSize:28, fontWeight:400, fontFamily:C.fontHead, color:"#fff", textAlign:"center", marginBottom:8 }}>Your <span style={{color:C.cyan}}>Channel</span></div>
+          <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody, textAlign:"center", lineHeight:1.6, marginBottom:28 }}>What's your TikTok handle? This lets the AI personalise content strategy specifically for @findkrap's niche — SE Asia backpacker travel + bin-finding.</div>
+          <div style={{ marginBottom:10 }}>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:8, fontFamily:C.fontHead }}>TIKTOK HANDLE</div>
+            <input value={obHandle} onChange={e=>setObHandle(e.target.value)} onKeyDown={e=>e.key==="Enter"&&setObStep(2)} placeholder="@findkrap" autoFocus style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`2px solid ${obHandle?C.cyan:"rgba(255,255,255,0.1)"}`, borderRadius:14, color:"#fff", padding:"16px 18px", fontSize:18, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s" }}/>
+          </div>
+          <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.cyan}08`, border:`1px solid ${C.cyan}15`, marginBottom:24 }}>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.55)", fontFamily:C.fontBody, lineHeight:1.5 }}>💡 All AI prompts, content strategy and scoring will be calibrated to your channel and niche automatically.</div>
+          </div>
+          <button onClick={()=>setObStep(2)} style={{ width:"100%", padding:"16px", borderRadius:16, border:"none", background:`linear-gradient(135deg,${C.cyan}cc,${C.purple})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 24px ${C.cyan}30`, letterSpacing:"0.04em", marginBottom:10 }}>
+            Continue →
+          </button>
+          <button onClick={()=>setObStep(2)} style={{ width:"100%", padding:"10px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontFamily:C.fontHead, fontSize:13, cursor:"pointer" }}>Skip for now</button>
+        </div>
+      ),
     },
     {
-      icon:"🤖",
-      title:<>Add your <span style={{color:C.purple}}>AI Key</span></>,
-      sub:"Step 2 of 2 — optional but recommended",
-      body:"Paste your Anthropic API key to unlock AI scoring, Script Builder, Hook A/B Tester and Weekly Debrief. You can add it later in Settings.",
-      field:<input value={obKey} onChange={e=>setObKey(e.target.value)} placeholder="sk-ant-api03-..." type="password" style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`1px solid ${C.purple}40`, borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:14, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box", marginTop:4 }}/>,
-      cta:"Finish setup →",
-      onNext:finishOnboarding,
-      skip:finishOnboarding,
+      key:"apikey",
+      render:()=>(
+        <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+          <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:"0.14em", textAlign:"center", marginBottom:20 }}>STEP 2 OF 2</div>
+          <div style={{ fontSize:28, fontWeight:400, fontFamily:C.fontHead, color:"#fff", textAlign:"center", marginBottom:8 }}>Add your <span style={{color:C.purple}}>AI Key</span></div>
+          <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody, textAlign:"center", lineHeight:1.6, marginBottom:24 }}>Unlocks AI idea scoring, Script Builder, Hook A/B Tester and Weekly Debrief. Your key is stored only on this device — never sent to our servers.</div>
+          {/* What you unlock */}
+          <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
+            {[["⚡","Hook A/B Tester","Compare two hooks, AI picks the winner"],["🎬","Script Builder","Full scene-by-scene filming scripts"],["📊","Idea Scoring","Virality scores 0-100 with reasoning"],["🗓️","Weekly Debrief","Strategic AI summary every week"]].map(([ic,l,d],i)=>(
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:12, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)" }}>
+                <span style={{ fontSize:18 }}>{ic}</span>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, color:"#fff", fontFamily:C.fontHead }}>{l}</div>
+                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", fontFamily:C.fontBody }}>{d}</div>
+                </div>
+                <div style={{ marginLeft:"auto", fontSize:11, color:C.green, fontFamily:C.fontHead, fontWeight:700 }}>UNLOCKED</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginBottom:10 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", fontFamily:C.fontHead }}>ANTHROPIC API KEY</div>
+              <a href="https://console.anthropic.com/keys" target="_blank" rel="noreferrer" style={{ fontSize:11, color:C.purple, fontFamily:C.fontHead, textDecoration:"none" }}>Get a key →</a>
+            </div>
+            <input value={obKey} onChange={e=>setObKey(e.target.value)} placeholder="sk-ant-api03-..." type="password" style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`2px solid ${obKey?C.purple:"rgba(255,255,255,0.1)"}`, borderRadius:14, color:"#fff", padding:"16px 18px", fontSize:14, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s", marginBottom:4 }}/>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.25)", fontFamily:C.fontBody }}>You can also add this later in Settings</div>
+          </div>
+          <div style={{ height:16 }}/>
+          <button onClick={finishOnboarding} style={{ width:"100%", padding:"16px", borderRadius:16, border:"none", background:`linear-gradient(135deg,${C.pink},${C.purple})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 32px ${C.pink}40`, letterSpacing:"0.04em", marginBottom:10 }}>
+            {obKey.trim()?"Launch KrapMaps 🚀":"Launch without AI →"}
+          </button>
+          <button onClick={()=>setObStep(1)} style={{ width:"100%", padding:"10px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.25)", fontFamily:C.fontHead, fontSize:13, cursor:"pointer" }}>← Back</button>
+        </div>
+      ),
     },
   ];
 
@@ -6963,40 +7027,22 @@ Return JSON:
       {modals.editStats   && <EditStatsModal />}
 
       {/* ONBOARDING */}
-      {!onboarded && (() => {
-        const step = OB_STEPS[obStep];
-        return (
-          <div style={{ position:"fixed", inset:0, background:"rgba(7,5,15,0.92)", backdropFilter:"blur(24px)", WebkitBackdropFilter:"blur(24px)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-            <div style={{ width:"100%", maxWidth:460, borderRadius:28, background:"rgba(14,10,28,0.98)", border:"1px solid rgba(255,255,255,0.1)", padding:"40px 36px", position:"relative", boxShadow:"0 32px 80px rgba(0,0,0,0.7)" }}>
-              {/* Progress dots */}
-              <div style={{ display:"flex", gap:6, justifyContent:"center", marginBottom:32 }}>
-                {OB_STEPS.map((_,i)=>(
-                  <div key={i} style={{ width:i===obStep?24:6, height:6, borderRadius:3, background:i===obStep?C.pink:i<obStep?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.1)", transition:"all 0.3s" }}/>
-                ))}
-              </div>
-              {/* Icon */}
-              <div style={{ fontSize:48, textAlign:"center", marginBottom:16, lineHeight:1 }}>{step.icon}</div>
-              {/* Title */}
-              <div style={{ fontSize:28, fontWeight:400, fontFamily:C.fontHead, color:"#fff", textAlign:"center", lineHeight:1.2, marginBottom:6 }}>{step.title}</div>
-              <div style={{ fontSize:12, color:"rgba(255,255,255,0.35)", textAlign:"center", fontFamily:C.fontHead, letterSpacing:"0.1em", marginBottom:20 }}>{step.sub}</div>
-              {/* Body */}
-              <div style={{ fontSize:14, color:"rgba(255,255,255,0.65)", fontFamily:C.fontBody, lineHeight:1.65, textAlign:"center", marginBottom:24 }}>{step.body}</div>
-              {/* Field */}
-              {step.field && <div style={{ marginBottom:24 }}>{step.field}</div>}
-              {/* CTA */}
-              <button onClick={step.onNext} style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${C.pink},${C.purple})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:15, cursor:"pointer", boxShadow:`0 8px 24px ${C.pink}40`, letterSpacing:"0.04em" }}>
-                {step.cta}
-              </button>
-              {/* Skip */}
-              {step.skip && (
-                <button onClick={step.skip} style={{ width:"100%", marginTop:12, padding:"10px", borderRadius:10, border:"none", background:"transparent", color:"rgba(255,255,255,0.3)", fontFamily:C.fontHead, fontSize:13, cursor:"pointer" }}>
-                  Skip for now
-                </button>
-              )}
+      {!onboarded && (
+        <div style={{ position:"fixed", inset:0, background:`linear-gradient(145deg,rgba(7,5,15,0.97),rgba(14,6,28,0.99))`, backdropFilter:"blur(32px)", WebkitBackdropFilter:"blur(32px)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px 16px", overflowY:"auto" }}>
+          {/* Ambient glows */}
+          <div style={{ position:"fixed", top:"10%", left:"5%", width:320, height:320, borderRadius:"50%", background:`radial-gradient(circle,${C.pink}18 0%,transparent 70%)`, pointerEvents:"none" }}/>
+          <div style={{ position:"fixed", bottom:"10%", right:"5%", width:280, height:280, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}14 0%,transparent 70%)`, pointerEvents:"none" }}/>
+          <div style={{ width:"100%", maxWidth:480, borderRadius:28, background:"rgba(12,8,24,0.98)", border:"1px solid rgba(255,255,255,0.09)", padding:"36px 32px", position:"relative", boxShadow:"0 40px 100px rgba(0,0,0,0.8), 0 0 0 0.5px rgba(255,255,255,0.05)" }}>
+            {/* Progress bar */}
+            <div style={{ display:"flex", gap:6, justifyContent:"center", marginBottom:28 }}>
+              {OB_STEPS.map((_,i)=>(
+                <div key={i} style={{ height:4, borderRadius:2, flex:i===obStep?2:1, background:i===obStep?C.pink:i<obStep?`${C.pink}50`:"rgba(255,255,255,0.08)", transition:"all 0.35s ease" }}/>
+              ))}
             </div>
+            {OB_STEPS[obStep]?.render()}
           </div>
-        );
-      })()}
+        </div>
+      )}
 
     </div>
   );
