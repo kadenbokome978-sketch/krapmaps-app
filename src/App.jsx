@@ -6934,6 +6934,7 @@ function OnboardingPage({ onComplete }) {
   const [codeInput, setCodeInput] = useState("");
   const [codeError, setCodeError] = useState(false);
   const [codeShake, setCodeShake] = useState(false);
+  const [demoIdx, setDemoIdx] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadLines, setLoadLines] = useState([]);
 
@@ -6949,6 +6950,21 @@ function OnboardingPage({ onComplete }) {
     { text:"All systems ready ✓", delay:2700, green:true },
     { text:"ACCESS GRANTED — Welcome.", delay:3100, green:true, bold:true },
   ];
+
+  const DEMO_CARDS = [
+    { label:"HOOK A/B TESTER", content:`"POV: you can't find a bin in Bali"`, sub:"WINNER · 94 pts", bar:0.94 },
+    { label:"VIRALITY SCORE", content:"82 / 100", sub:"HIGH POTENTIAL · Strong hook", bar:0.82 },
+    { label:"BRAND DEAL", content:"£2,400", sub:"Patagonia · Signed ✓", bar:1 },
+    { label:"SCRIPT BUILDER", content:"Hook → Problem → App → CTA", sub:"Script ready · 47 sec", bar:0.7 },
+    { label:"AI WEEKLY DEBRIEF", content:"Hook vids up 3×", sub:"Film the contrast idea this week", bar:0.6 },
+    { label:"ANALYTICS", content:"↑ 12.4K views", sub:"Best day: Thursday 6pm", bar:0.78 },
+  ];
+
+  useEffect(()=>{
+    if(step!==1) return;
+    const t = setInterval(()=>setDemoIdx(p=>(p+1)%DEMO_CARDS.length), 2800);
+    return ()=>clearInterval(t);
+  },[step]);
 
   const submitCode = () => {
     if(codeInput.trim().toUpperCase() === VALID_CODE) {
@@ -7088,55 +7104,67 @@ function OnboardingPage({ onComplete }) {
             <div style={{ display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center", position:"relative", minHeight:"100vh", justifyContent:"center", padding:"40px 20px", overflow:"hidden" }}>
 
               {/* Scanline overlay */}
-              <div style={{ position:"fixed", inset:0, background:"repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.012) 2px,rgba(255,255,255,0.012) 4px)", pointerEvents:"none", zIndex:0 }}/>
+              <div style={{ position:"fixed", inset:0, background:"repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.011) 2px,rgba(255,255,255,0.011) 4px)", pointerEvents:"none", zIndex:0 }}/>
 
-              {/* Ghost watermark — huge OS behind everything */}
-              <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", fontSize:"38vw", fontWeight:900, color:"rgba(255,255,255,0.028)", letterSpacing:"-0.06em", fontFamily:"Inter,system-ui,sans-serif", lineHeight:1, pointerEvents:"none", zIndex:0, userSelect:"none", whiteSpace:"nowrap" }}>OS</div>
+              {/* Dot grid */}
+              <div style={{ position:"fixed", inset:0, backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.055) 1px,transparent 1px)", backgroundSize:"32px 32px", pointerEvents:"none", zIndex:0 }}/>
 
-              {/* Subtle dot grid */}
-              <div style={{ position:"fixed", inset:0, backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.06) 1px,transparent 1px)", backgroundSize:"32px 32px", pointerEvents:"none", zIndex:0 }}/>
-
-              {/* Vertical feature list — left edge */}
-              <div style={{ position:"fixed", left:28, top:"50%", transform:"translateY(-50%)", display:"flex", flexDirection:"column", gap:22, pointerEvents:"none", zIndex:1 }}>
-                {["HOOK TESTER","SCRIPT BUILDER","BRAND DEALS","AI DEBRIEF","ANALYTICS","TASK BOARD"].map((f,i)=>(
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <div style={{ width:18, height:1, background:`rgba(255,255,255,${i===0?0.3:0.07})` }}/>
-                    <div style={{ fontSize:9, letterSpacing:"0.22em", color:`rgba(255,255,255,${i===0?0.22:0.06})`, fontFamily:"Courier New,monospace", fontWeight:700 }}>{f}</div>
-                  </div>
-                ))}
+              {/* Stacked CREATOR / OS watermark */}
+              <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", pointerEvents:"none", zIndex:0, userSelect:"none", textAlign:"center", lineHeight:0.85 }}>
+                <div style={{ fontSize:"13vw", fontWeight:900, color:"rgba(255,255,255,0.032)", letterSpacing:"-0.04em", fontFamily:"Inter,system-ui,sans-serif" }}>CREATOR</div>
+                <div style={{ fontSize:"22vw", fontWeight:900, color:"rgba(255,255,255,0.026)", letterSpacing:"-0.06em", fontFamily:"Inter,system-ui,sans-serif", marginTop:"-0.05em" }}>OS</div>
               </div>
 
-              {/* Thin horizontal rule top */}
-              <div style={{ position:"fixed", top:0, left:0, right:0, height:1, background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)", pointerEvents:"none", zIndex:1 }}/>
-              {/* Thin horizontal rule bottom */}
-              <div style={{ position:"fixed", bottom:0, left:0, right:0, height:1, background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)", pointerEvents:"none", zIndex:1 }}/>
+              {/* Edge rules */}
+              <div style={{ position:"fixed", top:0, left:0, right:0, height:1, background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent)", pointerEvents:"none", zIndex:1 }}/>
+              <div style={{ position:"fixed", bottom:0, left:0, right:0, height:1, background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent)", pointerEvents:"none", zIndex:1 }}/>
 
               {/* Corner marks */}
               {[{top:20,left:20},{top:20,right:20},{bottom:20,left:20},{bottom:20,right:20}].map((pos,i)=>(
-                <div key={i} style={{ position:"fixed", ...pos, width:14, height:14, borderTop:i<2?"1px solid rgba(255,255,255,0.12)":undefined, borderBottom:i>=2?"1px solid rgba(255,255,255,0.12)":undefined, borderLeft:i%2===0?"1px solid rgba(255,255,255,0.12)":undefined, borderRight:i%2===1?"1px solid rgba(255,255,255,0.12)":undefined, pointerEvents:"none", zIndex:1 }}/>
+                <div key={i} style={{ position:"fixed", ...pos, width:14, height:14, borderTop:i<2?"1px solid rgba(255,255,255,0.1)":undefined, borderBottom:i>=2?"1px solid rgba(255,255,255,0.1)":undefined, borderLeft:i%2===0?"1px solid rgba(255,255,255,0.1)":undefined, borderRight:i%2===1?"1px solid rgba(255,255,255,0.1)":undefined, pointerEvents:"none", zIndex:1 }}/>
               ))}
 
-              {/* Content */}
-              <div style={{ position:"relative", zIndex:2, maxWidth:480 }}>
+              {/* Cycling feature demo card — bottom left */}
+              {(()=>{
+                const card = DEMO_CARDS[demoIdx];
+                return (
+                  <div key={demoIdx} style={{ position:"fixed", bottom:40, left:32, width:200, pointerEvents:"none", zIndex:2, animation:"fadeInUp 0.5s ease forwards", opacity:0 }}>
+                    <style>{`@keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}`}</style>
+                    <div style={{ fontSize:8, letterSpacing:"0.22em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:8 }}>{card.label}</div>
+                    <div style={{ fontSize:20, fontWeight:800, color:"rgba(255,255,255,0.9)", fontFamily:"Inter,system-ui,sans-serif", letterSpacing:"-0.02em", marginBottom:4, lineHeight:1.2 }}>{card.content}</div>
+                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:10 }}>{card.sub}</div>
+                    <div style={{ height:1, background:"rgba(255,255,255,0.06)", borderRadius:1 }}>
+                      <div style={{ height:"100%", width:`${card.bar*100}%`, background:"rgba(255,255,255,0.3)", borderRadius:1, transition:"width 0.6s ease" }}/>
+                    </div>
+                    <div style={{ marginTop:8, display:"flex", gap:4 }}>
+                      {DEMO_CARDS.map((_,i)=>(
+                        <div key={i} style={{ height:2, flex:1, borderRadius:1, background:i===demoIdx?"rgba(255,255,255,0.4)":"rgba(255,255,255,0.08)", transition:"background 0.3s" }}/>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
-                <div style={{ fontSize:10, color:"rgba(255,255,255,0.12)", letterSpacing:"0.5em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:44, display:"flex", alignItems:"center", justifyContent:"center", gap:16 }}>
-                  <div style={{ width:32, height:"1px", background:"rgba(255,255,255,0.08)" }}/>
+              {/* Content */}
+              <div style={{ position:"relative", zIndex:2, maxWidth:460 }}>
+
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.1)", letterSpacing:"0.5em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:44, display:"flex", alignItems:"center", justifyContent:"center", gap:16 }}>
+                  <div style={{ width:28, height:"1px", background:"rgba(255,255,255,0.07)" }}/>
                   CREATOROS
-                  <div style={{ width:32, height:"1px", background:"rgba(255,255,255,0.08)" }}/>
+                  <div style={{ width:28, height:"1px", background:"rgba(255,255,255,0.07)" }}/>
                 </div>
 
-                <div style={{ marginBottom:24 }}>
-                  <div style={{ fontSize:56, fontWeight:900, color:"#fff", lineHeight:1.0, letterSpacing:"-0.035em", fontFamily:"Inter,system-ui,sans-serif" }}>
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontSize:54, fontWeight:900, color:"#fff", lineHeight:1.0, letterSpacing:"-0.035em", fontFamily:"Inter,system-ui,sans-serif" }}>
                     Your channel.<br/>
                     Your strategy.<br/>
-                    <span style={{ color:"rgba(255,255,255,0.13)" }}>Your rules.</span>
+                    <span style={{ color:"rgba(255,255,255,0.12)" }}>Your rules.</span>
                   </div>
                 </div>
 
-                {/* Thin divider */}
-                <div style={{ width:40, height:1, background:"rgba(255,255,255,0.15)", margin:"0 auto 24px" }}/>
+                <div style={{ width:36, height:1, background:"rgba(255,255,255,0.14)", margin:"0 auto 22px" }}/>
 
-                <div style={{ fontSize:10, color:"rgba(255,255,255,0.18)", letterSpacing:"0.22em", fontWeight:600, marginBottom:56, fontFamily:"Courier New,monospace" }}>
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.16)", letterSpacing:"0.22em", fontWeight:600, marginBottom:52, fontFamily:"Courier New,monospace" }}>
                   6 TOOLS &nbsp;&middot;&nbsp; 1 SYSTEM &nbsp;&middot;&nbsp; BUILT FOR CREATORS WHO MEAN IT
                 </div>
 
