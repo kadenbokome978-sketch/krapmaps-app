@@ -7012,12 +7012,12 @@ function OnboardingPage({ onComplete }) {
   ];
 
   return (
-    <div style={{ minHeight:"100vh", background:step===0?"#000":"#09090B", display:"flex", fontFamily:"'Inter',system-ui,sans-serif", position:"relative", overflow:"hidden", transition:"background 0.6s" }}>
+    <div style={{ minHeight:"100vh", background:step<=1?"#000":"#09090B", display:"flex", fontFamily:"'Inter',system-ui,sans-serif", position:"relative", overflow:"hidden", transition:"background 0.6s" }}>
       {/* Subtle green glow on activate screen */}
       {step===0 && <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,#39FF1406 0%,transparent 65%)", pointerEvents:"none" }}/>}
-      {/* Background gradient blobs — hidden on terminal step */}
-      {step>0 && <div style={{ position:"fixed", top:"-20%", right:"-10%", width:600, height:600, borderRadius:"50%", background:`radial-gradient(circle,${ac}22 0%,transparent 65%)`, pointerEvents:"none" }}/>}
-      {step>0 && <div style={{ position:"fixed", bottom:"-20%", left:"-10%", width:500, height:500, borderRadius:"50%", background:`radial-gradient(circle,${ac2}18 0%,transparent 65%)`, pointerEvents:"none" }}/>}
+      {/* Background gradient blobs — hidden on terminal/welcome steps */}
+      {step>1 && <div style={{ position:"fixed", top:"-20%", right:"-10%", width:600, height:600, borderRadius:"50%", background:`radial-gradient(circle,${ac}22 0%,transparent 65%)`, pointerEvents:"none" }}/>}
+      {step>1 && <div style={{ position:"fixed", bottom:"-20%", left:"-10%", width:500, height:500, borderRadius:"50%", background:`radial-gradient(circle,${ac2}18 0%,transparent 65%)`, pointerEvents:"none" }}/>}
 
       {/* Left panel — branding, hidden on terminal step */}
       <div style={{ flex:"0 0 420px", display:"none" }}>
@@ -7039,8 +7039,8 @@ function OnboardingPage({ onComplete }) {
       </div>
 
       {/* Right panel — steps */}
-      <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"32px 20px", overflowY:"auto" }}>
-        <div style={{ width:"100%", maxWidth:440 }}>
+      <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:step===1?"flex-start":"center", padding:step===1?"0":"32px 20px", overflowY:"auto", position:"relative" }}>
+        <div style={{ width:"100%", maxWidth:step===1?"100%":440 }}>
 
           {/* Step 0 — Activation / Loading */}
           {step === 0 && (
