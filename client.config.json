@@ -1,0 +1,29 @@
+{
+  "clientId": "krapmaps",
+  "appName": "KrapMaps",
+  "appTagline": "Content OS",
+  "handle": "@findkrap",
+  "creator1": "Kaden",
+  "creator2": "Harley",
+  "niche": "crowdsourced bin-finding app for backpackers and travellers",
+  "contentStyle": "founder journey, on-the-ground real bin mapping moments in SE Asia, gamification challenges, app demos, hostel partnerships, street humour — formula: visual problem (litter in beautiful place) → founder doing something about it → app solving it → community invitation",
+  "platforms": "tiktok,instagram",
+  "targetAudience": "18-28 backpackers and travellers, SE Asia + UK, eco-conscious but not preachy, hostel crowd, people who hate litter but never knew what to do about it",
+  "competitors": "@explorewithjosh,@sustainabletravel,@thebrokebackpacker",
+  "appDescription": "World's first crowdsourced bin-finding app for travellers. Solves the 'where the hell do I throw this?' problem backpackers hit daily.",
+  "bestFormula": "Problem -> struggle -> app saves the day -> satisfied reaction",
+  "accentColor": "#FF2D78",
+  "accentColor2": "#00E5FF",
+  "currency": "£",
+  "onboardingTagline": "The strategy system built for your channel.\nScore ideas, track growth, close brand deals — all in one place.",
+  "aiGreeting": "Hey! I'm your content OS AI. I can add tasks, create video ideas, answer questions about your content — or upload a clip and I'll analyse it.",
+  "statLabels": {
+    "followers": "Followers",
+    "views": "Total Views",
+    "likes": "Total Likes",
+    "custom1Label": "Bins Mapped",
+    "custom1Key": "bins",
+    "custom2Label": "Downloads",
+    "custom2Key": "downloads"
+  }
+}

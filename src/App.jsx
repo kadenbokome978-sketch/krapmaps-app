@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import CLIENT_CONFIG from "../client.config.json";
 
 
 const C = {
@@ -898,7 +899,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
       const r = await fetch("https://api.anthropic.com/v1/messages", {
         method:"POST",
         headers:{ "x-api-key":key, "anthropic-version":"2023-06-01", "content-type":"application/json", "anthropic-dangerous-direct-browser-access":"true" },
-        body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:800, messages:[{role:"user",content:`Expand this rough content concept into a full video idea for @findkrap (KrapMaps — bin-finding app for backpackers in SE Asia).\n\nConcept: "${quickExpand}"\n\nReturn ONLY valid JSON:\n{"title":"compelling title under 12 words","type":"facecam|broll|voiceover|collab","hook":"hook type: achievement|contrast|challenge|curiosity|emotion|location|local|story","hookLine":"exact opening line under 10 words","body":"2 sentences on what happens in the video","cta":"what to say at the end","viralityScore":0-100,"contentPillar":"Local Connection|Location Contrast|Mission Reveal|App In Action|Travel Utility","estimated_views":"e.g. 20K-80K"}`}] })
+        body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:800, messages:[{role:"user",content:`Expand this rough content concept into a full video idea for ${WL.handle} (${WL.appName} — ${WL.niche}).\n\nConcept: "${quickExpand}"\n\nReturn ONLY valid JSON:\n{"title":"compelling title under 12 words","type":"facecam|broll|voiceover|collab","hook":"hook type: achievement|contrast|challenge|curiosity|emotion|location|local|story","hookLine":"exact opening line under 10 words","body":"2 sentences on what happens in the video","cta":"what to say at the end","viralityScore":0-100,"contentPillar":"Local Connection|Location Contrast|Mission Reveal|App In Action|Travel Utility","estimated_views":"e.g. 20K-80K"}`}] })
       });
       const d = await r.json();
       const text = (d.content||[]).map(b=>b.text||"").join("").trim();
@@ -1256,7 +1257,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
             if(!hookA.trim()||!hookB.trim()) return;
             setHookABLoading(true); setHookABResult(null);
             try {
-              const r = await callAI(`Compare these two TikTok hooks for @findkrap (KrapMaps — bin-finding app for backpackers in SE Asia). Score each on: pattern interrupt, open loop strength, identity trigger, curiosity gap. Return ONLY JSON: {"winner":"A","hookAScore":0,"hookBScore":0,"hookAAnalysis":"","hookBAnalysis":"","whyWinner":"","improvedWinner":""}\n\nHook A: "${hookA}"\nHook B: "${hookB}"`, 600);
+              const r = await callAI(`Compare these two TikTok hooks for ${WL.handle} (${WL.appName} — ${WL.niche}). Score each on: pattern interrupt, open loop strength, identity trigger, curiosity gap. Return ONLY JSON: {"winner":"A","hookAScore":0,"hookBScore":0,"hookAAnalysis":"","hookBAnalysis":"","whyWinner":"","improvedWinner":""}\n\nHook A: "${hookA}"\nHook B: "${hookB}"`, 600);
               setHookABResult(r); addXP(10);
             } catch(e){}
             setHookABLoading(false);
@@ -3407,7 +3408,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
 
   const platforms = [
     {
-      id:"tt", icon:I.tt, label:"TikTok", handle:"@findkrap", color:C.pink,
+      id:"tt", icon:I.tt, label:"TikTok", handle:WL.handle, color:C.pink,
       live: !!scrapedStats,
       stats:[
         {l:"FOLLOWERS", v:fmtG(m?.tt_followers||0), c:C.pink},
@@ -3420,7 +3421,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
       ]
     },
     {
-      id:"ig", icon:I.ig, label:"Instagram", handle:"@findkrap", color:C.purple,
+      id:"ig", icon:I.ig, label:"Instagram", handle:WL.handle, color:C.purple,
       live: igReels.length>0,
       stats:[
         {l:"FOLLOWERS", v:igFollowers?fmtG(igFollowers):"--", c:C.purple},
@@ -3860,7 +3861,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             const blob = new Blob([lines.join("\n")], {type:"text/plain"});
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
-            a.href = url; a.download = `krapmaps-intel-${new Date().toISOString().slice(0,10)}.txt`;
+            a.href = url; a.download = `${(WL.appName||"content-os").toLowerCase().replace(/\s+/g,"-")}-intel-${new Date().toISOString().slice(0,10)}.txt`;
             a.click(); URL.revokeObjectURL(url);
           }} style={{ padding:"10px 18px", borderRadius:11, border:`1px solid ${C.cyan}40`, background:`${C.cyan}15`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", whiteSpace:"nowrap" }}>
             ↓ EXPORT
@@ -3943,18 +3944,24 @@ const DEFAULT_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmF
 
 const WL_KEY = "krapmaps_v1_wl";
 const WL_DEFAULTS = {
-  appName:"KrapMaps",
-  handle:"@findkrap",
-  creator1:"Kaden",
-  creator2:"Harley",
-  niche:"crowdsourced bin-finding app for backpackers and travellers",
-  contentStyle:"founder journey, on-the-ground real bin mapping moments in SE Asia, gamification challenges, app demos, hostel partnerships, street humour — formula: visual problem (litter in beautiful place) → founder doing something about it → app solving it → community invitation",
-  platforms:"tiktok,instagram",
-  targetAudience:"18-28 backpackers and travellers, SE Asia + UK, eco-conscious but not preachy, hostel crowd, people who hate litter but never knew what to do about it",
-  competitors:"@explorewithjosh,@sustainabletravel,@thebrokebackpacker",
-  appDescription:"World's first crowdsourced bin-finding app for travellers. Solves the 'where the hell do I throw this?' problem backpackers hit daily. Live on App Store + Google Play v1.3.34. 230+ users, 654+ bins mapped across 12+ countries. Gamification: points per verified bin, monthly leaderboards, daily challenges, Team Crimson vs Azure mapping wars, Bin Guesser mini-game, achievement badges. Partners: Mad Monkey Hostels (24 properties, 7 SE Asian countries), Revolution Hostels (2 properties Pai Thailand). Premium £4.99/month. Tagline: Find it. Map it. Clean it. Founding insight: 70% of people would dispose properly if a bin were closer — it's infrastructure visibility, not behaviour.",
-  bestFormula:"Problem -> struggle -> app saves the day -> satisfied reaction",
-  accentColor:C.pink,
+  appName: CLIENT_CONFIG.appName || "Content OS",
+  appTagline: CLIENT_CONFIG.appTagline || "Content OS",
+  handle: CLIENT_CONFIG.handle || "@yourchannel",
+  creator1: CLIENT_CONFIG.creator1 || "Creator",
+  creator2: CLIENT_CONFIG.creator2 || "",
+  niche: CLIENT_CONFIG.niche || "content creator",
+  contentStyle: CLIENT_CONFIG.contentStyle || "",
+  platforms: CLIENT_CONFIG.platforms || "tiktok,instagram",
+  targetAudience: CLIENT_CONFIG.targetAudience || "",
+  competitors: CLIENT_CONFIG.competitors || "",
+  appDescription: CLIENT_CONFIG.appDescription || "",
+  bestFormula: CLIENT_CONFIG.bestFormula || "",
+  accentColor: CLIENT_CONFIG.accentColor || C.pink,
+  accentColor2: CLIENT_CONFIG.accentColor2 || C.cyan,
+  currency: CLIENT_CONFIG.currency || "£",
+  onboardingTagline: CLIENT_CONFIG.onboardingTagline || "Score ideas, track growth, close brand deals — all in one place.",
+  aiGreeting: CLIENT_CONFIG.aiGreeting || "Hey! I'm your content OS AI assistant.",
+  statLabels: CLIENT_CONFIG.statLabels || {},
 };
 const loadWL = () => { try { const s=JSON.parse(localStorage.getItem(WL_KEY)); return s?{...WL_DEFAULTS,...s}:WL_DEFAULTS; } catch { return WL_DEFAULTS; } };
 const saveWL = (wl) => { try { localStorage.setItem(WL_KEY,JSON.stringify(wl)); } catch {} };
@@ -4946,7 +4953,7 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
   const CHAT_KEY = "krapmaps_v1_chat";
   const [msgs, setMsgs] = useState(()=>{
     const saved = loadJSON(CHAT_KEY, null);
-    return saved || [{ role:"assistant", content:"Hey! I'm your KrapMaps AI assistant. I can add tasks, create video ideas, answer questions about your content — or upload a clip and I'll analyse it and tell you how to edit it." }];
+    return saved || [{ role:"assistant", content:WL.aiGreeting }];
   });
 
   useEffect(()=>{ saveJSON(CHAT_KEY, msgs); }, [msgs]);
@@ -5448,7 +5455,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
       const topics = userMsgs.map(m=>m.content.slice(0,60)).join(" | ");
       addMemoryEntry("CHAT_SESSION", `Session topics: ${topics.slice(0,200)}`);
     }
-    const fresh = [{ role:"assistant", content:"Hey! I'm your KrapMaps AI assistant. I can add tasks, create video ideas, answer questions about your content — or upload a clip and I'll analyse it and tell you how to edit it." }];
+    const fresh = [{ role:"assistant", content:WL.aiGreeting }];
     setMsgs(fresh);
     setLastFileUri(null);
     setLastFileMime(null);
@@ -5464,7 +5471,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
             {I.brain(20,"#fff")}
           </div>
           <div>
-            <div style={{ fontSize:16, fontWeight:700, color:"#fff", lineHeight:1.1 }}>KrapMaps AI</div>
+            <div style={{ fontSize:16, fontWeight:700, color:"#fff", lineHeight:1.1 }}>{WL.appName} AI</div>
             <div style={{ fontSize:11, color:C.purple, marginTop:2, letterSpacing:"0.04em" }}>claude-sonnet-4-6 · gemini-2.5-flash</div>
           </div>
         </div>
@@ -5576,7 +5583,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
           value={input}
           onChange={e=>setInput(e.target.value)}
           onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
-          placeholder="Message KrapMaps AI..."
+          placeholder={`Message ${WL.appName} AI...`}
           style={{ flex:1, background:"transparent", border:"none", color:"#fff", fontSize:14, fontFamily:C.fontHead, outline:"none", minWidth:0 }}
         />
         <button onClick={send} disabled={loading||!input.trim()}
@@ -5620,7 +5627,7 @@ function Dashboard({ keys, onEditKeys }) {
       const topVids = [...vids].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
       const postedThisWeek = idList.filter(i=>i.status==="posted"&&i.postedDate&&(Date.now()-new Date(i.postedDate).getTime())<604800000);
       const recentIdeas = idList.slice(0,5).map(i=>`"${(i.title||"").slice(0,40)}" (scored ${i.viral||"unscored"})`).join(", ");
-      const r = await callAI(`You are the strategist for @findkrap (KrapMaps — bin-finding app, SE Asia backpacker content). Generate a weekly debrief.\n\nChannel data:\n- Total videos: ${vids.length}, avg views: ${Math.round(vids.reduce((s,v)=>s+(v.views||0),0)/(vids.length||1))}\n- Posted this week: ${postedThisWeek.length} videos\n- Top 5 videos: ${topVids.map(v=>`${(v.title||"").slice(0,30)} (${(v.views||0).toLocaleString()} views)`).join(", ")}\n- Recent ideas: ${recentIdeas}\n- Unscored ideas: ${idList.filter(i=>!(i.viral>0)).length}\n\nReturn ONLY JSON: {"headline":"","whatWorked":["",""],"whatDidnt":[""],"focusThisWeek":["","",""],"ideaToFilmNow":"title and why","watchOut":"one risk to avoid"}`, 800);
+      const r = await callAI(`You are the strategist for ${WL.handle} (${WL.appName} — ${WL.niche}). Generate a weekly debrief.\n\nChannel data:\n- Total videos: ${vids.length}, avg views: ${Math.round(vids.reduce((s,v)=>s+(v.views||0),0)/(vids.length||1))}\n- Posted this week: ${postedThisWeek.length} videos\n- Top 5 videos: ${topVids.map(v=>`${(v.title||"").slice(0,30)} (${(v.views||0).toLocaleString()} views)`).join(", ")}\n- Recent ideas: ${recentIdeas}\n- Unscored ideas: ${idList.filter(i=>!(i.viral>0)).length}\n\nReturn ONLY JSON: {"headline":"","whatWorked":["",""],"whatDidnt":[""],"focusThisWeek":["","",""],"ideaToFilmNow":"title and why","watchOut":"one risk to avoid"}`, 800);
       const result = {...r, generatedAt: new Date().toISOString()};
       saveJSON("krapmaps_v1_debrief", result);
       setWeeklyDebrief(result);
@@ -6322,7 +6329,7 @@ LEARNING: [one sentence]`}]})
       const predAccBlock = formatPredictionAccuracy(predAcc);
 
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
-      const r = await callAI(`You are the world's best viral content strategist. Score this TikTok/Reels idea for @findkrap (KrapMaps — crowdsourced bin-finding app for backpackers in SE Asia, niche: environmental travel / backpacker culture).
+      const r = await callAI(`You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
 
 ${channelTheory ? `━━ CHANNEL VIRAL THEORY (why this channel specifically goes viral — anchor ALL scoring to this) ━━\n${channelTheory}\n` : ""}
 ━━ CHANNEL INTELLIGENCE (real data — treat as ground truth) ━━
@@ -6398,7 +6405,7 @@ Return ONLY valid JSON:
     setCaptionIdea(idea);
     setCaptionResult(null);
     try {
-      const r = await callAI(`Write captions for KrapMaps TikTok and Instagram for this idea: "${idea.title||idea.text}".
+      const r = await callAI(`Write captions for ${wl.handle} TikTok and Instagram for this idea: "${idea.title||idea.text}".
 
 For TikTok, provide 3 HOOK VARIANTS — each uses a different psychology trigger. For Instagram, one caption.
 
@@ -6605,7 +6612,7 @@ Return JSON:
       // Auto-rescore after saving
       setScoring(true);
       try {
-        const r = await callAI(`Score this KrapMaps TikTok idea. Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 1-2 sentence verdict","viralityReason":"string","hookFeedback":"string","improvedHook":"string under 12 words","recommendations":[{"action":"string","impact":"high|medium"}]}. Idea: "${title.trim()}" type:${type}`, 1000);
+        const r = await callAI(`Score this ${WL.appName} TikTok idea. Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 1-2 sentence verdict","viralityReason":"string","hookFeedback":"string","improvedHook":"string under 12 words","recommendations":[{"action":"string","impact":"high|medium"}]}. Idea: "${title.trim()}" type:${type}`, 1000);
         setIdeas(is=>is.map(i=>i.id===idea.id?{...i,viral:r.viralityScore,hookScore:r.hookScore,verdict:r.verdict,viralReason:r.viralityReason,hookFeedback:r.hookFeedback,improvedHook:r.improvedHook,recs:r.recommendations?.map(x=>({a:x.action,impact:x.impact?.toUpperCase()}))}:i));
       } catch(e) { setAiErr("Rescore failed: "+e.message); }
       setScoring(false);
@@ -6746,8 +6753,8 @@ Return JSON:
           <div style={{ width:72, height:72, borderRadius:24, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:24, boxShadow:`0 0 40px ${C.pink}50` }}>
             {I.bin(32,"#fff")}
           </div>
-          <div style={{ fontSize:32, fontWeight:400, fontFamily:C.fontHead, color:"#fff", marginBottom:6, textAlign:"center" }}>Krap<span style={{color:C.pink}}>Maps</span> Content OS</div>
-          <div style={{ fontSize:14, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody, marginBottom:28, textAlign:"center", lineHeight:1.6 }}>The strategy system built for @findkrap.<br/>Score ideas, track growth, close brand deals — all in one place.</div>
+          <div style={{ fontSize:32, fontWeight:400, fontFamily:C.fontHead, color:"#fff", marginBottom:6, textAlign:"center" }}>{WL.appName} <span style={{color:C.pink}}>{WL.appTagline}</span></div>
+          <div style={{ fontSize:14, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody, marginBottom:28, textAlign:"center", lineHeight:1.6 }}>{WL.onboardingTagline.split("\n").map((l,i)=><React.Fragment key={i}>{l}{i<WL.onboardingTagline.split("\n").length-1&&<br/>}</React.Fragment>)}</div>
           {/* Feature grid */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, width:"100%", marginBottom:28 }}>
             {FEATURES.map((f,i)=>(
@@ -6770,7 +6777,7 @@ Return JSON:
         <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
           <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:"0.14em", textAlign:"center", marginBottom:20 }}>STEP 1 OF 2</div>
           <div style={{ fontSize:28, fontWeight:400, fontFamily:C.fontHead, color:"#fff", textAlign:"center", marginBottom:8 }}>Your <span style={{color:C.cyan}}>Channel</span></div>
-          <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody, textAlign:"center", lineHeight:1.6, marginBottom:28 }}>What's your TikTok handle? This lets the AI personalise content strategy specifically for @findkrap's niche — SE Asia backpacker travel + bin-finding.</div>
+          <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody, textAlign:"center", lineHeight:1.6, marginBottom:28 }}>What's your TikTok handle? This lets the AI personalise content strategy specifically for your niche and audience.</div>
           <div style={{ marginBottom:10 }}>
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:8, fontFamily:C.fontHead }}>TIKTOK HANDLE</div>
             <input value={obHandle} onChange={e=>setObHandle(e.target.value)} onKeyDown={e=>e.key==="Enter"&&setObStep(2)} placeholder="@findkrap" autoFocus style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`2px solid ${obHandle?C.cyan:"rgba(255,255,255,0.1)"}`, borderRadius:14, color:"#fff", padding:"16px 18px", fontSize:18, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s" }}/>
@@ -6840,8 +6847,8 @@ Return JSON:
               {I.bin(18,"#fff")}
             </div>
             <div>
-              <div style={{ fontSize:20, fontWeight:900, color:"#fff", fontFamily:C.fontHead, lineHeight:1 }}>Krap<span style={{color:C.pink}}>Maps</span></div>
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.14em", marginTop:2, fontFamily:C.fontHead }}>CONTENT OS</div>
+              <div style={{ fontSize:20, fontWeight:900, color:"#fff", fontFamily:C.fontHead, lineHeight:1 }}>{WL.appName.slice(0,-4) || "Content"}<span style={{color:C.pink}}>{WL.appName.slice(-4) || " OS"}</span></div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.14em", marginTop:2, fontFamily:C.fontHead }}>{WL.appTagline.toUpperCase()}</div>
             </div>
           </div>
         </div>
@@ -6902,7 +6909,7 @@ Return JSON:
 
           {/* MOBILE HEADER */}
           <div className="mobile-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 16px 0" }}>
-            <div style={{ fontSize:24, fontWeight:900, color:"#fff", fontFamily:C.fontHead }}>Krap<span style={{color:C.pink}}>Maps</span></div>
+            <div style={{ fontSize:24, fontWeight:900, color:"#fff", fontFamily:C.fontHead }}>{WL.appName}</div>
             <div style={{ width:36, height:36, borderRadius:12, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.bin(16,"#fff")}</div>
           </div>
 
@@ -6949,7 +6956,7 @@ Return JSON:
                   {nav==="ai" && <span><span style={{color:C.pink}}>AI</span> Assistant</span>}
                 </div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.38)", lineHeight:1.5 }}>
-                  {nav==="home"&&"@findkrap · TikTok & Instagram"}
+                  {nav==="home"&&`${WL.handle} · ${WL.platforms.split(",").map(p=>p[0].toUpperCase()+p.slice(1)).join(" & ")}`}
                   {nav==="content"&&"All your TikTok and Instagram content in one view"}
                   {nav==="analytics"&&"Deep performance data across all your content"}
                   {nav==="tasks"&&"Keep BK and Harley aligned on what to do next"}
