@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import CLIENT_CONFIG from "../client.config.json";
+import THIERNO_CONFIG from "../client.config.thierno.json";
+
+// All registered clients keyed by activation code
+const CLIENTS = {
+  [CLIENT_CONFIG.activationCode.toUpperCase()]: CLIENT_CONFIG,
+  [THIERNO_CONFIG.activationCode.toUpperCase()]: THIERNO_CONFIG,
+};
 
 
 const C = {
@@ -3943,25 +3950,35 @@ const ANTHROPIC_KEY  = ""; // Add your key in Settings tab
 const DEFAULT_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpdWRzeWlpbmtxdG1vd2tpcXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NTcwNTMsImV4cCI6MjA1ODMzMzA1M30.xh1I8a8TUrPZ3YtElqCHv9LjI27BnCDp_YY-J_FDBDU";
 
 const WL_KEY = "krapmaps_v1_wl";
+const CLIENT_KEY = "krapmaps_v1_client";
+// Resolve which client config to use — persisted after activation
+const _resolveClientConfig = () => {
+  try {
+    const stored = localStorage.getItem(CLIENT_KEY);
+    if(stored) return JSON.parse(stored);
+  } catch {}
+  return CLIENT_CONFIG;
+};
+const _CC = _resolveClientConfig();
 const WL_DEFAULTS = {
-  appName: CLIENT_CONFIG.appName || "Content OS",
-  appTagline: CLIENT_CONFIG.appTagline || "Content OS",
-  handle: CLIENT_CONFIG.handle || "@yourchannel",
-  creator1: CLIENT_CONFIG.creator1 || "Creator",
-  creator2: CLIENT_CONFIG.creator2 || "",
-  niche: CLIENT_CONFIG.niche || "content creator",
-  contentStyle: CLIENT_CONFIG.contentStyle || "",
-  platforms: CLIENT_CONFIG.platforms || "tiktok,instagram",
-  targetAudience: CLIENT_CONFIG.targetAudience || "",
-  competitors: CLIENT_CONFIG.competitors || "",
-  appDescription: CLIENT_CONFIG.appDescription || "",
-  bestFormula: CLIENT_CONFIG.bestFormula || "",
-  accentColor: CLIENT_CONFIG.accentColor || C.pink,
-  accentColor2: CLIENT_CONFIG.accentColor2 || C.cyan,
-  currency: CLIENT_CONFIG.currency || "£",
-  onboardingTagline: CLIENT_CONFIG.onboardingTagline || "Score ideas, track growth, close brand deals — all in one place.",
-  aiGreeting: CLIENT_CONFIG.aiGreeting || "Hey! I'm your content OS AI assistant.",
-  statLabels: CLIENT_CONFIG.statLabels || {},
+  appName: _CC.appName || "Content OS",
+  appTagline: _CC.appTagline || "Content OS",
+  handle: _CC.handle || "@yourchannel",
+  creator1: _CC.creator1 || "Creator",
+  creator2: _CC.creator2 || "",
+  niche: _CC.niche || "content creator",
+  contentStyle: _CC.contentStyle || "",
+  platforms: _CC.platforms || "tiktok,instagram",
+  targetAudience: _CC.targetAudience || "",
+  competitors: _CC.competitors || "",
+  appDescription: _CC.appDescription || "",
+  bestFormula: _CC.bestFormula || "",
+  accentColor: _CC.accentColor || C.pink,
+  accentColor2: _CC.accentColor2 || C.cyan,
+  currency: _CC.currency || "£",
+  onboardingTagline: _CC.onboardingTagline || "Score ideas, track growth, close brand deals — all in one place.",
+  aiGreeting: _CC.aiGreeting || "Hey! I'm your content OS AI assistant.",
+  statLabels: _CC.statLabels || {},
 };
 const loadWL = () => { try { const s=JSON.parse(localStorage.getItem(WL_KEY)); return s?{...WL_DEFAULTS,...s}:WL_DEFAULTS; } catch { return WL_DEFAULTS; } };
 const saveWL = (wl) => { try { localStorage.setItem(WL_KEY,JSON.stringify(wl)); } catch {} };
@@ -6939,7 +6956,7 @@ function OnboardingPage({ onComplete }) {
   const [loading, setLoading] = useState(false);
   const [loadLines, setLoadLines] = useState([]);
 
-  const VALID_CODE = (CLIENT_CONFIG.activationCode || "").toUpperCase();
+  const VALID_CODE = null; // multi-client: codes checked against CLIENTS map
 
   const BOOT_LINES = [
     { text:"Verifying licence key...", delay:0 },
@@ -6974,7 +6991,11 @@ function OnboardingPage({ onComplete }) {
   },[step]);
 
   const submitCode = () => {
-    if(codeInput.trim().toUpperCase() === VALID_CODE) {
+    const entered = codeInput.trim().toUpperCase();
+    const matched = CLIENTS[entered];
+    if(matched) {
+      // Persist client config so WL loads correctly after reload
+      try { localStorage.setItem(CLIENT_KEY, JSON.stringify(matched)); } catch {}
       setCodeError(false);
       setLoading(true);
       setLoadLines([]);
