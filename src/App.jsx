@@ -7085,34 +7085,73 @@ function OnboardingPage({ onComplete }) {
 
           {/* Step 1 — Welcome */}
           {step === 1 && (
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center" }}>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center", position:"relative", minHeight:"100vh", justifyContent:"center", padding:"40px 20px" }}>
 
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.12)", letterSpacing:"0.4em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:52 }}>CREATOROS</div>
-
-              <div style={{ marginBottom:24 }}>
-                <div style={{ fontSize:52, fontWeight:800, color:"#fff", lineHeight:1.05, letterSpacing:"-0.03em", fontFamily:"Inter,system-ui,sans-serif" }}>
-                  Your channel.<br/>
-                  Your strategy.<br/>
-                  <span style={{ color:"rgba(255,255,255,0.18)" }}>Your rules.</span>
+              {/* Floating visual cards — decorative */}
+              <div style={{ position:"fixed", top:"8%", left:"3%", opacity:0.18, transform:"rotate(-8deg)", pointerEvents:"none", zIndex:0 }}>
+                <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, padding:"14px 18px", width:160, backdropFilter:"blur(10px)" }}>
+                  <div style={{ fontSize:9, color:"#39FF14", letterSpacing:"0.1em", marginBottom:8, fontFamily:"Courier New,monospace" }}>VIRALITY SCORE</div>
+                  <div style={{ fontSize:42, fontWeight:800, color:"#fff", lineHeight:1, fontFamily:"Inter,sans-serif" }}>87</div>
+                  <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", marginTop:6, fontFamily:"Courier New,monospace" }}>HIGH POTENTIAL</div>
+                  <div style={{ height:3, background:"linear-gradient(90deg,#39FF14,transparent)", borderRadius:2, marginTop:10 }}/>
                 </div>
               </div>
 
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.15)", letterSpacing:"0.18em", fontWeight:600, marginBottom:56, fontFamily:"Courier New,monospace" }}>
-                6 TOOLS &nbsp;&middot;&nbsp; 1 SYSTEM &nbsp;&middot;&nbsp; BUILT FOR CREATORS WHO MEAN IT
+              <div style={{ position:"fixed", top:"18%", right:"2%", opacity:0.15, transform:"rotate(6deg)", pointerEvents:"none", zIndex:0 }}>
+                <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, padding:"14px 18px", width:180 }}>
+                  <div style={{ fontSize:9, color:"#FF2D78", letterSpacing:"0.1em", marginBottom:8, fontFamily:"Courier New,monospace" }}>HOOK A/B TEST</div>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.6)", fontFamily:"Courier New,monospace", marginBottom:6, lineHeight:1.5 }}>"POV: you can't find a bin anywhere..."</div>
+                  <div style={{ fontSize:10, color:"#39FF14", fontFamily:"Courier New,monospace", fontWeight:700 }}>WINNER — 94 pts</div>
+                </div>
               </div>
 
-              <button
-                onClick={()=>setStep(2)}
-                style={{ padding:"15px 40px", borderRadius:3, border:"1px solid rgba(255,255,255,0.18)", background:"transparent", color:"rgba(255,255,255,0.85)", fontWeight:700, fontSize:12, cursor:"pointer", letterSpacing:"0.18em", fontFamily:"Courier New,monospace", transition:"all 0.2s", width:"100%" }}
-                onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.35)"; e.currentTarget.style.color="#fff"; }}
-                onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(255,255,255,0.18)"; e.currentTarget.style.color="rgba(255,255,255,0.85)"; }}
-              >
-                ACTIVATE MY WORKSPACE
-              </button>
+              <div style={{ position:"fixed", bottom:"20%", left:"2%", opacity:0.14, transform:"rotate(5deg)", pointerEvents:"none", zIndex:0 }}>
+                <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, padding:"14px 18px", width:170 }}>
+                  <div style={{ fontSize:9, color:"#C566FF", letterSpacing:"0.1em", marginBottom:8, fontFamily:"Courier New,monospace" }}>BRAND DEAL</div>
+                  <div style={{ fontSize:18, fontWeight:800, color:"#fff", fontFamily:"Inter,sans-serif", marginBottom:4 }}>£2,400</div>
+                  <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", fontFamily:"Courier New,monospace" }}>Patagonia · Signed ✓</div>
+                </div>
+              </div>
 
-              <button onClick={()=>finish("")} style={{ marginTop:18, background:"none", border:"none", color:"rgba(255,255,255,0.1)", fontSize:11, cursor:"pointer", letterSpacing:"0.14em", fontFamily:"Courier New,monospace" }}>
-                SKIP
-              </button>
+              <div style={{ position:"fixed", bottom:"14%", right:"3%", opacity:0.13, transform:"rotate(-5deg)", pointerEvents:"none", zIndex:0 }}>
+                <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, padding:"14px 18px", width:165 }}>
+                  <div style={{ fontSize:9, color:"#00E5FF", letterSpacing:"0.1em", marginBottom:8, fontFamily:"Courier New,monospace" }}>WEEKLY DEBRIEF</div>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.55)", fontFamily:"Courier New,monospace", lineHeight:1.5 }}>Hook videos up 3x.<br/>Film the contrast idea<br/>this week.</div>
+                </div>
+              </div>
+
+              {/* Ambient glow behind headline */}
+              <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-60%)", width:500, height:400, borderRadius:"50%", background:"radial-gradient(ellipse,rgba(197,102,255,0.08) 0%,rgba(255,45,120,0.05) 40%,transparent 70%)", pointerEvents:"none", filter:"blur(20px)" }}/>
+
+              {/* Content */}
+              <div style={{ position:"relative", zIndex:1 }}>
+                <div style={{ fontSize:11, color:"rgba(255,255,255,0.1)", letterSpacing:"0.4em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:40 }}>CREATOROS</div>
+
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontSize:54, fontWeight:800, color:"#fff", lineHeight:1.05, letterSpacing:"-0.03em", fontFamily:"Inter,system-ui,sans-serif" }}>
+                    Your channel.<br/>
+                    Your strategy.<br/>
+                    <span style={{ color:"rgba(255,255,255,0.15)" }}>Your rules.</span>
+                  </div>
+                </div>
+
+                <div style={{ fontSize:11, color:"rgba(255,255,255,0.14)", letterSpacing:"0.18em", fontWeight:600, marginBottom:52, fontFamily:"Courier New,monospace" }}>
+                  6 TOOLS &nbsp;&middot;&nbsp; 1 SYSTEM &nbsp;&middot;&nbsp; BUILT FOR CREATORS WHO MEAN IT
+                </div>
+
+                <button
+                  onClick={()=>setStep(2)}
+                  style={{ padding:"15px 40px", borderRadius:3, border:"1px solid rgba(255,255,255,0.16)", background:"transparent", color:"rgba(255,255,255,0.8)", fontWeight:700, fontSize:12, cursor:"pointer", letterSpacing:"0.18em", fontFamily:"Courier New,monospace", transition:"all 0.2s", width:"100%" }}
+                  onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.3)"; e.currentTarget.style.color="#fff"; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(255,255,255,0.16)"; e.currentTarget.style.color="rgba(255,255,255,0.8)"; }}
+                >
+                  ACTIVATE MY WORKSPACE
+                </button>
+
+                <button onClick={()=>finish("")} style={{ marginTop:16, background:"none", border:"none", color:"rgba(255,255,255,0.08)", fontSize:11, cursor:"pointer", letterSpacing:"0.14em", fontFamily:"Courier New,monospace" }}>
+                  SKIP
+                </button>
+              </div>
 
             </div>
           )}
