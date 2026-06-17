@@ -7119,11 +7119,14 @@ function OnboardingPage({ onComplete }) {
     const matched = CLIENTS[entered];
     if(matched) {
       // Persist client config so WL loads correctly after reload
-      // For new clients (not KrapMaps), wipe all data so they start clean
+      // Wipe data only when activating a NEW client for the first time
       try {
+        const prev = localStorage.getItem(CLIENT_KEY);
+        const prevId = prev ? JSON.parse(prev).clientId : null;
+        const isNewClient = prevId !== matched.clientId;
         localStorage.setItem(CLIENT_KEY, JSON.stringify(matched));
         localStorage.removeItem(WL_KEY);
-        if(matched.clientId !== "krapmaps") {
+        if(isNewClient && matched.clientId !== "krapmaps") {
           [VIDEOS_KEY,IDEAS_KEY,CAL_KEY,TASKS_KEY,APPIDEAS_KEY,ANALYSIS_KEY,
            NEXTVIDS_KEY,WEEKLY_KEY,TRENDS_KEY,SCRAPE_KEY,SCORES_KEY,MEMORY_KEY,
            COMPETE_KEY,PREDICT_KEY,CUR_TRENDS_KEY,CHANNEL_THEORY_KEY,HOOK_DB_KEY,
