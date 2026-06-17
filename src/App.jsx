@@ -6978,13 +6978,15 @@ function OnboardingPage({ onComplete }) {
   ];
 
   return (
-    <div style={{ minHeight:"100vh", background:"#09090B", display:"flex", fontFamily:"'Inter',system-ui,sans-serif", position:"relative", overflow:"hidden" }}>
-      {/* Background gradient blobs */}
-      <div style={{ position:"fixed", top:"-20%", right:"-10%", width:600, height:600, borderRadius:"50%", background:`radial-gradient(circle,${ac}22 0%,transparent 65%)`, pointerEvents:"none" }}/>
-      <div style={{ position:"fixed", bottom:"-20%", left:"-10%", width:500, height:500, borderRadius:"50%", background:`radial-gradient(circle,${ac2}18 0%,transparent 65%)`, pointerEvents:"none" }}/>
+    <div style={{ minHeight:"100vh", background:step===0?"#080808":"#09090B", display:"flex", fontFamily:"'Inter',system-ui,sans-serif", position:"relative", overflow:"hidden", transition:"background 0.5s" }}>
+      {/* Scanlines overlay for terminal step */}
+      {step===0 && <div style={{ position:"fixed", inset:0, backgroundImage:"repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.15) 2px,rgba(0,0,0,0.15) 4px)", pointerEvents:"none", zIndex:0 }}/>}
+      {/* Background gradient blobs — hidden on terminal step */}
+      {step>0 && <div style={{ position:"fixed", top:"-20%", right:"-10%", width:600, height:600, borderRadius:"50%", background:`radial-gradient(circle,${ac}22 0%,transparent 65%)`, pointerEvents:"none" }}/>}
+      {step>0 && <div style={{ position:"fixed", bottom:"-20%", left:"-10%", width:500, height:500, borderRadius:"50%", background:`radial-gradient(circle,${ac2}18 0%,transparent 65%)`, pointerEvents:"none" }}/>}
 
-      {/* Left panel — branding */}
-      <div style={{ flex:"0 0 420px", display:"none", flexDirection:"column", justifyContent:"center", padding:"60px 52px", borderRight:"1px solid rgba(255,255,255,0.06)", position:"relative" }} className="ob-left">
+      {/* Left panel — branding, hidden on terminal step */}
+      <div style={{ flex:"0 0 420px", display:step===0?"none":"none", flexDirection:"column", justifyContent:"center", padding:"60px 52px", borderRight:"1px solid rgba(255,255,255,0.06)", position:"relative" }} className={step===0?"":"ob-left"}>
         <div style={{ marginBottom:48 }}>
           <div style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"6px 14px", borderRadius:100, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", marginBottom:32 }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:ac, boxShadow:`0 0 6px ${ac}` }}/>
@@ -7006,30 +7008,56 @@ function OnboardingPage({ onComplete }) {
       <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"32px 20px", overflowY:"auto" }}>
         <div style={{ width:"100%", maxWidth:440 }}>
 
-          {/* Step 0 — Activation code */}
+          {/* Step 0 — Terminal activation */}
           {step === 0 && (
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
-              <div style={{ width:56, height:56, borderRadius:18, background:`linear-gradient(135deg,${ac},${ac2})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:24, boxShadow:`0 8px 24px ${ac}40` }}>
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="#fff" strokeWidth="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
+            <div style={{ fontFamily:"'Courier New',Courier,monospace", width:"100%" }}>
+              {/* Terminal window chrome */}
+              <div style={{ borderRadius:"12px 12px 0 0", background:"#1C1C1C", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, borderBottom:"1px solid #333" }}>
+                <div style={{ width:12, height:12, borderRadius:"50%", background:"#FF5F57" }}/>
+                <div style={{ width:12, height:12, borderRadius:"50%", background:"#FFBD2E" }}/>
+                <div style={{ width:12, height:12, borderRadius:"50%", background:"#28C840" }}/>
+                <span style={{ marginLeft:8, fontSize:12, color:"#666", letterSpacing:"0.05em" }}>content-os — activate</span>
               </div>
-              <div style={{ fontSize:26, fontWeight:700, color:"#fff", marginBottom:8, letterSpacing:"-0.01em", textAlign:"center" }}>Enter your activation code</div>
-              <div style={{ fontSize:14, color:"rgba(255,255,255,0.4)", lineHeight:1.6, textAlign:"center", marginBottom:32, maxWidth:320 }}>You should have received this by email when you signed up. Contact support if you need help.</div>
-              <div style={{ width:"100%", marginBottom:16 }}>
-                <input
-                  value={codeInput}
-                  onChange={e=>{ setCodeInput(e.target.value.toUpperCase()); setCodeError(false); }}
-                  onKeyDown={e=>e.key==="Enter"&&submitCode()}
-                  placeholder="XXXX-0000"
-                  autoFocus
-                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`2px solid ${codeError?"#EF4444":codeInput?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.08)"}`, borderRadius:14, color:"#fff", padding:"18px 20px", fontSize:22, fontWeight:700, letterSpacing:"0.15em", outline:"none", boxSizing:"border-box", textAlign:"center", transition:"border-color 0.2s", fontFamily:"monospace", animation:codeShake?"shake 0.5s ease":"none" }}
-                />
-                {codeError && <div style={{ fontSize:13, color:"#EF4444", textAlign:"center", marginTop:8 }}>Invalid code — check your email and try again</div>}
-              </div>
-              <button onClick={submitCode} disabled={!codeInput.trim()} style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", background:codeInput.trim()?`linear-gradient(135deg,${ac},${ac2})`:"rgba(255,255,255,0.08)", color:codeInput.trim()?"#fff":"rgba(255,255,255,0.3)", fontWeight:700, fontSize:15, cursor:codeInput.trim()?"pointer":"not-allowed", boxShadow:codeInput.trim()?`0 8px 24px ${ac}40`:"none", transition:"all 0.2s" }}>
-                Activate →
-              </button>
-              <div style={{ marginTop:20, fontSize:13, color:"rgba(255,255,255,0.2)", textAlign:"center" }}>
-                Don't have a code? <a href="mailto:hello@contentOS.io" style={{ color:ac, textDecoration:"none" }}>Get in touch →</a>
+              {/* Terminal body */}
+              <div style={{ background:"#0D0D0D", borderRadius:"0 0 12px 12px", padding:"28px 24px", border:"1px solid #222", borderTop:"none", minHeight:380 }}>
+                <div style={{ color:"#39FF14", fontSize:13, lineHeight:2, marginBottom:8 }}>
+                  <span style={{ color:"#666" }}>$</span> ./content-os --activate<br/>
+                  <span style={{ color:"#555" }}>Initialising Content OS v2.1 ...</span><br/>
+                  <span style={{ color:"#555" }}>Loading modules </span><span style={{ color:"#39FF14" }}>✓</span><br/>
+                  <span style={{ color:"#555" }}>Checking licence </span><span style={{ color:"#FFD50A" }}>awaiting key</span><br/>
+                </div>
+                <div style={{ color:"#39FF14", fontSize:13, marginBottom:16, marginTop:8 }}>
+                  <span style={{ color:"#666" }}>$</span> <span style={{ color:"#fff" }}>Enter activation code to continue:</span>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                  <span style={{ color:"#39FF14", fontSize:14, flexShrink:0 }}>&gt;</span>
+                  <input
+                    value={codeInput}
+                    onChange={e=>{ setCodeInput(e.target.value.toUpperCase()); setCodeError(false); }}
+                    onKeyDown={e=>e.key==="Enter"&&submitCode()}
+                    placeholder="XXXX-0000_"
+                    autoFocus
+                    style={{ flex:1, background:"transparent", border:"none", borderBottom:`1px solid ${codeError?"#EF4444":"#39FF14"}`, color:"#39FF14", padding:"8px 4px", fontSize:20, fontWeight:700, letterSpacing:"0.2em", outline:"none", fontFamily:"'Courier New',Courier,monospace", caretColor:"#39FF14", animation:codeShake?"shake 0.5s ease":"none" }}
+                  />
+                </div>
+                {codeError && (
+                  <div style={{ color:"#EF4444", fontSize:12, marginBottom:12, paddingLeft:20, lineHeight:1.6 }}>
+                    ERROR: Invalid activation code<br/>
+                    <span style={{ color:"#666" }}>Check your email and try again, or contact support.</span>
+                  </div>
+                )}
+                {!codeError && <div style={{ color:"#333", fontSize:12, marginBottom:20, paddingLeft:20 }}>Press ENTER or click EXECUTE to continue</div>}
+                <button
+                  onClick={submitCode}
+                  disabled={!codeInput.trim()}
+                  style={{ background:"transparent", border:`1px solid ${codeInput.trim()?"#39FF14":"#333"}`, color:codeInput.trim()?"#39FF14":"#444", padding:"10px 24px", fontFamily:"'Courier New',Courier,monospace", fontSize:13, fontWeight:700, letterSpacing:"0.1em", cursor:codeInput.trim()?"pointer":"not-allowed", borderRadius:4, transition:"all 0.2s", boxShadow:codeInput.trim()?"0 0 16px #39FF1430":"none" }}
+                >
+                  {codeInput.trim() ? "[ EXECUTE ]" : "[ EXECUTE ]"}
+                </button>
+                <div style={{ marginTop:28, borderTop:"1px solid #1A1A1A", paddingTop:16, color:"#333", fontSize:11, lineHeight:1.8 }}>
+                  <span style={{ color:"#555" }}>No code? </span>
+                  <a href="mailto:hello@contentOS.io" style={{ color:"#39FF14", textDecoration:"none", opacity:0.7 }}>contact support →</a>
+                </div>
               </div>
             </div>
           )}
