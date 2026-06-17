@@ -7107,7 +7107,7 @@ function OnboardingPage({ onComplete }) {
 // ROOT
 export default function App() {
   const [config, setConfig] = useState(()=>loadJSON(KEYS_KEY,{}));
-  const [onboarded, setOnboarded] = useState(()=>!!loadJSON("krapmaps_v1_onboarded",false));
+  const [onboarded, setOnboarded] = useState(false); // DEV: always show onboarding
 
   const handleEditKeys = (keys) => {
     const u={...config,keys};
