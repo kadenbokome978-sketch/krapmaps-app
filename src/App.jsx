@@ -970,7 +970,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
       {/* Tabs + Add button */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", gap:8 }}>
-          {[SC.contentTabLabel,"CALENDAR","CAPTIONS"].map(t=>(
+          {["IDEAS","CALENDAR","CAPTIONS"].map(t=>(
             <button key={t} onClick={()=>setSub(t)} style={{ padding:"10px 20px", borderRadius:12, border:`1px solid ${sub===t?C.pink:"rgba(255,255,255,0.08)"}`, background:sub===t?`${C.pink}15`:"transparent", color:sub===t?C.pink:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", letterSpacing:"0.06em" }}>
               {t}{t==="IDEAS"&&` (${ideas.length})`}{t==="CALENDAR"&&` (${calItems.length})`}
             </button>
