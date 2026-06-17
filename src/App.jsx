@@ -12,6 +12,7 @@ const CLIENTS = {
 // Detect active client at module load (before React)
 const _activeCfg = (()=>{ try { const s=localStorage.getItem("krapmaps_v1_client"); return s?JSON.parse(s):CLIENT_CONFIG; } catch { return CLIENT_CONFIG; } })();
 const _isThiernoClient = _activeCfg.clientId === "thierno";
+if(typeof document !== "undefined") document.title = _activeCfg.appName || "CreatorOS";
 
 const C = _isThiernoClient ? {
   // ── Thierno "Bras" — deluxe vinyl / late-night studio ──
