@@ -6960,6 +6960,62 @@ function OnboardingPage({ onComplete }) {
 
   const VALID_CODE = null; // multi-client: codes checked against CLIENTS map
 
+  // Slide content keyed by client
+  const isBraz = WL.clientId === "thierno";
+  const SC = isBraz ? {
+    handle: "@officialthierno",
+    ideas: [
+      {title:`POV: you drop a raw vocal and your whole comment section loses it`,score:91,tag:"POST NOW",col:"#FF2D78",pinned:true},
+      {title:`Day in the life making music in Portsmouth vs London`,score:78,tag:"GOOD",col:"#FFD50A",pinned:false},
+      {title:`Reacting to my first song 'Flaws' a year later`,score:65,tag:"GOOD",col:"rgba(255,255,255,0.35)",pinned:false},
+    ],
+    selectedIdea: `POV: raw vocal drop in my bedroom`,
+    scriptScenes: [
+      {scene:"HOOK",col:"#FF2D78",text:`Raw vocal clip — no music, just voice. Text: "POV: this is what my room sounds like at 2am"`},
+      {scene:"BUILD",col:"#FF6B1A",text:"Cut to: writing the melody on phone notes, replaying it, fixing the run."},
+      {scene:"REVEAL",col:"#39FF14",text:"Final take — full vocal with the beat drops in. Reaction to playback."},
+      {scene:"CTA",col:"#00E5FF",text:`"Can't Imagine is out now. Link in bio. Tell me what you feel."`},
+    ],
+    aiQ: "Which of my ideas should I post first?",
+    aiA: <>Post <span style={{color:"#FF2D78",fontWeight:600}}>"raw vocal drop"</span> first — scored <span style={{color:"#FF2D78"}}>91/100</span>. Raw vocals are your best-performing format. Evening post, Thursday or Friday.</>,
+    weekHandle: "@officialthierno · Week in Review",
+    stats: [{label:"STREAMS",val:"2.4K",col:"#00C853"},{label:"SAVES",val:"184",col:"rgba(255,255,255,0.6)"},{label:"LIKE RATIO",val:"6.1%",col:"rgba(255,255,255,0.6)"},{label:"FOLLOWERS",val:"+112",col:"#00C853"}],
+    quickActions: [
+      {icon:"◈",label:"WHAT'S WORKING",sub:"Top content analysis",col:"#FF2D78"},
+      {icon:"▶",label:"NEXT RELEASE",sub:"Pipeline planning",col:"#C566FF"},
+      {icon:"⊞",label:"CONTENT BRIEF",sub:"Your weekly plan",col:"#FFD50A"},
+      {icon:"✦",label:"TRENDS",sub:"R&B trends now",col:"#00E5FF"},
+    ],
+    platformHandle: "@officialthierno",
+    platformStats: [{label:"STREAMS",val:"2.4K",col:"#00C853"},{label:"SAVES",val:"184",col:"rgba(255,255,255,0.6)"},{label:"FOLLOWERS",val:"784",col:"#00C853"},{label:"MONTHLY",val:"37",col:"rgba(255,255,255,0.6)"}],
+  } : {
+    handle: "@findkrap",
+    ideas: [
+      {title:`POV: you can't find a single bin in Bali`,score:87,tag:"FILM THIS",col:"#FF2D78",pinned:true},
+      {title:`I mapped every bin in Chiang Mai in one day`,score:74,tag:"GOOD",col:"#FFD50A",pinned:false},
+      {title:`Why tourists always end up littering abroad`,score:61,tag:"REWORK",col:"rgba(255,255,255,0.25)",pinned:false},
+    ],
+    selectedIdea: `POV: can't find a single bin in Bali`,
+    scriptScenes: [
+      {scene:"HOOK",col:"#FF2D78",text:`"POV: you're in Bali and you literally cannot find a single bin anywhere…"`},
+      {scene:"PROBLEM",col:"#FF6B1A",text:"Cut to street shots — rubbish everywhere, tourists confused, bins nowhere."},
+      {scene:"SOLUTION",col:"#39FF14",text:"Open KrapMaps — drop a pin on every bin in real-time. Map fills up live."},
+      {scene:"CTA",col:"#00E5FF",text:`"Tap the link, download KrapMaps. Let's stop the littering."`},
+    ],
+    aiQ: "Which of my ideas should I film next?",
+    aiA: <>Film <span style={{color:"#FF2D78",fontWeight:600}}>"bin in Bali"</span> first — highest scored at <span style={{color:"#FF2D78"}}>87/100</span>. Strong hook, good trend timing. Thursday 6pm is your best slot.</>,
+    weekHandle: "@findkrap · Week in Review",
+    stats: [{label:"TOTAL VIEWS",val:"12.4K",col:"#FF2D78"},{label:"AVG VIEWS",val:"3,100",col:"rgba(255,255,255,0.6)"},{label:"LIKE RATIO",val:"4.2%",col:"rgba(255,255,255,0.6)"},{label:"FOLLOWERS",val:"+847",col:"#39FF14"}],
+    quickActions: [
+      {icon:"◈",label:"WHAT'S WORKING",sub:"Analyse top content",col:"#FF2D78"},
+      {icon:"▶",label:"NEXT VIDEOS",sub:"AI recommendations",col:"#C566FF"},
+      {icon:"⊞",label:"WEEKLY BRIEF",sub:"Your filming brief",col:"#FFD50A"},
+      {icon:"✦",label:"TRENDS",sub:"What's hot now",col:"#00E5FF"},
+    ],
+    platformHandle: "@findkrap",
+    platformStats: [{label:"TOTAL VIEWS",val:"12.4K",col:"#FF2D78"},{label:"AVG VIEWS",val:"3,100",col:"rgba(255,255,255,0.6)"},{label:"LIKE RATIO",val:"4.2%",col:"rgba(255,255,255,0.6)"},{label:"FOLLOWERS",val:"2,841",col:"#FF2D78"}],
+  };
+
   const BOOT_LINES = [
     { text:"Verifying licence key...", delay:0 },
     { text:"KEY ACCEPTED ✓", delay:500, green:true },
@@ -7157,11 +7213,11 @@ function OnboardingPage({ onComplete }) {
 
                 <div style={{ fontSize:10, color:"rgba(255,255,255,0.1)", letterSpacing:"0.5em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:48, display:"flex", alignItems:"center", gap:14 }}>
                   <div style={{ width:24, height:"1px", background:"rgba(255,255,255,0.07)" }}/>
-                  CREATOROS
+                  {WL.appName.toUpperCase()}
                 </div>
 
                 <div style={{ fontSize:"clamp(40px,4.2vw,68px)", fontWeight:900, color:"#fff", lineHeight:0.95, letterSpacing:"-0.04em", fontFamily:"Inter,system-ui,sans-serif", marginBottom:28 }}>
-                  Your<br/>channel.<br/>Your<br/>strategy.<br/>
+                  Your<br/>{WL.clientId==="thierno"?"music.":"channel."}<br/>Your<br/>strategy.<br/>
                   <span style={{ color:"rgba(255,255,255,0.1)" }}>Your rules.</span>
                 </div>
 
@@ -7200,7 +7256,7 @@ function OnboardingPage({ onComplete }) {
                     <div style={{ width:10, height:10, borderRadius:"50%", background:"rgba(255,255,255,0.08)" }}/>
                     <div style={{ width:10, height:10, borderRadius:"50%", background:"rgba(255,255,255,0.05)" }}/>
                     <div style={{ flex:1, textAlign:"center", fontSize:9, color:"rgba(255,255,255,0.12)", letterSpacing:"0.22em", fontFamily:"Courier New,monospace" }}>CREATOROS · DASHBOARD</div>
-                    <div style={{ fontSize:9, color:"rgba(255,255,255,0.08)", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>@findkrap</div>
+                    <div style={{ fontSize:9, color:"rgba(255,255,255,0.08)", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>{SC.handle}</div>
                   </div>
 
                   {/* Dashboard body */}
@@ -7253,9 +7309,7 @@ function OnboardingPage({ onComplete }) {
                           </div>
                           <div style={{ display:"flex", flexDirection:"column", gap:6, flex:1 }}>
                             {[
-                              {title:`POV: you can't find a single bin in Bali`,score:87,tag:"FILM THIS",col:"#FF2D78",pinned:true},
-                              {title:`I mapped every bin in Chiang Mai in one day`,score:74,tag:"GOOD",col:"#FFD50A",pinned:false},
-                              {title:`Why tourists always end up littering abroad`,score:61,tag:"REWORK",col:"rgba(255,255,255,0.25)",pinned:false},
+                              ...SC.ideas,
                             ].map(({title,score,tag,col,pinned},i)=>(
                               <div key={i} style={{ background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"9px 12px", display:"flex", alignItems:"center", gap:10, position:"relative", overflow:"hidden" }}>
                                 <div style={{ position:"absolute", left:0, top:0, bottom:0, width:2, background:col }}/>
@@ -7295,7 +7349,7 @@ function OnboardingPage({ onComplete }) {
                             <div style={{ width:"38%", display:"flex", flexDirection:"column", gap:7 }}>
                               <div style={{ background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,45,120,0.2)", borderRadius:10, padding:"8px 10px" }}>
                                 <div style={{ fontSize:7, color:"#FF2D78", fontFamily:"Courier New,monospace", marginBottom:3 }}>SELECTED IDEA</div>
-                                <div style={{ fontSize:9, color:"rgba(255,255,255,0.75)", lineHeight:1.4 }}>{`POV: can't find a single bin in Bali`}</div>
+                                <div style={{ fontSize:9, color:"rgba(255,255,255,0.75)", lineHeight:1.4 }}>{SC.selectedIdea}</div>
                                 <div style={{ fontSize:22, fontFamily:"'Lilita One',Georgia,serif", color:"#FF2D78", marginTop:4, lineHeight:1 }}>87</div>
                               </div>
                               <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
@@ -7309,12 +7363,7 @@ function OnboardingPage({ onComplete }) {
                               </div>
                             </div>
                             <div style={{ flex:1, display:"flex", flexDirection:"column", gap:5, overflow:"hidden" }}>
-                              {[
-                                {scene:"HOOK",col:"#FF2D78",text:`"POV: you're in Bali and you literally cannot find a single bin anywhere…"`},
-                                {scene:"PROBLEM",col:"#FF6B1A",text:"Cut to street shots — rubbish everywhere, tourists confused, bins nowhere."},
-                                {scene:"SOLUTION",col:"#39FF14",text:"Open KrapMaps — drop a pin on every bin in real-time. Map fills up live."},
-                                {scene:"CTA",col:"#00E5FF",text:`"Tap the link, download KrapMaps. Let's stop the littering."`},
-                              ].map(({scene,col,text})=>(
+                              {SC.scriptScenes.map(({scene,col,text})=>(
                                 <div key={scene} style={{ background:"rgba(255,255,255,0.02)", border:`1px solid ${col}20`, borderLeft:`2px solid ${col}`, borderRadius:"0 8px 8px 0", padding:"6px 9px" }}>
                                   <div style={{ fontSize:7, color:col, fontFamily:"Courier New,monospace", marginBottom:2 }}>{scene}</div>
                                   <div style={{ fontSize:8, color:"rgba(255,255,255,0.55)", lineHeight:1.45 }}>{text}</div>
@@ -7346,11 +7395,11 @@ function OnboardingPage({ onComplete }) {
                           </div>
                           <div style={{ display:"flex", flexDirection:"column", gap:7, flex:1 }}>
                             <div style={{ display:"flex", justifyContent:"flex-end" }}>
-                              <div style={{ maxWidth:"75%", background:"linear-gradient(135deg,#FF2D78,#C566FF)", borderRadius:"12px 12px 2px 12px", padding:"7px 10px", fontSize:9, color:"#fff", lineHeight:1.4 }}>Which of my ideas should I film next?</div>
+                              <div style={{ maxWidth:"75%", background:"linear-gradient(135deg,#FF2D78,#C566FF)", borderRadius:"12px 12px 2px 12px", padding:"7px 10px", fontSize:9, color:"#fff", lineHeight:1.4 }}>{SC.aiQ}</div>
                             </div>
                             <div style={{ display:"flex", gap:7 }}>
                               <div style={{ width:18, height:18, borderRadius:5, background:"linear-gradient(135deg,#FF2D78,#C566FF)", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9 }}>◎</div>
-                              <div style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:"2px 12px 12px 12px", padding:"7px 10px", fontSize:9, color:"rgba(255,255,255,0.65)", lineHeight:1.5 }}>Film <span style={{color:"#FF2D78",fontWeight:600}}>"bin in Bali"</span> first — highest scored at <span style={{color:"#FF2D78"}}>87/100</span>. Strong hook, good trend timing. Thursday 6pm is your best slot.</div>
+                              <div style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:"2px 12px 12px 12px", padding:"7px 10px", fontSize:9, color:"rgba(255,255,255,0.65)", lineHeight:1.5 }}>{SC.aiA}</div>
                             </div>
                           </div>
                           <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.09)", borderRadius:10, padding:"8px 12px", display:"flex", alignItems:"center", gap:8 }}>
@@ -7367,17 +7416,12 @@ function OnboardingPage({ onComplete }) {
                             <div>
                               <div style={{ fontSize:7, color:"#FF2D78", letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>DASHBOARD</div>
                               <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.4))", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>Content OS</div>
-                              <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", marginTop:2 }}>@findkrap · Week in Review</div>
+                              <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", marginTop:2 }}>{SC.weekHandle}</div>
                             </div>
                             <div style={{ fontSize:8, color:"#39FF14", background:"rgba(57,255,20,0.08)", border:"1px solid rgba(57,255,20,0.2)", borderRadius:6, padding:"3px 8px", fontFamily:"Courier New,monospace" }}>All clear ✓</div>
                           </div>
                           <div style={{ display:"flex", gap:7 }}>
-                            {[
-                              {label:"TOTAL VIEWS",val:"12.4K",col:"#FF2D78"},
-                              {label:"AVG VIEWS",val:"3,100",col:"rgba(255,255,255,0.6)"},
-                              {label:"LIKE RATIO",val:"4.2%",col:"rgba(255,255,255,0.6)"},
-                              {label:"FOLLOWERS",val:"+847",col:"#39FF14"},
-                            ].map(({label,val,col})=>(
+                            {SC.stats.map(({label,val,col})=>(
                               <div key={label} style={{ flex:1, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:9, padding:"8px" }}>
                                 <div style={{ fontSize:6, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:3 }}>{label}</div>
                                 <div style={{ fontSize:14, fontFamily:"'Lilita One',Georgia,serif", color:col, lineHeight:1 }}>{val}</div>
@@ -7385,12 +7429,7 @@ function OnboardingPage({ onComplete }) {
                             ))}
                           </div>
                           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:7 }}>
-                            {[
-                              {icon:"◈",label:"WHAT'S WORKING",sub:"Analyse top content",col:"#FF2D78"},
-                              {icon:"▶",label:"NEXT VIDEOS",sub:"AI recommendations",col:"#C566FF"},
-                              {icon:"⊞",label:"WEEKLY BRIEF",sub:"Your filming brief",col:"#FFD50A"},
-                              {icon:"✦",label:"TRENDS",sub:"What's hot now",col:"#00E5FF"},
-                            ].map(({icon,label,sub,col})=>(
+                            {SC.quickActions.map(({icon,label,sub,col})=>(
                               <div key={label} style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:9, padding:"8px 10px", display:"flex", gap:8, alignItems:"center", cursor:"pointer" }}>
                                 <div style={{ fontSize:14, color:col }}>{icon}</div>
                                 <div>
@@ -7469,17 +7508,12 @@ function OnboardingPage({ onComplete }) {
                               <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                                 <div style={{ fontSize:10 }}>🎵</div>
                                 <div style={{ fontSize:9, color:"rgba(255,255,255,0.7)", fontWeight:600 }}>TikTok</div>
-                                <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace" }}>@findkrap</div>
+                                <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace" }}>{SC.handle}</div>
                               </div>
                               <div style={{ fontSize:7, color:"#FF2D78", fontFamily:"Courier New,monospace", border:"1px solid rgba(255,45,120,0.25)", borderRadius:4, padding:"2px 6px" }}>PINNED</div>
                             </div>
                             <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-                              {[
-                                {label:"TOTAL VIEWS",val:"12.4K",col:"#FF2D78"},
-                                {label:"AVG VIEWS",val:"3,100",col:"rgba(255,255,255,0.6)"},
-                                {label:"LIKE RATIO",val:"4.2%",col:"rgba(255,255,255,0.6)"},
-                                {label:"FOLLOWERS",val:"2,841",col:"#FF2D78"},
-                              ].map(({label,val,col})=>(
+                              {SC.platformStats.map(({label,val,col})=>(
                                 <div key={label} style={{ flex:1 }}>
                                   <div style={{ fontSize:6, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:2 }}>{label}</div>
                                   <div style={{ fontSize:13, fontFamily:"'Lilita One',Georgia,serif", color:col, lineHeight:1 }}>{val}</div>
@@ -7494,14 +7528,13 @@ function OnboardingPage({ onComplete }) {
                             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
                               <div style={{ fontSize:10 }}>📷</div>
                               <div style={{ fontSize:9, color:"rgba(255,255,255,0.7)", fontWeight:600 }}>Instagram</div>
-                              <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace" }}>@findkrap</div>
+                              <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace" }}>{SC.handle}</div>
                             </div>
                             <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-                              {[
-                                {label:"FOLLOWERS",val:"1,204",col:"rgba(255,255,255,0.6)"},
-                                {label:"AVG VIEWS",val:"890",col:"rgba(255,255,255,0.6)"},
-                                {label:"AVG LIKES",val:"112",col:"rgba(255,255,255,0.6)"},
-                              ].map(({label,val,col})=>(
+                              {(isBraz
+                                ? [{label:"FOLLOWERS",val:"1,566",col:"rgba(255,255,255,0.6)"},{label:"AVG VIEWS",val:"420",col:"rgba(255,255,255,0.6)"},{label:"AVG LIKES",col:"rgba(255,255,255,0.6)",val:"68"}]
+                                : [{label:"FOLLOWERS",val:"1,204",col:"rgba(255,255,255,0.6)"},{label:"AVG VIEWS",val:"890",col:"rgba(255,255,255,0.6)"},{label:"AVG LIKES",val:"112",col:"rgba(255,255,255,0.6)"}]
+                              ).map(({label,val,col})=>(
                                 <div key={label} style={{ flex:1 }}>
                                   <div style={{ fontSize:6, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:2 }}>{label}</div>
                                   <div style={{ fontSize:13, fontFamily:"'Lilita One',Georgia,serif", color:col, lineHeight:1 }}>{val}</div>
