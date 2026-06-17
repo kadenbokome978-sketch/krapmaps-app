@@ -945,7 +945,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
       {/* Tabs + Add button */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", gap:8 }}>
-          {["IDEAS","CALENDAR","CAPTIONS"].map(t=>(
+          {[SC.contentTabLabel,"CALENDAR","CAPTIONS"].map(t=>(
             <button key={t} onClick={()=>setSub(t)} style={{ padding:"10px 20px", borderRadius:12, border:`1px solid ${sub===t?C.pink:"rgba(255,255,255,0.08)"}`, background:sub===t?`${C.pink}15`:"transparent", color:sub===t?C.pink:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", letterSpacing:"0.06em" }}>
               {t}{t==="IDEAS"&&` (${ideas.length})`}{t==="CALENDAR"&&` (${calItems.length})`}
             </button>
@@ -6962,7 +6962,23 @@ function OnboardingPage({ onComplete }) {
 
   // Slide content keyed by client
   const isBraz = WL.clientId === "thierno";
+  const ac1 = WL.accentColor || "#FF2D78";
+  const ac2wl = WL.accentColor2 || "#00E5FF";
   const SC = isBraz ? {
+    windowLabel: "ARTISTOS · DASHBOARD",
+    navItems: [
+      {icon:"⌂",lb:"HOME",   col:"#00C853",idx:3},
+      {icon:"✦",lb:"CONTENT",col:"#CE93D8",idx:0},
+      {icon:"▶",lb:"STREAMS", col:"#64B5F6",idx:5},
+      {icon:"≡",lb:"SCRIPT",  col:"#00C853",idx:1},
+      {icon:"◇",lb:"DEALS",   col:"#CE93D8",idx:4},
+      {icon:"◎",lb:"ASSIST",  col:"#00C853",idx:2},
+      {icon:"▲",lb:"GROWTH",  col:"#64B5F6",idx:6},
+    ],
+    slidePageLabels: ["CONTENT","CONTENT","ASSIST","DASHBOARD","DEALS","ANALYTICS","GROWTH"],
+    slideTitleColors: ["#CE93D8","#CE93D8","#00C853","#00C853","#00C853","#64B5F6","#64B5F6"],
+    contentTabLabel: "RELEASES",
+    contentAddLabel: "+ ADD IDEA",
     handle: "@officialthierno",
     ideas: [
       {title:`POV: you drop a raw vocal and your whole comment section loses it`,score:91,tag:"POST NOW",col:"#FF2D78",pinned:true},
@@ -6989,6 +7005,20 @@ function OnboardingPage({ onComplete }) {
     platformHandle: "@officialthierno",
     platformStats: [{label:"STREAMS",val:"2.4K",col:"#00C853"},{label:"SAVES",val:"184",col:"rgba(255,255,255,0.6)"},{label:"FOLLOWERS",val:"784",col:"#00C853"},{label:"MONTHLY",val:"37",col:"rgba(255,255,255,0.6)"}],
   } : {
+    windowLabel: "CREATOROS · DASHBOARD",
+    navItems: [
+      {icon:"⌂",lb:"HOME",    col:"#FF2D78",idx:3},
+      {icon:"✦",lb:"CONTENT", col:"#C566FF",idx:0},
+      {icon:"▶",lb:"ANALYTICS",col:"#FF6B1A",idx:5},
+      {icon:"≡",lb:"TASKS",   col:"#00E5FF",idx:1},
+      {icon:"◇",lb:"DEALS",   col:"#39FF14",idx:4},
+      {icon:"◎",lb:"ASSIST",  col:"#FF2D78",idx:2},
+      {icon:"▲",lb:"GROWTH",  col:"#00E5FF",idx:6},
+    ],
+    slidePageLabels: ["CONTENT","CONTENT","ASSIST","DASHBOARD","DEALS","ANALYTICS","GROWTH"],
+    slideTitleColors: ["#C566FF","#C566FF","#FF2D78","#FF2D78","#39FF14","#FF6B1A","#00E5FF"],
+    contentTabLabel: "IDEAS",
+    contentAddLabel: "+ ADD IDEA",
     handle: "@findkrap",
     ideas: [
       {title:`POV: you can't find a single bin in Bali`,score:87,tag:"FILM THIS",col:"#FF2D78",pinned:true},
@@ -7255,7 +7285,7 @@ function OnboardingPage({ onComplete }) {
                     <div style={{ width:10, height:10, borderRadius:"50%", background:"rgba(255,255,255,0.18)" }}/>
                     <div style={{ width:10, height:10, borderRadius:"50%", background:"rgba(255,255,255,0.08)" }}/>
                     <div style={{ width:10, height:10, borderRadius:"50%", background:"rgba(255,255,255,0.05)" }}/>
-                    <div style={{ flex:1, textAlign:"center", fontSize:9, color:"rgba(255,255,255,0.12)", letterSpacing:"0.22em", fontFamily:"Courier New,monospace" }}>CREATOROS · DASHBOARD</div>
+                    <div style={{ flex:1, textAlign:"center", fontSize:9, color:"rgba(255,255,255,0.12)", letterSpacing:"0.22em", fontFamily:"Courier New,monospace" }}>{SC.windowLabel}</div>
                     <div style={{ fontSize:9, color:"rgba(255,255,255,0.08)", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>{SC.handle}</div>
                   </div>
 
@@ -7264,15 +7294,7 @@ function OnboardingPage({ onComplete }) {
 
                     {/* Sidebar — mirrors real app nav */}
                     <div style={{ width:58, borderRight:"1px solid rgba(255,255,255,0.05)", background:"rgba(0,0,0,0.25)", display:"flex", flexDirection:"column", alignItems:"center", paddingTop:12, gap:2, flexShrink:0 }}>
-                      {[
-                        {icon:"⌂",lb:"HOME",col:"#FF2D78",idx:3},
-                        {icon:"✦",lb:"CONTENT",col:"#C566FF",idx:0},
-                        {icon:"▶",lb:"ANALYTICS",col:"#FF6B1A",idx:5},
-                        {icon:"≡",lb:"TASKS",col:"#00E5FF",idx:1},
-                        {icon:"◇",lb:"DEALS",col:"#39FF14",idx:4},
-                        {icon:"◎",lb:"ASSIST",col:"#FF2D78",idx:2},
-                        {icon:"▲",lb:"GROWTH",col:"#00E5FF",idx:6},
-                      ].map(({icon,lb,col,idx})=>{
+                      {SC.navItems.map(({icon,lb,col,idx})=>{
                         const active = slideIdx===idx;
                         return (
                           <div key={lb} onClick={()=>setSlideIdx(idx)} style={{ position:"relative", display:"flex", flexDirection:"column", alignItems:"center", gap:2, cursor:"pointer", padding:"8px 0", width:"100%", opacity:active?1:0.28, transition:"opacity 0.2s" }}>
@@ -7297,9 +7319,9 @@ function OnboardingPage({ onComplete }) {
                       {slideIdx===0 && (
                         <div key="s0" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
                           <div>
-                            <div style={{ fontSize:7, color:"#C566FF", letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>CONTENT</div>
-                            <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.4))", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>Manage Content</div>
-                            <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", marginTop:2 }}>All your content, ideas and scripts in one place</div>
+                            <div style={{ fontSize:7, color:SC.slideTitleColors[0], letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>{SC.slidePageLabels[0]}</div>
+                            <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.4))", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>{isBraz?"Manage Releases":"Manage Content"}</div>
+                            <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", marginTop:2 }}>{isBraz?"Your releases, ideas and scripts in one place":"All your content, ideas and scripts in one place"}</div>
                           </div>
                           <div style={{ display:"flex", gap:0, borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
                             {["IDEAS","CALENDAR","CAPTIONS"].map((t,i)=>(
@@ -7348,7 +7370,7 @@ function OnboardingPage({ onComplete }) {
                           <div style={{ display:"flex", gap:10, flex:1, overflow:"hidden" }}>
                             <div style={{ width:"38%", display:"flex", flexDirection:"column", gap:7 }}>
                               <div style={{ background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,45,120,0.2)", borderRadius:10, padding:"8px 10px" }}>
-                                <div style={{ fontSize:7, color:"#FF2D78", fontFamily:"Courier New,monospace", marginBottom:3 }}>SELECTED IDEA</div>
+                                <div style={{ fontSize:7, color:SC.slideTitleColors[1], fontFamily:"Courier New,monospace", marginBottom:3 }}>SELECTED IDEA</div>
                                 <div style={{ fontSize:9, color:"rgba(255,255,255,0.75)", lineHeight:1.4 }}>{SC.selectedIdea}</div>
                                 <div style={{ fontSize:22, fontFamily:"'Lilita One',Georgia,serif", color:"#FF2D78", marginTop:4, lineHeight:1 }}>87</div>
                               </div>
@@ -7378,13 +7400,13 @@ function OnboardingPage({ onComplete }) {
                       {slideIdx===2 && (
                         <div key="s2" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
                           <div>
-                            <div style={{ fontSize:7, color:"#FF2D78", letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>ASSIST</div>
-                            <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#FF2D78,#C566FF)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>AI Assistant</div>
+                            <div style={{ fontSize:7, color:SC.slideTitleColors[2], letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>{SC.slidePageLabels[2]}</div>
+                            <div style={{ fontSize:20, fontWeight:800, background:`linear-gradient(135deg,${ac1},${ac2wl})`, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>AI Assistant</div>
                             <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", marginTop:2 }}>Ask me anything about your content</div>
                           </div>
                           <div style={{ background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"9px 11px" }}>
                             <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:7 }}>
-                              <div style={{ width:22, height:22, borderRadius:6, background:"linear-gradient(135deg,#FF2D78,#C566FF)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11 }}>◎</div>
+                              <div style={{ width:22, height:22, borderRadius:6, background:`linear-gradient(135deg,${ac1},${ac2wl})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11 }}>◎</div>
                               <div style={{ fontSize:9, color:"rgba(255,255,255,0.8)", fontWeight:600 }}>CreatorOS AI</div>
                             </div>
                             <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
@@ -7395,10 +7417,10 @@ function OnboardingPage({ onComplete }) {
                           </div>
                           <div style={{ display:"flex", flexDirection:"column", gap:7, flex:1 }}>
                             <div style={{ display:"flex", justifyContent:"flex-end" }}>
-                              <div style={{ maxWidth:"75%", background:"linear-gradient(135deg,#FF2D78,#C566FF)", borderRadius:"12px 12px 2px 12px", padding:"7px 10px", fontSize:9, color:"#fff", lineHeight:1.4 }}>{SC.aiQ}</div>
+                              <div style={{ maxWidth:"75%", background:`linear-gradient(135deg,${ac1},${ac2wl})`, borderRadius:"12px 12px 2px 12px", padding:"7px 10px", fontSize:9, color:"#fff", lineHeight:1.4 }}>{SC.aiQ}</div>
                             </div>
                             <div style={{ display:"flex", gap:7 }}>
-                              <div style={{ width:18, height:18, borderRadius:5, background:"linear-gradient(135deg,#FF2D78,#C566FF)", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9 }}>◎</div>
+                              <div style={{ width:18, height:18, borderRadius:5, background:`linear-gradient(135deg,${ac1},${ac2wl})`, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9 }}>◎</div>
                               <div style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:"2px 12px 12px 12px", padding:"7px 10px", fontSize:9, color:"rgba(255,255,255,0.65)", lineHeight:1.5 }}>{SC.aiA}</div>
                             </div>
                           </div>
@@ -7414,7 +7436,7 @@ function OnboardingPage({ onComplete }) {
                         <div key="s3" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                             <div>
-                              <div style={{ fontSize:7, color:"#FF2D78", letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>DASHBOARD</div>
+                              <div style={{ fontSize:7, color:SC.slideTitleColors[3], letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>{SC.slidePageLabels[3]}</div>
                               <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.4))", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>Content OS</div>
                               <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", marginTop:2 }}>{SC.weekHandle}</div>
                             </div>
@@ -7452,7 +7474,7 @@ function OnboardingPage({ onComplete }) {
                         <div key="s4" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end" }}>
                             <div>
-                              <div style={{ fontSize:7, color:"#39FF14", letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>DEALS</div>
+                              <div style={{ fontSize:7, color:SC.slideTitleColors[4], letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>{SC.slidePageLabels[4]}</div>
                               <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.4))", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>Brand Deals</div>
                               <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", marginTop:2 }}>Your partnerships, rates and conversations</div>
                             </div>
@@ -7494,7 +7516,7 @@ function OnboardingPage({ onComplete }) {
                       {slideIdx===5 && (
                         <div key="s5" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
                           <div>
-                            <div style={{ fontSize:7, color:"#FF6B1A", letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>ANALYTICS</div>
+                            <div style={{ fontSize:7, color:SC.slideTitleColors[5], letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>{SC.slidePageLabels[5]}</div>
                             <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.4))", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>Track Performance</div>
                             <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", marginTop:2 }}>Deep-dive performance for every upload</div>
                           </div>
@@ -7549,7 +7571,7 @@ function OnboardingPage({ onComplete }) {
                       {slideIdx===6 && (
                         <div key="s6" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
                           <div>
-                            <div style={{ fontSize:7, color:"#00E5FF", letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>GROWTH</div>
+                            <div style={{ fontSize:7, color:SC.slideTitleColors[6], letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>{SC.slidePageLabels[6]}</div>
                             <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.4))", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>Monitor Growth</div>
                             <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", marginTop:2 }}>Track follower growth across platforms</div>
                           </div>
