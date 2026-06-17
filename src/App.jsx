@@ -7101,144 +7101,174 @@ function OnboardingPage({ onComplete }) {
 
           {/* Step 1 — Welcome */}
           {step === 1 && (
-            <div style={{ position:"relative", minHeight:"100vh", overflow:"hidden", display:"flex", alignItems:"center" }}>
+            <div style={{ position:"fixed", inset:0, display:"flex", overflow:"hidden" }}>
 
               <style>{`
-                @keyframes slideInRight{from{opacity:0;transform:translateX(48px)}to{opacity:1;transform:translateX(0)}}
-                @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+                @keyframes slideInRight{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:translateX(0)}}
+                @keyframes fadeLeft{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
               `}</style>
 
-              {/* Scanline overlay */}
-              <div style={{ position:"fixed", inset:0, background:"repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.009) 2px,rgba(255,255,255,0.009) 4px)", pointerEvents:"none", zIndex:0 }}/>
+              {/* Scanlines */}
+              <div style={{ position:"absolute", inset:0, background:"repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.008) 2px,rgba(255,255,255,0.008) 4px)", pointerEvents:"none", zIndex:0 }}/>
               {/* Dot grid */}
-              <div style={{ position:"fixed", inset:0, backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.045) 1px,transparent 1px)", backgroundSize:"32px 32px", pointerEvents:"none", zIndex:0 }}/>
-              {/* Edge rules */}
-              <div style={{ position:"fixed", top:0, left:0, right:0, height:1, background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent)", pointerEvents:"none", zIndex:1 }}/>
-              <div style={{ position:"fixed", bottom:0, left:0, right:0, height:1, background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent)", pointerEvents:"none", zIndex:1 }}/>
+              <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.04) 1px,transparent 1px)", backgroundSize:"32px 32px", pointerEvents:"none", zIndex:0 }}/>
+
               {/* Corner marks */}
-              {[{top:20,left:20},{top:20,right:20},{bottom:20,left:20},{bottom:20,right:20}].map((pos,i)=>(
-                <div key={i} style={{ position:"fixed", ...pos, width:14, height:14, borderTop:i<2?"1px solid rgba(255,255,255,0.1)":undefined, borderBottom:i>=2?"1px solid rgba(255,255,255,0.1)":undefined, borderLeft:i%2===0?"1px solid rgba(255,255,255,0.1)":undefined, borderRight:i%2===1?"1px solid rgba(255,255,255,0.1)":undefined, pointerEvents:"none", zIndex:1 }}/>
+              {[{top:24,left:24},{top:24,right:24},{bottom:24,left:24},{bottom:24,right:24}].map((pos,i)=>(
+                <div key={i} style={{ position:"absolute", ...pos, width:16, height:16, borderTop:i<2?"1px solid rgba(255,255,255,0.12)":undefined, borderBottom:i>=2?"1px solid rgba(255,255,255,0.12)":undefined, borderLeft:i%2===0?"1px solid rgba(255,255,255,0.12)":undefined, borderRight:i%2===1?"1px solid rgba(255,255,255,0.12)":undefined, pointerEvents:"none", zIndex:1 }}/>
               ))}
 
-              {/* LEFT — headline copy */}
-              <div style={{ position:"relative", zIndex:2, flex:"0 0 auto", width:"min(440px,42vw)", padding:"0 0 0 clamp(24px,5vw,72px)", display:"flex", flexDirection:"column", justifyContent:"center" }}>
-                <div style={{ fontSize:10, color:"rgba(255,255,255,0.1)", letterSpacing:"0.5em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:40, display:"flex", alignItems:"center", gap:14 }}>
+              {/* LEFT PANEL — 42% wide, full height, copy + CTA */}
+              <div style={{ width:"42%", flexShrink:0, display:"flex", flexDirection:"column", justifyContent:"center", padding:"0 5% 0 6%", position:"relative", zIndex:2, animation:"fadeLeft 0.7s ease forwards" }}>
+
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.1)", letterSpacing:"0.5em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:48, display:"flex", alignItems:"center", gap:14 }}>
                   <div style={{ width:24, height:"1px", background:"rgba(255,255,255,0.07)" }}/>
                   CREATOROS
                 </div>
-                <div style={{ fontSize:"clamp(34px,3.8vw,54px)", fontWeight:900, color:"#fff", lineHeight:1.0, letterSpacing:"-0.035em", fontFamily:"Inter,system-ui,sans-serif", marginBottom:20 }}>
-                  Your channel.<br/>
-                  Your strategy.<br/>
-                  <span style={{ color:"rgba(255,255,255,0.12)" }}>Your rules.</span>
+
+                <div style={{ fontSize:"clamp(40px,4.2vw,68px)", fontWeight:900, color:"#fff", lineHeight:0.95, letterSpacing:"-0.04em", fontFamily:"Inter,system-ui,sans-serif", marginBottom:28 }}>
+                  Your<br/>channel.<br/>Your<br/>strategy.<br/>
+                  <span style={{ color:"rgba(255,255,255,0.1)" }}>Your rules.</span>
                 </div>
-                <div style={{ width:32, height:1, background:"rgba(255,255,255,0.14)", marginBottom:20 }}/>
-                <div style={{ fontSize:10, color:"rgba(255,255,255,0.16)", letterSpacing:"0.2em", fontWeight:600, marginBottom:44, fontFamily:"Courier New,monospace" }}>
-                  6 TOOLS &nbsp;&middot;&nbsp; 1 SYSTEM &nbsp;&middot;&nbsp; BUILT FOR CREATORS WHO MEAN IT
+
+                <div style={{ width:36, height:1, background:"rgba(255,255,255,0.14)", marginBottom:24 }}/>
+
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.2)", letterSpacing:"0.18em", fontWeight:600, marginBottom:52, fontFamily:"Courier New,monospace", lineHeight:2 }}>
+                  6 TOOLS &nbsp;&middot;&nbsp; 1 SYSTEM<br/>BUILT FOR CREATORS WHO MEAN IT
                 </div>
+
                 <button
                   onClick={()=>setStep(2)}
-                  style={{ padding:"15px 0", borderRadius:2, border:"1px solid rgba(255,255,255,0.2)", background:"transparent", color:"#fff", fontWeight:700, fontSize:11, cursor:"pointer", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", transition:"all 0.2s", width:"100%", maxWidth:320 }}
-                  onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.4)"; }}
-                  onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(255,255,255,0.2)"; }}
+                  style={{ padding:"18px 0", borderRadius:2, border:"1px solid rgba(255,255,255,0.22)", background:"transparent", color:"#fff", fontWeight:700, fontSize:11, cursor:"pointer", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", transition:"all 0.2s", width:"100%", maxWidth:340 }}
+                  onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.45)"; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(255,255,255,0.22)"; }}
                 >
                   ACTIVATE MY WORKSPACE
                 </button>
-                <button onClick={()=>finish("")} style={{ marginTop:14, background:"none", border:"none", color:"rgba(255,255,255,0.07)", fontSize:10, cursor:"pointer", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", textAlign:"left", padding:0 }}>
+                <button onClick={()=>finish("")} style={{ marginTop:16, background:"none", border:"none", color:"rgba(255,255,255,0.07)", fontSize:10, cursor:"pointer", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", textAlign:"left", padding:0 }}>
                   SKIP
                 </button>
               </div>
 
-              {/* RIGHT — faux dashboard graphic */}
-              <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"32px clamp(16px,3vw,48px)", position:"relative", zIndex:2, minHeight:"100vh" }}>
-                <div style={{ width:"100%", maxWidth:520, background:"rgba(8,8,8,0.97)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, overflow:"hidden", boxShadow:"0 48px 120px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04)", animation:"slideInRight 0.8s cubic-bezier(0.16,1,0.3,1) forwards" }}>
+              {/* DIVIDER */}
+              <div style={{ width:1, background:"linear-gradient(180deg,transparent,rgba(255,255,255,0.08) 20%,rgba(255,255,255,0.08) 80%,transparent)", flexShrink:0, zIndex:2 }}/>
+
+              {/* RIGHT PANEL — 58% wide, full height, dashboard fills it */}
+              <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"32px 40px", position:"relative", zIndex:2 }}>
+                <div style={{ width:"100%", height:"calc(100vh - 64px)", maxHeight:780, background:"rgba(7,7,7,0.98)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, overflow:"hidden", boxShadow:"0 60px 160px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,255,255,0.04)", animation:"slideInRight 0.9s cubic-bezier(0.16,1,0.3,1) forwards", display:"flex", flexDirection:"column" }}>
 
                   {/* Window chrome */}
-                  <div style={{ display:"flex", alignItems:"center", gap:6, padding:"11px 14px", borderBottom:"1px solid rgba(255,255,255,0.07)", background:"rgba(255,255,255,0.02)" }}>
-                    <div style={{ width:9, height:9, borderRadius:"50%", background:"rgba(255,255,255,0.15)" }}/>
-                    <div style={{ width:9, height:9, borderRadius:"50%", background:"rgba(255,255,255,0.07)" }}/>
-                    <div style={{ width:9, height:9, borderRadius:"50%", background:"rgba(255,255,255,0.04)" }}/>
-                    <div style={{ flex:1, textAlign:"center", fontSize:9, color:"rgba(255,255,255,0.13)", letterSpacing:"0.2em", fontFamily:"Courier New,monospace" }}>CREATOROS · DASHBOARD</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:7, padding:"13px 18px", borderBottom:"1px solid rgba(255,255,255,0.07)", background:"rgba(255,255,255,0.02)", flexShrink:0 }}>
+                    <div style={{ width:10, height:10, borderRadius:"50%", background:"rgba(255,255,255,0.18)" }}/>
+                    <div style={{ width:10, height:10, borderRadius:"50%", background:"rgba(255,255,255,0.08)" }}/>
+                    <div style={{ width:10, height:10, borderRadius:"50%", background:"rgba(255,255,255,0.05)" }}/>
+                    <div style={{ flex:1, textAlign:"center", fontSize:9, color:"rgba(255,255,255,0.12)", letterSpacing:"0.22em", fontFamily:"Courier New,monospace" }}>CREATOROS · DASHBOARD</div>
+                    <div style={{ fontSize:9, color:"rgba(255,255,255,0.08)", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>@findkrap</div>
                   </div>
 
                   {/* Dashboard body */}
-                  <div style={{ display:"flex", height:400 }}>
+                  <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
 
-                    {/* Mini sidebar */}
-                    <div style={{ width:42, borderRight:"1px solid rgba(255,255,255,0.06)", display:"flex", flexDirection:"column", alignItems:"center", padding:"14px 0", gap:16, flexShrink:0 }}>
-                      {[["⊞",true],["◈",false],["▲",false],["✦",false],["◎",false],["⚙",false]].map(([ic,act],i)=>(
-                        <div key={i} style={{ fontSize:13, color:act?"rgba(255,255,255,0.8)":"rgba(255,255,255,0.15)", lineHeight:1 }}>{ic}</div>
+                    {/* Sidebar */}
+                    <div style={{ width:52, borderRight:"1px solid rgba(255,255,255,0.06)", display:"flex", flexDirection:"column", alignItems:"center", padding:"20px 0", gap:20, flexShrink:0 }}>
+                      {[["⊞","HOME",true],["◈","IDEAS",false],["▲","STATS",false],["✦","DEALS",false],["◎","AI",false],["⚙","SET",false]].map(([ic,lb,act],i)=>(
+                        <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, opacity:act?1:0.22 }}>
+                          <div style={{ fontSize:15, color:"rgba(255,255,255,0.9)" }}>{ic}</div>
+                          <div style={{ fontSize:6, color:"rgba(255,255,255,0.35)", letterSpacing:"0.1em", fontFamily:"Courier New,monospace" }}>{lb}</div>
+                        </div>
                       ))}
                     </div>
 
-                    {/* Main panels */}
-                    <div style={{ flex:1, padding:"12px", display:"flex", flexDirection:"column", gap:9 }}>
+                    {/* Main grid */}
+                    <div style={{ flex:1, padding:"16px", display:"grid", gridTemplateRows:"1fr 1fr 1fr", gridTemplateColumns:"1fr 1fr 1fr", gap:10, overflow:"hidden" }}>
 
-                      {/* Row 1: Virality + Hook tester */}
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1.1fr", gap:9 }}>
-
-                        <div style={{ background:"rgba(255,255,255,0.035)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:8, padding:"11px" }}>
-                          <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.28)", fontFamily:"Courier New,monospace", marginBottom:7 }}>VIRALITY SCORE</div>
-                          <div style={{ fontSize:40, fontWeight:900, color:"#fff", lineHeight:1, letterSpacing:"-0.03em", fontFamily:"Inter,sans-serif", marginBottom:3 }}>87</div>
-                          <div style={{ fontSize:8, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:7 }}>HIGH POTENTIAL</div>
-                          <div style={{ height:2, background:"rgba(255,255,255,0.06)", borderRadius:1 }}>
-                            <div style={{ height:"100%", width:"87%", background:"rgba(255,255,255,0.55)", borderRadius:1 }}/>
-                          </div>
+                      {/* Virality Score */}
+                      <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px", display:"flex", flexDirection:"column" }}>
+                        <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:8 }}>VIRALITY SCORE</div>
+                        <div style={{ fontSize:52, fontWeight:900, color:"#fff", lineHeight:1, letterSpacing:"-0.04em", fontFamily:"Inter,sans-serif", flex:1 }}>87</div>
+                        <div style={{ fontSize:8, color:"rgba(255,255,255,0.28)", fontFamily:"Courier New,monospace", marginBottom:8 }}>HIGH POTENTIAL</div>
+                        <div style={{ height:2, background:"rgba(255,255,255,0.06)", borderRadius:1 }}>
+                          <div style={{ height:"100%", width:"87%", background:"rgba(255,255,255,0.6)", borderRadius:1 }}/>
                         </div>
+                      </div>
 
-                        <div style={{ background:"rgba(255,255,255,0.035)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:8, padding:"11px" }}>
-                          <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.28)", fontFamily:"Courier New,monospace", marginBottom:8 }}>HOOK A/B TEST</div>
-                          {[["A","POV: no bin in sight...",94,true],["B","This is why Bali has...",71,false]].map(([lbl,txt,sc,win])=>(
-                            <div key={lbl} style={{ background:win?"rgba(255,255,255,0.07)":"transparent", border:`1px solid rgba(255,255,255,${win?0.1:0.04})`, borderRadius:5, padding:"5px 7px", marginBottom:4 }}>
-                              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
-                                <div style={{ fontSize:7, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace" }}>{lbl}</div>
-                                <div style={{ fontSize:8, fontWeight:700, color:win?"#fff":"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace" }}>{sc} pts</div>
-                              </div>
-                              <div style={{ fontSize:8, color:"rgba(255,255,255,0.45)", fontFamily:"Courier New,monospace", lineHeight:1.3 }}>{txt}</div>
+                      {/* Hook A/B Test */}
+                      <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px" }}>
+                        <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:10 }}>HOOK A/B TEST</div>
+                        {[["A","POV: no bin in sight anywhere in Bali",94,true],["B","This is why travellers litter (not their fault)",71,false]].map(([lbl,txt,sc,win])=>(
+                          <div key={lbl} style={{ background:win?"rgba(255,255,255,0.07)":"transparent", border:`1px solid rgba(255,255,255,${win?0.12:0.05})`, borderRadius:6, padding:"7px 9px", marginBottom:5 }}>
+                            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+                              <div style={{ fontSize:7, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", fontWeight:700 }}>{lbl} {win?"· WINNER":""}</div>
+                              <div style={{ fontSize:9, fontWeight:700, color:win?"#fff":"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace" }}>{sc}</div>
+                            </div>
+                            <div style={{ fontSize:8, color:"rgba(255,255,255,0.5)", lineHeight:1.4 }}>{txt}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Analytics bar chart */}
+                      <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px", display:"flex", flexDirection:"column" }}>
+                        <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:6 }}>WEEKLY VIEWS</div>
+                        <div style={{ fontSize:20, fontWeight:800, color:"#fff", fontFamily:"Inter,sans-serif", letterSpacing:"-0.02em", marginBottom:10 }}>↑ 12.4K</div>
+                        <div style={{ display:"flex", alignItems:"flex-end", gap:4, flex:1 }}>
+                          {[0.32,0.55,0.38,0.78,0.62,1.0,0.7].map((h,i)=>(
+                            <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3, height:"100%", justifyContent:"flex-end" }}>
+                              <div style={{ width:"100%", background:i===5?"rgba(255,255,255,0.8)":"rgba(255,255,255,0.16)", borderRadius:"2px 2px 0 0", height:`${h*100}%` }}/>
+                              <div style={{ fontSize:6, color:"rgba(255,255,255,0.18)", fontFamily:"Courier New,monospace" }}>{["M","T","W","T","F","S","S"][i]}</div>
                             </div>
                           ))}
                         </div>
                       </div>
 
-                      {/* Row 2: Brand deals */}
-                      <div style={{ background:"rgba(255,255,255,0.035)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:8, padding:"11px" }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                          <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.28)", fontFamily:"Courier New,monospace" }}>BRAND DEALS</div>
-                          <div style={{ fontSize:7, color:"rgba(255,255,255,0.18)", fontFamily:"Courier New,monospace" }}>3 ACTIVE</div>
+                      {/* Brand deals — spans 2 cols */}
+                      <div style={{ gridColumn:"span 2", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                          <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace" }}>BRAND DEALS</div>
+                          <div style={{ fontSize:18, fontWeight:800, color:"#fff", fontFamily:"Inter,sans-serif", letterSpacing:"-0.02em" }}>£4,400</div>
                         </div>
-                        {[["Patagonia","£2,400","SIGNED"],["Osprey","£1,200","NEGOTIATING"],["HostelWorld","£800","OUTREACH"]].map(([brand,val,status])=>(
-                          <div key={brand} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"4px 0", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
-                            <div style={{ fontSize:9, color:"rgba(255,255,255,0.65)", fontFamily:"Inter,sans-serif", fontWeight:600 }}>{brand}</div>
-                            <div style={{ display:"flex", alignItems:"center", gap:7 }}>
-                              <div style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.9)", fontFamily:"Courier New,monospace" }}>{val}</div>
-                              <div style={{ fontSize:6, color:status==="SIGNED"?"rgba(255,255,255,0.45)":"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace", letterSpacing:"0.08em", border:"1px solid rgba(255,255,255,0.09)", borderRadius:2, padding:"1px 4px" }}>{status}</div>
+                        {[["Patagonia","£2,400","SIGNED",1],["Osprey","£1,200","NEGOTIATING",0.65],["HostelWorld","£800","OUTREACH",0.3]].map(([brand,val,status,prog])=>(
+                          <div key={brand} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
+                            <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", fontFamily:"Inter,sans-serif", fontWeight:600, width:90, flexShrink:0 }}>{brand}</div>
+                            <div style={{ flex:1, height:2, background:"rgba(255,255,255,0.06)", borderRadius:1 }}>
+                              <div style={{ height:"100%", width:`${prog*100}%`, background:"rgba(255,255,255,0.45)", borderRadius:1 }}/>
                             </div>
+                            <div style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.8)", fontFamily:"Courier New,monospace", width:46, textAlign:"right" }}>{val}</div>
+                            <div style={{ fontSize:6, color:status==="SIGNED"?"rgba(255,255,255,0.5)":"rgba(255,255,255,0.18)", fontFamily:"Courier New,monospace", letterSpacing:"0.08em", border:"1px solid rgba(255,255,255,0.1)", borderRadius:2, padding:"2px 5px", flexShrink:0 }}>{status}</div>
                           </div>
                         ))}
                       </div>
 
-                      {/* Row 3: Analytics + AI debrief */}
-                      <div style={{ display:"grid", gridTemplateColumns:"1.3fr 1fr", gap:9, flex:1 }}>
-
-                        <div style={{ background:"rgba(255,255,255,0.035)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:8, padding:"11px" }}>
-                          <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.28)", fontFamily:"Courier New,monospace", marginBottom:9 }}>WEEKLY VIEWS</div>
-                          <div style={{ display:"flex", alignItems:"flex-end", gap:3, height:50 }}>
-                            {[0.32,0.52,0.38,0.78,0.62,1.0,0.7].map((h,i)=>(
-                              <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3, height:"100%", justifyContent:"flex-end" }}>
-                                <div style={{ width:"100%", background:i===5?"rgba(255,255,255,0.75)":"rgba(255,255,255,0.18)", borderRadius:"2px 2px 0 0", height:`${h*100}%` }}/>
-                                <div style={{ fontSize:6, color:"rgba(255,255,255,0.18)", fontFamily:"Courier New,monospace" }}>{["M","T","W","T","F","S","S"][i]}</div>
-                              </div>
-                            ))}
-                          </div>
+                      {/* AI Debrief */}
+                      <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px", display:"flex", flexDirection:"column" }}>
+                        <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:10 }}>AI DEBRIEF</div>
+                        <div style={{ fontSize:9, color:"rgba(255,255,255,0.45)", fontFamily:"Courier New,monospace", lineHeight:1.8, flex:1 }}>
+                          Hook vids up 3×.<br/>
+                          Best: Thu 6pm.<br/>
+                          <span style={{ color:"rgba(255,255,255,0.88)", fontWeight:700 }}>Film the contrast idea this week.</span>
                         </div>
+                      </div>
 
-                        <div style={{ background:"rgba(255,255,255,0.035)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:8, padding:"11px", display:"flex", flexDirection:"column" }}>
-                          <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.28)", fontFamily:"Courier New,monospace", marginBottom:8 }}>AI DEBRIEF</div>
-                          <div style={{ fontSize:8, color:"rgba(255,255,255,0.5)", fontFamily:"Courier New,monospace", lineHeight:1.7, flex:1 }}>
-                            Hook vids up 3×.<br/>
-                            Best: Thurs 6pm.<br/>
-                            <span style={{ color:"rgba(255,255,255,0.85)", fontWeight:700 }}>Film contrast<br/>idea this week.</span>
+                      {/* Script Builder */}
+                      <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px" }}>
+                        <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:10 }}>SCRIPT BUILDER</div>
+                        {[["HOOK","POV: you can't find a bin..."],["PROBLEM","Bali streets, beautiful but..."],["APP","KrapMaps shows nearest bin"],["CTA","Download + map your street"]].map(([label,text])=>(
+                          <div key={label} style={{ display:"flex", gap:7, marginBottom:5, alignItems:"flex-start" }}>
+                            <div style={{ fontSize:6, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace", fontWeight:700, letterSpacing:"0.1em", marginTop:1, flexShrink:0, width:44 }}>{label}</div>
+                            <div style={{ fontSize:8, color:"rgba(255,255,255,0.45)", lineHeight:1.4 }}>{text}</div>
                           </div>
-                        </div>
+                        ))}
+                      </div>
+
+                      {/* Tasks */}
+                      <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"14px" }}>
+                        <div style={{ fontSize:7, letterSpacing:"0.18em", color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", marginBottom:10 }}>TASKS</div>
+                        {[["Film contrast reel","TODAY",true],["Email Osprey brief","WED",false],["Post Monday hook","MON",false],["Debrief review","FRI",false]].map(([task,due,done])=>(
+                          <div key={task} style={{ display:"flex", alignItems:"center", gap:7, marginBottom:6 }}>
+                            <div style={{ width:8, height:8, borderRadius:2, border:`1px solid rgba(255,255,255,${done?0.5:0.15})`, background:done?"rgba(255,255,255,0.4)":"transparent", flexShrink:0 }}/>
+                            <div style={{ flex:1, fontSize:8, color:`rgba(255,255,255,${done?0.3:0.55})`, textDecoration:done?"line-through":"none" }}>{task}</div>
+                            <div style={{ fontSize:6, color:"rgba(255,255,255,0.18)", fontFamily:"Courier New,monospace" }}>{due}</div>
+                          </div>
+                        ))}
                       </div>
 
                     </div>
