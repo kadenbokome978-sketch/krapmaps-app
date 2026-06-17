@@ -7055,7 +7055,7 @@ function OnboardingPage({ onComplete }) {
               {!loading ? (
                 /* ── ACTIVATE SCREEN ── */
                 <div style={{ width:"100%", display:"flex", flexDirection:"column", alignItems:"center", gap:0 }}>
-                  <div style={{ position:"relative", marginBottom:40 }}><div style={{ position:"absolute", inset:"-100px -160px", background:"radial-gradient(ellipse,#39FF140e 0%,transparent 70%)", pointerEvents:"none", borderRadius:"50%", filter:"blur(40px)" }}/><div style={{ fontSize:46, color:"#39FF14", letterSpacing:"0.22em", marginBottom:0, fontWeight:800, fontFamily:"Courier New,Courier,monospace", textShadow:"0 0 60px #39FF1430, 0 0 120px #39FF1418, 0 0 200px #39FF1410" }}>CREATOR<span style={{color:"#39FF1455", fontWeight:400, letterSpacing:"0.18em"}}>OS</span></div></div>
+                  <div style={{ marginBottom:40 }}/>
                   <div style={{ fontSize:13, color:"#39FF14", letterSpacing:"0.15em", marginBottom:10, opacity:0.7 }}>ENTER ACTIVATION CODE</div>
                   <input
                     value={codeInput}
