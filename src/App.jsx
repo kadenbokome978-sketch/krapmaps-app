@@ -20,6 +20,7 @@ const _ENV = (typeof import.meta !== "undefined" && import.meta.env) || {};
 const BAKED_ANTHROPIC_KEY = _ENV.VITE_ANTHROPIC_KEY || "";
 const BAKED_GPT_KEY = _ENV.VITE_GPT_KEY || "";
 const BAKED_GEMINI_KEY = _ENV.VITE_GEMINI_KEY || "";
+const BAKED_PERPLEXITY_KEY = _ENV.VITE_PERPLEXITY_KEY || "";
 
 const C = _isThiernoClient ? {
   // ── Thierno "Braz" — deluxe vinyl / late-night studio ──
@@ -2385,7 +2386,7 @@ const NicheView = ({ WL, keys, aiLoad, setAiLoad, setAiErr, videos=[], ideas=[] 
 
   useEffect(()=>{ 
     const cfg = loadJSON("krapmaps_v1_config",{});
-    setHasPPX(!!(cfg?.keys?.perplexity));
+    setHasPPX(!!(cfg?.keys?.perplexity || BAKED_PERPLEXITY_KEY));
     setHasGPT(!!(cfg?.keys?.gpt4o));
     // Build hook DB and patterns from videos on mount
     if(videos.length) {
@@ -2426,7 +2427,7 @@ const NicheView = ({ WL, keys, aiLoad, setAiLoad, setAiErr, videos=[], ideas=[] 
   const silentPPX = async (prompt) => {
     try {
       const cfg = loadJSON("krapmaps_v1_config",{});
-      if(!cfg?.keys?.perplexity) return null;
+      if(!cfg?.keys?.perplexity && !BAKED_PERPLEXITY_KEY) return null;
       return await callPerplexity(prompt, loadWL());
     } catch { return null; }
   };
@@ -5560,8 +5561,8 @@ const STATUS_C    = { idea:C.dim, scripted:C.purple, filming:C.yellow, editing:C
 
 const loadJSON  = (k,fb) => { try { return JSON.parse(localStorage.getItem(k))||fb; } catch { return fb; } };
 const saveJSON  = (k,d)  => { try { localStorage.setItem(k,JSON.stringify(d)); } catch {} };
-const getSbUrl  = () => localStorage.getItem(SB_URL_KEY) || DEFAULT_SB_URL;
-const getSbKey  = () => localStorage.getItem(SB_KEY_KEY) || DEFAULT_SB_KEY;
+const getSbUrl  = () => localStorage.getItem(SB_URL_KEY) || _ENV.VITE_SB_URL || DEFAULT_SB_URL;
+const getSbKey  = () => localStorage.getItem(SB_KEY_KEY) || _ENV.VITE_SB_KEY || DEFAULT_SB_KEY;
 const today     = () => new Date().toISOString().slice(0,10);
 const getDays   = d => { const t=new Date(d); const n=new Date(); return Math.ceil((t-n)/86400000); };
 const fmtDate   = d => { try { return new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"}).toUpperCase(); } catch { return d||""; } };
@@ -5696,7 +5697,7 @@ const PPX_MODELS = ["llama-3.1-sonar-large-128k-online","llama-3.1-sonar-small-1
 
 async function callPerplexity(prompt, wl=WL) {
   const storedCfg = loadJSON(KEYS_KEY,{});
-  const apiKey = storedCfg?.keys?.perplexity;
+  const apiKey = storedCfg?.keys?.perplexity || BAKED_PERPLEXITY_KEY;
   if(!apiKey) throw new Error("NO PERPLEXITY KEY -- go to Settings and add your Perplexity API key");
   const r = await fetch("https://api.perplexity.ai/chat/completions", {
     method:"POST",
@@ -6885,7 +6886,7 @@ function Dashboard({ keys, onEditKeys }) {
   // ── IG REELS AUTO-SCRAPER ─────────────────────────────────────
   const fetchIGFollowers = useCallback(async()=>{
     const cfg = loadJSON(KEYS_KEY,{});
-    const rapidKey = cfg?.keys?.igscraper || cfg?.keys?.tikwm;
+    const rapidKey = cfg?.keys?.igscraper; // IG needs a dedicated scraper key; tikwm fallback causes 403
     if(!rapidKey) return;
     const lastFollowerFetch = loadJSON("krapmaps_v1_igfollowers_last", 0);
     if(Date.now() - lastFollowerFetch < 6 * 60 * 60 * 1000) return; // 6hr cache
@@ -6914,7 +6915,7 @@ function Dashboard({ keys, onEditKeys }) {
 
   const fetchIGReels = useCallback(async(force=false)=>{
     const cfg = loadJSON(KEYS_KEY,{});
-    const rapidKey = cfg?.keys?.igscraper || cfg?.keys?.tikwm; // reuse tikwm key if no separate key
+    const rapidKey = cfg?.keys?.igscraper; // IG needs a dedicated scraper key; tikwm fallback causes 403
     if(!rapidKey) return;
 
     const lastFetch = loadJSON("krapmaps_v1_igreels_last", 0);
