@@ -1589,7 +1589,14 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
   );
 };
 
-const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={}, commentInsights=null, visualDNA=null }) => {
+const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={}, commentInsights=null, visualDNA=null, setIdeas }) => {
+  const [sentIdeas, setSentIdeas] = useState({});
+  const sendVidToIdeas = (v, key) => {
+    if(!setIdeas || sentIdeas[key]) return;
+    const now = new Date().toISOString();
+    setIdeas(is=>[{ id:Date.now(), title:v.title, type:v.type||"", hook:v.openingLine||"", thumbnail:"", notes:v.whyItWillWork||"", collab:"", viral:0, hookScore:0, created:now.slice(0,10), createdAt:now },...is]);
+    setSentIdeas(s=>({...s,[key]:true}));
+  };
   const [sub, setSub] = useState("OVERVIEW");
   const [vidAnalysis, setVidAnalysis] = useState({});
   const [vidLoading, setVidLoading]   = useState({});
@@ -2077,10 +2084,11 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                     {v.openingLine && (
                       <div style={{ padding:"8px 12px", background:`${C.green}08`, border:`1px solid ${C.green}15`, borderRadius:8, fontSize:13, color:"rgba(255,255,255,0.8)", fontStyle:"italic" }}>"{v.openingLine}"</div>
                     )}
-                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
                       {v.type && <span style={{ fontSize:10, fontWeight:700, color:C.pink, background:`${C.pink}10`, borderRadius:5, padding:"2px 8px" }}>{v.type}</span>}
                       {v.estimated_views && <span style={{ fontSize:10, fontWeight:700, color:C.cyan, background:`${C.cyan}10`, borderRadius:5, padding:"2px 8px" }}>{v.estimated_views}</span>}
                       {v.winning_combo_used && <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)" }}>✓ winning combo</span>}
+                      <button onClick={()=>sendVidToIdeas(v,i)} disabled={!!sentIdeas[i]} style={{ marginLeft:"auto", fontSize:10, fontWeight:700, letterSpacing:"0.04em", color:sentIdeas[i]?"rgba(255,255,255,0.4)":C.green, background:sentIdeas[i]?"rgba(255,255,255,0.04)":`${C.green}12`, border:`1px solid ${sentIdeas[i]?"rgba(255,255,255,0.08)":C.green+"30"}`, borderRadius:6, padding:"4px 10px", cursor:sentIdeas[i]?"default":"pointer", whiteSpace:"nowrap" }}>{sentIdeas[i]?"✓ Added":"+ Send to Ideas"}</button>
                     </div>
                   </div>
                 </div>
@@ -8001,7 +8009,7 @@ Return JSON:
         {/* VIEWS */}
         {nav==="home"      && <HomeView ideas={topIdeas} allIdeas={ideas} outcomeMatches={autoMatchOutcomes(ideas, videos)} confirmOutcome={confirmOutcome} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} weeklyDebrief={weeklyDebrief} debriefLoading={debriefLoading} runDebrief={runDebrief} />}
         {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} markPosted={markPosted} />}
-        {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} />}
+        {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} setIdeas={setIdeas} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
         {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} preloadMsg={assistPreload} />}
