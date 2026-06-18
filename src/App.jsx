@@ -961,7 +961,14 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
     setExpanding(false);
   };
 
-  const sorted = [...ideas].sort((a,b)=>(Number(b.viral)||0)-(Number(a.viral)||0));
+  // Conviction ranking: sort by score, but when two ideas are within 4pts, the
+  // higher-confidence one wins — a data-backed 82 should outrank an uncertain 84.
+  const _conf = i => i.confidenceLevel==="HIGH"?2:i.confidenceLevel==="LOW"?0:1;
+  const sorted = [...ideas].sort((a,b)=>{
+    const sa=Number(a.viral)||0, sb=Number(b.viral)||0;
+    if(Math.abs(sa-sb) <= 4) { const c=_conf(b)-_conf(a); if(c!==0) return c; }
+    return sb-sa;
+  });
   const filteredCal = calFilter==="ALL" ? calItems : calItems.filter(c=>(c.platform||"").toUpperCase()===calFilter);
   const ic = v => (v||0)>=80?C.green:(v||0)>=60?C.yellow:C.pink;
   const perfLabel = s => s>=80?"VIRAL":s>=65?"STRONG":s>=50?"DECENT":s>=35?"WEAK":"NEW";
@@ -4681,8 +4688,13 @@ const buildOutcomeLearning = (ideas=[]) => {
   });
   // Weighted mean: recent results count more, but every sample still contributes.
   const wAvg = arr => { const tw = arr.reduce((s,x)=>s+x.w,0)||1; return arr.reduce((s,x)=>s+x.r*x.w,0)/tw; };
+  // Empirical-Bayes shrinkage: pull small-sample ratios toward 1.0 (the no-adjustment prior).
+  // A hook seen twice shouldn't override priors as hard as one seen 20×. k=3 → n=2 applies 40%
+  // of its deviation, n=10 applies 77%, n=20 applies 87%. Prevents overfitting to noise.
+  const SHRINK_K = 3;
+  const shrink = (ratio, n) => 1 + (ratio - 1) * (n / (n + SHRINK_K));
   const build = (bucket, label) => Object.entries(bucket).filter(([,a])=>a.length>=2)
-    .map(([k,a])=>({ [label]:k, avgRatio:parseFloat(wAvg(a).toFixed(2)), count:a.length }))
+    .map(([k,a])=>{ const raw=wAvg(a); const n=a.length; return { [label]:k, rawRatio:parseFloat(raw.toFixed(2)), avgRatio:parseFloat(shrink(raw,n).toFixed(2)), count:n }; })
     .sort((a,b)=>b.avgRatio-a.avgRatio);
   const hookAdjust   = build(hookL, "hook");
   const typeAdjust   = build(typeL, "type");
@@ -4706,8 +4718,44 @@ const formatOutcomeLearning = (learning) => {
     out += `• Pillar outcome multipliers:\n`;
     learning.pillarAdjust.forEach(p => out += `  - "${p.pillar}": ${p.avgRatio}x (n=${p.count}) — ${sig(p.avgRatio)}\n`);
   }
-  out += `→ MANDATORY: multiply your estimated_views by the matching hook+type ratio. If hook ratio is 1.6x, multiply estimate by 1.6. If 0.6x, reduce by 40%. This is empirical data — it overrides your priors.\n`;
+  out += `→ MANDATORY: multiply your estimated_views by the matching hook+type ratio. If hook ratio is 1.6x, multiply estimate by 1.6. If 0.6x, reduce by 40%. These are confidence-adjusted (small samples shrunk toward 1.0) — trust them in proportion to their n.\n`;
   return out;
+};
+
+// ── SCORE VALIDITY (meta-learning) ────────────────────────────────
+// Measures whether the AI's own virality scores actually rank-correlate with real outcomes.
+// Spearman ρ between predicted score and actual views = does the scoring engine even work?
+const buildScoreValidity = (ideas=[]) => {
+  const posted = ideas.filter(i => i.status==="posted" && i.postedViews>0 && typeof (i.viral ?? i.aiScore?.viralityScore) === "number");
+  if(posted.length < 4) return null;
+  const rows = posted.map(i => ({ score: i.viral ?? i.aiScore.viralityScore, views: i.postedViews }));
+  // Tie-aware rank assignment
+  const rankOf = (key) => {
+    const order = [...rows].map((x,idx)=>({ idx, v:x[key] })).sort((a,b)=>a.v-b.v);
+    const ranks = new Array(rows.length);
+    let i=0;
+    while(i<order.length){
+      let j=i; while(j+1<order.length && order[j+1].v===order[i].v) j++;
+      const avgRank = (i+j)/2 + 1;
+      for(let k=i;k<=j;k++) ranks[order[k].idx] = avgRank;
+      i=j+1;
+    }
+    return ranks;
+  };
+  const sr = rankOf("score"), vr = rankOf("views");
+  const n = rows.length;
+  let d2 = 0; for(let i=0;i<n;i++){ const d = sr[i]-vr[i]; d2 += d*d; }
+  const rho = 1 - (6*d2)/(n*(n*n-1));
+  return { rho: parseFloat(rho.toFixed(2)), sampleSize:n };
+};
+
+const formatScoreValidity = (v) => {
+  if(!v) return "";
+  const verdict = v.rho >= 0.6 ? "STRONG — your scores reliably predict actual performance. Trust your scoring instincts."
+                : v.rho >= 0.3 ? "MODERATE — scores are directionally right but noisy. Tighten the gap between strong and weak ideas."
+                : v.rho >= 0 ? "WEAK — your scores barely predict reality. STOP clustering everything around 70 — push genuinely strong ideas to 85+ and genuinely weak ones below 50. Be far more discriminating."
+                : "INVERTED — your high-scored ideas are UNDERPERFORMING your low-scored ones. Something is systematically wrong in what you reward. Reconsider which factors you weight.";
+  return `SCORE VALIDITY [self-graded — Spearman ρ=${v.rho} between past scores and actual views, n=${v.sampleSize}]: ${verdict}\n`;
 };
 
 // ── HOOK FATIGUE DETECTOR ─────────────────────────────────────────
@@ -6366,7 +6414,8 @@ function Dashboard({ keys, onEditKeys }) {
     const wl = loadWL();
     setTimeout(async()=>{
       try {
-        const r = await callPerplexity(`It is June 2026. What is trending RIGHT NOW on TikTok and Instagram Reels for travel content in Southeast Asia? What sounds/audio are peaking? What formats are getting the highest reach? What topics are viral this week? Return JSON: { hot:[{topic,momentum:'rising|peak|fading',hook_example}], sounds:[string], formats:[string] }`, wl);
+        const _now = new Date().toLocaleDateString("en-GB",{month:"long",year:"numeric"});
+        const r = await callPerplexity(`It is ${_now}. What is trending RIGHT NOW on ${wl.platforms||"TikTok and Instagram Reels"} for ${wl.niche} content aimed at ${wl.targetAudience||"this audience"}? What sounds/audio are peaking? What formats are getting the highest reach? What topics are viral this week? Consider what ${wl.competitors||"top creators in this space"} are doing. Return JSON: { hot:[{topic,momentum:'rising|peak|fading',hook_example}], sounds:[string], formats:[string] }`, wl);
         if(r?.hot?.length || r?.sounds?.length) {
           const formatted = [
             r.hot?.map(t=>`[${t.momentum?.toUpperCase()||"TRENDING"}] ${t.topic}${t.hook_example?` — hook: "${t.hook_example}"`:""}`).join("\n"),
@@ -6624,6 +6673,10 @@ LEARNING: [one sentence]`}]})
       const pipelineSat = buildPipelineSaturation(idea, ideas);
       const pipelineSatBlock = formatPipelineSaturation(pipelineSat);
 
+      // Score validity — does the scoring engine's own output even correlate with reality?
+      const scoreValidity = buildScoreValidity(ideas);
+      const scoreValidityBlock = formatScoreValidity(scoreValidity);
+
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
       const _scorePrompt = `You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
 
@@ -6638,6 +6691,7 @@ ${outcomeLearningBlock}
 ${recentTrackBlock}
 ${hookFatigueBlock}
 ${pipelineSatBlock}
+${scoreValidityBlock}
 ${calibration ? `CALIBRATION: ${calibration}` : ""}
 ${ideaOutcomes.length ? `RECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
 ${seriesMomentum ? `\n${seriesMomentum}` : ""}
