@@ -5819,8 +5819,7 @@ async function callAI(prompt, maxTokens=2000) {
     },
     body: JSON.stringify({
       model:"claude-sonnet-4-6",
-      max_tokens:maxTokens + 3000,
-      thinking:{ type:"enabled", budget_tokens:2500 },
+      max_tokens: maxTokens,
       system:buildSystem(currentWL),
       messages:[{ role:"user", content:prompt }]
     })
