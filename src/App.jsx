@@ -5033,6 +5033,67 @@ async function callGPT(prompt, systemMsg="You are an expert TikTok content strat
   try { return JSON.parse(text); } catch { return {}; }
 }
 
+// ── SEMANTIC EMBEDDINGS ───────────────────────────────────────────
+// Replaces keyword overlap with true meaning-similarity. "late-night drive" and
+// "midnight vibes" share no keywords but are conceptually close — embeddings catch that.
+// Vectors are cached by text hash so each string is embedded at most once.
+const EMB_KEY = "krapmaps_v1_embeddings";
+const _embHash = (s) => { let h=0; const str=(s||"").toLowerCase().trim(); for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))|0; } return "e"+(h>>>0).toString(36); };
+async function embedTexts(texts=[]) {
+  const cache = loadJSON(EMB_KEY,{});
+  const apiKey = loadJSON(KEYS_KEY,{})?.keys?.gpt4o; // embeddings use the OpenAI key
+  if(!apiKey) return cache;
+  const need = [...new Set(texts.filter(t=>t&&t.trim()&&!cache[_embHash(t)]))].slice(0,200);
+  if(!need.length) return cache;
+  try {
+    const r = await fetch("https://api.openai.com/v1/embeddings", {
+      method:"POST",
+      headers:{ "Authorization":`Bearer ${apiKey}`, "Content-Type":"application/json" },
+      body: JSON.stringify({ model:"text-embedding-3-small", input:need })
+    });
+    if(!r.ok) return cache;
+    const d = await r.json();
+    (d.data||[]).forEach((e,idx)=>{ if(e.embedding) cache[_embHash(need[idx])] = e.embedding; });
+    saveJSON(EMB_KEY, cache);
+  } catch { /* silent — semantic layer is additive, never blocks scoring */ }
+  return cache;
+}
+const _cosine = (a,b) => {
+  if(!a||!b||a.length!==b.length) return 0;
+  let dot=0,na=0,nb=0;
+  for(let i=0;i<a.length;i++){ dot+=a[i]*b[i]; na+=a[i]*a[i]; nb+=b[i]*b[i]; }
+  return (na&&nb) ? dot/(Math.sqrt(na)*Math.sqrt(nb)) : 0;
+};
+const _getVec = (cache, text) => cache[_embHash(text)] || null;
+
+// Conceptual saturation + momentum using meaning, not keywords
+const buildSemanticContext = (idea, ideas=[], videos=[], cache={}) => {
+  const iv = _getVec(cache, idea.title);
+  if(!iv) return null;
+  const SIM = 0.80;
+  const pendingSimilar = ideas
+    .filter(i=>i.id!==idea.id && i.status!=="posted")
+    .map(i=>({ i, s:_cosine(iv,_getVec(cache,i.title)) }))
+    .filter(x=>x.s>=SIM).sort((a,b)=>b.s-a.s);
+  const v = videos.filter(x=>x.views>0);
+  const avg = v.length ? v.reduce((s,x)=>s+x.views,0)/v.length : 0;
+  const winners = [
+    ...v.filter(x=>x.views>avg*1.5).map(x=>({ title:x.title, views:x.views })),
+    ...ideas.filter(i=>i.status==="posted"&&i.postedViews>avg*1.5).map(i=>({ title:i.title, views:i.postedViews })),
+  ];
+  const matchedWinner = winners
+    .map(w=>({ w, s:_cosine(iv,_getVec(cache,w.title)) }))
+    .filter(x=>x.s>=SIM).sort((a,b)=>b.s-a.s)[0];
+  return { pendingSimilar, matchedWinner };
+};
+const formatSemanticContext = (ctx) => {
+  if(!ctx) return "";
+  let out = "";
+  if(ctx.matchedWinner) out += `SEMANTIC MOMENTUM: conceptually ${(ctx.matchedWinner.s*100).toFixed(0)}% similar to your past winner "${ctx.matchedWinner.w.title}" (${(ctx.matchedWinner.w.views/1000).toFixed(1)}k views) — matched by MEANING not keywords. Proven concept with this audience → niche-fit boost.\n`;
+  if(ctx.pendingSimilar.length>=2) out += `SEMANTIC SATURATION: ${ctx.pendingSimilar.length} pending ideas are conceptually near-identical (closest: "${ctx.pendingSimilar[0].i.title}" at ${(ctx.pendingSimilar[0].s*100).toFixed(0)}%). They overlap in meaning even if worded differently — consolidate or space out.\n`;
+  return out;
+};
+
 // ── GEMINI 1.5 PRO — Video Analysis ─────────────────────────────
 async function callGeminiVideo(videoUrl, prompt) {
   const cfg = loadJSON("krapmaps_v1_config",{});
@@ -6780,6 +6841,14 @@ LEARNING: [one sentence]`}]})
       const allocator = buildContentAllocator(ideas, organicVids.length?organicVids:videos, WL.pillars||[]);
       const allocatorBlock = formatContentAllocator(allocator, idea.aiScore?.contentPillar);
 
+      // Semantic layer — meaning-based saturation/momentum (embeddings, not keywords)
+      let semanticBlock = "";
+      try {
+        const _vidPool = organicVids.length?organicVids:videos;
+        const _embCacheNow = await embedTexts([idea.title, ...ideas.map(i=>i.title), ..._vidPool.map(v=>v.title)].filter(Boolean));
+        semanticBlock = formatSemanticContext(buildSemanticContext(idea, ideas, _vidPool, _embCacheNow));
+      } catch { /* embeddings optional — never block scoring */ }
+
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
       const _scorePrompt = `You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
 
@@ -6796,6 +6865,7 @@ ${hookFatigueBlock}
 ${pipelineSatBlock}
 ${scoreValidityBlock}
 ${allocatorBlock}
+${semanticBlock}
 ${calibration ? `CALIBRATION: ${calibration}` : ""}
 ${ideaOutcomes.length ? `RECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
 ${seriesMomentum ? `\n${seriesMomentum}` : ""}
