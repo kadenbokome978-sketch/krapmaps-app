@@ -7871,8 +7871,13 @@ Return JSON:
               {WL.appName[0]}
             </div>
             <div>
-              <div style={{ fontSize:20, fontWeight:900, color:"#fff", fontFamily:C.fontHead, lineHeight:1 }}>{WL.appName.slice(0,-2) || "Artist"}<span style={{color:WL.accentColor}}>{WL.appName.slice(-2) || "OS"}</span></div>
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.14em", marginTop:2, fontFamily:C.fontHead }}>{WL.appTagline.toUpperCase()}</div>
+              {_isThiernoClient ? (<>
+                <div style={{ fontSize:20, fontWeight:900, color:"#fff", fontFamily:C.fontHead, lineHeight:1 }}>{WL.creator1 || "Thierno"}</div>
+                <div style={{ fontSize:11, color:WL.accentColor, letterSpacing:"0.18em", marginTop:3, fontFamily:C.fontHead, fontWeight:800 }}>{WL.appName.toUpperCase()}</div>
+              </>) : (<>
+                <div style={{ fontSize:20, fontWeight:900, color:"#fff", fontFamily:C.fontHead, lineHeight:1 }}>{WL.appName.slice(0,-2) || "Artist"}<span style={{color:WL.accentColor}}>{WL.appName.slice(-2) || "OS"}</span></div>
+                <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.14em", marginTop:2, fontFamily:C.fontHead }}>{WL.appTagline.toUpperCase()}</div>
+              </>)}
             </div>
           </div>
         </div>
