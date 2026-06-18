@@ -7600,8 +7600,8 @@ Return ONLY valid JSON:
           lastScoredAt: new Date().toISOString().slice(0,10),
         };
       }));
-    } catch(e) { setAiErr("Score failed: "+e.message); }
-    addXP(20); // XP for scoring an idea
+    } catch(e) { setAiErr("Score failed: "+e.message); console.error("scoreIdea error:", e); }
+    addXP(20);
     setAiLoad(l=>({...l,[key]:false}));
   };
 
