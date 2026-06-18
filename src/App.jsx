@@ -2127,12 +2127,12 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
 const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarget, setModals }) => {
   const [sub, setSub]             = useState("TO DO");
   const [taskInput, setTaskInput] = useState("");
-  const [assign, setAssign]       = useState("BOTH");
   const [taskFilter, setTaskFilter] = useState("ALL");
   const [ideaInput, setIdeaInput] = useState("");
 
   const _c1 = WL.creator1||"Me";
   const _c2 = WL.creator2||"";
+  const [assign, setAssign]       = useState(_c2?"BOTH":_c1.toUpperCase());
   const ac = a => a===_c2.toUpperCase()?C.cyan:a==="BOTH"?C.yellow:C.pink;
   const acLabel = a => a===_c2.toUpperCase()?(_c2[0]||"2"):a==="BOTH"?"B":(_c1.slice(0,2)||"Me");
 
@@ -2150,7 +2150,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
     setIdeaInput("");
   };
 
-  const assignees = ["ALL",_c1.toUpperCase(),...(_c2?[_c2.toUpperCase()]:["BOTH"]),"BOTH"].filter((v,i,a)=>a.indexOf(v)===i);
+  const assignees = ["ALL",_c1.toUpperCase(),...(_c2?[_c2.toUpperCase(),"BOTH"]:[])].filter((v,i,a)=>a.indexOf(v)===i);
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
@@ -2183,7 +2183,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                 {/* Assignee picker */}
                 <div style={{ display:"flex", gap:6 }}>
-                  {[_c1.toUpperCase(),...(_c2?[_c2.toUpperCase()]:["BOTH"]),"BOTH"].filter((v,i,a)=>a.indexOf(v)===i).map(a=>(
+                  {[_c1.toUpperCase(),...(_c2?[_c2.toUpperCase(),"BOTH"]:[])].filter((v,i,a)=>a.indexOf(v)===i).map(a=>(
                     <button key={a} onClick={()=>setAssign(a)} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${assign===a?ac(a):"rgba(255,255,255,0.1)"}`, background:assign===a?`${ac(a)}20`:"transparent", color:assign===a?ac(a):"rgba(255,255,255,0.45)", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>
                       {a}
                     </button>
@@ -2249,7 +2249,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
             {/* Assignee breakdown */}
             <div style={{ borderRadius:16, padding:"16px 18px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)" }}>
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:14 }}>By Assignee</div>
-              {[_c1.toUpperCase(),...(_c2?[_c2.toUpperCase()]:["BOTH"]),"BOTH"].filter((v,i,a)=>a.indexOf(v)===i).map(a=>{
+              {[_c1.toUpperCase(),...(_c2?[_c2.toUpperCase(),"BOTH"]:[])].filter((v,i,a)=>a.indexOf(v)===i).map(a=>{
                 const count = tasks.filter(t=>!t.done&&t.assignee===a).length;
                 const total = tasks.filter(t=>t.assignee===a).length;
                 return (
