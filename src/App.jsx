@@ -5257,6 +5257,79 @@ const sbUpsert = async (table,data) => {
   } catch {}
 };
 
+// ── CROSS-CLIENT ANONYMISED PRIORS ────────────────────────────────
+// Pools ONLY standard hook/type outcome ratios across channels in the same coarse niche
+// bucket. No titles, no handles, no content — a hashed client id + generic labels + stats.
+// Gives a thin-data client a warm start instead of cold. Degrades silently if the
+// shared km_meta_priors table doesn't exist.
+const nicheBucket = (niche="") => {
+  const s = (niche||"").toLowerCase();
+  if(/music|artist|rapper|singer|afrobeat|r&b|rnb|hip.?hop|producer|\bsong/.test(s)) return "music";
+  if(/\bapp\b|saas|startup|founder|product|tech/.test(s)) return "product";
+  if(/travel|backpack|hostel|nomad|tourism/.test(s)) return "travel";
+  if(/fitness|gym|workout|health|wellness/.test(s)) return "fitness";
+  if(/food|recipe|cook|restaurant|chef/.test(s)) return "food";
+  if(/fashion|style|beauty|makeup|skincare/.test(s)) return "fashion";
+  return "general";
+};
+const _clientHash = (id="") => { let h=0; const s=String(id); for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return "c"+(h>>>0).toString(36); };
+
+async function pushMetaPriors(outcomeLearning, wl) {
+  if(!outcomeLearning) return;
+  const bucket = nicheBucket(wl.niche);
+  const ch = _clientHash(wl.clientId||wl.appName||"anon");
+  const rows = [];
+  const add = (dim, arr, keyName) => (arr||[]).forEach(a=>{
+    const val = a[keyName]; if(!val) return;
+    rows.push({
+      id: `${ch}_${dim}_${String(val).replace(/\s+/g,"_").slice(0,40)}`,
+      client_hash: ch, niche_bucket: bucket, dimension: dim, value: String(val),
+      win_ratio: a.avgRatio, sample_n: a.count, updated_at: new Date().toISOString(),
+    });
+  });
+  // Only standard, comparable vocabularies are shared — not custom pillar names.
+  add("hook", outcomeLearning.hookAdjust, "hook");
+  add("type", outcomeLearning.typeAdjust, "type");
+  if(rows.length) await sbUpsert("km_meta_priors", rows).catch(()=>{});
+}
+
+async function fetchMetaPriors(wl) {
+  const bucket = nicheBucket(wl.niche);
+  const ch = _clientHash(wl.clientId||wl.appName||"anon");
+  const rows = await sbFetch("km_meta_priors", `select=*&niche_bucket=eq.${bucket}`);
+  if(!rows || !rows.length) return null;
+  const others = rows.filter(r=>r.client_hash!==ch && r.sample_n>=2);
+  if(others.length < 2) return null;
+  const agg = {};
+  others.forEach(r=>{
+    const k = `${r.dimension}|${r.value}`;
+    if(!agg[k]) agg[k] = { dimension:r.dimension, value:r.value, wsum:0, nsum:0, clients:new Set() };
+    agg[k].wsum += r.win_ratio * r.sample_n;
+    agg[k].nsum += r.sample_n;
+    agg[k].clients.add(r.client_hash);
+  });
+  const priors = Object.values(agg).map(a=>({
+    dimension:a.dimension, value:a.value,
+    ratio: parseFloat((a.wsum/a.nsum).toFixed(2)),
+    clients: a.clients.size, n: a.nsum,
+  }));
+  return { priors, bucket };
+}
+
+const formatMetaPriors = (mp, ownLearning) => {
+  if(!mp || !mp.priors.length) return "";
+  const ownN = ownLearning?.sampleSize || 0;
+  const weightNote = ownN < 5
+    ? "Your own channel data is thin — lean on these cross-channel priors as a warm start."
+    : "Use only to corroborate your own channel data, which always takes precedence.";
+  let out = `CROSS-CHANNEL PRIORS [anonymised aggregate from other ${mp.bucket} channels — standard hook/type labels + outcome ratios only, zero content]:\n`;
+  mp.priors.sort((a,b)=>b.ratio-a.ratio).slice(0,8).forEach(p=>{
+    out += `  • ${p.dimension} "${p.value}": ${p.ratio}x outcome across ${p.clients} channel(s) (pooled n=${p.n})\n`;
+  });
+  out += `→ ${weightNote}\n`;
+  return out;
+};
+
 // ── AI ────────────────────────────────────────────────────────────
 const buildSystem = (wl=WL) => `You are the AI content strategist for ${wl.appName} (${wl.handle}).
 
@@ -6916,6 +6989,14 @@ LEARNING: [one sentence]`}]})
       const _ci = loadJSON(COMMENTS_KEY, null);
       const commentBlock = _ci ? `AUDIENCE VOICE [from ${_ci.sampleSize} real comments on top videos]:\n• Sentiment: ${_ci.overall_sentiment||"n/a"}\n• Recurring themes: ${(_ci.top_themes||[]).join("; ")||"n/a"}\n• They're explicitly asking for: ${(_ci.audience_requests||[]).join("; ")||"n/a"}\n• Their exact words (reuse in captions/hooks): ${(_ci.language_patterns||[]).slice(0,6).join(", ")||"n/a"}\n→ If this idea answers an audience request or hits a recurring theme, boost share trigger AND niche fit — this is what they're literally asking for.\n` : "";
 
+      // Cross-channel anonymised priors — warm-start from other channels in the same niche bucket
+      let metaBlock = "";
+      try {
+        if(outcomeLearning) pushMetaPriors(outcomeLearning, WL); // fire-and-forget contribution
+        const _mp = await fetchMetaPriors(WL);
+        metaBlock = formatMetaPriors(_mp, outcomeLearning);
+      } catch { /* shared table optional — never blocks scoring */ }
+
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
       const _scorePrompt = `You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
 
@@ -6934,6 +7015,7 @@ ${scoreValidityBlock}
 ${allocatorBlock}
 ${semanticBlock}
 ${commentBlock}
+${metaBlock}
 ${calibration ? `CALIBRATION: ${calibration}` : ""}
 ${ideaOutcomes.length ? `RECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
 ${seriesMomentum ? `\n${seriesMomentum}` : ""}
