@@ -1512,7 +1512,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
   );
 };
 
-const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={} }) => {
+const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={}, commentInsights=null }) => {
   const [sub, setSub] = useState("OVERVIEW");
   const [vidAnalysis, setVidAnalysis] = useState({});
   const [vidLoading, setVidLoading]   = useState({});
@@ -1879,12 +1879,40 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
       {/* ── AI INSIGHTS ─────────────────────────────────────────── */}
       {sub==="AI INSIGHTS" && (
         <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+          {/* Audience voice — mined from real comments */}
+          {commentInsights && (
+            <div style={{ borderRadius:16, padding:"18px 20px", background:`${C.purple}08`, border:`1px solid ${C.purple}22` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+                <span style={{ fontSize:16 }}>💬</span>
+                <div style={{ fontSize:13, fontWeight:700, color:C.purple, letterSpacing:"0.08em" }}>AUDIENCE VOICE</div>
+                <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)", marginLeft:"auto" }}>{commentInsights.sampleSize||0} comments · auto-mined</span>
+              </div>
+              {commentInsights.overall_sentiment && (
+                <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)", lineHeight:1.5, marginBottom:12, fontFamily:C.fontBody }}>{commentInsights.overall_sentiment}</div>
+              )}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(220px,100%),1fr))", gap:12 }}>
+                {[
+                  {l:"THEY KEEP MENTIONING", arr:commentInsights.top_themes, c:C.cyan},
+                  {l:"THEY'RE ASKING FOR", arr:commentInsights.audience_requests, c:C.green},
+                  {l:"THEIR EXACT WORDS", arr:commentInsights.language_patterns, c:C.yellow},
+                  {l:"VIDEOS THEY WANT", arr:commentInsights.content_ideas, c:C.pink},
+                ].filter(x=>x.arr?.length).map((x,i)=>(
+                  <div key={i} style={{ padding:"10px 12px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${x.c}18` }}>
+                    <div style={{ fontSize:10, color:x.c, fontWeight:700, letterSpacing:"0.08em", marginBottom:6 }}>{x.l}</div>
+                    {x.arr.slice(0,4).map((t,j)=>(
+                      <div key={j} style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, marginBottom:3, fontFamily:C.fontBody }}>• {t}</div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {/* Action buttons */}
           <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
             {[
               {l:"WHAT'S WORKING", c:C.cyan, m:"analysis", load:aiLoad.analysis},
               {l:"NEXT VIDEOS", c:C.green, m:"nextVids", load:aiLoad.nextVids},
-              {l:"HARLEY BRIEF", c:C.yellow, m:"weekly", load:aiLoad.weekly},
+              {l:`${(WL.creator2||"WEEKLY").toUpperCase()} BRIEF`, c:C.yellow, m:"weekly", load:aiLoad.weekly},
               {l:"TRENDS", c:C.orange, m:"trends", load:aiLoad.trends},
             ].map((a,i)=>(
               <button key={i} onClick={()=>runAI&&runAI(a.m)} disabled={a.load}
@@ -3981,6 +4009,7 @@ const CHANNEL_THEORY_KEY = "krapmaps_v1_channel_theory";
 const HOOK_DB_KEY  = "krapmaps_v1_hookdb";
 const PATTERN_KEY  = "krapmaps_v1_patterns";
 const GAP_KEY      = "krapmaps_v1_gaps";
+const COMMENTS_KEY = "krapmaps_v1_comment_insights";
 const GPT_KEY_ID   = "gpt4o";
 
 // ── STREAK & XP SYSTEM ─────────────────────────────────────────────
@@ -6097,6 +6126,7 @@ function Dashboard({ keys, onEditKeys }) {
 
   const [wlConfig, setWlConfig] = useState(()=>loadWL());
   const [videoScores, setVideoScores] = useState(()=>loadJSON(SCORES_KEY,{}));
+  const [commentInsights, setCommentInsights] = useState(()=>loadJSON(COMMENTS_KEY,null));
   const onEditWL = (newWL) => { saveWL(newWL); setWlConfig({...WL_DEFAULTS,...newWL}); };
   const activeWL = wlConfig;
 
@@ -6373,6 +6403,39 @@ function Dashboard({ keys, onEditKeys }) {
 
   // Auto-fetch on load and every 12hrs
   useEffect(()=>{ if(!ttFetchedRef.current){ ttFetchedRef.current=true; fetchTikToks(); } },[]);
+
+  // ── COMMENT SENTIMENT MINER ───────────────────────────────────
+  // Pulls real comments off the top videos and distils the AUDIENCE VOICE —
+  // the richest signal there is: their exact words, requests, and emotional drivers.
+  const mineComments = useCallback(async()=>{
+    const cfg = loadJSON(KEYS_KEY,{});
+    const rapidKey = cfg?.keys?.tikwm || cfg?.keys?.igscraper;
+    const aiKey = cfg?.keys?.anthropic;
+    if(!rapidKey || !aiKey) return;
+    if(Date.now() - loadJSON("krapmaps_v1_comments_last", 0) < 3*24*60*60*1000) return; // every 3 days
+    const top = [...videos].filter(v=>v.platform==="tiktok"&&v.views>0&&(v._tikwmId||v.url)).sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
+    if(top.length < 2) return;
+    try {
+      let pool = [];
+      for(const v of top) {
+        const idOrUrl = v._tikwmId || v.url;
+        const r = await fetch("https://tiktok-scraper7.p.rapidapi.com/comment/list?url="+encodeURIComponent(idOrUrl)+"&count=20&cursor=0",
+          { headers:{ "x-rapidapi-host":"tiktok-scraper7.p.rapidapi.com","x-rapidapi-key":rapidKey } });
+        if(!r.ok) continue;
+        const d = await r.json();
+        (d?.data?.comments||[]).forEach(c=>{ if(c.text) pool.push(c.text); });
+        await new Promise(res=>setTimeout(res,500));
+      }
+      pool = pool.filter(Boolean).slice(0,120);
+      if(pool.length < 10) return;
+      const wl = loadWL();
+      const insights = await callAI(`These are real audience comments on ${wl.handle}'s top videos (${wl.niche}). Analyse the AUDIENCE VOICE — what they actually feel, want, and say.\n\nCOMMENTS:\n${pool.map((c,i)=>`${i+1}. ${c.slice(0,160)}`).join("\n")}\n\nReturn JSON: {"overall_sentiment":"positive|mixed|negative — plus one line why","top_themes":["recurring things they mention"],"audience_requests":["things they explicitly ask for"],"language_patterns":["exact words/phrases the audience uses — to reuse in captions"],"content_ideas":["specific videos the comments are begging for"],"emotional_drivers":["what emotion is making them comment"]}`, 1500);
+      saveJSON(COMMENTS_KEY, { ...insights, sampleSize:pool.length, minedAt:new Date().toISOString() });
+      saveJSON("krapmaps_v1_comments_last", Date.now());
+      setCommentInsights(insights);
+    } catch(e){ /* silent — additive signal */ }
+  },[videos]);
+  useEffect(()=>{ const t=setTimeout(()=>mineComments(),6000); return ()=>clearTimeout(t); },[mineComments]);
 
   // ── IG REELS AUTO-SCRAPER ─────────────────────────────────────
   const fetchIGFollowers = useCallback(async()=>{
@@ -6849,6 +6912,10 @@ LEARNING: [one sentence]`}]})
         semanticBlock = formatSemanticContext(buildSemanticContext(idea, ideas, _vidPool, _embCacheNow));
       } catch { /* embeddings optional — never block scoring */ }
 
+      // Audience voice — distilled from real comments on top videos
+      const _ci = loadJSON(COMMENTS_KEY, null);
+      const commentBlock = _ci ? `AUDIENCE VOICE [from ${_ci.sampleSize} real comments on top videos]:\n• Sentiment: ${_ci.overall_sentiment||"n/a"}\n• Recurring themes: ${(_ci.top_themes||[]).join("; ")||"n/a"}\n• They're explicitly asking for: ${(_ci.audience_requests||[]).join("; ")||"n/a"}\n• Their exact words (reuse in captions/hooks): ${(_ci.language_patterns||[]).slice(0,6).join(", ")||"n/a"}\n→ If this idea answers an audience request or hits a recurring theme, boost share trigger AND niche fit — this is what they're literally asking for.\n` : "";
+
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
       const _scorePrompt = `You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
 
@@ -6866,6 +6933,7 @@ ${pipelineSatBlock}
 ${scoreValidityBlock}
 ${allocatorBlock}
 ${semanticBlock}
+${commentBlock}
 ${calibration ? `CALIBRATION: ${calibration}` : ""}
 ${ideaOutcomes.length ? `RECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
 ${seriesMomentum ? `\n${seriesMomentum}` : ""}
@@ -7432,7 +7500,7 @@ Return JSON:
         {/* VIEWS */}
         {nav==="home"      && <HomeView ideas={topIdeas} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} weeklyDebrief={weeklyDebrief} debriefLoading={debriefLoading} runDebrief={runDebrief} />}
         {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} markPosted={markPosted} />}
-        {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} />}
+        {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
         {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} preloadMsg={assistPreload} />}
