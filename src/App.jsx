@@ -3773,7 +3773,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
     { id:"perplexity", label:"Perplexity", desc:"Live trend research", color:C.cyan },
     { id:"gpt4o", label:"GPT-4o", desc:"Multi-model consensus", color:C.green },
     { id:"tikwm", label:"TikTok (RapidAPI)", desc:"Auto TikTok sync", color:"#FF2D55" },
-    { id:"gemini", label:"Gemini", desc:"Video reader AI", color:C.yellow },
+    { id:"gemini", label:"Gemini", desc:"Video reader + 3rd scoring vote", color:C.yellow },
     { id:"igscraper", label:"Instagram (RapidAPI)", desc:"Auto reel sync", color:"#E1306C" },
   ];
 
@@ -5343,49 +5343,75 @@ async function callGeminiVideo(videoUrl, prompt) {
 }
 
 // Multi-model consensus — run same prompt through Claude + GPT4o, merge insights
+// ── GEMINI 1.5 PRO — text JSON scoring (3rd ensemble model, optional) ──
+async function callGeminiText(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.") {
+  const cfg = loadJSON(KEYS_KEY,{});
+  const apiKey = cfg?.keys?.gemini;
+  if(!apiKey) throw new Error("NO GEMINI KEY");
+  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key="+apiKey, {
+    method:"POST", headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      contents:[{ parts:[{ text: systemMsg+"\n\n"+prompt }] }],
+      generationConfig:{ responseMimeType:"application/json", maxOutputTokens:2000 }
+    })
+  });
+  if(!r.ok) throw new Error("Gemini error "+r.status);
+  const d = await r.json();
+  const text = d.candidates?.[0]?.content?.parts?.[0]?.text||"";
+  const clean = text.replace(/```json/g,"").replace(/```/g,"").trim();
+  try { return JSON.parse(clean); } catch {
+    const m = clean.match(/\{[\s\S]*\}/); if(m){ try { return JSON.parse(m[0]); } catch {} }
+    throw new Error("Could not parse Gemini response");
+  }
+}
+
 async function callConsensus(claudePrompt, gptPrompt, wl=WL) {
-  const results = await Promise.allSettled([
+  const hasGemini = !!loadJSON(KEYS_KEY,{})?.keys?.gemini;
+  const calls = [
     callAI(claudePrompt, 2000),
     callGPT(gptPrompt, `You are an expert ${wl.niche} content strategist for ${wl.appName}. Return ONLY valid JSON.`)
-  ]);
+  ];
+  if(hasGemini) calls.push(callGeminiText(gptPrompt, `You are an expert ${wl.niche} content strategist for ${wl.appName}. Return ONLY valid JSON.`));
+  const results = await Promise.allSettled(calls);
   const claudeResult = results[0].status==="fulfilled" ? results[0].value : null;
   const gptResult    = results[1].status==="fulfilled" ? results[1].value : null;
-  return { claude:claudeResult, gpt:gptResult, bothSucceeded: !!(claudeResult && gptResult) };
+  const geminiResult = hasGemini && results[2]?.status==="fulfilled" ? results[2].value : null;
+  return { claude:claudeResult, gpt:gptResult, gemini:geminiResult, bothSucceeded: !!(claudeResult && gptResult) };
 }
 
 // ── ENSEMBLE RECONCILIATION ───────────────────────────────────────
-// Two independent models scoring the same idea — averaging reduces variance,
-// and the size of their disagreement IS the uncertainty signal.
-const reconcileScores = (a, b) => {
-  if(a && !b) return { ...a, modelAgreement:"SINGLE — only one model responded", _ensemble:false };
-  if(b && !a) return { ...b, modelAgreement:"SINGLE — only one model responded", _ensemble:false };
-  if(!a && !b) return null;
-  const avg = (x,y) => (typeof x==="number"&&typeof y==="number") ? Math.round((x+y)/2) : (typeof x==="number"?x:(typeof y==="number"?y:null));
-  const disagreement = Math.abs((a.viralityScore||0)-(b.viralityScore||0));
-  // Per-factor disagreement reveals WHICH dimension is uncertain
-  const factorGap = (k) => Math.abs((a[k]||0)-(b[k]||0));
-  const gaps = { hook:factorGap("hookScore"), retention:factorGap("retentionScore"), share:factorGap("shareScore"), algo:factorGap("algoScore"), niche:factorGap("nicheScore") };
+// N independent models score the same idea — averaging reduces variance, and the
+// SPREAD across models (max−min) is the uncertainty signal. Claude is kept as the
+// qualitative spine (thinking-enabled, richest text); the others vote on the numbers.
+// Variadic: pass any mix of (claude, gpt, gemini) — nulls are ignored gracefully.
+const reconcileScores = (...models) => {
+  const present = models.filter(Boolean);
+  if(!present.length) return null;
+  // Claude (first arg) keeps the qualitative spine if it answered; else first available.
+  const spine = models[0] || present[0];
+  const others = present.filter(m=>m!==spine);
+  if(present.length === 1) return { ...spine, modelAgreement:"SINGLE — only one model responded", _ensemble:false };
+  const NUMERIC = ["viralityScore","hookScore","retentionScore","shareScore","algoScore","nicheScore"];
+  const mean = (k) => { const vals = present.map(m=>m[k]).filter(v=>typeof v==="number"); return vals.length ? Math.round(vals.reduce((s,v)=>s+v,0)/vals.length) : (spine[k] ?? null); };
+  const spread = (k) => { const vals = present.map(m=>m[k]).filter(v=>typeof v==="number"); return vals.length>1 ? Math.max(...vals)-Math.min(...vals) : 0; };
+  const disagreement = spread("viralityScore");
+  // Per-factor spread reveals WHICH dimension the models contest most.
+  const gaps = { hook:spread("hookScore"), retention:spread("retentionScore"), share:spread("shareScore"), algo:spread("algoScore"), niche:spread("nicheScore") };
   const mostContested = Object.entries(gaps).sort((x,y)=>y[1]-x[1])[0];
-  let confidenceLevel = a.confidenceLevel || b.confidenceLevel || "MEDIUM";
+  let confidenceLevel = spine.confidenceLevel || present.find(m=>m.confidenceLevel)?.confidenceLevel || "MEDIUM";
   if(disagreement > 20) confidenceLevel = "LOW";
   else if(disagreement > 10 && confidenceLevel === "HIGH") confidenceLevel = "MEDIUM";
-  const agreement = disagreement <= 8 ? "STRONG — both models converge, high trust"
-                  : disagreement <= 18 ? "MODERATE — minor divergence"
-                  : `WEAK — models disagree by ${disagreement}pts on virality, treat as uncertain`;
-  return {
-    ...a, // keep Claude's richer qualitative text (thinking-enabled)
-    viralityScore: avg(a.viralityScore, b.viralityScore),
-    hookScore: avg(a.hookScore, b.hookScore),
-    retentionScore: avg(a.retentionScore, b.retentionScore),
-    shareScore: avg(a.shareScore, b.shareScore),
-    algoScore: avg(a.algoScore, b.algoScore),
-    nicheScore: avg(a.nicheScore, b.nicheScore),
-    confidenceLevel,
-    modelAgreement: agreement,
+  const n = present.length;
+  const agreement = disagreement <= 8 ? `STRONG — all ${n} models converge, high trust`
+                  : disagreement <= 18 ? `MODERATE — ${n} models show minor divergence`
+                  : `WEAK — ${n} models disagree by ${disagreement}pts on virality, treat as uncertain`;
+  const out = { ...spine, _ensemble:true, _modelCount:n,
+    confidenceLevel, modelAgreement: agreement,
     mostContestedFactor: (mostContested && mostContested[1] > 15) ? `${mostContested[0]} (models differ by ${mostContested[1]}pts)` : null,
-    secondOpinion: (disagreement > 15 && b.verdict) ? `GPT-4o's take: ${b.verdict}` : null,
-    _ensemble: true,
+    secondOpinion: (disagreement > 15 && others[0]?.verdict) ? `2nd model's take: ${others[0].verdict}` : null,
   };
+  NUMERIC.forEach(k => { out[k] = mean(k); });
+  return out;
 };
 
 const HOOK_TYPES       = ["edgy/controversial","problem->solution","gamification","achievement","reaction","challenge","pov","tutorial"];
@@ -7287,8 +7313,8 @@ REASONING DISCIPLINE: Before scoring, identify the 2-3 strongest data signals ab
 Return ONLY valid JSON:
 {"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","hookVariants":[{"hook":"A/B variant 1 under 10 words — a DISTINCT angle (different trigger type than the others)","trigger":"open-loop|contrast|identity|social-proof|visual-disruption","predictedLift":"+X% vs the original hook, grounded in this channel's OUTCOME LEARNING + VISUAL DNA above","why":"one line: which channel data signal makes this variant win"},{"hook":"A/B variant 2 — different trigger","trigger":"...","predictedLift":"+X%","why":"..."},{"hook":"A/B variant 3 — different trigger","trigger":"...","predictedLift":"+X%","why":"..."}],"bestVariantIndex":"0|1|2 — which variant you predict wins and would test first","retentionFix":"the single biggest retention improvement","openLoopStrength":"rate 1-10 how well this video creates and sustains curiosity gaps — what is the open loop and when does it close?","reHookMoments":["specific moment at ~3s to re-engage","specific moment at ~15s","specific moment at ~30s if video is longer"],"emotionalArc":"setup→tension→payoff analysis — what emotion does viewer feel at start, middle, end? Where does it escalate?","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic RANGE corrected by outcome learning + bias σ e.g. 24K-56K","contentPillar":"niche-specific pillar name","competitorAngle":"how to differentiate from what competitors are already doing in this niche","optimalPostSlot":"best day+time to post this based on the channel's day/time performance data above, e.g. 'Saturday 6-9pm'","confidenceLevel":"HIGH|MEDIUM|LOW — based on how much real data backs this score","scoreRationale":"1 sentence: which 2-3 data signals drove this specific score up or down vs a generic idea"}`;
       const _consensus = await callConsensus(_scorePrompt, _scorePrompt, wl);
-      if(!_consensus.claude && !_consensus.gpt) throw new Error("Both scoring models failed — check your Anthropic / GPT-4o keys in Settings");
-      const r = reconcileScores(_consensus.claude, _consensus.gpt);
+      if(!_consensus.claude && !_consensus.gpt && !_consensus.gemini) throw new Error("All scoring models failed — check your Anthropic / GPT-4o keys in Settings");
+      const r = reconcileScores(_consensus.claude, _consensus.gpt, _consensus.gemini);
       // Neural blend: fuse the trained net's data-driven view prediction with the LLM's estimate.
       // Weight is the net's earned, cross-validated trust — 0 when it can't beat baseline.
       try {
