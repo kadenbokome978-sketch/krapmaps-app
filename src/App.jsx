@@ -218,7 +218,7 @@ const GlowAreaChart = ({ data=[], color=C.pink, height=120, dataKey="value", xKe
   const vals = data.map(d=>d[dataKey]||0);
   const max = Math.max(...vals,1), min = Math.min(...vals,0);
   const range = max-min||1;
-  const pts = data.map((d,i)=>[PAD+(i/(data.length-1||1))*(W-PAD*2), H-BPAD-((d[dataKey]-min)/range)*(H-BPAD-8)]);
+  const pts = data.map((d,i)=>[PAD+(i/(data.length-1||1))*(W-PAD*2), H-BPAD-(((d[dataKey]||0)-min)/range)*(H-BPAD-8)]);
   const path = bezier(pts);
   const id = color.replace("#","c");
   return (
@@ -359,7 +359,7 @@ const GlowLineChart = ({ data=[], color=C.cyan, height=100, dataKey="value", xKe
   const W=500, H=height, PAD=20, BPAD=20;
   const vals = data.map(d=>d[dataKey]||0);
   const max=Math.max(...vals,1), min=Math.min(...vals,0), range=max-min||1;
-  const pts = data.map((d,i)=>[PAD+(i/(data.length-1))*(W-PAD*2), H-BPAD-((d[dataKey]-min)/range)*(H-BPAD-8)]);
+  const pts = data.map((d,i)=>[PAD+(i/(data.length-1))*(W-PAD*2), H-BPAD-(((d[dataKey]||0)-min)/range)*(H-BPAD-8)]);
   const path = bezier(pts);
   const id = color.replace("#","l");
   return (
@@ -433,7 +433,8 @@ const Sparkline = ({ data=[], color=C.pink, height=40 }) => {
 };
 
 const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calItems, setNav, runAI, aiLoad, openModal, ttViewsDisplay, igViewsTotal=0, allViewsDisplay=0, m, scrapedStats, statsError, igData, videos=[], weeklyDebrief, debriefLoading, runDebrief }) => {
-  const topIdeas = [...(ideas||[])].sort((a,b)=>(Number(b.viral)||0)-(Number(a.viral)||0)).slice(0,3);
+  const _allIdeas = allIdeas.length ? allIdeas : (ideas||[]);
+  const topIdeas = [..._allIdeas].sort((a,b)=>(Number(b.viral)||0)-(Number(a.viral)||0)).slice(0,3);
   const ritual = React.useMemo(()=>buildRitual(allIdeas.length?allIdeas:(ideas||[]), videos),[allIdeas, ideas, videos]);
   React.useEffect(()=>{ if(ritual.freshWeek) markRitualWeek(ritual.week); },[ritual.freshWeek, ritual.week]);
   const upcoming = (calItems||[]).slice(0,3);
@@ -441,7 +442,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
   const xp = React.useMemo(()=>getXP(),[]);
   const intelLevel = React.useMemo(()=>getIntelligenceLevel(videos, ideas||[], loadJSON(MEMORY_KEY,{entries:[]}), loadJSON(CHANNEL_THEORY_KEY,"")),[videos, ideas]);
   const xpToNext = 100 * (xp.level * xp.level);
-  const xpProgress = Math.min(((xp.total - 100*(xp.level-1)*(xp.level-1)) / (xpToNext - 100*(xp.level-1)*(xp.level-1))) * 100, 100);
+  const xpProgress = Math.min(((xp.total - 100*(xp.level-1)*(xp.level-1)) / (xpToNext - 100*(xp.level-1)*(xp.level-1) || 1)) * 100, 100) || 0;
   // Build chart data from videos
   const last7 = [...Array(7)].map((_,i) => {
     const d = new Date(); d.setDate(d.getDate()-6+i);
@@ -559,8 +560,8 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         </div>
         {/* Open loops — Zeigarnik effect */}
         {(() => {
-          const unscored = (ideas||[]).filter(i=>!(i.viral>0)&&i.status!=="posted").length;
-          const stale = (ideas||[]).filter(i=>{ if(["posted","filmed"].includes(i.status)) return false; const d=i.createdAt?Math.floor((Date.now()-new Date(i.createdAt).getTime())/86400000):null; return d&&d>30; }).length;
+          const unscored = _allIdeas.filter(i=>!(i.viral>0)&&i.status!=="posted").length;
+          const stale = _allIdeas.filter(i=>{ if(["posted","filmed"].includes(i.status)) return false; const d=i.createdAt?Math.floor((Date.now()-new Date(i.createdAt).getTime())/86400000):null; return d&&d>30; }).length;
           const urgent = unscored + stale;
           return urgent > 0 ? (
             <div data-card style={{ borderRadius:16, padding:"16px 20px", background:`${C.pink}08`, border:`1px solid ${C.pink}25`, cursor:"pointer" }} onClick={()=>setNav("content")}>
@@ -871,7 +872,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           {[
             { ic:I.search, l:"WHAT'S WORKING",  desc:"Analyse top content", c:C.cyan,   m:"analysis" },
             { ic:I.target, l:"NEXT VIDEOS",      desc:"AI recommendations", c:C.green,  m:"nextVids" },
-            { ic:I.write,  l:"HARLEY BRIEF",     desc:"Weekly filming brief", c:C.yellow, m:"weekly"   },
+            { ic:I.write,  l:`${(WL.creator2||"WEEKLY").toUpperCase()} BRIEF`, desc:"Weekly filming brief", c:C.yellow, m:"weekly"   },
             { ic:I.trend,  l:"TRENDS",           desc:"What's hot now", c:C.orange, m:"trends"   },
           ].map((a,i)=>(
             <button data-btn key={i} onClick={()=>runAI&&runAI(a.m)} disabled={aiLoad&&aiLoad[a.m]}
@@ -1136,8 +1137,8 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
               const isStale = daysOld!==null && daysOld>30 && idea.status!=="posted" && idea.status!=="filmed";
               const hasScore = (idea.viral||0)>0;
               const isScoring = aiLoad&&aiLoad["s"+idea.id];
-              const stageLabel = ({idea:"Idea",script_ready:"Scripted",filming:"Filming",posted:"Posted"})[idea.status||"idea"];
-              const stageColor = ({idea:C.cyan,script_ready:C.green,filming:C.orange,posted:C.green})[idea.status||"idea"];
+              const stageLabel = ({idea:"Idea",script_ready:"Scripted",filming:"Filming",filmed:"Filmed",posted:"Posted"})[idea.status||"idea"]||"Idea";
+              const stageColor = ({idea:C.cyan,script_ready:C.green,filming:C.orange,filmed:C.yellow,posted:C.green})[idea.status||"idea"]||C.cyan;
               return (
                 <div key={idea.id} style={{ borderRadius:16, background:"rgba(12,8,24,0.95)", border:`1px solid ${isStale?C.pink+"40":hasScore?scoreC+"22":"rgba(255,255,255,0.08)"}`, position:"relative", overflow:"hidden", display:"flex", flexDirection:"column", transition:"border-color 0.2s" }}>
 
@@ -1593,9 +1594,9 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                                 const mem = loadJSON(MEMORY_KEY,{entries:[]});
                                 mem.entries.push({ type:"HOOK_LEARNING", recommendation:`Hook split test winner: "${v.hook_type}" for idea "${captionIdea?.title?.slice(0,40)||"unknown"}". Caption: ${v.caption?.slice(0,80)}`, date:new Date().toISOString().slice(0,10), id:Date.now() });
                                 saveJSON(MEMORY_KEY,mem);
-                                alert(`✓ "${v.hook_type}" saved to memory`);
+                                copyText&&copyText("hookwin_"+i, `✓ "${v.hook_type}" saved to memory`);
                               }} style={{ padding:"3px 9px", borderRadius:5, border:`1px solid ${C.green}25`, background:`${C.green}08`, color:C.green, fontFamily:C.fontHead, fontSize:9, fontWeight:700, cursor:"pointer" }}>🏆 WIN</button>
-                              <button onClick={()=>navigator.clipboard.writeText(v.caption+(v.hashtags?" "+v.hashtags.map(h=>"#"+h).join(" "):""))} style={{ padding:"3px 9px", borderRadius:5, border:`1px solid ${C.pink}25`, background:"transparent", color:C.pink, fontFamily:C.fontHead, fontSize:9, fontWeight:700, cursor:"pointer" }}>COPY</button>
+                              <button onClick={()=>copyText&&copyText("hookcopy_"+i, v.caption+(v.hashtags?" "+v.hashtags.map(h=>"#"+h).join(" "):""))} style={{ padding:"3px 9px", borderRadius:5, border:`1px solid ${C.pink}25`, background:"transparent", color:C.pink, fontFamily:C.fontHead, fontSize:9, fontWeight:700, cursor:"pointer" }}>{copied==="hookcopy_"+i?"✓":"COPY"}</button>
                             </div>
                           </div>
                           <div style={{ padding:"8px 12px" }}>
@@ -1899,7 +1900,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 <span style={{ fontSize:20, fontWeight:400, fontFamily:C.fontHead, color:C.pink }}>{fmt(ttBarData[0]?.value||0)}</span>
               </div>
               {ttBarData.length>0 ? <GlowBarChart data={ttBarData} color={C.pink} height={160} dataKey="value" xKey="label"/>
-                : <div style={{height:160,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"rgba(255,255,255,0.25)",fontStyle:"italic"}}>No TikTok videos yet</div>}
+                : <div style={{height:160,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"rgba(255,255,255,0.45)",fontStyle:"italic"}}>No TikTok videos yet</div>}
             </div>
 
             {/* Instagram top reels */}
@@ -1910,7 +1911,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 <span style={{ fontSize:20, fontWeight:400, fontFamily:C.fontHead, color:C.purple }}>{fmt(igBarData[0]?.value||0)}</span>
               </div>
               {igBarData.length>0 ? <GlowBarChart data={igBarData} color={C.purple} height={160} dataKey="value" xKey="label"/>
-                : <div style={{height:160,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"rgba(255,255,255,0.25)",fontStyle:"italic"}}>Sync IG reels via Settings</div>}
+                : <div style={{height:160,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"rgba(255,255,255,0.45)",fontStyle:"italic"}}>Sync IG reels via Settings</div>}
             </div>
           </div>
 
@@ -2151,8 +2152,8 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
             <div data-card style={{ borderRadius:16, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.yellow}20`, position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.yellow},${C.yellow}00)` }}/>
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:14, display:"flex", alignItems:"center", gap:6 }}><span style={{width:6,height:6,borderRadius:"50%",background:C.yellow,display:"inline-block",flexShrink:0}}/>Harley Brief</div>
-              {weekly ? <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)", lineHeight:1.6, fontFamily:C.fontBody }}>{weekly.harleyBrief||weekly.rawSummaryText}</div>
-                : <div style={{ fontSize:13, color:"rgba(255,255,255,0.25)", fontStyle:"italic" }}>Run "Harley Brief" for filming instructions</div>}
+              {weekly ? <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)", lineHeight:1.6, fontFamily:C.fontBody }}>{weekly.brief||weekly.harleyBrief||weekly.rawSummaryText}</div>
+                : <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", fontStyle:"italic" }}>Run the weekly brief for filming instructions</div>}
             </div>
 
             {/* Trends */}
@@ -2692,6 +2693,8 @@ Return ONLY JSON: {
     try {
       const wl = loadWL();
       const ctx = buildChannelContext();
+      const memCtx = buildMemoryContext();
+      const compCtx = competitors?.data?.opportunities ? `Competitor gaps identified: ${JSON.stringify(competitors.data.opportunities.slice(0,2))}` : "";
       // Step 1a — raw trend fetch
       const trendPrompt = `You are researching TikTok and Instagram trends RIGHT NOW in ${wl.niche} for a creator targeting ${wl.targetAudience}.
 Search for: top trending topics, viral formats, trending sounds, competitor activity from ${wl.competitors}.
@@ -3041,10 +3044,10 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
           <input value={predictInput.title} onChange={e=>setPredictInput(p=>({...p,title:e.target.value}))} placeholder="Video concept / title..." style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${C.purple}40`, borderRadius:12, color:"#fff", padding:"12px 16px", fontSize:17, fontFamily:C.fontHead, outline:"none" }} />
           <input value={predictInput.hook} onChange={e=>setPredictInput(p=>({...p,hook:e.target.value}))} placeholder="Opening hook (first 3 seconds)..." style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${C.purple}40`, borderRadius:12, color:"#fff", padding:"12px 16px", fontSize:17, fontFamily:C.fontHead, outline:"none" }} />
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(280px,100%),1fr))", gap:10 }}>
-            <select value={predictInput.type} onChange={e=>setPredictInput(p=>({...p,type:e.target.value}))} style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${C.purple}40`, borderRadius:12, color:"#fff", padding:"12px 16px", fontSize:17, fontFamily:C.fontHead, outline:"none" }}>
+            <select value={predictInput.type} onChange={e=>setPredictInput(p=>({...p,type:e.target.value}))} style={{ background:"#0D0B18", border:`1px solid ${C.purple}40`, borderRadius:12, color:"#fff", padding:"12px 16px", fontSize:17, fontFamily:C.fontHead, outline:"none", appearance:"none", colorScheme:"dark" }}>
               {["facecam","street","screencap","voiceover","mixed"].map(t=><option key={t} value={t} style={{background:"#0D0B18"}}>{t}</option>)}
             </select>
-            <select value={predictInput.platform} onChange={e=>setPredictInput(p=>({...p,platform:e.target.value}))} style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${C.purple}40`, borderRadius:12, color:"#fff", padding:"12px 16px", fontSize:17, fontFamily:C.fontHead, outline:"none" }}>
+            <select value={predictInput.platform} onChange={e=>setPredictInput(p=>({...p,platform:e.target.value}))} style={{ background:"#0D0B18", border:`1px solid ${C.purple}40`, borderRadius:12, color:"#fff", padding:"12px 16px", fontSize:17, fontFamily:C.fontHead, outline:"none", appearance:"none", colorScheme:"dark" }}>
               {["tiktok","instagram","both"].map(t=><option key={t} value={t} style={{background:"#0D0B18"}}>{t}</option>)}
             </select>
           </div>
@@ -3450,7 +3453,7 @@ Hook type: ${video.hook||"unknown"} | Video type: ${video.type||"unknown"}
 ${geminiResult ? "GEMINI VIDEO ANALYSIS: "+JSON.stringify(geminiResult) : "No Gemini video analysis available"}
 
 CHANNEL CONTEXT:
-${wl.appName} avg views: ${avgViews.toLocaleString()}. This video ${(video.views||0)>avgViews?"BEAT":"MISSED"} the average by ${Math.abs(Math.round(((video.views||0)/avgViews-1)*100))}%.
+${wl.appName} avg views: ${avgViews.toLocaleString()}. This video ${(video.views||0)>avgViews?"BEAT":"MISSED"} the average${avgViews>0?` by ${Math.abs(Math.round(((video.views||0)/(avgViews||1)-1)*100))}%`:""}.
 ${memCtx}
 
 Now give the complete strategic teardown:
@@ -3605,7 +3608,7 @@ Return ONLY JSON: {
           {result.why_it_performed && (
             <div style={{ padding:"14px 16px", borderRadius:12, background:"rgba(255,255,255,0.04)", border:`1px solid rgba(255,255,255,0.08)`, marginBottom:14 }}>
               <div style={{ fontSize:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>WHY IT PERFORMED THIS WAY</div>
-              <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", lineHeight:1.6, fontFamily:C.fontBody, fontFamily:C.fontBody }}>{result.why_it_performed}</div>
+              <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", lineHeight:1.6, fontFamily:C.fontBody }}>{result.why_it_performed}</div>
               {result.biggest_factor && <div style={{ marginTop:8, fontSize:14, color:C.yellow }}>⚡ Biggest factor: {result.biggest_factor}</div>}
             </div>
           )}
@@ -4509,8 +4512,8 @@ const buildChannelInsights = (videos=[]) => {
   const collabMultiplier = (collabAvg && soloAvg) ? parseFloat((collabAvg/soloAvg).toFixed(2)) : null;
 
   // Platform split
-  const tiktokV = v.filter(vid=>vid.platform==="TikTok"||!vid.platform);
-  const instaV  = v.filter(vid=>vid.platform==="Instagram");
+  const tiktokV = v.filter(vid=>(vid.platform||"tiktok").toLowerCase()==="tiktok");
+  const instaV  = v.filter(vid=>(vid.platform||"").toLowerCase()==="instagram");
   const tiktokAvg = tiktokV.length ? Math.round(tiktokV.reduce((s,vid)=>s+(vid.views||0),0)/tiktokV.length) : null;
   const instaAvg  = instaV.length  ? Math.round(instaV.reduce((s,vid)=>s+(vid.views||0),0)/instaV.length)   : null;
 
@@ -5603,7 +5606,7 @@ const THUMBNAIL_TYPES  = ["text overlay","face close-up","scene reveal","shock m
 const STATUSES    = ["idea","scripted","filming","editing","scheduled","posted"];
 const STATUS_C    = { idea:C.dim, scripted:C.purple, filming:C.yellow, editing:C.cyan, scheduled:C.green, posted:C.orange };
 
-const loadJSON  = (k,fb) => { try { return JSON.parse(localStorage.getItem(k))||fb; } catch { return fb; } };
+const loadJSON  = (k,fb) => { try { const v=JSON.parse(localStorage.getItem(k)); return v!=null?v:fb; } catch { return fb; } };
 const saveJSON  = (k,d)  => { try { localStorage.setItem(k,JSON.stringify(d)); } catch {} };
 const getSbUrl  = () => localStorage.getItem(SB_URL_KEY) || _ENV.VITE_SB_URL || DEFAULT_SB_URL;
 const getSbKey  = () => localStorage.getItem(SB_KEY_KEY) || _ENV.VITE_SB_KEY || DEFAULT_SB_KEY;
@@ -5632,6 +5635,11 @@ const sbFetch = async (table,filter="") => {
 const sbUpsert = async (table,data) => {
   try {
     await fetch(`${getSbUrl()}/rest/v1/${table}`,{ method:"POST", headers:{ apikey:getSbKey(),"Authorization":"Bearer "+getSbKey(),"Content-Type":"application/json","Prefer":"resolution=merge-duplicates" }, body:JSON.stringify(data) });
+  } catch {}
+};
+const sbDelete = async (table,id) => {
+  try {
+    await fetch(`${getSbUrl()}/rest/v1/${table}?id=eq.${id}`,{ method:"DELETE", headers:{ apikey:getSbKey(),"Authorization":"Bearer "+getSbKey() } });
   } catch {}
 };
 
@@ -5852,8 +5860,8 @@ const DealsView = () => {
             {[["Type",["Sponsored Post","UGC","Affiliate","Gifted","Ambassador"],"type"],["Status",["Enquiry","Negotiating","Signed","Live","Delivered","Paid","Declined"],"status"],["Platform",["TikTok","Instagram","Both","YouTube"],"platform"]].map(([l,opts,k])=>(
               <div key={k}>
                 <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:6, fontFamily:C.fontHead }}>{l.toUpperCase()}</div>
-                <select value={form[k]} onChange={set(k)} style={{ width:"100%", background:"rgba(12,8,24,0.95)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, color:"#fff", padding:"10px 14px", fontSize:14, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box" }}>
-                  {opts.map(o=><option key={o} value={o}>{o}</option>)}
+                <select value={form[k]} onChange={set(k)} style={{ width:"100%", background:"#0C0A1A", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, color:"#fff", padding:"10px 14px", fontSize:14, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box", appearance:"none", colorScheme:"dark" }}>
+                  {opts.map(o=><option key={o} value={o} style={{background:"#0C0A1A"}}>{o}</option>)}
                 </select>
               </div>
             ))}
@@ -5879,10 +5887,10 @@ const DealsView = () => {
               </div>
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                 {deal.value && <div style={{ fontSize:20, fontWeight:400, fontFamily:C.fontHead, color:C.green }}>£{parseFloat(deal.value).toLocaleString()}</div>}
-                <select value={deal.status} onChange={e=>setDeals(ds=>ds.map(d=>d.id===deal.id?{...d,status:e.target.value}:d))} style={{ background:"rgba(12,8,24,0.95)", border:`1px solid ${STATUS_C[deal.status]||C.dim}40`, borderRadius:8, color:STATUS_C[deal.status]||"#fff", padding:"6px 10px", fontSize:12, fontFamily:C.fontHead, fontWeight:700, cursor:"pointer", outline:"none" }}>
-                  {["Enquiry","Negotiating","Signed","Live","Delivered","Paid","Declined"].map(s=><option key={s} value={s}>{s}</option>)}
+                <select value={deal.status} onChange={e=>setDeals(ds=>ds.map(d=>d.id===deal.id?{...d,status:e.target.value}:d))} style={{ background:"#0C0A1A", border:`1px solid ${STATUS_C[deal.status]||C.dim}40`, borderRadius:8, color:STATUS_C[deal.status]||"#fff", padding:"6px 10px", fontSize:12, fontFamily:C.fontHead, fontWeight:700, cursor:"pointer", outline:"none", appearance:"none", colorScheme:"dark" }}>
+                  {["Enquiry","Negotiating","Signed","Live","Delivered","Paid","Declined"].map(s=><option key={s} value={s} style={{background:"#0C0A1A"}}>{s}</option>)}
                 </select>
-                <button onClick={()=>setDeals(ds=>ds.filter(d=>d.id!==deal.id))} style={{ padding:"6px 8px", borderRadius:8, border:`1px solid ${C.pink}20`, background:"transparent", color:`${C.pink}70`, cursor:"pointer" }}>{I.trash(12,C.pink)}</button>
+                <button onClick={()=>{ if(window.confirm("Delete this deal?")) setDeals(ds=>ds.filter(d=>d.id!==deal.id)); }} style={{ padding:"6px 8px", borderRadius:8, border:`1px solid ${C.pink}20`, background:"transparent", color:`${C.pink}70`, cursor:"pointer" }}>{I.trash(12,C.pink)}</button>
               </div>
             </div>
           ))}
@@ -5947,7 +5955,7 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
         type:"object",
         properties: {
           text: { type:"string", description:"The task text" },
-          assignee: { type:"string", enum:[WL.creator1||"Creator",WL.creator2||"Both","Both"], description:"Who the task is assigned to" },
+          assignee: { type:"string", enum:WL.creator2?[WL.creator1||"Creator",WL.creator2,"Both"]:[WL.creator1||"Creator"], description:"Who the task is assigned to" },
           priority: { type:"string", enum:["urgent","normal","low"], description:"Task priority" }
         },
         required:["text","assignee"]
@@ -6046,7 +6054,7 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
 
   const analyseVideo = async (file) => {
     const cfg = loadJSON(KEYS_KEY, {});
-    const geminiKey = cfg?.keys?.gemini;
+    const geminiKey = cfg?.keys?.gemini || BAKED_GEMINI_KEY;
     if(!geminiKey) { setMsgs(m=>[...m,{role:"assistant",content:"No Gemini API key set. Go to Settings to add one — video analysis uses Gemini."}]); return; }
 
     setUploading(true);
@@ -6320,7 +6328,7 @@ ${memCtx ? `━━ CHANNEL MEMORY ━━\n${memCtx}` : ""}`;
   const getCapcutPlan = async () => {
     if(!lastFileB64) return;
     const cfg = loadJSON(KEYS_KEY, {});
-    const geminiKey = cfg?.keys?.gemini;
+    const geminiKey = cfg?.keys?.gemini || BAKED_GEMINI_KEY;
     if(!geminiKey) return;
     setMsgs(m=>[...m, { role:"user", content:"Give me a step-by-step CapCut edit plan for maximum virality" }, { role:"assistant", content:"Building your CapCut edit plan..." }]);
     setLoading(true);
@@ -7157,7 +7165,6 @@ function Dashboard({ keys, onEditKeys }) {
         const result = await callPerplexity(`Search RIGHT NOW for recent content from these TikTok/Instagram creators: ${wl.competitors}. For each find viral posts, hook styles, topics. Also find content gaps they aren't covering. Return ONLY JSON: { competitors:[{handle,recent_viral:[{title,est_views,why_worked,hook_style}],topics_covering:[string],weaknesses:[string]}], opportunities:[{gap,why_can_win:string,suggested_angle:string,urgency:"HIGH|MEDIUM|LOW"}], steal_these_hooks:[{hook,from_creator,adapt_for_channel:string}] }`, wl);
         const data = { data:result, lastFetched:new Date().toISOString().slice(0,10) };
         saveCompetitorData(data);
-        setCompetitors(data);
         addMemoryEntry("COMPETITOR_SCAN", `Auto-refreshed (${daysSince}d stale). Top opportunity: ${result.opportunities?.[0]?.gap||"unknown"}`);
       } catch(e) { /* silent */ }
     }, 6000);
@@ -7205,7 +7212,7 @@ function Dashboard({ keys, onEditKeys }) {
       const prompts = {
         analysis: richCtx+liveCtx+"\nAnalyse these videos. Use real numbers from the channel statistics above. Return JSON: {whatIsWorking:[{insight,evidence,impact:'high|medium'}],whatIsNotWorking:[{insight,evidence,fix}],topFormat,bestHook,channel_diagnosis,engagement_insight}. Videos: "+JSON.stringify(vSummary),
         nextVids:  richCtx+liveCtx+"\nSuggest next 5 videos. Use winning hook+type combos and engagement signals from the data above. Be specific. Return JSON: {tiktok:[{title,type,hook,thumbnail_style,whyItWillWork,openingLine,priority:'HIGH|MEDIUM',estimated_views,winning_combo_used}],instagram:[{concept,contentType,whyItWillWork}]}. Videos: "+JSON.stringify(vSummary),
-        weekly:    channelCtx+"\nWrite a filming brief for "+wl.creator2+". Return JSON: {harleyBrief:'2-3 sentences',priorities:[{task,why,how_to_shoot}],rawSummaryText:'WhatsApp-ready message'}. Videos: "+JSON.stringify(vSummary),
+        weekly:    channelCtx+"\nWrite a filming brief for "+(wl.creator2||wl.creator1||"this creator")+". Return JSON: {brief:'2-3 sentences',priorities:[{task,why,how_to_shoot}],rawSummaryText:'WhatsApp-ready message'}. Videos: "+JSON.stringify(vSummary),
         trends:    channelCtx+liveCtx+"\nBest trending angles for "+wl.appName+" RIGHT NOW that fit this channel style. Return JSON: {trends:[{trend,urgency:'POST NOW|THIS WEEK|THIS MONTH',tiktokAngle,hook,why_fits_channel,instagramAngle}]}",
             };
 
@@ -7240,7 +7247,7 @@ function Dashboard({ keys, onEditKeys }) {
     const outcome = actualViews>0 ? `Got ${fmt(actualViews)} views (AI predicted ${predicted})` : "Posted, views not tracked yet";
     const pillar = idea.aiScore?.contentPillar||idea.type||"unknown";
     const score = idea.viral||0;
-    addMemoryEntry("IDEA_OUTCOME", `"${idea.title.slice(0,60)}" posted. ${outcome}. Pillar: ${pillar}. Score: ${score}/100`, outcome);
+    addMemoryEntry("IDEA_OUTCOME", `"${(idea.title||"").slice(0,60)}" posted. ${outcome}. Pillar: ${pillar}. Score: ${score}/100`, outcome);
     setIdeas(is=>is.map(i=>i.id===idea.id?{...i,status:"posted",postedViews:actualViews,postedDate:new Date().toISOString().slice(0,10)}:i));
     addXP(50); // XP for posting
 
@@ -7305,7 +7312,7 @@ LEARNING: [one sentence]`}]})
       const organicVids = videos.filter(v=>!v.boosted);
       const topV = [...(organicVids.length?organicVids:videos)].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
       const postedIdeas = ideas.filter(i=>i.status==="posted"&&i.postedViews>0);
-      const ideaOutcomes = postedIdeas.slice(0,5).map(i=>`"${i.title.slice(0,40)}" → ${fmt(i.postedViews)} views (score was ${i.viral||"?"}/100, pillar: ${i.aiScore?.contentPillar||"unknown"})`);
+      const ideaOutcomes = postedIdeas.slice(0,5).map(i=>`"${(i.title||"").slice(0,40)}" → ${fmt(i.postedViews)} views (score was ${i.viral||"?"}/100, pillar: ${i.aiScore?.contentPillar||"unknown"})`);
       const avgV = organicVids.length?Math.round(organicVids.reduce((s,v)=>s+(v.views||0),0)/organicVids.length):(videos.length?Math.round(videos.reduce((s,v)=>s+(v.views||0),0)/videos.length):0);
 
       // Build calibration curve — use posted idea outcomes if available, fall back to video percentiles
@@ -7572,6 +7579,7 @@ Return ONLY valid JSON:
   };
 
   const genCaption = async (idea) => {
+    const wl = loadWL();
     setAiLoad(l=>({...l,caption:true}));
     setCaptionIdea(idea);
     setCaptionResult(null);
@@ -7614,7 +7622,7 @@ Return JSON:
     await sbUpsert("km_videos",[v]).catch(()=>{});
     closeModal("addVideo");
   };
-  const deleteVideo = (id) => setVideos(vs=>vs.filter(v=>v.id!==id));
+  const deleteVideo = (id) => { if(!window.confirm("Delete this video? This can't be undone.")) return; setVideos(vs=>vs.filter(v=>v.id!==id)); sbDelete&&sbDelete("km_videos",id).catch(()=>{}); };
   const updateVideo = (updated) => { setVideos(vs=>vs.map(v=>v.id===updated.id?{...v,...updated,_updated:true}:v)); closeModal("updateVideo"); };
 
   // ── COMPUTED ──────────────────────────────────────────────────
@@ -8390,7 +8398,7 @@ function OnboardingPage({ onComplete }) {
         <div style={{ marginBottom:48 }}>
           <div style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"6px 14px", borderRadius:100, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", marginBottom:32 }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:ac, boxShadow:`0 0 6px ${ac}` }}/>
-            <span style={{ fontSize:12, color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", fontWeight:500 }}>CreatorOS</span>
+            <span style={{ fontSize:12, color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", fontWeight:500 }}>{WL.appName}</span>
           </div>
           <div style={{ fontSize:40, fontWeight:700, color:"#fff", lineHeight:1.15, marginBottom:16, letterSpacing:"-0.02em" }}>
             The content system<br/><span style={{ color:ac }}>serious creators</span><br/>actually use.
@@ -8436,7 +8444,7 @@ function OnboardingPage({ onComplete }) {
                     [ ACTIVATE ]
                   </button>
                   <div style={{ marginTop:48, fontSize:11, color:"#1a1a1a", letterSpacing:"0.1em" }}>
-                    NO CODE? <a href="mailto:hello@contentOS.io" style={{ color:"#39FF1440", textDecoration:"none" }}>CONTACT SUPPORT</a>
+                    NO CODE? <a href={`mailto:hello@${(WL.appName||"creatorOS").toLowerCase().replace(/\s/g,"")}.io`} style={{ color:"#39FF1440", textDecoration:"none" }}>CONTACT SUPPORT</a>
                   </div>
                 </div>
               ) : (
@@ -8510,7 +8518,7 @@ function OnboardingPage({ onComplete }) {
                 >
                   ACTIVATE MY WORKSPACE
                 </button>
-                <button onClick={()=>finish("")} style={{ marginTop:16, background:"none", border:"none", color:"rgba(255,255,255,0.07)", fontSize:10, cursor:"pointer", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", textAlign:"left", padding:0 }}>
+                <button onClick={()=>finish("")} style={{ marginTop:16, background:"none", border:"none", color:"rgba(255,255,255,0.38)", fontSize:10, cursor:"pointer", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", textAlign:"left", padding:0 }}>
                   SKIP
                 </button>
               </div>
@@ -8630,8 +8638,8 @@ function OnboardingPage({ onComplete }) {
                     <div style={{ width:10, height:10, borderRadius:"50%", background:"rgba(255,255,255,0.18)" }}/>
                     <div style={{ width:10, height:10, borderRadius:"50%", background:"rgba(255,255,255,0.08)" }}/>
                     <div style={{ width:10, height:10, borderRadius:"50%", background:"rgba(255,255,255,0.05)" }}/>
-                    <div style={{ flex:1, textAlign:"center", fontSize:9, color:"rgba(255,255,255,0.12)", letterSpacing:"0.22em", fontFamily:"Courier New,monospace" }}>{SC.windowLabel}</div>
-                    <div style={{ fontSize:9, color:"rgba(255,255,255,0.08)", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>{SC.handle}</div>
+                    <div style={{ flex:1, textAlign:"center", fontSize:9, color:"rgba(255,255,255,0.4)", letterSpacing:"0.22em", fontFamily:"Courier New,monospace" }}>{SC.windowLabel}</div>
+                    <div style={{ fontSize:9, color:"rgba(255,255,255,0.4)", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>{SC.handle}</div>
                   </div>
 
                   {/* Dashboard body */}
@@ -8752,7 +8760,7 @@ function OnboardingPage({ onComplete }) {
                           <div style={{ background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"9px 11px" }}>
                             <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:7 }}>
                               <div style={{ width:22, height:22, borderRadius:6, background:`linear-gradient(135deg,${ac1},${ac2wl})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11 }}>◎</div>
-                              <div style={{ fontSize:9, color:"rgba(255,255,255,0.8)", fontWeight:600 }}>CreatorOS AI</div>
+                              <div style={{ fontSize:9, color:"rgba(255,255,255,0.8)", fontWeight:600 }}>{WL.appName} AI</div>
                             </div>
                             <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
                               {["Show my stats","Edit this idea","Location challenge ideas","What should I post?"].map(chip=>(
@@ -8770,7 +8778,7 @@ function OnboardingPage({ onComplete }) {
                             </div>
                           </div>
                           <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.09)", borderRadius:10, padding:"8px 12px", display:"flex", alignItems:"center", gap:8 }}>
-                            <div style={{ flex:1, fontSize:9, color:"rgba(255,255,255,0.2)" }}>Message CreatorOS AI…</div>
+                            <div style={{ flex:1, fontSize:9, color:"rgba(255,255,255,0.45)" }}>Message {WL.appName} AI…</div>
                             <div style={{ fontSize:8, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", border:"1px solid rgba(255,255,255,0.08)", borderRadius:4, padding:"2px 6px" }}>Send</div>
                           </div>
                         </div>
@@ -9026,7 +9034,7 @@ function OnboardingPage({ onComplete }) {
                       <div style={{ fontSize:11, fontWeight:600, color:"rgba(255,255,255,0.7)", fontFamily:"Courier New,monospace", letterSpacing:"0.06em" }}>{l}</div>
                       <div style={{ fontSize:10, color:"rgba(255,255,255,0.5)", fontFamily:"Courier New,monospace" }}>{d}</div>
                     </div>
-                    <div style={{ fontSize:8, color:"#39FF14", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>UNLOCKED</div>
+                    <div style={{ fontSize:8, color:apiKey.trim()?"#39FF14":"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>{apiKey.trim()?"UNLOCKED":"LOCKED"}</div>
                   </div>
                 ))}
               </div>
@@ -9057,11 +9065,14 @@ function OnboardingPage({ onComplete }) {
       </div>
 
       <style>{`
-        
         @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
         @keyframes fadeInLine{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
         @keyframes blink{0%,100%{opacity:0.2}50%{opacity:1}}
         @keyframes expandBar{from{width:0}to{width:100%}}
+        [data-btn]:hover { transform:translateY(-1px); filter:brightness(1.15); }
+        [data-card]:hover { border-color:rgba(255,255,255,0.18) !important; }
+        [data-nav-btn]:hover { background:rgba(255,255,255,0.08) !important; }
+        button:focus-visible,a:focus-visible { outline:2px solid #9B59B6; outline-offset:2px; }
       `}</style>
     </div>
   );
@@ -9070,7 +9081,7 @@ function OnboardingPage({ onComplete }) {
 // ROOT
 export default function App() {
   const [config, setConfig] = useState(()=>loadJSON(KEYS_KEY,{}));
-  const [onboarded, setOnboarded] = useState(false); // DEV: always show onboarding
+  const [onboarded, setOnboarded] = useState(()=>loadJSON("krapmaps_v1_onboarded", false));
 
   const handleEditKeys = (keys) => {
     const u={...config,keys};
