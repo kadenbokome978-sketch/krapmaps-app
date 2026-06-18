@@ -1081,6 +1081,25 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                       </div>
                     )}
 
+                    {/* Hook A/B variants — ranked, grounded in channel data */}
+                    {isExpanded && Array.isArray(idea.hookVariants) && idea.hookVariants.length>0 && (
+                      <div style={{ padding:"10px 14px", background:"rgba(255,255,255,0.02)", border:`1px solid ${C.cyan}18`, borderRadius:11, marginBottom:10 }}>
+                        <div style={{ fontSize:10, color:C.cyan, fontWeight:700, letterSpacing:"0.12em", marginBottom:8 }}>🧪 HOOK A/B VARIANTS — TEST THESE</div>
+                        {idea.hookVariants.slice(0,3).map((hv,vi)=>{
+                          const isBest = String(idea.bestVariantIndex)===String(vi);
+                          return (
+                            <div key={vi} style={{ display:"flex", gap:8, alignItems:"flex-start", padding:"7px 0", borderTop:vi>0?"1px solid rgba(255,255,255,0.05)":"none" }}>
+                              <span style={{ fontSize:10, fontWeight:700, color:isBest?C.green:"rgba(255,255,255,0.4)", padding:"2px 6px", borderRadius:5, background:isBest?`${C.green}18`:"rgba(255,255,255,0.04)", whiteSpace:"nowrap" }}>{isBest?"★ TEST 1ST":hv.trigger||`V${vi+1}`}</span>
+                              <div style={{ flex:1 }}>
+                                <div style={{ fontSize:13, color:"#fff", fontStyle:"italic", lineHeight:1.45 }}>"{hv.hook}"</div>
+                                {(hv.predictedLift||hv.why) && <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", marginTop:2, lineHeight:1.4 }}>{hv.predictedLift?`${hv.predictedLift} · `:""}{hv.why||""}</div>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
                     {/* Expanded detail panels — tabbed */}
                     {isExpanded && (
                       <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:4, padding:"12px", borderRadius:12, background:"rgba(255,255,255,0.015)", marginTop:4 }}>
@@ -7264,7 +7283,7 @@ Your estimated_views must reflect all 5 steps. Do not output a raw uncorrected e
 REASONING DISCIPLINE: Before scoring, identify the 2-3 strongest data signals above that apply to THIS idea, and the single biggest risk. Let those drive the numbers. Do not regress every idea to a safe 70 — if the data says 45, score 45; if it says 90, score 90. Spread your scores honestly.
 
 Return ONLY valid JSON:
-{"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","retentionFix":"the single biggest retention improvement","openLoopStrength":"rate 1-10 how well this video creates and sustains curiosity gaps — what is the open loop and when does it close?","reHookMoments":["specific moment at ~3s to re-engage","specific moment at ~15s","specific moment at ~30s if video is longer"],"emotionalArc":"setup→tension→payoff analysis — what emotion does viewer feel at start, middle, end? Where does it escalate?","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic RANGE corrected by outcome learning + bias σ e.g. 24K-56K","contentPillar":"niche-specific pillar name","competitorAngle":"how to differentiate from what competitors are already doing in this niche","optimalPostSlot":"best day+time to post this based on the channel's day/time performance data above, e.g. 'Saturday 6-9pm'","confidenceLevel":"HIGH|MEDIUM|LOW — based on how much real data backs this score","scoreRationale":"1 sentence: which 2-3 data signals drove this specific score up or down vs a generic idea"}`;
+{"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","hookVariants":[{"hook":"A/B variant 1 under 10 words — a DISTINCT angle (different trigger type than the others)","trigger":"open-loop|contrast|identity|social-proof|visual-disruption","predictedLift":"+X% vs the original hook, grounded in this channel's OUTCOME LEARNING + VISUAL DNA above","why":"one line: which channel data signal makes this variant win"},{"hook":"A/B variant 2 — different trigger","trigger":"...","predictedLift":"+X%","why":"..."},{"hook":"A/B variant 3 — different trigger","trigger":"...","predictedLift":"+X%","why":"..."}],"bestVariantIndex":"0|1|2 — which variant you predict wins and would test first","retentionFix":"the single biggest retention improvement","openLoopStrength":"rate 1-10 how well this video creates and sustains curiosity gaps — what is the open loop and when does it close?","reHookMoments":["specific moment at ~3s to re-engage","specific moment at ~15s","specific moment at ~30s if video is longer"],"emotionalArc":"setup→tension→payoff analysis — what emotion does viewer feel at start, middle, end? Where does it escalate?","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic RANGE corrected by outcome learning + bias σ e.g. 24K-56K","contentPillar":"niche-specific pillar name","competitorAngle":"how to differentiate from what competitors are already doing in this niche","optimalPostSlot":"best day+time to post this based on the channel's day/time performance data above, e.g. 'Saturday 6-9pm'","confidenceLevel":"HIGH|MEDIUM|LOW — based on how much real data backs this score","scoreRationale":"1 sentence: which 2-3 data signals drove this specific score up or down vs a generic idea"}`;
       const _consensus = await callConsensus(_scorePrompt, _scorePrompt, wl);
       if(!_consensus.claude && !_consensus.gpt) throw new Error("Both scoring models failed — check your Anthropic / GPT-4o keys in Settings");
       const r = reconcileScores(_consensus.claude, _consensus.gpt);
@@ -7305,6 +7324,8 @@ Return ONLY valid JSON:
           viralReason:r.viralityReason,
           hookFeedback:r.hookFeedback,
           improvedHook:r.improvedHook,
+          hookVariants:r.hookVariants,
+          bestVariantIndex:r.bestVariantIndex,
           retentionFix:r.retentionFix,
           competitorAngle:r.competitorAngle,
           openLoopStrength:r.openLoopStrength,
