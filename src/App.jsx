@@ -2151,7 +2151,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
             {/* Harley brief */}
             <div data-card style={{ borderRadius:16, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.yellow}20`, position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.yellow},${C.yellow}00)` }}/>
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:14, display:"flex", alignItems:"center", gap:6 }}><span style={{width:6,height:6,borderRadius:"50%",background:C.yellow,display:"inline-block",flexShrink:0}}/>Harley Brief</div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:14, display:"flex", alignItems:"center", gap:6 }}><span style={{width:6,height:6,borderRadius:"50%",background:C.yellow,display:"inline-block",flexShrink:0}}/>{(WL.creator2||"Weekly")} Brief</div>
               {weekly ? <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)", lineHeight:1.6, fontFamily:C.fontBody }}>{weekly.brief||weekly.harleyBrief||weekly.rawSummaryText}</div>
                 : <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", fontStyle:"italic" }}>Run the weekly brief for filming instructions</div>}
             </div>
@@ -8790,7 +8790,7 @@ function OnboardingPage({ onComplete }) {
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                             <div>
                               <div style={{ fontSize:7, color:SC.slideTitleColors[3], letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>{SC.slidePageLabels[3]}</div>
-                              <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.4))", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>Content OS</div>
+                              <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.4))", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>{WL.appName}</div>
                               <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", marginTop:2 }}>{SC.weekHandle}</div>
                             </div>
                             <div style={{ fontSize:8, color:"#39FF14", background:"rgba(57,255,20,0.08)", border:"1px solid rgba(57,255,20,0.2)", borderRadius:6, padding:"3px 8px", fontFamily:"Courier New,monospace" }}>All clear ✓</div>
