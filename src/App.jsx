@@ -4166,8 +4166,8 @@ const ResetZone = () => {
     if(n >= 5) { setShow(true); setTaps(0); }
   };
   return (
-    <div style={{ textAlign:"center", marginTop:32, paddingBottom:24 }}>
-      <div onClick={tap} style={{ fontSize:10, color:"rgba(255,255,255,0.12)", letterSpacing:"0.2em", cursor:"default", userSelect:"none" }}>v1.0</div>
+    <div style={{ textAlign:"center", marginTop:40, paddingBottom:32, borderTop:"1px solid rgba(255,255,255,0.05)", paddingTop:24 }}>
+      <div onClick={tap} style={{ fontSize:11, color:"rgba(255,255,255,0.3)", letterSpacing:"0.18em", cursor:"pointer", userSelect:"none", fontFamily:"Courier New,monospace", display:"inline-block", padding:"6px 14px", borderRadius:8, border:"1px solid rgba(255,255,255,0.07)" }}>v1.0 · tap 5× to reset</div>
       {show && (
         <div style={{ marginTop:16, padding:"18px 20px", borderRadius:14, border:"1px solid rgba(255,59,59,0.3)", background:"rgba(255,59,59,0.06)" }}>
           <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)", marginBottom:14, fontFamily:"Courier New,monospace", letterSpacing:"0.06em" }}>Reset workspace — shows activation screen on next load</div>
