@@ -14,6 +14,13 @@ const _activeCfg = (()=>{ try { const s=localStorage.getItem("krapmaps_v1_client
 const _isThiernoClient = _activeCfg.clientId === "thierno";
 if(typeof document !== "undefined") document.title = _activeCfg.appName || "CreatorOS";
 
+// Baked-in shared keys (set as build-time env vars in Vercel — NOT committed to git).
+// Used as a fallback so a build works out-of-the-box without the user adding their own key.
+const _ENV = (typeof import.meta !== "undefined" && import.meta.env) || {};
+const BAKED_ANTHROPIC_KEY = _ENV.VITE_ANTHROPIC_KEY || "";
+const BAKED_GPT_KEY = _ENV.VITE_GPT_KEY || "";
+const BAKED_GEMINI_KEY = _ENV.VITE_GEMINI_KEY || "";
+
 const C = _isThiernoClient ? {
   // ── Thierno "Braz" — deluxe vinyl / late-night studio ──
   pink:"#00f085",    // green as primary accent (CTAs, key numbers)
@@ -982,7 +989,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
     setExpanding(true);
     try {
       const cfg = loadJSON(KEYS_KEY,{});
-      const key = cfg?.keys?.anthropic;
+      const key = cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
       if(!key) { alert("Add Anthropic key in Settings first"); return; }
       const r = await fetch("https://api.anthropic.com/v1/messages", {
         method:"POST",
@@ -1602,7 +1609,7 @@ const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hook
   const [vidLoading, setVidLoading]   = useState({});
   const [vidErr, setVidErr]           = useState(null);
   const cfg = loadJSON(KEYS_KEY,{});
-  const hasAnthrop = !!(cfg?.keys?.anthropic);
+  const hasAnthrop = !!(cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY);
 
   const hasGeminiKey = !!(cfg?.keys?.gemini);
 
@@ -3343,7 +3350,7 @@ const VideoReaderView = ({ videos=[], WL }) => {
 
   const cfg = loadJSON("krapmaps_v1_config",{});
   const hasGemini = !!(cfg?.keys?.gemini);
-  const hasAnthrop = !!(cfg?.keys?.anthropic);
+  const hasAnthrop = !!(cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY);
 
   const analyseVideo = async (video) => {
     if(loading[video.id]) return;
@@ -5337,7 +5344,7 @@ const projectFinalViews = (video, model) => {
 // ── GPT-4o CALL ──────────────────────────────────────────────────
 async function callGPT(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.") {
   const storedCfg = loadJSON(KEYS_KEY,{});
-  const apiKey = storedCfg?.keys?.gpt4o;
+  const apiKey = storedCfg?.keys?.gpt4o || BAKED_GPT_KEY;
   if(!apiKey) throw new Error("NO GPT-4O KEY — add it in Settings");
   const r = await fetch("https://api.openai.com/v1/chat/completions", {
     method:"POST",
@@ -5477,7 +5484,7 @@ async function callGeminiVideo(videoUrl, prompt) {
 // ── GEMINI 1.5 PRO — text JSON scoring (3rd ensemble model, optional) ──
 async function callGeminiText(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.") {
   const cfg = loadJSON(KEYS_KEY,{});
-  const apiKey = cfg?.keys?.gemini;
+  const apiKey = cfg?.keys?.gemini || BAKED_GEMINI_KEY;
   if(!apiKey) throw new Error("NO GEMINI KEY");
   const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key="+apiKey, {
     method:"POST", headers:{ "Content-Type":"application/json" },
@@ -5497,7 +5504,7 @@ async function callGeminiText(prompt, systemMsg="You are an expert TikTok conten
 }
 
 async function callConsensus(claudePrompt, gptPrompt, wl=WL) {
-  const hasGemini = !!loadJSON(KEYS_KEY,{})?.keys?.gemini;
+  const hasGemini = !!(loadJSON(KEYS_KEY,{})?.keys?.gemini || BAKED_GEMINI_KEY);
   const calls = [
     callAI(claudePrompt, 2000),
     callGPT(gptPrompt, `You are an expert ${wl.niche} content strategist for ${wl.appName}. Return ONLY valid JSON.`)
@@ -5718,7 +5725,7 @@ async function callPerplexity(prompt, wl=WL) {
 
 async function callAI(prompt, maxTokens=2000) {
   const storedCfg = loadJSON(KEYS_KEY,{});
-  const apiKey = storedCfg?.keys?.anthropic;
+  const apiKey = storedCfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
   if(!apiKey) throw new Error("NO API KEY -- go to Settings tab and add your Anthropic key");
   const currentWL = loadWL();
   const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -6500,13 +6507,13 @@ function Dashboard({ keys, onEditKeys }) {
     setNav("ai");
     setSub(null);
     // Background: auto-score if not already scored
-    if(!idea.viral && keys?.anthropic) {
+    if(!idea.viral && (keys?.anthropic||BAKED_ANTHROPIC_KEY)) {
       setTimeout(()=>scoreIdea(idea), 500);
     }
   };
 
   const runDebrief = async () => {
-    if(!keys?.anthropic) return;
+    if(!(keys?.anthropic||BAKED_ANTHROPIC_KEY)) return;
     setDebriefLoading(true);
     try {
       const vids = loadJSON(VIDEOS_KEY,[]);
@@ -6810,7 +6817,7 @@ function Dashboard({ keys, onEditKeys }) {
   const mineComments = useCallback(async()=>{
     const cfg = loadJSON(KEYS_KEY,{});
     const rapidKey = cfg?.keys?.tikwm || cfg?.keys?.igscraper;
-    const aiKey = cfg?.keys?.anthropic;
+    const aiKey = cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
     if(!rapidKey || !aiKey) return;
     if(Date.now() - loadJSON("krapmaps_v1_comments_last", 0) < 3*24*60*60*1000) return; // every 3 days
     const top = [...videos].filter(v=>v.platform==="tiktok"&&v.views>0&&(v._tikwmId||v.url)).sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
@@ -6843,7 +6850,7 @@ function Dashboard({ keys, onEditKeys }) {
   // cached, auto-refreshes weekly. Purely additive — silently no-ops without a key/images.
   const analyzeThumbnails = useCallback(async()=>{
     const cfg = loadJSON(KEYS_KEY,{});
-    const aiKey = cfg?.keys?.anthropic;
+    const aiKey = cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
     if(!aiKey) return;
     if(Date.now() - loadJSON("krapmaps_v1_vision_last", 0) < 7*24*60*60*1000) return; // weekly
     const withCover = videos.filter(v=>v.cover && v.views>0 && /^https?:\/\//.test(v.cover));
@@ -7195,7 +7202,7 @@ function Dashboard({ keys, onEditKeys }) {
     // Background: counterfactual reasoning + structured learning
     if(actualViews > 0) {
       const cfg = loadJSON(KEYS_KEY,{});
-      const key = cfg?.keys?.anthropic;
+      const key = cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
       if(key) {
         setTimeout(async()=>{
           try {
@@ -8012,7 +8019,7 @@ Return JSON:
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} setIdeas={setIdeas} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
-        {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} preloadMsg={assistPreload} />}
+        {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic || BAKED_ANTHROPIC_KEY} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} preloadMsg={assistPreload} />}
         {nav==="growth"    && <GrowthView m={m} ttViewsDisplay={ttViewsDisplay} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} scrapedStats={scrapedStats} saveManual={saveManual} setManualData={setManualData} videos={videos} />}
         {nav==="settings"  && <SettingsView keys={keys} onEditKeys={onEditKeys} scrapedStats={scrapedStats} hasIG={hasIG} WL={activeWL} onEditWL={onEditWL} onSyncTikTok={async()=>{
               setSyncMsg("Syncing...");
