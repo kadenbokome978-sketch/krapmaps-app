@@ -374,8 +374,10 @@ const Sparkline = ({ data=[], color=C.pink, height=40 }) => {
   );
 };
 
-const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDisplay, igViewsTotal=0, allViewsDisplay=0, m, scrapedStats, statsError, igData, videos=[], weeklyDebrief, debriefLoading, runDebrief }) => {
+const HomeView = ({ ideas, allIdeas=[], calItems, setNav, runAI, aiLoad, openModal, ttViewsDisplay, igViewsTotal=0, allViewsDisplay=0, m, scrapedStats, statsError, igData, videos=[], weeklyDebrief, debriefLoading, runDebrief }) => {
   const topIdeas = [...(ideas||[])].sort((a,b)=>(Number(b.viral)||0)-(Number(a.viral)||0)).slice(0,3);
+  const ritual = React.useMemo(()=>buildRitual(allIdeas.length?allIdeas:(ideas||[]), videos),[allIdeas, ideas, videos]);
+  React.useEffect(()=>{ if(ritual.freshWeek) markRitualWeek(ritual.week); },[ritual.freshWeek, ritual.week]);
   const upcoming = (calItems||[]).slice(0,3);
   const streak = React.useMemo(()=>getStreak(),[]);
   const xp = React.useMemo(()=>getXP(),[]);
@@ -411,6 +413,41 @@ const HomeView = ({ ideas, calItems, setNav, runAI, aiLoad, openModal, ttViewsDi
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+
+      {/* ══ WEEKLY RITUAL — the retention loop that feeds the AI ══════ */}
+      {ritual.pending > 0 ? (
+        <div data-card style={{ borderRadius:18, padding:"20px 24px", background:`linear-gradient(135deg,${C.pink}10,${C.purple}08)`, border:`1px solid ${C.pink}30`, position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${C.pink}70,transparent)` }}/>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+            <span style={{ fontSize:20 }}>🎯</span>
+            <div style={{ fontSize:13, fontWeight:800, letterSpacing:"0.14em", color:"#fff" }}>THIS WEEK'S RITUAL</div>
+            <span style={{ marginLeft:"auto", fontSize:11, fontWeight:700, color:C.pink, background:`${C.pink}15`, border:`1px solid ${C.pink}30`, borderRadius:20, padding:"3px 12px" }}>{ritual.pending} to feed the AI</span>
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {ritual.tasks.map(t=>(
+              <div key={t.id} onClick={()=>setNav(t.nav)} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderRadius:12, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", cursor:"pointer", transition:"background 0.15s" }}
+                onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.05)"}
+                onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,0.025)"}>
+                <div style={{ fontSize:20, fontWeight:400, fontFamily:C.fontHead, color:C.pink, minWidth:30, textAlign:"center" }}>{t.n}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:14, color:"#fff", fontWeight:600, marginBottom:2 }}>{t.label}</div>
+                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody }}>{t.why}</div>
+                </div>
+                <div style={{ fontSize:18, color:"rgba(255,255,255,0.3)" }}>→</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", marginTop:12, fontFamily:C.fontBody }}>Clear these and your AI scoring gets measurably sharper — the model literally learns from every result you log.</div>
+        </div>
+      ) : (
+        <div data-card style={{ borderRadius:18, padding:"16px 24px", background:`${C.green}08`, border:`1px solid ${C.green}25`, display:"flex", alignItems:"center", gap:14 }}>
+          <span style={{ fontSize:22 }}>🔥</span>
+          <div>
+            <div style={{ fontSize:14, fontWeight:700, color:C.green }}>Ritual complete — AI fully fed this week</div>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody, marginTop:2 }}>Every posted video is logged and every idea scored. The model has everything it needs.</div>
+          </div>
+        </div>
+      )}
 
       {/* ══ RETENTION BAR — streak, XP, intelligence ══════════════ */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(160px,100%),1fr))", gap:10 }}>
@@ -4093,6 +4130,33 @@ const addXP = (amount) => {
   return { total:newTotal, level:newLevel };
 };
 const getXP = () => loadJSON(XP_KEY, { total:0, level:1 });
+
+// ── WEEKLY RITUAL LOOP ─────────────────────────────────────────────
+// The retention engine: the intelligence is data-gated on the user logging real
+// outcomes and scoring ideas. This surfaces those exact tasks once a week so the
+// loop closes — the user returns, feeds the AI, the AI gets sharper, repeat.
+const RITUAL_KEY = "krapmaps_v1_ritual";
+const isoWeek = (d=new Date()) => {
+  const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = dt.getUTCDay() || 7;
+  dt.setUTCDate(dt.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+  const wk = Math.ceil((((dt - yearStart) / 86400000) + 1) / 7);
+  return `${dt.getUTCFullYear()}-W${String(wk).padStart(2,"0")}`;
+};
+const buildRitual = (ideas=[], videos=[]) => {
+  const pendingOutcomes = ideas.filter(i => i.status==="posted" && !(i.postedViews>0));
+  const pendingScores   = ideas.filter(i => !(i.viral>0) && i.status!=="posted");
+  const tasks = [];
+  if(pendingOutcomes.length) tasks.push({ id:"outcomes", n:pendingOutcomes.length, label:`Log real views on ${pendingOutcomes.length} posted ${pendingOutcomes.length===1?"video":"videos"}`, why:"This is what trains the AI — every logged result sharpens future scores.", nav:"content" });
+  if(pendingScores.length)   tasks.push({ id:"scores",   n:pendingScores.length,   label:`Score ${pendingScores.length} unscored ${pendingScores.length===1?"idea":"ideas"}`, why:"Get a virality read before you spend time filming.", nav:"content" });
+  const week = isoWeek();
+  const state = loadJSON(RITUAL_KEY, { week:null });
+  const freshWeek = state.week !== week;
+  return { tasks, pending: pendingOutcomes.length + pendingScores.length, week, freshWeek };
+};
+const markRitualWeek = (week) => saveJSON(RITUAL_KEY, { week, seenAt:new Date().toISOString() });
+
 const getIntelligenceLevel = (videos=[], ideas=[], memory={}, theory="") => {
   let score = 0;
   score += Math.min(videos.length * 3, 30);        // up to 30pts for videos
@@ -7862,7 +7926,7 @@ Return JSON:
             </div>
 
         {/* VIEWS */}
-        {nav==="home"      && <HomeView ideas={topIdeas} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} weeklyDebrief={weeklyDebrief} debriefLoading={debriefLoading} runDebrief={runDebrief} />}
+        {nav==="home"      && <HomeView ideas={topIdeas} allIdeas={ideas} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} weeklyDebrief={weeklyDebrief} debriefLoading={debriefLoading} runDebrief={runDebrief} />}
         {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} markPosted={markPosted} />}
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
