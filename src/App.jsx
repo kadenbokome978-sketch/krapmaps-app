@@ -4826,9 +4826,9 @@ const formatOutcomeLearning = (learning) => {
 // Measures whether the AI's own virality scores actually rank-correlate with real outcomes.
 // Spearman ρ between predicted score and actual views = does the scoring engine even work?
 const buildScoreValidity = (ideas=[]) => {
-  const posted = ideas.filter(i => i.status==="posted" && i.postedViews>0 && typeof (i.viral ?? i.aiScore?.viralityScore) === "number");
+  const posted = ideas.filter(i => i.status==="posted" && i.postedViews>0 && ((i.viral>0) || (i.aiScore?.viralityScore>0)));
   if(posted.length < 4) return null;
-  const rows = posted.map(i => ({ score: i.viral ?? i.aiScore.viralityScore, views: i.postedViews }));
+  const rows = posted.map(i => ({ score: i.viral || i.aiScore.viralityScore, views: i.postedViews }));
   // Tie-aware rank assignment
   const rankOf = (key) => {
     const order = [...rows].map((x,idx)=>({ idx, v:x[key] })).sort((a,b)=>a.v-b.v);
@@ -4916,9 +4916,11 @@ const _trainMLP = (X, y, inDim, H=8, epochs=400, lr=0.05, l2=1e-3) => {
 // Build + cross-validate the neural model from this channel's posted outcomes.
 const buildNeuralModel = (ideas=[]) => {
   try {
-    const posted = ideas.filter(i => i.status==="posted" && i.postedViews>0 && (typeof i.hookScore==="number" || typeof i.viral==="number"));
+    // Require an ACTUAL score — an unscored-but-posted idea has viral:0/hookScore:0
+    // and would feed all-zero feature vectors as training noise.
+    const posted = ideas.filter(i => i.status==="posted" && i.postedViews>0 && (i.viral>0 || i.hookScore>0));
     const n = posted.length;
-    if(n < 15) return { ready:false, n, reason:"need ≥15 posted outcomes to train" };
+    if(n < 15) return { ready:false, n, reason:"need ≥15 scored+posted outcomes to train" };
     const X = posted.map(_nnFeaturize);
     const inDim = X[0].length;
     const yRaw = posted.map(i => Math.log10(i.postedViews+1));
@@ -7211,7 +7213,7 @@ LEARNING: [one sentence]`}]})
       // Cached by an outcome signature so it only retrains when new results land.
       let neuralBlock = "", neuralSerial = null;
       try {
-        const postedForNN = ideas.filter(i=>i.status==="posted"&&i.postedViews>0&&(typeof i.hookScore==="number"||typeof i.viral==="number"));
+        const postedForNN = ideas.filter(i=>i.status==="posted"&&i.postedViews>0&&(i.viral>0||i.hookScore>0));
         const sig = `${postedForNN.length}:${postedForNN.reduce((s,i)=>s+(i.postedViews||0),0)}`;
         const cached = loadJSON(NN_KEY, null);
         if(cached && cached.sig===sig && cached.serial){
