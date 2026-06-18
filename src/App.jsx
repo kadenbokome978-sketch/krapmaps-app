@@ -1567,11 +1567,13 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
   })();
   const channelAvg = videos.length ? Math.round(totalViews/videos.length) : 0;
   const igVideos = videos.filter(v=>v.platform==="instagram");
+  const velocityModel = buildVelocityModel(videos);
 
   const renderVidCard = (v,i) => {
                 const r=rl(v);
                 const sc = videoScores?.[v.id];
                 const perfC = sc ? sc.color : perfColor(0);
+                const projection = projectFinalViews(v, velocityModel);
                 return (
                   <div key={v.id||i} style={{ borderRadius:16, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", overflow:"hidden", position:"relative" }}>
                     {sc && <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${sc.color},${sc.color}00)` }}/>}
@@ -1592,6 +1594,16 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                         {v.hook && <Tag color={C.cyan} sm>{v.hook}</Tag>}
                         {v.platform==="instagram" && <Tag color={C.purple} sm>IG</Tag>}
                       </div>
+                      {/* Velocity projection — only while the video is still maturing */}
+                      {projection && (
+                        <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 11px", marginBottom:12, borderRadius:10, background:`${C.green}08`, border:`1px solid ${C.green}20` }}>
+                          <span style={{ fontSize:14 }}>📈</span>
+                          <div style={{ flex:1 }}>
+                            <div style={{ fontSize:10, color:C.green, fontWeight:700, letterSpacing:"0.08em" }}>PROJECTED FINAL · {projection.confidence} CONF</div>
+                            <div style={{ fontSize:13, color:"#fff", fontWeight:600 }}>~{fmt(projection.expected)} <span style={{ fontSize:11, color:"rgba(255,255,255,0.45)", fontWeight:400 }}>({fmt(projection.low)}–{fmt(projection.high)})</span></div>
+                          </div>
+                        </div>
+                      )}
                       {/* Stats grid */}
                       {(() => {
                         const watchProxy = v.views48h&&v.views48h>0&&v.likes>0 ? parseFloat(((v.likes/v.views48h)*100).toFixed(1)) : null;
@@ -4951,6 +4963,46 @@ const calcVideoScore = (video, allVideos=[]) => {
   const color = score >= 80 ? "#00FF94" : score >= 65 ? "#FFD60A" : score >= 50 ? "#00CFFF" : score >= 35 ? "#FF6B35" : "#FF2D78";
 
   return { score, label, color, phase, velocity: Math.round(velocity), ageDays: Math.round(ageDays * 10) / 10, likeRatio: likeRatio.toFixed(1) };
+};
+
+// ── VELOCITY PROJECTION MODEL ─────────────────────────────────────
+// Learns this channel's "early views → final views" curve from mature videos that
+// have a logged 24hr (or 48hr) snapshot, then projects a young video's final reach.
+// Uses the MEDIAN multiplier (robust to one viral outlier) plus the interquartile
+// spread for an honest low/high band.
+const buildVelocityModel = (videos=[]) => {
+  const MATURE_DAYS = 7;
+  const now = Date.now();
+  const mature = videos.filter(v => {
+    if(!v.views24h || v.views24h<=0 || !v.views || v.views<=0 || !v.created_at) return false;
+    return (now - new Date(v.created_at).getTime())/86400000 >= MATURE_DAYS;
+  });
+  if(mature.length < 4) return null;
+  const mults = mature.map(v => v.views / v.views24h).filter(m => m>=1 && isFinite(m)).sort((a,b)=>a-b);
+  if(mults.length < 4) return null;
+  const q = p => mults[Math.min(mults.length-1, Math.floor(mults.length*p))];
+  return {
+    median: parseFloat(q(0.5).toFixed(2)),
+    low: parseFloat(q(0.25).toFixed(2)),
+    high: parseFloat(q(0.75).toFixed(2)),
+    sampleSize: mults.length,
+  };
+};
+
+// Projects a still-maturing video's final views from its 24hr snapshot (or live pace).
+const projectFinalViews = (video, model) => {
+  if(!model || !video) return null;
+  const now = Date.now();
+  const ageDays = video.created_at ? (now - new Date(video.created_at).getTime())/86400000 : 99;
+  if(ageDays >= 7) return null; // already mature — the number IS the final
+  const base = video.views24h && video.views24h>0 ? video.views24h : video.views;
+  if(!base || base<=0) return null;
+  return {
+    expected: Math.round(base * model.median),
+    low: Math.round(base * model.low),
+    high: Math.round(base * model.high),
+    confidence: model.sampleSize >= 12 ? "HIGH" : model.sampleSize >= 6 ? "MEDIUM" : "LOW",
+  };
 };
 
 // ── GPT-4o CALL ──────────────────────────────────────────────────
