@@ -7950,6 +7950,55 @@ function OnboardingPage({ onComplete }) {
   const isBraz = WL.clientId === "thierno";
   const ac1 = WL.accentColor || "#FF2D78";
   const ac2wl = WL.accentColor2 || "#00E5FF";
+
+  // ── EDITORIAL BRIEF — same layout on every build, content driven by client ──
+  const BRIEF = isBraz ? {
+    name:"Thierno", sub:"aka Bras · @officialthierno",
+    desc:"R&B · Afrobeats · Hip-Hop. Portsmouth, Northampton, London. Influenced by Chris Brown, Tory Lanez, Justin Bieber.",
+    cols:{ c1:"#00C853", c2:"#64B5F6", c3:"#CE93D8", c4:"#FF6B6B" },
+    headline:{ label:"NEXT DROP", big:"21", unit:"DAYS", caption:<>Until <span style={{color:"#64B5F6"}}>Single 03</span> — summer banger. Pipeline behind it: moody autumn/winter late-night already lined up.</> },
+    numbersLabel:"CURRENT NUMBERS",
+    numbers:[
+      {platform:"Spotify",val:"37",label:"monthly listeners",col:"#00C853"},
+      {platform:"TikTok",val:"784",label:"followers · 12.9K views",col:"#64B5F6"},
+      {platform:"Instagram",val:"1,566",label:"followers",col:"#CE93D8"},
+      {platform:"YouTube",val:"~20",label:"subscribers",col:"rgba(255,255,255,0.3)"},
+    ],
+    listLabel:"DISCOGRAPHY",
+    list:[
+      {title:"Flaws",status:"OUT NOW",col:"rgba(255,255,255,0.25)"},
+      {title:"Can't Imagine",status:"OUT NOW · TOP PERFORMER",col:"#00C853"},
+      {title:"Single 03",status:"3 WEEKS",col:"#64B5F6"},
+    ],
+    horizon:<>Consistent posting. 3–4 new songs out. Growing streams and engagement. Building a genuine core fanbase. <span style={{color:"rgba(255,255,255,0.7)"}}>National → continental → global.</span></>,
+    brand:"Authenticity. Delivery. Feel-good energy. Listeners fully absorbed in the vibe.",
+    bottleneck:"Raw vocals perform best — not posting enough. Self-managed. Outward creative side drains when the heart is in the music.",
+    origin:"\"Started at school when his friend Tate spotted his vocal talent, got him in the studio — and it snowballed from there.\"",
+  } : {
+    name:"KrapMaps", sub:"@findkrap · Kaden + Harley",
+    desc:"World's first crowdsourced bin-finding app for backpackers. SE Asia + UK. Founder-built, mission-driven, slightly self-deprecating.",
+    cols:{ c1:"#FF2D78", c2:"#00E5FF", c3:"#C566FF", c4:"#FF6B1A" },
+    headline:{ label:"NEXT MILESTONE", big:"10K", unit:"FOLLOWERS", caption:<>Organic TikTok target — plus <span style={{color:"#00E5FF"}}>3 hostel partnerships</span> and 1,000 app downloads from content alone.</> },
+    numbersLabel:"CURRENT NUMBERS",
+    numbers:[
+      {platform:"App",val:"230+",label:"active users",col:"#FF2D78"},
+      {platform:"Bins",val:"654+",label:"mapped",col:"#00E5FF"},
+      {platform:"Partners",val:"2",label:"hostel chains · 24+ sites",col:"#C566FF"},
+      {platform:"Stage",val:"Pre-seed",label:"raise in progress",col:"rgba(255,255,255,0.3)"},
+    ],
+    listLabel:"CONTENT PILLARS",
+    list:[
+      {title:"Local Connection",status:"CEILING 500K+",col:"#FF2D78"},
+      {title:"Location Contrast",status:"CEILING 200K+",col:"#00E5FF"},
+      {title:"Mission Reveal",status:"CEILING 100K+",col:"#C566FF"},
+      {title:"App In Action",status:"CEILING 50K",col:"rgba(255,255,255,0.3)"},
+      {title:"Travel Utility",status:"CEILING 30K",col:"rgba(255,255,255,0.22)"},
+    ],
+    horizon:<>Grow organic TikTok to 10K. Land 3 more hostel partnerships. <span style={{color:"rgba(255,255,255,0.7)"}}>1,000 app downloads from content alone.</span></>,
+    brand:"Genuine, slightly self-deprecating founder energy. Not preachy eco-content — the humour is in the absurdity of hunting bins as a serious mission.",
+    bottleneck:"Consistent posting while travelling — capturing the raw moments before they lose energy.",
+    origin:"\"Two backpackers tired of holding their rubbish for hours in paradise built the world's first crowdsourced bin-finding app — and turned the mission into the content.\"",
+  };
   const SC = isBraz ? {
     windowLabel: "ARTISTOS · DASHBOARD",
     navItems: [
@@ -8273,8 +8322,8 @@ function OnboardingPage({ onComplete }) {
               <div style={{ width:1, background:"linear-gradient(180deg,transparent,rgba(255,255,255,0.08) 20%,rgba(255,255,255,0.08) 80%,transparent)", flexShrink:0, zIndex:2 }}/>
 
               {/* RIGHT PANEL */}
-              {isBraz ? (
-                /* ── THIERNO — editorial artist brief ── */
+              {true ? (
+                /* ── EDITORIAL BRIEF — same layout on every build, content from BRIEF config ── */
                 <div style={{ flex:1, overflowY:"auto", padding:"48px 52px", position:"relative", zIndex:2, animation:"slideInRight 0.9s cubic-bezier(0.16,1,0.3,1) forwards" }}>
                   <style>{`
                     @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,700;0,900;1,300;1,700&display=swap');
@@ -8284,38 +8333,33 @@ function OnboardingPage({ onComplete }) {
 
                   {/* Identity */}
                   <div className="braz-section">
-                    <div style={{ fontSize:9, color:"#00C853", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>IDENTITY</div>
+                    <div style={{ fontSize:9, color:BRIEF.cols.c1, letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>IDENTITY</div>
                     <div style={{ fontSize:"clamp(36px,3.6vw,58px)", fontFamily:"'Fraunces',Georgia,serif", fontWeight:900, color:"#fff", lineHeight:0.95, letterSpacing:"-0.02em", marginBottom:10 }}>
-                      Thierno<span style={{color:"rgba(255,255,255,0.18)"}}>.</span>
+                      {BRIEF.name}<span style={{color:"rgba(255,255,255,0.18)"}}>.</span>
                     </div>
-                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.35)", fontFamily:"Courier New,monospace", letterSpacing:"0.1em", marginBottom:6 }}>aka Bras &nbsp;·&nbsp; @officialthierno</div>
-                    <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", lineHeight:1.65, maxWidth:420 }}>R&B · Afrobeats · Hip-Hop. Portsmouth, Northampton, London. Influenced by Chris Brown, Tory Lanez, Justin Bieber.</div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.35)", fontFamily:"Courier New,monospace", letterSpacing:"0.1em", marginBottom:6 }}>{BRIEF.sub}</div>
+                    <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", lineHeight:1.65, maxWidth:420 }}>{BRIEF.desc}</div>
                   </div>
 
                   <div style={{ width:"100%", height:1, background:"rgba(255,255,255,0.06)", marginBottom:36 }}/>
 
-                  {/* Countdown to Single 03 */}
+                  {/* Headline metric */}
                   <div className="braz-section">
-                    <div style={{ fontSize:9, color:"#64B5F6", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>NEXT DROP</div>
+                    <div style={{ fontSize:9, color:BRIEF.cols.c2, letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>{BRIEF.headline.label}</div>
                     <div style={{ display:"flex", alignItems:"baseline", gap:12, marginBottom:8 }}>
-                      <div style={{ fontSize:"clamp(48px,4.8vw,72px)", fontFamily:"'Fraunces',Georgia,serif", fontWeight:900, color:"#fff", lineHeight:1 }}>21</div>
-                      <div style={{ fontSize:14, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>DAYS</div>
+                      <div style={{ fontSize:"clamp(48px,4.8vw,72px)", fontFamily:"'Fraunces',Georgia,serif", fontWeight:900, color:"#fff", lineHeight:1 }}>{BRIEF.headline.big}</div>
+                      <div style={{ fontSize:14, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>{BRIEF.headline.unit}</div>
                     </div>
-                    <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)" }}>Until <span style={{color:"#64B5F6"}}>Single 03</span> — summer banger. Pipeline behind it: moody autumn/winter late-night already lined up.</div>
+                    <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)" }}>{BRIEF.headline.caption}</div>
                   </div>
 
                   <div style={{ width:"100%", height:1, background:"rgba(255,255,255,0.06)", marginBottom:36 }}/>
 
                   {/* Stats */}
                   <div className="braz-section">
-                    <div style={{ fontSize:9, color:"#00C853", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:14 }}>CURRENT NUMBERS</div>
+                    <div style={{ fontSize:9, color:BRIEF.cols.c1, letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:14 }}>{BRIEF.numbersLabel}</div>
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:16 }}>
-                      {[
-                        {platform:"Spotify",val:"37",label:"monthly listeners",col:"#00C853"},
-                        {platform:"TikTok",val:"784",label:"followers · 12.9K views",col:"#64B5F6"},
-                        {platform:"Instagram",val:"1,566",label:"followers",col:"#CE93D8"},
-                        {platform:"YouTube",val:"~20",label:"subscribers",col:"rgba(255,255,255,0.3)"},
-                      ].map(({platform,val,label,col})=>(
+                      {BRIEF.numbers.map(({platform,val,label,col})=>(
                         <div key={platform}>
                           <div style={{ fontSize:9, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace", marginBottom:4 }}>{platform.toUpperCase()}</div>
                           <div style={{ fontSize:22, fontFamily:"'Fraunces',Georgia,serif", fontWeight:700, color:col, lineHeight:1, marginBottom:3 }}>{val}</div>
@@ -8327,15 +8371,11 @@ function OnboardingPage({ onComplete }) {
 
                   <div style={{ width:"100%", height:1, background:"rgba(255,255,255,0.06)", marginBottom:36 }}/>
 
-                  {/* Discography */}
+                  {/* List — discography / content pillars */}
                   <div className="braz-section">
-                    <div style={{ fontSize:9, color:"#CE93D8", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:14 }}>DISCOGRAPHY</div>
+                    <div style={{ fontSize:9, color:BRIEF.cols.c3, letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:14 }}>{BRIEF.listLabel}</div>
                     <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                      {[
-                        {title:"Flaws",status:"OUT NOW",col:"rgba(255,255,255,0.25)"},
-                        {title:"Can't Imagine",status:"OUT NOW · TOP PERFORMER",col:"#00C853"},
-                        {title:"Single 03",status:"3 WEEKS",col:"#64B5F6"},
-                      ].map(({title,status,col})=>(
+                      {BRIEF.list.map(({title,status,col})=>(
                         <div key={title} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
                           <div style={{ fontSize:15, fontFamily:"'Fraunces',Georgia,serif", fontWeight:700, color:"rgba(255,255,255,0.8)", fontStyle:"italic" }}>{title}</div>
                           <div style={{ fontSize:8, color:col, fontFamily:"Courier New,monospace", letterSpacing:"0.12em" }}>{status}</div>
@@ -8348,9 +8388,9 @@ function OnboardingPage({ onComplete }) {
 
                   {/* 6-month horizon */}
                   <div className="braz-section">
-                    <div style={{ fontSize:9, color:"#64B5F6", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>6-MONTH HORIZON</div>
+                    <div style={{ fontSize:9, color:BRIEF.cols.c2, letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>6-MONTH HORIZON</div>
                     <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", lineHeight:1.7 }}>
-                      Consistent posting. 3–4 new songs out. Growing streams and engagement. Building a genuine core fanbase. <span style={{color:"rgba(255,255,255,0.7)"}}>National → continental → global.</span>
+                      {BRIEF.horizon}
                     </div>
                   </div>
 
@@ -8359,12 +8399,12 @@ function OnboardingPage({ onComplete }) {
                   {/* Brand */}
                   <div className="braz-section" style={{ display:"flex", gap:40 }}>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:9, color:"#CE93D8", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>BRAND</div>
-                      <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", lineHeight:1.7 }}>Authenticity. Delivery. Feel-good energy. Listeners fully absorbed in the vibe.</div>
+                      <div style={{ fontSize:9, color:BRIEF.cols.c3, letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>BRAND</div>
+                      <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", lineHeight:1.7 }}>{BRIEF.brand}</div>
                     </div>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:9, color:"#FF6B6B", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>BOTTLENECK</div>
-                      <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", lineHeight:1.7 }}>Raw vocals perform best — not posting enough. Self-managed. Outward creative side drains when the heart is in the music.</div>
+                      <div style={{ fontSize:9, color:BRIEF.cols.c4, letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>BOTTLENECK</div>
+                      <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", lineHeight:1.7 }}>{BRIEF.bottleneck}</div>
                     </div>
                   </div>
 
@@ -8374,7 +8414,7 @@ function OnboardingPage({ onComplete }) {
                   <div className="braz-section">
                     <div style={{ fontSize:9, color:"rgba(255,255,255,0.18)", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:10 }}>ORIGIN</div>
                     <div style={{ fontSize:"clamp(14px,1.3vw,17px)", fontFamily:"'Fraunces',Georgia,serif", fontStyle:"italic", fontWeight:300, color:"rgba(255,255,255,0.35)", lineHeight:1.7 }}>
-                      "Started at school when his friend Tate spotted his vocal talent, got him in the studio — and it snowballed from there."
+                      {BRIEF.origin}
                     </div>
                   </div>
                 </div>
