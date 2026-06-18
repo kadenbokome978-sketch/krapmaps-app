@@ -374,7 +374,7 @@ const Sparkline = ({ data=[], color=C.pink, height=40 }) => {
   );
 };
 
-const HomeView = ({ ideas, allIdeas=[], calItems, setNav, runAI, aiLoad, openModal, ttViewsDisplay, igViewsTotal=0, allViewsDisplay=0, m, scrapedStats, statsError, igData, videos=[], weeklyDebrief, debriefLoading, runDebrief }) => {
+const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calItems, setNav, runAI, aiLoad, openModal, ttViewsDisplay, igViewsTotal=0, allViewsDisplay=0, m, scrapedStats, statsError, igData, videos=[], weeklyDebrief, debriefLoading, runDebrief }) => {
   const topIdeas = [...(ideas||[])].sort((a,b)=>(Number(b.viral)||0)-(Number(a.viral)||0)).slice(0,3);
   const ritual = React.useMemo(()=>buildRitual(allIdeas.length?allIdeas:(ideas||[]), videos),[allIdeas, ideas, videos]);
   React.useEffect(()=>{ if(ritual.freshWeek) markRitualWeek(ritual.week); },[ritual.freshWeek, ritual.week]);
@@ -437,6 +437,24 @@ const HomeView = ({ ideas, allIdeas=[], calItems, setNav, runAI, aiLoad, openMod
               </div>
             ))}
           </div>
+          {outcomeMatches.length > 0 && (
+            <div style={{ marginTop:14, paddingTop:14, borderTop:"1px solid rgba(255,255,255,0.07)" }}>
+              <div style={{ fontSize:11, fontWeight:800, letterSpacing:"0.12em", color:C.cyan, marginBottom:8, display:"flex", alignItems:"center", gap:7 }}>
+                <span>⚡</span> AUTO-MATCHED FROM YOUR TIKTOK — TAP TO CONFIRM
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {outcomeMatches.slice(0,5).map(mm=>(
+                  <div key={mm.ideaId} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:10, background:`${C.cyan}08`, border:`1px solid ${C.cyan}22` }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, color:"#fff", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{mm.ideaTitle}</div>
+                      <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody }}>matched → <span style={{color:C.cyan,fontWeight:700}}>{mm.views>=1e6?(mm.views/1e6).toFixed(1)+"M":mm.views>=1e3?(mm.views/1e3).toFixed(1)+"K":mm.views} views</span> · {mm.confidence}% confident</div>
+                    </div>
+                    <button onClick={()=>confirmOutcome&&confirmOutcome(mm.ideaId, mm.views)} style={{ flexShrink:0, padding:"7px 14px", borderRadius:8, border:`1px solid ${C.green}40`, background:`${C.green}12`, color:C.green, fontWeight:700, fontSize:12, cursor:"pointer", letterSpacing:"0.04em" }}>✓ Confirm</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", marginTop:12, fontFamily:C.fontBody }}>Clear these and your AI scoring gets measurably sharper — the model literally learns from every result you log.</div>
         </div>
       ) : (
@@ -4157,6 +4175,43 @@ const buildRitual = (ideas=[], videos=[]) => {
 };
 const markRitualWeek = (week) => saveJSON(RITUAL_KEY, { week, seenAt:new Date().toISOString() });
 
+// ── AUTO STAT-PULL — match posted ideas to scraped videos, pre-fill real views ──
+// Title-token overlap + posting-date proximity. Strict thresholds: only confident,
+// unambiguous matches are surfaced — and they're surfaced as ONE-TAP CONFIRMATIONS,
+// never silently written, because this data trains the model. The ritual is the
+// fallback whenever a match isn't confident enough.
+const _normTokens = (s) => (s||"").toLowerCase().replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(w=>w.length>2);
+const _titleSim = (a,b) => {
+  const ta=new Set(_normTokens(a)), tb=new Set(_normTokens(b));
+  if(!ta.size || !tb.size) return 0;
+  let inter=0; ta.forEach(t=>{ if(tb.has(t)) inter++; });
+  return inter / Math.min(ta.size, tb.size); // overlap coefficient — robust to caption length
+};
+const autoMatchOutcomes = (ideas=[], videos=[]) => {
+  const ttVids = videos.filter(v => v.platform==="tiktok" && v.views>0 && (v._tikwmId||v.videoUrl));
+  if(!ttVids.length) return [];
+  const out = [];
+  ideas.filter(i => i.status==="posted" && !(i.postedViews>0) && i.title).forEach(i => {
+    let best=null, runnerUp=0;
+    ttVids.forEach(v => {
+      const sim = _titleSim(i.title, v.title);
+      let dateScore = 0.5;
+      if(i.postedDate && v.created_at){
+        const days = Math.abs((new Date(v.created_at) - new Date(i.postedDate))/86400000);
+        dateScore = days<=10 ? 1 : days<=30 ? 0.6 : 0.2;
+      }
+      const conf = sim*0.7 + dateScore*0.3;
+      if(!best || conf>best.conf){ runnerUp = best?best.conf:0; best={ conf, sim, v }; }
+      else if(conf>runnerUp) runnerUp=conf;
+    });
+    // Confident AND unambiguous: strong title overlap, and clearly ahead of the next candidate.
+    if(best && best.sim>=0.6 && best.conf>=0.62 && (best.conf - runnerUp) >= 0.12){
+      out.push({ ideaId:i.id, ideaTitle:i.title, views:best.v.views, videoTitle:best.v.title, confidence:Math.round(best.conf*100) });
+    }
+  });
+  return out;
+};
+
 const getIntelligenceLevel = (videos=[], ideas=[], memory={}, theory="") => {
   let score = 0;
   score += Math.min(videos.length * 3, 30);        // up to 30pts for videos
@@ -7107,6 +7162,15 @@ function Dashboard({ keys, onEditKeys }) {
     setAiLoad(l=>({...l,[mode]:false}));
   };
 
+  // Auto-matched outcome confirmation — fills postedViews from a scraped video (one tap).
+  const confirmOutcome = (ideaId, views) => {
+    if(!(views>0)) return;
+    const idea = ideas.find(i=>i.id===ideaId);
+    setIdeas(is=>is.map(i=>i.id===ideaId?{...i, postedViews:views, _autoMatched:true}:i));
+    addXP(20);
+    if(idea) addMemoryEntry("IDEA_OUTCOME", `"${(idea.title||"").slice(0,60)}" auto-matched to scraped video → ${fmt(views)} views. Score was ${idea.viral||0}/100.`, `Got ${fmt(views)} views`);
+  };
+
   const markPosted = (idea, actualViews=0) => {
     const predicted = idea.aiScore?.estimated_views||"unknown";
     const outcome = actualViews>0 ? `Got ${fmt(actualViews)} views (AI predicted ${predicted})` : "Posted, views not tracked yet";
@@ -7926,7 +7990,7 @@ Return JSON:
             </div>
 
         {/* VIEWS */}
-        {nav==="home"      && <HomeView ideas={topIdeas} allIdeas={ideas} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} weeklyDebrief={weeklyDebrief} debriefLoading={debriefLoading} runDebrief={runDebrief} />}
+        {nav==="home"      && <HomeView ideas={topIdeas} allIdeas={ideas} outcomeMatches={autoMatchOutcomes(ideas, videos)} confirmOutcome={confirmOutcome} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} weeklyDebrief={weeklyDebrief} debriefLoading={debriefLoading} runDebrief={runDebrief} />}
         {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} markPosted={markPosted} />}
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
