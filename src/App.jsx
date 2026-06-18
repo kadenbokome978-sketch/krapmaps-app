@@ -4263,7 +4263,11 @@ const WL_DEFAULTS = {
   biggestChallenge: _CC.biggestChallenge || "",
   goals: _CC.goals || "",
 };
-const loadWL = () => { try { const s=JSON.parse(localStorage.getItem(WL_KEY)); return s?{...WL_DEFAULTS,...s}:WL_DEFAULTS; } catch { return WL_DEFAULTS; } };
+// Branding/identity fields are owned by the active client config — never let a
+// stale stored WL override them (prevents cross-client leaks like an ArtistOS
+// build showing a KrapMaps greeting).
+const _CLIENT_OWNED = { aiGreeting: WL_DEFAULTS.aiGreeting, onboardingTagline: WL_DEFAULTS.onboardingTagline };
+const loadWL = () => { try { const s=JSON.parse(localStorage.getItem(WL_KEY)); return s?{...WL_DEFAULTS,...s,..._CLIENT_OWNED}:WL_DEFAULTS; } catch { return WL_DEFAULTS; } };
 const saveWL = (wl) => { try { localStorage.setItem(WL_KEY,JSON.stringify(wl)); } catch {} };
 const WL = loadWL();
 
