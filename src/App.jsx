@@ -15,7 +15,7 @@ const _isThiernoClient = _activeCfg.clientId === "thierno";
 if(typeof document !== "undefined") document.title = _activeCfg.appName || "CreatorOS";
 
 const C = _isThiernoClient ? {
-  // ── Thierno "Bras" — deluxe vinyl / late-night studio ──
+  // ── Thierno "Braz" — deluxe vinyl / late-night studio ──
   pink:"#00f085",    // green as primary accent (CTAs, key numbers)
   cyan:"#5cb8ff",    // blue — secondary, info
   yellow:"#b58dff",  // purple — highlights, top-performer
@@ -8098,7 +8098,7 @@ function OnboardingPage({ onComplete }) {
 
   // ── EDITORIAL BRIEF — same layout on every build, content driven by client ──
   const BRIEF = isBraz ? {
-    name:"Thierno", sub:"aka Bras · @officialthierno",
+    name:"Thierno", sub:"aka Braz · @officialthierno",
     desc:"R&B · Afrobeats · Hip-Hop. Portsmouth, Northampton, London. Influenced by Chris Brown, Tory Lanez, Justin Bieber.",
     cols:{ c1:"#00C853", c2:"#64B5F6", c3:"#CE93D8", c4:"#FF6B6B" },
     headline:{ label:"NEXT DROP", big:"21", unit:"DAYS", caption:<>Until <span style={{color:"#64B5F6"}}>Single 03</span> — summer banger. Pipeline behind it: moody autumn/winter late-night already lined up.</> },
