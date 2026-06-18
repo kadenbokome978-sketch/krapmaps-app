@@ -7597,7 +7597,7 @@ Return JSON:
     </div>
   );
   const MLabel = ({children}) => <div style={{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",color:C.dim,marginBottom:5,textTransform:"uppercase" }}>{children}</div>;
-  const MInput = ({value,onChange,placeholder,type="text"}) => <input type={type} value={value||""} onChange={onChange} placeholder={placeholder} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:C.text,padding:"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12 }} />;
+  const MInput = ({value,onChange,placeholder,type="text"}) => <input type={type} value={value||""} onChange={onChange} placeholder={placeholder} style={{ width:"100%",background:"#1a1330",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#fff",padding:"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12,colorScheme:"dark" }} />;
   const MBtn = ({children,onClick,color=C.pink}) => <button onClick={onClick} style={{ width:"100%",padding:"13px",borderRadius:12,border:"none",background:color,color:"#fff",fontFamily:C.fontHead,fontWeight:700,fontSize:15,cursor:"pointer",marginTop:6 }}>{children}</button>;
 
   const AddVideoModal = () => {
@@ -7614,11 +7614,11 @@ Return JSON:
           <>
             <MLabel>Title</MLabel><MInput value={form.title} onChange={set("title")} placeholder="Video title" />
             <MLabel>Type</MLabel>
-            <select value={form.type} onChange={set("type")} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:C.text,padding:"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12 }}>
+            <select value={form.type} onChange={set("type")} style={{ width:"100%",background:"#1a1330",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#fff",padding:"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" }}>
               {VIDEO_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
             <MLabel>Hook</MLabel>
-            <select value={form.hook} onChange={set("hook")} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:C.text,padding:"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12 }}>
+            <select value={form.hook} onChange={set("hook")} style={{ width:"100%",background:"#1a1330",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#fff",padding:"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" }}>
               {HOOK_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
@@ -7671,7 +7671,7 @@ Return JSON:
   const AddIdeaModal = () => {
     const [form, setForm] = useState({ title:"", type:"facecam", hook:"achievement", thumbnail:"text overlay", notes:"", collab: false });
     const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
-    const selStyle = { width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:C.text,padding:"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12 };
+    const selStyle = { width:"100%",background:"#1a1330",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#fff",padding:"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" };
     return (
       <ModalBase onClose={()=>closeModal("addIdea")}>
         <div style={{ fontSize:20,fontWeight:700,color:C.text,marginBottom:16 }}>Add Idea</div>
@@ -7815,11 +7815,11 @@ Return JSON:
         <MLabel>Title</MLabel><MInput value={form.title} onChange={set("title")} placeholder="Content title" />
         <MLabel>Date</MLabel><MInput value={form.date} onChange={set("date")} type="date" />
         <MLabel>Platform</MLabel>
-        <select value={form.platform} onChange={set("platform")} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:C.text,padding:"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12 }}>
+        <select value={form.platform} onChange={set("platform")} style={{ width:"100%",background:"#1a1330",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#fff",padding:"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" }}>
           {["TikTok","Instagram","Both","YouTube"].map(p=><option key={p} value={p}>{p}</option>)}
         </select>
         <MLabel>Status</MLabel>
-        <select value={form.status} onChange={set("status")} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:C.text,padding:"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12 }}>
+        <select value={form.status} onChange={set("status")} style={{ width:"100%",background:"#1a1330",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#fff",padding:"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" }}>
           {STATUSES.map(s=><option key={s} value={s}>{s}</option>)}
         </select>
         <MBtn onClick={()=>{ if(!form.title.trim()) return; setCalItems(cs=>[{id:Date.now(),...form,statusColor:STATUS_C[form.status]||C.dim},...cs]); closeModal("addCal"); }}>Add to Calendar</MBtn>
