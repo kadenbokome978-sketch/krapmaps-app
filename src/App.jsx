@@ -4842,6 +4842,53 @@ const formatPipelineSaturation = (sat) => {
   return `PIPELINE SATURATION: ${sat.count} other unposted ideas already cover this same topic (${sat.titles.join("; ")}). If the plan is to post all of them, deduct from niche fit — topic repetition burns the audience even when hooks differ. Recommend consolidating or spacing them out.\n`;
 };
 
+// ── CONTENT ALLOCATOR (multi-armed bandit) ────────────────────────
+// Treats each content pillar as an arm. Each posted result is a Bernoulli trial
+// (beat channel median = win). Maintains a Beta(α,β) posterior per pillar and ranks
+// by a 90% upper credible bound — automatically balancing exploit (proven win-rate)
+// against explore (under-tested pillars get a high bound from their wide uncertainty).
+const buildContentAllocator = (ideas=[], videos=[], pillars=[]) => {
+  if(!pillars || !pillars.length) return null;
+  const tagged = [];
+  ideas.forEach(i => { if(i.status==="posted" && i.postedViews>0 && i.aiScore?.contentPillar) tagged.push({ pillar:i.aiScore.contentPillar, views:i.postedViews }); });
+  videos.forEach(v => { if(v.views>0 && v.pillar) tagged.push({ pillar:v.pillar, views:v.views }); });
+  if(tagged.length < 3) return null;
+  const allViews = tagged.map(t=>t.views).sort((a,b)=>a-b);
+  const median = allViews[Math.floor(allViews.length/2)] || 1;
+  const z = 1.28; // ~90% upper credible bound
+  const arms = pillars.map(p => {
+    const items = tagged.filter(t=>t.pillar===p);
+    const wins = items.filter(t=>t.views >= median).length;
+    const losses = items.length - wins;
+    const a = 1 + wins, b = 1 + losses;          // Beta posterior with uniform prior
+    const mean = a/(a+b);
+    const variance = (a*b)/((a+b)*(a+b)*(a+b+1));
+    const ucb = mean + z*Math.sqrt(variance);
+    return { pillar:p, n:items.length, wins, winRate:parseFloat(mean.toFixed(2)), priority:parseFloat(ucb.toFixed(3)) };
+  }).sort((a,b)=>b.priority-a.priority);
+  return { arms, median, sampleSize:tagged.length };
+};
+
+const formatContentAllocator = (alloc, ideaPillar) => {
+  if(!alloc) return "";
+  const fmt = n => n>=1000?`${(n/1000).toFixed(1)}k`:String(n);
+  const top = alloc.arms[0];
+  let out = `STRATEGIC ALLOCATION [bandit over content pillars — win = beating channel median ${fmt(alloc.median)} views, n=${alloc.sampleSize}]:\n`;
+  alloc.arms.forEach(a => {
+    const tag = a.n < 2 ? "UNDER-TESTED — high uncertainty, worth a calculated bet"
+              : a.winRate >= 0.6 ? "proven winner — exploit"
+              : a.winRate <= 0.34 ? "underperforming — reduce frequency"
+              : "neutral";
+    out += `  • ${a.pillar}: ${Math.round(a.winRate*100)}% win-rate (n=${a.n}), priority ${a.priority} — ${tag}\n`;
+  });
+  out += `  → Highest-priority pillar to post next: "${top.pillar}".`;
+  if(ideaPillar) {
+    const idx = alloc.arms.findIndex(a=>a.pillar===ideaPillar);
+    if(idx >= 0) out += ` This idea's pillar ranks ${idx+1}/${alloc.arms.length} — ${idx===0?"it IS the strategic priority → boost niche fit":"weigh its lower strategic priority into the score"}.`;
+  }
+  return out + "\n";
+};
+
 // ── VIDEO SCORE ENGINE ──────────────────────────────────────────
 // Time-weighted score — factors in age, velocity, ratio, hook performance
 const calcVideoScore = (video, allVideos=[]) => {
@@ -6677,6 +6724,10 @@ LEARNING: [one sentence]`}]})
       const scoreValidity = buildScoreValidity(ideas);
       const scoreValidityBlock = formatScoreValidity(scoreValidity);
 
+      // Content allocator — bandit over pillars: what's strategically worth posting next
+      const allocator = buildContentAllocator(ideas, organicVids.length?organicVids:videos, WL.pillars||[]);
+      const allocatorBlock = formatContentAllocator(allocator, idea.aiScore?.contentPillar);
+
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
       const _scorePrompt = `You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
 
@@ -6692,6 +6743,7 @@ ${recentTrackBlock}
 ${hookFatigueBlock}
 ${pipelineSatBlock}
 ${scoreValidityBlock}
+${allocatorBlock}
 ${calibration ? `CALIBRATION: ${calibration}` : ""}
 ${ideaOutcomes.length ? `RECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
 ${seriesMomentum ? `\n${seriesMomentum}` : ""}
