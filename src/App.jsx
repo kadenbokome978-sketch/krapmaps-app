@@ -98,6 +98,56 @@ const Glass = ({ children, glow, border, style={} }) => (
 const Tag = ({ children, color, sm }) => (
   <span style={{ background:`${color}18`, border:`1px solid ${color}40`, color, borderRadius:6, padding:sm?"2px 8px":"3px 10px", fontSize:sm?10:12, fontWeight:700, letterSpacing:"0.06em", display:"inline-block", whiteSpace:"nowrap", fontFamily:C.fontHead, textTransform:"uppercase" }}>{children}</span>
 );
+// Animated count-up: climbs from 0 → target with an easeOut curve, then a tiny
+// overshoot "tick" so the final number settles in with a satisfying bump.
+const CountUp = ({ value, duration=1100, style }) => {
+  const target = Number(value) || 0;
+  const [display, setDisplay] = useState(target);
+  const rafRef = useRef(null);
+  const prevTarget = useRef(target);
+  useEffect(() => {
+    // Only animate when the score actually changes (i.e. a fresh score reveal)
+    if (prevTarget.current === target) { setDisplay(target); return; }
+    prevTarget.current = target;
+    const start = performance.now();
+    const from = 0;
+    const tick = (now) => {
+      const t = Math.min((now - start) / duration, 1);
+      // easeOutCubic — fast then gently decelerates into the final number
+      const eased = 1 - Math.pow(1 - t, 3);
+      // slight overshoot near the end (the "wheel" nudging up past, then settling)
+      const overshoot = t > 0.85 ? Math.sin((t - 0.85) / 0.15 * Math.PI) * 1.4 : 0;
+      const v = from + (target - from) * eased + overshoot;
+      setDisplay(t < 1 ? Math.round(v) : target);
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => rafRef.current && cancelAnimationFrame(rafRef.current);
+  }, [target, duration]);
+  return <span style={style}>{display}</span>;
+};
+// Factor bar — number counts up while the fill bar sweeps to the same value.
+const FactorBar = ({ val, color, label }) => {
+  const target = Number(val) || 0;
+  const [w, setW] = useState(0);
+  const prev = useRef(null);
+  useEffect(() => {
+    if (prev.current === target) { setW(target); return; }
+    prev.current = target;
+    setW(0);
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => setW(target)));
+    return () => cancelAnimationFrame(id);
+  }, [target]);
+  return (
+    <div style={{ flex:1, textAlign:"center" }}>
+      <CountUp value={target} duration={1100} style={{ fontSize:13, fontWeight:700, color, lineHeight:1, display:"inline-block" }} />
+      <div style={{ height:4, borderRadius:2, background:`${color}18`, marginTop:4, overflow:"hidden" }}>
+        <div style={{ width:`${w}%`, height:"100%", borderRadius:2, background:color, transition:"width 1.1s cubic-bezier(0.22,1,0.36,1)" }}/>
+      </div>
+      <div style={{ fontSize:9, color:"rgba(255,255,255,0.25)", marginTop:3, letterSpacing:"0.08em" }}>{label}</div>
+    </div>
+  );
+};
 const Pill = ({ children, color, active, onClick }) => (
   <button onClick={onClick} style={{ padding:"7px 16px", borderRadius:20, border:`1px solid ${active?color:C.border}`, background:active?`${color}20`:"transparent", color:active?color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, letterSpacing:"0.05em", cursor:"pointer", fontFamily:C.fontHead, transition:"all 0.15s", whiteSpace:"nowrap" }}>{children}</button>
 );
@@ -1115,7 +1165,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                       <div style={{ flexShrink:0, textAlign:"center", minWidth:52 }}>
                         {hasScore ? (
                           <>
-                            <div style={{ fontSize:44, fontWeight:300, fontFamily:C.fontHead, color:scoreC, lineHeight:1, letterSpacing:"-0.02em", textShadow:`0 0 24px ${scoreC}60` }}>{idea.viral}</div>
+                            <CountUp value={idea.viral} style={{ fontSize:44, fontWeight:300, fontFamily:C.fontHead, color:scoreC, lineHeight:1, letterSpacing:"-0.02em", textShadow:`0 0 24px ${scoreC}60`, display:"inline-block" }} />
                             <div style={{ fontSize:9, color:"rgba(255,255,255,0.45)", fontWeight:700, letterSpacing:"0.14em", marginTop:2 }}>{perfLabel(idea.viral)}</div>
                             {idea.scoreDelta!=null && idea.scoreDelta!==0 && (
                               <div style={{ fontSize:10, fontWeight:700, color:idea.scoreDelta>0?C.green:C.pink, marginTop:1 }}>{idea.scoreDelta>0?`+${idea.scoreDelta}`:idea.scoreDelta}</div>
@@ -1291,13 +1341,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                           { label:"Algo", val:idea.algoScore, color:C.yellow },
                           { label:"Niche", val:idea.nicheScore, color:C.purple },
                         ].filter(f=>f.val).map((f,fi)=>(
-                          <div key={fi} style={{ flex:1, textAlign:"center" }}>
-                            <div style={{ fontSize:13, fontWeight:700, color:f.color, lineHeight:1 }}>{f.val}</div>
-                            <div style={{ height:4, borderRadius:2, background:`${f.color}18`, marginTop:4, overflow:"hidden" }}>
-                              <div style={{ width:`${f.val}%`, height:"100%", borderRadius:2, background:f.color }}/>
-                            </div>
-                            <div style={{ fontSize:9, color:"rgba(255,255,255,0.25)", marginTop:3, letterSpacing:"0.08em" }}>{f.label}</div>
-                          </div>
+                          <FactorBar key={fi} val={f.val} color={f.color} label={f.label} />
                         ))}
                       </div>
                     </div>
