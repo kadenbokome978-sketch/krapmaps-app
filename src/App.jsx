@@ -1515,7 +1515,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
   );
 };
 
-const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={}, commentInsights=null }) => {
+const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={}, commentInsights=null, visualDNA=null }) => {
   const [sub, setSub] = useState("OVERVIEW");
   const [vidAnalysis, setVidAnalysis] = useState({});
   const [vidLoading, setVidLoading]   = useState({});
@@ -1905,6 +1905,42 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                     {x.arr.slice(0,4).map((t,j)=>(
                       <div key={j} style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, marginBottom:3, fontFamily:C.fontBody }}>• {t}</div>
                     ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {visualDNA && (
+            <div style={{ borderRadius:16, padding:"18px 20px", background:`${C.cyan}08`, border:`1px solid ${C.cyan}22` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+                <span style={{ fontSize:16 }}>🖼️</span>
+                <div style={{ fontSize:13, fontWeight:700, color:C.cyan, letterSpacing:"0.08em" }}>VISUAL DNA</div>
+                <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)", marginLeft:"auto" }}>{visualDNA.sampleSize||0} thumbnails · vision-analyzed</span>
+              </div>
+              {visualDNA.one_rule && (
+                <div style={{ fontSize:13, color:C.cyan, lineHeight:1.5, marginBottom:12, fontFamily:C.fontBody, fontWeight:600 }}>★ {visualDNA.one_rule}</div>
+              )}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(220px,100%),1fr))", gap:12 }}>
+                {[
+                  {l:"WINNING TRAITS", arr:visualDNA.winning_traits, c:C.green},
+                  {l:"WHAT LOSES", arr:visualDNA.losing_traits, c:C.pink},
+                ].filter(x=>x.arr?.length).map((x,i)=>(
+                  <div key={i} style={{ padding:"10px 12px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${x.c}18` }}>
+                    <div style={{ fontSize:10, color:x.c, fontWeight:700, letterSpacing:"0.08em", marginBottom:6 }}>{x.l}</div>
+                    {x.arr.slice(0,4).map((t,j)=>(
+                      <div key={j} style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, marginBottom:3, fontFamily:C.fontBody }}>• {t}</div>
+                    ))}
+                  </div>
+                ))}
+                {[
+                  {l:"COLOR / CONTRAST", v:visualDNA.color_palette, c:C.yellow},
+                  {l:"COMPOSITION", v:visualDNA.composition, c:C.purple},
+                  {l:"FACES", v:visualDNA.face_pattern, c:C.cyan},
+                  {l:"TEXT OVERLAY", v:visualDNA.text_overlay, c:C.green},
+                ].filter(x=>x.v).map((x,i)=>(
+                  <div key={"v"+i} style={{ padding:"10px 12px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${x.c}18` }}>
+                    <div style={{ fontSize:10, color:x.c, fontWeight:700, letterSpacing:"0.08em", marginBottom:6 }}>{x.l}</div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, fontFamily:C.fontBody }}>{x.v}</div>
                   </div>
                 ))}
               </div>
@@ -4013,6 +4049,7 @@ const HOOK_DB_KEY  = "krapmaps_v1_hookdb";
 const PATTERN_KEY  = "krapmaps_v1_patterns";
 const GAP_KEY      = "krapmaps_v1_gaps";
 const COMMENTS_KEY = "krapmaps_v1_comment_insights";
+const VISION_KEY   = "krapmaps_v1_visual_dna";
 const GPT_KEY_ID   = "gpt4o";
 
 // ── STREAK & XP SYSTEM ─────────────────────────────────────────────
@@ -6311,6 +6348,7 @@ function Dashboard({ keys, onEditKeys }) {
   const [wlConfig, setWlConfig] = useState(()=>loadWL());
   const [videoScores, setVideoScores] = useState(()=>loadJSON(SCORES_KEY,{}));
   const [commentInsights, setCommentInsights] = useState(()=>loadJSON(COMMENTS_KEY,null));
+  const [visualDNA, setVisualDNA] = useState(()=>loadJSON(VISION_KEY,null));
   const onEditWL = (newWL) => { saveWL(newWL); setWlConfig({...WL_DEFAULTS,...newWL}); };
   const activeWL = wlConfig;
 
@@ -6620,6 +6658,44 @@ function Dashboard({ keys, onEditKeys }) {
     } catch(e){ /* silent — additive signal */ }
   },[videos]);
   useEffect(()=>{ const t=setTimeout(()=>mineComments(),6000); return ()=>clearTimeout(t); },[mineComments]);
+
+  // ── VISUAL DNA — vision model learns what THIS channel's winning thumbnails look like.
+  // The scoring engine is otherwise blind to its own best-performing visuals; this gives it
+  // a real visual sense by contrasting top vs bottom real thumbnails. One multimodal call,
+  // cached, auto-refreshes weekly. Purely additive — silently no-ops without a key/images.
+  const analyzeThumbnails = useCallback(async()=>{
+    const cfg = loadJSON(KEYS_KEY,{});
+    const aiKey = cfg?.keys?.anthropic;
+    if(!aiKey) return;
+    if(Date.now() - loadJSON("krapmaps_v1_vision_last", 0) < 7*24*60*60*1000) return; // weekly
+    const withCover = videos.filter(v=>v.cover && v.views>0 && /^https?:\/\//.test(v.cover));
+    if(withCover.length < 6) return;
+    const sorted = [...withCover].sort((a,b)=>(b.views||0)-(a.views||0));
+    const top = sorted.slice(0, Math.min(5, Math.floor(sorted.length/2)));
+    const bottom = sorted.slice(-Math.min(5, Math.floor(sorted.length/2)));
+    try {
+      const wl = loadWL();
+      const content = [];
+      content.push({ type:"text", text:`You are a visual content analyst for ${wl.handle} (${wl.niche}). Below are real thumbnails: first the channel's HIGHEST-viewed videos, then its LOWEST-viewed. Identify the VISUAL DNA that separates winners from losers on THIS channel — composition, color, faces, text overlay, framing, subject. Be specific and channel-grounded, not generic.` });
+      top.forEach((v,i)=>{ content.push({ type:"text", text:`HIGH PERFORMER #${i+1} — ${fmt(v.views)} views:` }); content.push({ type:"image", source:{ type:"url", url:v.cover } }); });
+      bottom.forEach((v,i)=>{ content.push({ type:"text", text:`LOW PERFORMER #${i+1} — ${fmt(v.views)} views:` }); content.push({ type:"image", source:{ type:"url", url:v.cover } }); });
+      content.push({ type:"text", text:`Return ONLY JSON: {"winning_traits":["specific visual traits the high performers share"],"losing_traits":["what the low performers do that hurts them"],"color_palette":"dominant colors/contrast that wins here","composition":"framing/subject placement that wins","face_pattern":"role of faces/expressions in winners","text_overlay":"how on-thumbnail text is used by winners vs losers","one_rule":"the single most important visual rule for this channel's thumbnails"}` });
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "x-api-key":aiKey, "anthropic-version":"2023-06-01", "anthropic-dangerous-direct-browser-access":"true" },
+        body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:1200, messages:[{ role:"user", content }] })
+      });
+      if(!r.ok) return;
+      const d = await r.json();
+      const txt = (d.content||[]).map(b=>b.text||"").join("").replace(/```json/g,"").replace(/```/g,"").trim();
+      const m = txt.match(/\{[\s\S]*\}/); if(!m) return;
+      const dna = JSON.parse(m[0]);
+      saveJSON(VISION_KEY, { ...dna, sampleSize:top.length+bottom.length, analyzedAt:new Date().toISOString() });
+      saveJSON("krapmaps_v1_vision_last", Date.now());
+      setVisualDNA(loadJSON(VISION_KEY,null));
+    } catch(e){ /* silent — additive visual signal */ }
+  },[videos]);
+  useEffect(()=>{ const t=setTimeout(()=>analyzeThumbnails(),9000); return ()=>clearTimeout(t); },[analyzeThumbnails]);
 
   // ── IG REELS AUTO-SCRAPER ─────────────────────────────────────
   const fetchIGFollowers = useCallback(async()=>{
@@ -7100,6 +7176,10 @@ LEARNING: [one sentence]`}]})
       const _ci = loadJSON(COMMENTS_KEY, null);
       const commentBlock = _ci ? `AUDIENCE VOICE [from ${_ci.sampleSize} real comments on top videos]:\n• Sentiment: ${_ci.overall_sentiment||"n/a"}\n• Recurring themes: ${(_ci.top_themes||[]).join("; ")||"n/a"}\n• They're explicitly asking for: ${(_ci.audience_requests||[]).join("; ")||"n/a"}\n• Their exact words (reuse in captions/hooks): ${(_ci.language_patterns||[]).slice(0,6).join(", ")||"n/a"}\n→ If this idea answers an audience request or hits a recurring theme, boost share trigger AND niche fit — this is what they're literally asking for.\n` : "";
 
+      // Visual DNA — what this channel's winning thumbnails actually look like (vision model)
+      const _vd = loadJSON(VISION_KEY, null);
+      const visualBlock = _vd ? `VISUAL DNA [learned by a vision model from ${_vd.sampleSize} real thumbnails — top vs bottom performers on THIS channel]:\n• Winning visual traits: ${(_vd.winning_traits||[]).join("; ")||"n/a"}\n• What loses: ${(_vd.losing_traits||[]).join("; ")||"n/a"}\n• Color/contrast that wins: ${_vd.color_palette||"n/a"}\n• Composition: ${_vd.composition||"n/a"}\n• Faces: ${_vd.face_pattern||"n/a"}\n• Text overlay: ${_vd.text_overlay||"n/a"}\n• THE RULE: ${_vd.one_rule||"n/a"}\n→ Score this idea's thumbnail concept ("${idea.thumbnail||"not specified"}") against this learned visual DNA. If the thumbnail concept violates the winning pattern, lower hook strength and flag it in hookFeedback with a concrete visual fix.\n` : "";
+
       // Cross-channel anonymised priors — warm-start from other channels in the same niche bucket
       let metaBlock = "";
       try {
@@ -7140,6 +7220,7 @@ ${hookFatigueBlock}
 ${pipelineSatBlock}
 ${scoreValidityBlock}
 ${neuralBlock}
+${visualBlock}
 ${allocatorBlock}
 ${semanticBlock}
 ${commentBlock}
@@ -7734,7 +7815,7 @@ Return JSON:
         {/* VIEWS */}
         {nav==="home"      && <HomeView ideas={topIdeas} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} weeklyDebrief={weeklyDebrief} debriefLoading={debriefLoading} runDebrief={runDebrief} />}
         {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} markPosted={markPosted} />}
-        {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} />}
+        {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
         {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} preloadMsg={assistPreload} />}
