@@ -4149,6 +4149,34 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
           </button>
         </div>
       </div>
+      {/* Hidden reset — tap 5× on the version label to trigger */}
+      <ResetZone />
+    </div>
+  );
+};
+const ResetZone = () => {
+  const [taps, setTaps] = React.useState(0);
+  const [show, setShow] = React.useState(false);
+  const tapRef = React.useRef(null);
+  const tap = () => {
+    const n = taps + 1;
+    setTaps(n);
+    clearTimeout(tapRef.current);
+    tapRef.current = setTimeout(() => setTaps(0), 2000);
+    if(n >= 5) { setShow(true); setTaps(0); }
+  };
+  return (
+    <div style={{ textAlign:"center", marginTop:32, paddingBottom:24 }}>
+      <div onClick={tap} style={{ fontSize:10, color:"rgba(255,255,255,0.12)", letterSpacing:"0.2em", cursor:"default", userSelect:"none" }}>v1.0</div>
+      {show && (
+        <div style={{ marginTop:16, padding:"18px 20px", borderRadius:14, border:"1px solid rgba(255,59,59,0.3)", background:"rgba(255,59,59,0.06)" }}>
+          <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)", marginBottom:14, fontFamily:"Courier New,monospace", letterSpacing:"0.06em" }}>Reset workspace — shows activation screen on next load</div>
+          <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+            <button onClick={()=>setShow(false)} style={{ padding:"8px 18px", borderRadius:10, border:"1px solid rgba(255,255,255,0.12)", background:"transparent", color:"rgba(255,255,255,0.5)", fontFamily:"Courier New,monospace", fontSize:12, cursor:"pointer" }}>Cancel</button>
+            <button onClick={()=>{ localStorage.clear(); window.location.reload(); }} style={{ padding:"8px 18px", borderRadius:10, border:"1px solid rgba(255,59,59,0.4)", background:"rgba(255,59,59,0.15)", color:"#ff6b6b", fontFamily:"Courier New,monospace", fontSize:12, cursor:"pointer", fontWeight:700 }}>RESET & RESTART</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
