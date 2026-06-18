@@ -7981,8 +7981,8 @@ function OnboardingPage({ onComplete }) {
     headline:{ label:"NEXT MILESTONE", big:"10K", unit:"FOLLOWERS", caption:<>Organic TikTok target — plus <span style={{color:"#00E5FF"}}>3 hostel partnerships</span> and 1,000 app downloads from content alone.</> },
     numbersLabel:"CURRENT NUMBERS",
     numbers:[
-      {platform:"App",val:"230+",label:"active users",col:"#FF2D78"},
-      {platform:"Bins",val:"654+",label:"mapped",col:"#00E5FF"},
+      {platform:"App",val:"247",label:"active users",col:"#FF2D78"},
+      {platform:"Bins",val:"710",label:"mapped",col:"#00E5FF"},
       {platform:"Partners",val:"2",label:"hostel chains · 24+ sites",col:"#C566FF"},
       {platform:"Stage",val:"Pre-seed",label:"raise in progress",col:"rgba(255,255,255,0.3)"},
     ],
