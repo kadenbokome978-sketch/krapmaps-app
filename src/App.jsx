@@ -8283,14 +8283,14 @@ Return JSON:
           </div>
 
           {/* PAGE CONTENT */}
-          <div className="web-page-content" style={{ padding:isMobile?"16px 0 60px":"32px 44px 60px" }}>
-            {/* PAGE TITLE */}
-            <div style={{ marginBottom:isMobile?16:32, display:"flex", alignItems:"flex-end", justifyContent:"space-between" }}>
+          <div className="web-page-content" style={{ padding:isMobile?"0":"32px 44px 60px" }}>
+            {/* PAGE TITLE — desktop only */}
+            {!isMobile && <div style={{ marginBottom:32, display:"flex", alignItems:"flex-end", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:600, marginBottom:6 }}>
                   {nav==="home"?"Dashboard":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":"Settings"}
                 </div>
-                <div style={{ fontSize:isMobile?22:34, fontWeight:400, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:6 }}>
+                <div style={{ fontSize:34, fontWeight:400, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:6 }}>
                   {nav==="home" && <span><span style={{color:WL.accentColor}}>{WL.appName.slice(0,-2)||"Content"}</span>{WL.appName.slice(-2)||" OS"}</span>}
                   {nav==="content" && <span>Manage <span style={{color:C.cyan}}>Content</span></span>}
                   {nav==="analytics" && <span>Track <span style={{color:C.yellow}}>Performance</span></span>}
@@ -8312,7 +8312,7 @@ Return JSON:
                 </div>
               </div>
               <div style={{ height:1, flex:1, margin:"0 32px 4px", background:"linear-gradient(90deg,rgba(255,255,255,0.06),transparent)" }} />
-            </div>
+            </div>}
 
         {/* VIEWS */}
         {nav==="home"      && <HomeView ideas={topIdeas} allIdeas={ideas} outcomeMatches={autoMatchOutcomes(ideas, videos)} confirmOutcome={confirmOutcome} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} weeklyDebrief={weeklyDebrief} debriefLoading={debriefLoading} runDebrief={runDebrief} />}

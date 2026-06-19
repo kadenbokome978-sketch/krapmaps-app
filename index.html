@@ -126,12 +126,15 @@
     button { min-height:40px; }
 
     /* Mobile content padding + safe area for notched phones */
-    .web-inner { padding:10px 12px calc(90px + env(safe-area-inset-bottom)) !important; }
-    .mobile-nav { bottom:calc(20px + env(safe-area-inset-bottom)) !important; padding-bottom:0 !important; }
+    .web-inner { padding:16px 16px calc(96px + env(safe-area-inset-bottom)) !important; }
+    .mobile-nav { bottom:calc(16px + env(safe-area-inset-bottom)) !important; padding-bottom:0 !important; }
+    /* More breathing room between cards */
+    .web-inner [data-card] { margin-bottom:4px; }
+    .web-inner > div > div { gap:18px !important; }
 
     /* Small phones */
     @media(max-width:374px) {
-      .web-inner { padding:8px 10px calc(72px + env(safe-area-inset-bottom)) !important; }
+      .web-inner { padding:12px 12px calc(88px + env(safe-area-inset-bottom)) !important; }
     }
 
     /* Tablet (768px+) — show sidebar */
