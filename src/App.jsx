@@ -6547,6 +6547,74 @@ ${memCtx ? `━━ CHANNEL MEMORY ━━\n${memCtx}` : ""}`;
 
   const msgText = (msg) => typeof msg.content === "string" ? msg.content : msg.content?.filter?.(b=>b.type==="text").map(b=>b.text).join("\n") || "";
 
+  const renderMsgContent = (msg) => {
+    const text = msgText(msg);
+    if(msg.role === "user") return <span style={{ whiteSpace:"pre-wrap" }}>{text}</span>;
+    // Parse assistant markdown into structured elements
+    const lines = text.split("\n");
+    const elements = [];
+    let i = 0;
+    while(i < lines.length) {
+      const line = lines[i];
+      if(!line.trim()) { i++; continue; }
+      // H1/H2 style: ## Header or **Header**
+      if(/^#{1,3}\s/.test(line)) {
+        const t = line.replace(/^#{1,3}\s+/, "");
+        elements.push(<div key={i} style={{ fontWeight:700, color:"#fff", fontSize:14, marginTop:elements.length?10:0, marginBottom:3, letterSpacing:"0.01em" }}>{t}</div>);
+        i++; continue;
+      }
+      // Bold-only line as header: **Foo**
+      if(/^\*\*[^*]+\*\*:?$/.test(line.trim())) {
+        const t = line.trim().replace(/\*\*/g,"").replace(/:$/,"");
+        elements.push(<div key={i} style={{ fontWeight:700, color:"#fff", fontSize:13, marginTop:elements.length?8:0, marginBottom:2 }}>{t}</div>);
+        i++; continue;
+      }
+      // Bullet: - or * or •
+      if(/^[-*•]\s/.test(line.trim())) {
+        const bullets = [];
+        while(i < lines.length && /^[-*•]\s/.test(lines[i].trim())) {
+          const bt = lines[i].trim().replace(/^[-*•]\s+/,"");
+          bullets.push(<div key={i} style={{ display:"flex", gap:8, marginBottom:3 }}>
+            <span style={{ color:C.pink, flexShrink:0, marginTop:1 }}>•</span>
+            <span style={{ color:"rgba(255,255,255,0.88)", lineHeight:1.5 }}>{renderInline(bt)}</span>
+          </div>);
+          i++;
+        }
+        elements.push(<div key={"b"+i} style={{ marginTop:elements.length?6:0 }}>{bullets}</div>);
+        continue;
+      }
+      // Numbered list
+      if(/^\d+\.\s/.test(line.trim())) {
+        const items = [];
+        let n = 1;
+        while(i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
+          const bt = lines[i].trim().replace(/^\d+\.\s+/,"");
+          items.push(<div key={i} style={{ display:"flex", gap:8, marginBottom:3 }}>
+            <span style={{ color:C.purple, flexShrink:0, fontWeight:700, minWidth:14 }}>{n}.</span>
+            <span style={{ color:"rgba(255,255,255,0.88)", lineHeight:1.5 }}>{renderInline(bt)}</span>
+          </div>);
+          i++; n++;
+        }
+        elements.push(<div key={"n"+i} style={{ marginTop:elements.length?6:0 }}>{items}</div>);
+        continue;
+      }
+      // Normal paragraph
+      elements.push(<div key={i} style={{ color:"rgba(255,255,255,0.88)", lineHeight:1.6, marginTop:elements.length?6:0 }}>{renderInline(line)}</div>);
+      i++;
+    }
+    return <div style={{ fontSize:13.5, fontFamily:C.fontBody }}>{elements}</div>;
+  };
+
+  const renderInline = (text) => {
+    // Bold **foo** and `code`
+    const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+    return parts.map((p, i) => {
+      if(p.startsWith("**") && p.endsWith("**")) return <strong key={i} style={{ color:"#fff", fontWeight:700 }}>{p.slice(2,-2)}</strong>;
+      if(p.startsWith("`") && p.endsWith("`")) return <code key={i} style={{ background:"rgba(255,255,255,0.1)", borderRadius:4, padding:"1px 5px", fontSize:12, fontFamily:C.fontMono }}>{p.slice(1,-1)}</code>;
+      return p;
+    });
+  };
+
   const getCapcutPlan = async () => {
     if(!lastFileB64) return;
     const cfg = loadJSON(KEYS_KEY, {});
@@ -6691,7 +6759,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
                 color:"#fff", fontSize:isMobile?13:13.5, lineHeight:1.65, fontFamily:C.fontHead,
                 wordBreak:"break-word", whiteSpace:"pre-wrap",
               }}>
-                {msgText(msg)}
+                {renderMsgContent(msg)}
               </div>
               {msg.role==="user" && (
                 <div style={{ width:28, height:28, borderRadius:9, background:`linear-gradient(135deg,${C.pink}70,${C.purple}70)`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:10, fontWeight:700, color:"#fff" }}>{creator1Init}</div>
