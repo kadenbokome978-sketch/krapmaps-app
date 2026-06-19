@@ -1862,7 +1862,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
               <div style={{ display:"flex", alignItems:"center", gap:12, padding:isMobile?"18px 20px 14px":"16px 22px 12px" }}>
                 <div style={{ width:38, height:38, borderRadius:12, background:`${plt.accent}20`, border:`1px solid ${plt.accent}35`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{plt.icon(18,plt.accent)}</div>
                 <div>
-                  <div style={{ fontSize:17, fontWeight:700, color:"#fff", lineHeight:1.1 }}>{plt.platform}</div>
+                  <div style={{ fontSize:isMobile?15:17, fontWeight:700, color:"#fff", lineHeight:1.1 }}>{plt.platform}</div>
                   <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:2 }}>{WL.handle} · {plt.count}</div>
                 </div>
               </div>
@@ -1949,7 +1949,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                           {i===0&&<span style={{ color:C.yellow, fontSize:13 }}>★</span>}
                           <span style={{ fontSize:14, color:i===0?"#fff":"rgba(255,255,255,0.85)", fontWeight:i===0?700:500 }}>{h.hook}</span>
                         </div>
-                        <span style={{ fontSize:17, fontFamily:C.fontHead, color:i===0?C.yellow:C.cyan }}>{fmt(h.avg)}</span>
+                        <span style={{ fontSize:isMobile?15:17, fontFamily:C.fontHead, color:i===0?C.yellow:C.cyan }}>{fmt(h.avg)}</span>
                       </div>
                     ))}
                   </div>
@@ -2280,7 +2280,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                 onChange={e=>setTaskInput(e.target.value)}
                 onKeyDown={e=>e.key==="Enter"&&addTask()}
                 placeholder="What needs to get done..."
-                style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, color:"#fff", padding:"14px 18px", fontSize:17, fontFamily:C.fontHead, outline:"none", marginBottom:14, boxSizing:"border-box" }}
+                style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, color:"#fff", padding:isMobile?"12px 14px":"14px 18px", fontSize:isMobile?15:17, fontFamily:C.fontHead, outline:"none", marginBottom:14, boxSizing:"border-box" }}
               />
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                 {/* Assignee picker */}
@@ -2401,7 +2401,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                 onChange={e=>setIdeaInput(e.target.value)}
                 onKeyDown={e=>e.key==="Enter"&&addIdea()}
                 placeholder="Describe your feature idea..."
-                style={{ flex:1, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, color:"#fff", padding:"14px 18px", fontSize:17, fontFamily:C.fontHead, outline:"none" }}
+                style={{ flex:1, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, color:"#fff", padding:isMobile?"12px 14px":"14px 18px", fontSize:isMobile?15:17, fontFamily:C.fontHead, outline:"none" }}
               />
               <button onClick={addIdea} style={{ padding:"12px 22px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:15, cursor:"pointer", whiteSpace:"nowrap" }}>ADD</button>
             </div>
@@ -8034,7 +8034,7 @@ Return JSON:
       <ModalBase onClose={()=>closeModal("addVideo")}>
         <div style={{ fontSize:22,fontWeight:700,color:C.text,marginBottom:24 }}>Log Video</div>
         <div style={{ display:"flex",gap:6,marginBottom:isMobile?24:16 }}>
-          {["manual","scan"].map(t=><button key={t} onClick={()=>setTab(t)} style={{ flex:1,padding:"8px",borderRadius:10,border:`1px solid ${tab===t?C.pink:C.border}`,background:tab===t?C.pink+"20":"transparent",color:tab===t?C.pink:C.dim,fontFamily:C.fontHead,fontWeight:700,fontSize:17,cursor:"pointer",textTransform:"uppercase",letterSpacing:"0.06em" }}>{t}</button>)}
+          {["manual","scan"].map(t=><button key={t} onClick={()=>setTab(t)} style={{ flex:1,padding:"8px",borderRadius:10,border:`1px solid ${tab===t?C.pink:C.border}`,background:tab===t?C.pink+"20":"transparent",color:tab===t?C.pink:C.dim,fontFamily:C.fontHead,fontWeight:700,fontSize:isMobile?14:17,cursor:"pointer",textTransform:"uppercase",letterSpacing:"0.06em" }}>{t}</button>)}
         </div>
         {tab==="manual" && (
           <>
@@ -8065,7 +8065,7 @@ Return JSON:
           <div style={{ textAlign:"center",padding:"20px 0" }}>
             <MLabel>TikTok URL</MLabel>
             <MInput value={form.url} onChange={set("url")} placeholder="https://tiktok.com/..." />
-            <div style={{ color:C.dim,fontSize:17,marginBottom:16,lineHeight:1.6 }}>Paste a TikTok URL and we'll log it. Stats auto-sync every 12hrs via TIKWM.</div>
+            <div style={{ color:C.dim,fontSize:isMobile?14:17,marginBottom:16,lineHeight:1.6 }}>Paste a TikTok URL and we'll log it. Stats auto-sync every 12hrs via TIKWM.</div>
             <MBtn onClick={()=>addVideo({ title:form.url.split("/").pop()||"TikTok video",type:"facecam",hook:"achievement",views:0,likes:0,url:form.url,date:today() })}>Log URL</MBtn>
           </div>
         )}
@@ -8081,7 +8081,7 @@ Return JSON:
     return (
       <ModalBase onClose={()=>closeModal("updateVideo")}>
         <div style={{ fontSize:20,fontWeight:700,color:C.text,marginBottom:4 }}>Update Stats</div>
-        <div style={{ color:C.dim,fontSize:17,marginBottom:16,lineHeight:1.4 }}>{v.title?.slice(0,50)}</div>
+        <div style={{ color:C.dim,fontSize:isMobile?14:17,marginBottom:16,lineHeight:1.4 }}>{v.title?.slice(0,50)}</div>
         <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8 }}>
           {[["Views","views"],["Likes","likes"],["Comments","comments"],["Shares","shares"]].map(([l,k])=>(
             <div key={k}><MLabel>{l}</MLabel><MInput value={form[k]} onChange={set(k)} placeholder="0" type="number" /></div>
@@ -8184,7 +8184,7 @@ Return JSON:
           <MLabel>TYPE</MLabel>
           <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
             {VIDEO_TYPES.map(t=>(
-              <button key={t} onClick={()=>setType(t)} style={{ padding:"6px 12px",borderRadius:8,border:`1px solid ${type===t?C.pink:C.border}`,background:type===t?`${C.pink}20`:"transparent",color:type===t?C.pink:C.dim,fontFamily:C.fontHead,fontSize:17,fontWeight:700,cursor:"pointer",textTransform:"uppercase" }}>{t}</button>
+              <button key={t} onClick={()=>setType(t)} style={{ padding:"6px 12px",borderRadius:8,border:`1px solid ${type===t?C.pink:C.border}`,background:type===t?`${C.pink}20`:"transparent",color:type===t?C.pink:C.dim,fontFamily:C.fontHead,fontSize:isMobile?14:17,fontWeight:700,cursor:"pointer",textTransform:"uppercase" }}>{t}</button>
             ))}
           </div>
         </div>
