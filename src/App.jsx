@@ -5590,7 +5590,8 @@ async function callConsensus(claudePrompt, gptPrompt, wl=WL) {
   const claudeResult = results[0].status==="fulfilled" ? results[0].value : null;
   const gptResult    = results[1].status==="fulfilled" ? results[1].value : null;
   const geminiResult = hasGemini && results[2]?.status==="fulfilled" ? results[2].value : null;
-  return { claude:claudeResult, gpt:gptResult, gemini:geminiResult, bothSucceeded: !!(claudeResult && gptResult) };
+  const claudeErr = results[0].status==="rejected" ? (results[0].reason?.message||String(results[0].reason)) : null;
+  return { claude:claudeResult, gpt:gptResult, gemini:geminiResult, claudeErr, bothSucceeded: !!(claudeResult && gptResult) };
 }
 
 // ── ENSEMBLE RECONCILIATION ───────────────────────────────────────
@@ -7540,7 +7541,7 @@ REASONING DISCIPLINE: Before scoring, identify the 2-3 strongest data signals ab
 Return ONLY valid JSON:
 {"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","hookVariants":[{"hook":"A/B variant 1 under 10 words — a DISTINCT angle (different trigger type than the others)","trigger":"open-loop|contrast|identity|social-proof|visual-disruption","predictedLift":"+X% vs the original hook, grounded in this channel's OUTCOME LEARNING + VISUAL DNA above","why":"one line: which channel data signal makes this variant win"},{"hook":"A/B variant 2 — different trigger","trigger":"...","predictedLift":"+X%","why":"..."},{"hook":"A/B variant 3 — different trigger","trigger":"...","predictedLift":"+X%","why":"..."}],"bestVariantIndex":"0|1|2 — which variant you predict wins and would test first","retentionFix":"the single biggest retention improvement","openLoopStrength":"rate 1-10 how well this video creates and sustains curiosity gaps — what is the open loop and when does it close?","reHookMoments":["specific moment at ~3s to re-engage","specific moment at ~15s","specific moment at ~30s if video is longer"],"emotionalArc":"setup→tension→payoff analysis — what emotion does viewer feel at start, middle, end? Where does it escalate?","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic RANGE corrected by outcome learning + bias σ e.g. 24K-56K","contentPillar":"niche-specific pillar name","competitorAngle":"how to differentiate from what competitors are already doing in this niche","optimalPostSlot":"best day+time to post this based on the channel's day/time performance data above, e.g. 'Saturday 6-9pm'","confidenceLevel":"HIGH|MEDIUM|LOW — based on how much real data backs this score","scoreRationale":"1 sentence: which 2-3 data signals drove this specific score up or down vs a generic idea"}`;
       const _consensus = await callConsensus(_scorePrompt, _scorePrompt, wl);
-      if(!_consensus.claude && !_consensus.gpt && !_consensus.gemini) throw new Error("All scoring models failed — check your Anthropic / GPT-4o keys in Settings");
+      if(!_consensus.claude && !_consensus.gpt && !_consensus.gemini) throw new Error("Scoring failed. Anthropic said: "+(_consensus.claudeErr||"unknown"));
       const r = reconcileScores(_consensus.claude, _consensus.gpt, _consensus.gemini);
       // Neural blend: fuse the trained net's data-driven view prediction with the LLM's estimate.
       // Weight is the net's earned, cross-validated trust — 0 when it can't beat baseline.
