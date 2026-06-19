@@ -7336,6 +7336,7 @@ LEARNING: [one sentence]`}]})
     const key = "s"+idea.id;
     setAiLoad(l=>({...l,[key]:true}));
     try {
+      const wl = loadWL();
       const organicVids = videos.filter(v=>!v.boosted);
       const topV = [...(organicVids.length?organicVids:videos)].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
       const postedIdeas = ideas.filter(i=>i.status==="posted"&&i.postedViews>0);
