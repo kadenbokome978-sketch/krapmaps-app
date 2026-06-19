@@ -3900,21 +3900,21 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
                         <div style={{ width:`${pct}%`, height:"100%", borderRadius:3, background:`linear-gradient(90deg,${C.green},${C.cyan})` }}/>
                       </div>
                     </div>
-                    <div style={{ display:"flex", gap:16, flexShrink:0 }}>
-                      <div style={{ textAlign:"right" }}>
-                        <div style={{ fontSize:18, fontWeight:700, color:C.green }}>{fmt(v.views||0)}</div>
-                        <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.08em" }}>VIEWS</div>
-                      </div>
-                      {v.likes != null && (
+                    <div style={{ display:"flex", flexDirection:"column", gap:4, flexShrink:0, alignItems:"flex-end" }}>
+                      <div style={{ display:"flex", gap:isMobile?10:16 }}>
                         <div style={{ textAlign:"right" }}>
-                          <div style={{ fontSize:18, fontWeight:700, color:C.pink }}>{fmt(v.likes)}</div>
-                          <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.08em" }}>LIKES</div>
+                          <div style={{ fontSize:isMobile?15:18, fontWeight:700, color:C.green }}>{fmt(v.views||0)}</div>
+                          <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", letterSpacing:"0.08em" }}>VIEWS</div>
                         </div>
-                      )}
+                        {v.likes != null && (
+                          <div style={{ textAlign:"right" }}>
+                            <div style={{ fontSize:isMobile?15:18, fontWeight:700, color:C.pink }}>{fmt(v.likes)}</div>
+                            <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", letterSpacing:"0.08em" }}>LIKES</div>
+                          </div>
+                        )}
+                      </div>
                       {v.hookType && (
-                        <div style={{ alignSelf:"center" }}>
-                          <span style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em", color:C.purple, background:`${C.purple}15`, padding:"3px 10px", borderRadius:20, border:`1px solid ${C.purple}40` }}>{v.hookType}</span>
-                        </div>
+                        <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.08em", color:C.purple, background:`${C.purple}15`, padding:"3px 10px", borderRadius:20, border:`1px solid ${C.purple}40` }}>{v.hookType}</span>
                       )}
                     </div>
                   </div>
@@ -3932,8 +3932,8 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
         <div style={{ position:"absolute", top:-60, right:-60, width:260, height:260, borderRadius:"50%", background:`${C.purple}08`, filter:"blur(80px)", pointerEvents:"none" }}/>
         <div style={{ padding:isMobile?"18px 18px":"28px 32px" }}>
           {sectionHead("Creator Score Card", C.purple)}
-          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:24, flexWrap:"wrap" }}>
-            <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:28 }}>
+          <div style={{ display:"flex", flexDirection:isMobile?"column":"row", alignItems:"flex-start", justifyContent:"space-between", gap:isMobile?20:24 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:28 }}>
               <div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.4)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:4 }}>Creator</div>
                 <div style={{ fontSize:28, fontWeight:700, fontFamily:C.fontHead, color:"#fff" }}>{WL.handle||"@creator"}</div>
@@ -3960,14 +3960,14 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
                 </div>
               )}
             </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:isMobile?22:12, alignItems:"flex-end" }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:10, alignItems:isMobile?"stretch":"flex-end", width:isMobile?"100%":"auto" }}>
               <button
                 onClick={handleShare}
-                style={{ padding:"14px 28px", borderRadius:14, background:`linear-gradient(135deg,${C.purple},${C.pink})`, border:"none", color:"#fff", fontSize:15, fontWeight:700, cursor:"pointer", letterSpacing:"0.04em", boxShadow:`0 4px 20px ${C.purple}40` }}
+                style={{ padding:"14px 28px", borderRadius:14, background:`linear-gradient(135deg,${C.purple},${C.pink})`, border:"none", color:"#fff", fontSize:15, fontWeight:700, cursor:"pointer", letterSpacing:"0.04em", boxShadow:`0 4px 20px ${C.purple}40`, width:isMobile?"100%":"auto" }}
               >
                 Share Results
               </button>
-              <div style={{ fontSize:12, color:"rgba(255,255,255,0.25)", textAlign:"right" }}>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.25)", textAlign:isMobile?"center":"right" }}>
                 Powered by {WL.appName}
               </div>
             </div>
