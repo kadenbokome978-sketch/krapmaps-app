@@ -217,6 +217,9 @@
   <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.42/bundled/lenis.min.js"></script>
   <script type="module" src="/src/main.jsx"></script>
   <script type="text/javascript">
+    // ── MOBILE FLAG
+    window.__isMobile = window.innerWidth < 768;
+
     // ── LENIS SMOOTH SCROLL
     (function initLenis() {
       if (typeof Lenis === 'undefined') { setTimeout(initLenis, 100); return; }
