@@ -2909,11 +2909,11 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
           { label:"CONSENSUS AI", desc:`Claude + GPT-4o${hasGPT?"":" (add GPT key)"}`, icon:I.zap, color:C.purple, action:runConsensus, key:"consensus" },
           { label:"HOOK DATABASE", desc:`${hookDB.length} hooks tracked`, icon:I.trend, color:C.yellow, action:()=>document.getElementById("hookdb-section")?.scrollIntoView({behavior:"smooth"}), key:"" },
         ].map((btn,i)=>(
-          <button key={i} data-btn onClick={btn.action} disabled={btn.key&&loading[btn.key]} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?20:10, padding:"20px 12px", borderRadius:16, background:`linear-gradient(145deg,${btn.color}18,${btn.color}06)`, border:`1px solid ${btn.color}35`, cursor:"pointer", fontFamily:C.fontHead, opacity:btn.key&&loading[btn.key]?0.6:1, transition:"all 0.2s", position:"relative", overflow:"hidden" }}>
-            <div style={{ width:52, height:52, borderRadius:16, background:`${btn.color}22`, border:`1px solid ${btn.color}45`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 0 20px ${btn.color}25` }}>{btn.icon(22,btn.color)}</div>
+          <button key={i} data-btn onClick={btn.action} disabled={btn.key&&loading[btn.key]} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?12:10, padding:isMobile?"16px 10px":"20px 12px", borderRadius:16, background:`linear-gradient(145deg,${btn.color}18,${btn.color}06)`, border:`1px solid ${btn.color}35`, cursor:"pointer", fontFamily:C.fontHead, opacity:btn.key&&loading[btn.key]?0.6:1, transition:"all 0.2s", position:"relative", overflow:"hidden" }}>
+            <div style={{ width:isMobile?40:52, height:isMobile?40:52, borderRadius:14, background:`${btn.color}22`, border:`1px solid ${btn.color}45`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 0 20px ${btn.color}25` }}>{btn.icon(isMobile?18:22,btn.color)}</div>
             <div style={{ textAlign:"center" }}>
-              <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>{btn.key&&loading[btn.key]?"RUNNING...":btn.label}</div>
-              <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginTop:3 }}>{btn.desc}</div>
+              <div style={{ fontSize:isMobile?11:16, fontWeight:700, color:"#fff", letterSpacing:"0.04em", textTransform:"uppercase" }}>{btn.key&&loading[btn.key]?"RUNNING...":btn.label}</div>
+              <div style={{ fontSize:isMobile?10:14, color:"rgba(255,255,255,0.7)", marginTop:2 }}>{btn.desc}</div>
             </div>
           </button>
         ))}
