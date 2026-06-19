@@ -1837,61 +1837,57 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
         const ttBarData = [...ttVids].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,8).map(v=>({label:(v.title||"").slice(0,7),value:v.views||0}));
         const igBarData = [...igVids].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,8).map(v=>({label:(v.title||"").slice(0,7),value:v.views||0}));
         return (<>
-        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:16 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?24:16 }}>
 
-          {/* Platform stat cards — TikTok row */}
-          <div style={{ borderRadius:16, padding:isMobile?"20px 18px":"18px 22px", background:"linear-gradient(145deg,rgba(255,45,120,0.08),rgba(10,6,20,0.95))", border:"1px solid rgba(255,45,120,0.2)", position:"relative", overflow:"hidden" }}>
-            <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
-              <div style={{ width:32, height:32, borderRadius:10, background:`${C.pink}20`, border:`1px solid ${C.pink}35`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.tt(15,C.pink)}</div>
-              <span style={{ fontSize:15, fontWeight:700, color:"#fff" }}>TikTok</span>
-              <span style={{ fontSize:13, color:"rgba(255,255,255,0.4)" }}>{WL.handle}</span>
-              <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:5, padding:"4px 10px", borderRadius:20, background:`${C.pink}10`, border:`1px solid ${C.pink}20` }}>
-                <div style={{ width:5, height:5, borderRadius:"50%", background:C.pink }}/>
-                <span style={{ fontSize:11, color:WL.accentColor, fontWeight:700, letterSpacing:"0.08em" }}>{ttVids.length} VIDEOS</span>
-              </div>
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:isMobile?14:12 }}>
-              {[
-                {l:"Total Views", v:fmt(ttTotal), c:C.pink},
-                {l:"Avg Views", v:fmt(ttAvg), c:C.cyan},
-                {l:"Like Ratio", v:ttRatio.toFixed(1)+"%", c:ttRatio>=5?C.green:C.yellow},
-                {l:"TT Followers", v:fmt(m?.tt_followers||0), c:C.purple},
-              ].map((s,i)=>(
-                <div key={i} style={{ padding:isMobile?"18px 16px":"14px 16px", borderRadius:14, background:`${s.c}10`, border:`1px solid ${s.c}20` }}>
-                  <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", letterSpacing:"0.08em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>{s.l}</div>
-                  <div style={{ fontSize:isMobile?28:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+          {/* ── MOBILE: big hero stat cards (full width, one per row) ── */}
+          {[
+            { platform:"TikTok", icon:I.tt, accent:C.pink, count:`${ttVids.length} videos`,
+              stats:[
+                {l:"Total Views",  v:fmt(ttTotal),              c:C.pink},
+                {l:"Avg Views",    v:fmt(ttAvg),                c:C.cyan},
+                {l:"Like Ratio",   v:ttRatio.toFixed(1)+"%",    c:ttRatio>=5?C.green:C.yellow},
+                {l:"Followers",    v:fmt(m?.tt_followers||0),   c:C.purple},
+              ]},
+            { platform:"Instagram", icon:I.ig, accent:C.purple, count:`${igVids.length} reels`,
+              stats:[
+                {l:"Total Views",  v:fmt(igTotal),              c:C.purple},
+                {l:"Avg Views",    v:fmt(igAvg),                c:C.cyan},
+                {l:"Like Ratio",   v:igRatio.toFixed(1)+"%",    c:igRatio>=5?C.green:C.yellow},
+                {l:"Followers",    v:fmt(igFollowers),          c:C.pink},
+              ]},
+          ].map((plt,pi)=>(
+            <div key={pi} style={{ borderRadius:20, overflow:"hidden", background:`linear-gradient(145deg,${plt.accent}12,rgba(10,6,20,0.97))`, border:`1px solid ${plt.accent}30`, position:"relative" }}>
+              <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${plt.accent},${plt.accent}00)` }}/>
+              {/* Platform header */}
+              <div style={{ display:"flex", alignItems:"center", gap:12, padding:isMobile?"18px 20px 14px":"16px 22px 12px" }}>
+                <div style={{ width:38, height:38, borderRadius:12, background:`${plt.accent}20`, border:`1px solid ${plt.accent}35`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{plt.icon(18,plt.accent)}</div>
+                <div>
+                  <div style={{ fontSize:17, fontWeight:700, color:"#fff", lineHeight:1.1 }}>{plt.platform}</div>
+                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:2 }}>{WL.handle} · {plt.count}</div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Platform stat cards — Instagram row */}
-          <div style={{ borderRadius:16, padding:isMobile?"20px 18px":"18px 22px", background:"linear-gradient(145deg,rgba(197,102,255,0.08),rgba(10,6,20,0.95))", border:"1px solid rgba(197,102,255,0.2)", position:"relative", overflow:"hidden" }}>
-            <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.purple},${C.purple}00)` }}/>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-              <div style={{ width:32, height:32, borderRadius:10, background:`${C.purple}20`, border:`1px solid ${C.purple}35`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.ig(15,C.purple)}</div>
-              <span style={{ fontSize:15, fontWeight:700, color:"#fff" }}>Instagram</span>
-              <span style={{ fontSize:13, color:"rgba(255,255,255,0.4)" }}>{WL.handle}</span>
-              <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:5, padding:"4px 10px", borderRadius:20, background:`${C.purple}10`, border:`1px solid ${C.purple}20` }}>
-                <div style={{ width:5, height:5, borderRadius:"50%", background:C.purple }}/>
-                <span style={{ fontSize:11, color:C.purple, fontWeight:700, letterSpacing:"0.08em" }}>{igVids.length} REELS</span>
               </div>
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:isMobile?14:12 }}>
-              {[
-                {l:"Total Views", v:fmt(igTotal), c:C.purple},
-                {l:"Avg Views", v:fmt(igAvg), c:C.cyan},
-                {l:"Like Ratio", v:igRatio.toFixed(1)+"%", c:igRatio>=5?C.green:C.yellow},
-                {l:"IG Followers", v:fmt(igFollowers), c:C.pink},
-              ].map((s,i)=>(
-                <div key={i} style={{ padding:isMobile?"18px 16px":"14px 16px", borderRadius:14, background:`${s.c}10`, border:`1px solid ${s.c}20` }}>
-                  <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", letterSpacing:"0.08em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>{s.l}</div>
-                  <div style={{ fontSize:isMobile?28:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+              {/* Stats — full width rows on mobile, 4-col grid on desktop */}
+              {isMobile ? (
+                <div style={{ padding:"0 20px 20px", display:"flex", flexDirection:"column", gap:0 }}>
+                  {plt.stats.map((s,i)=>(
+                    <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 0", borderBottom:i<plt.stats.length-1?`1px solid rgba(255,255,255,0.06)`:"none" }}>
+                      <div style={{ fontSize:14, color:"rgba(255,255,255,0.55)", fontWeight:600 }}>{s.l}</div>
+                      <div style={{ fontSize:32, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, padding:"0 22px 20px" }}>
+                  {plt.stats.map((s,i)=>(
+                    <div key={i} style={{ padding:"14px 16px", borderRadius:14, background:`${s.c}10`, border:`1px solid ${s.c}20` }}>
+                      <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", letterSpacing:"0.08em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>{s.l}</div>
+                      <div style={{ fontSize:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
+          ))}
 
           {/* Side by side charts */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(280px,100%),1fr))", gap:14 }}>
