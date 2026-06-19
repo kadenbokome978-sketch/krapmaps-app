@@ -129,6 +129,11 @@
     .web-inner { padding:28px 22px calc(48px + env(safe-area-inset-bottom)) !important; }
     .mobile-nav { display:none !important; }
 
+    /* Ensure section cards never touch each other on mobile */
+    @media(max-width:767px) {
+      [data-card] { margin-bottom:4px !important; }
+    }
+
     /* Small phones */
     @media(max-width:374px) {
       .web-inner { padding:12px 12px calc(88px + env(safe-area-inset-bottom)) !important; }
