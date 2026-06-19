@@ -619,7 +619,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             </div>
           </div>
           {/* Right: sparkline */}
-          <div style={{ width:220, display:"flex", flexDirection:"column", justifyContent:"flex-end", paddingBottom:8, opacity:0.75 }}>
+          <div style={{ width:isMobile?90:220, display:isMobile?"none":"flex", flexDirection:"column", justifyContent:"flex-end", paddingBottom:8, opacity:0.75 }}>
             <Sparkline data={[0.25,0.4,0.35,0.6,0.55,0.8,1].map(f=>Math.round((ttViewsDisplay||500)*f))} color={C.pink} height={70}/>
           </div>
         </div>
@@ -8282,7 +8282,7 @@ Return JSON:
           {/* PAGE CONTENT */}
           <div className="web-page-content" style={{ padding:isMobile?"16px 0 60px":"32px 44px 60px" }}>
             {/* PAGE TITLE */}
-            <div style={{ marginBottom:32, display:"flex", alignItems:"flex-end", justifyContent:"space-between" }}>
+            <div style={{ marginBottom:isMobile?16:32, display:"flex", alignItems:"flex-end", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:600, marginBottom:6 }}>
                   {nav==="home"?"Dashboard":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":"Settings"}
@@ -8357,7 +8357,7 @@ Return JSON:
       {/* NAV BAR */}
       <div className="mobile-nav" style={{ position:"fixed", bottom:20, left:8, right:8, transform:"none", background:"rgba(10,6,20,0.92)", backdropFilter:"blur(32px)", WebkitBackdropFilter:"blur(32px)", borderRadius:40, border:"1px solid rgba(255,255,255,0.1)", display:"flex", padding:"8px", zIndex:99, gap:2, boxShadow:"0 8px 40px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.06)", overflowX:"auto", scrollbarWidth:"none" }}>
         {NAV.map(n=>(
-          <button key={n.id} data-nav-btn onClick={()=>{ setNav(n.id); setSub(null); }} style={{ background:nav===n.id?`linear-gradient(135deg,${WL.accentColor}30,${WL.accentColor2}15)`:"transparent", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:nav===n.id?3:0, padding:nav===n.id?"8px 14px":"8px 12px", borderRadius:32, transition:"all 0.2s", minWidth:nav===n.id?52:44 }}>
+          <button key={n.id} data-nav-btn onClick={()=>{ setNav(n.id); setSub(null); }} style={{ background:nav===n.id?`linear-gradient(135deg,${WL.accentColor}30,${WL.accentColor2}15)`:"transparent", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:nav===n.id?3:0, padding:nav===n.id?"7px 10px":"7px 8px", borderRadius:32, transition:"all 0.2s", flex:1, minWidth:0 }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
               {n.ic(18, nav===n.id?"#fff":"rgba(255,255,255,0.4)")}
             </div>
