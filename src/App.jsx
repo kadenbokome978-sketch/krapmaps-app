@@ -799,7 +799,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             )
           },
         ].map((section,si)=>(
-          <div key={si} style={{ borderRadius:22, padding:"24px 26px", background:`linear-gradient(145deg,${section.color}0f,rgba(8,5,18,0.96))`, border:`1px solid ${section.color}20`, position:"relative", overflow:"hidden", boxShadow:`0 8px 40px rgba(0,0,0,0.3)` }}>
+          <div key={si} style={{ borderRadius:22, padding:isMobile?"20px 18px":"24px 26px", background:`linear-gradient(145deg,${section.color}0f,rgba(8,5,18,0.96))`, border:`1px solid ${section.color}20`, position:"relative", overflow:"hidden", boxShadow:`0 8px 40px rgba(0,0,0,0.3)` }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${section.color}cc,transparent 60%)` }}/>
             <div style={{ position:"absolute", bottom:-40, right:-40, width:140, height:140, borderRadius:"50%", background:`${section.color}08`, filter:"blur(40px)" }}/>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
@@ -840,7 +840,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         })).sort((a,b)=>b.avg-a.avg);
         const maxAvg = Math.max(...dayPerf.map(d=>d.avg),1);
         return videos.length > 3 ? (
-          <div style={{ borderRadius:22, padding:"24px 26px", background:"linear-gradient(145deg,rgba(255,107,53,0.08),rgba(8,5,18,0.96))", border:`1px solid ${C.orange}20`, position:"relative", overflow:"hidden" }}>
+          <div style={{ borderRadius:22, padding:isMobile?"20px 18px":"24px 26px", background:"linear-gradient(145deg,rgba(255,107,53,0.08),rgba(8,5,18,0.96))", border:`1px solid ${C.orange}20`, position:"relative", overflow:"hidden" }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.orange}cc,transparent 60%)` }}/>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
               <div>
@@ -867,7 +867,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
       })()}
 
       {/* ══ AI STRATEGY ════════════════════════════════════════════ */}
-      <div style={{ borderRadius:16, padding:"22px 24px", background:"linear-gradient(145deg,rgba(255,255,255,0.02),rgba(10,6,20,0.8))", border:"1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ borderRadius:16, padding:isMobile?"18px 16px":"22px 24px", background:"linear-gradient(145deg,rgba(255,255,255,0.02),rgba(10,6,20,0.8))", border:"1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:isMobile?24:16 }}>AI Strategy</div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:10 }}>
           {[
@@ -2921,7 +2921,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
 
       {/* LIVE TRENDS */}
       {trends && (
-        <div data-card style={{ borderRadius:16, padding:"24px", background:`linear-gradient(145deg,${C.cyan}12,rgba(7,5,15,0.95))`, border:`1px solid ${C.cyan}35`, position:"relative", overflow:"hidden" }}>
+        <div data-card style={{ borderRadius:16, padding:isMobile?"20px 18px":"24px", background:`linear-gradient(145deg,${C.cyan}12,rgba(7,5,15,0.95))`, border:`1px solid ${C.cyan}35`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }} />
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?24:16 }}>
             <div style={{ fontSize:20, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase" }}>LIVE TRENDS — {loadWL()?.niche?.toUpperCase()}</div>
@@ -2931,13 +2931,13 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
           {/* Biggest opportunity — show first, most prominent */}
           {trends.biggest_opportunity && (
             <div style={{ marginBottom:16, padding:"18px 20px", borderRadius:16, background:`linear-gradient(135deg,${C.green}18,${C.cyan}08)`, border:`1px solid ${C.green}40` }}>
-              <div style={{ fontSize:17, color:C.green, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>⚡ BIGGEST OPPORTUNITY RIGHT NOW</div>
+              <div style={{ fontSize:isMobile?14:17, color:C.green, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>⚡ BIGGEST OPPORTUNITY RIGHT NOW</div>
               <div style={{ fontSize:18, fontWeight:700, color:"#fff", marginBottom:6 }}>{trends.biggest_opportunity.what}</div>
               <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:isMobile?16:12 }}>{trends.biggest_opportunity.why_now}</div>
               <div style={{ padding:isMobile?"13px 16px":"10px 14px", borderRadius:10, background:`${C.green}12`, border:`1px solid ${C.green}25`, marginBottom:8 }}>
                 <div style={{ fontSize:12, color:C.green, fontWeight:700, letterSpacing:"0.1em", marginBottom:4 }}>SUGGESTED VIDEO</div>
                 <div style={{ fontSize:15, fontWeight:700, color:"#fff", marginBottom:4 }}>{trends.biggest_opportunity.suggested_video_title}</div>
-                <div style={{ fontSize:17, color:C.cyan, fontStyle:"italic" }}>"{trends.biggest_opportunity.hook}"</div>
+                <div style={{ fontSize:isMobile?14:17, color:C.cyan, fontStyle:"italic" }}>"{trends.biggest_opportunity.hook}"</div>
               </div>
               {trends.biggest_opportunity.predicted_impact && <div style={{ fontSize:15, color:C.green }}>📈 {trends.biggest_opportunity.predicted_impact}</div>}
             </div>
@@ -2955,7 +2955,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
               <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:10, lineHeight:1.5 }}>{t.why}</div>
               <div style={{ padding:isMobile?"13px 16px":"10px 14px", borderRadius:10, background:`${C.cyan}10`, border:`1px solid ${C.cyan}25`, marginBottom:8 }}>
                 <div style={{ fontSize:12, color:C.cyan, fontWeight:700, letterSpacing:"0.1em", marginBottom:4 }}>HOOK FOR YOUR CHANNEL</div>
-                <div style={{ fontSize:17, color:"#fff", fontStyle:"italic" }}>"{Object.entries(t).find(([k])=>k.startsWith("hook_for"))?.[1]||t.example_hook||t.hook}"</div>
+                <div style={{ fontSize:isMobile?14:17, color:"#fff", fontStyle:"italic" }}>"{Object.entries(t).find(([k])=>k.startsWith("hook_for"))?.[1]||t.example_hook||t.hook}"</div>
               </div>
               {t.why_it_fits_this_channel && <div style={{ fontSize:15, color:C.green }}>✓ {t.why_it_fits_this_channel}</div>}
             </div>
@@ -3225,7 +3225,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
 
       {/* ── HOOK A/B DATABASE ───────────────────────────────────── */}
       {hookDB.length > 0 && (
-        <div id="hookdb-section" data-card style={{ borderRadius:16, padding:"24px", background:`linear-gradient(145deg,${C.yellow}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.yellow}30`, position:"relative", overflow:"hidden" }}>
+        <div id="hookdb-section" data-card style={{ borderRadius:16, padding:isMobile?"20px 18px":"24px", background:`linear-gradient(145deg,${C.yellow}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.yellow}30`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.yellow},${C.yellow}00)` }} />
           <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:6 }}>HOOK A/B DATABASE</div>
           <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", marginBottom:isMobile?24:16 }}>Built automatically from your {videos.length} logged videos. Most to least effective.</div>
@@ -3252,7 +3252,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
 
       {/* ── VIRALITY PATTERN ENGINE ──────────────────────────────── */}
       {patterns && (
-        <div data-card style={{ borderRadius:16, padding:"24px", background:`linear-gradient(145deg,${C.cyan}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.cyan}30`, position:"relative", overflow:"hidden" }}>
+        <div data-card style={{ borderRadius:16, padding:isMobile?"20px 18px":"24px", background:`linear-gradient(145deg,${C.cyan}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.cyan}30`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }} />
           <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:6 }}>VIRALITY PATTERNS</div>
           <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", marginBottom:isMobile?24:16 }}>Hidden patterns across your {patterns.totalVideos} videos. Channel avg: {patterns.avg?.toLocaleString()} views.</div>
@@ -3318,7 +3318,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
 
       {/* ── CONTENT GAP RADAR ────────────────────────────────────── */}
       {gaps && (
-        <div data-card style={{ borderRadius:16, padding:"24px", background:`linear-gradient(145deg,${C.green}12,rgba(7,5,15,0.95))`, border:`1px solid ${C.green}35`, position:"relative", overflow:"hidden" }}>
+        <div data-card style={{ borderRadius:16, padding:isMobile?"20px 18px":"24px", background:`linear-gradient(145deg,${C.green}12,rgba(7,5,15,0.95))`, border:`1px solid ${C.green}35`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.green},${C.green}00)` }} />
           <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:isMobile?24:16 }}>CONTENT GAP RADAR</div>
           {gaps.gaps?.map((g,i)=>(
@@ -3357,7 +3357,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
 
       {/* ── MULTI-MODEL CONSENSUS ─────────────────────────────────── */}
       {consensus && (
-        <div data-card style={{ borderRadius:16, padding:"24px", background:`linear-gradient(145deg,${C.purple}12,rgba(7,5,15,0.95))`, border:`1px solid ${C.purple}35`, position:"relative", overflow:"hidden" }}>
+        <div data-card style={{ borderRadius:16, padding:isMobile?"20px 18px":"24px", background:`linear-gradient(145deg,${C.purple}12,rgba(7,5,15,0.95))`, border:`1px solid ${C.purple}35`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.purple},${C.cyan},${C.purple}00)` }} />
           <div style={{ fontSize:15, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:6 }}>MULTI-MODEL CONSENSUS</div>
           <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", marginBottom:16, lineHeight:1.5 }}>
@@ -3392,7 +3392,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
               <div style={{ padding:isMobile?"18px 18px":"14px 16px", borderRadius:16, background:`${C.green}10`, border:`1px solid ${C.green}25`, marginBottom:isMobile?16:12 }}>
                 <div style={{ fontSize:15, color:C.green, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>✓ BOTH MODELS AGREE — HIGH CONFIDENCE</div>
                 {agreed.slice(0,2).map((r,i)=>(
-                  <div key={i} style={{ fontSize:17, color:"#fff", marginBottom:4 }}>→ {r.action}</div>
+                  <div key={i} style={{ fontSize:isMobile?14:17, color:"#fff", marginBottom:4 }}>→ {r.action}</div>
                 ))}
               </div>
             ) : null;
@@ -3635,7 +3635,7 @@ Return ONLY JSON: {
 
       {/* Full teardown panel */}
       {result && selected && (
-        <div data-card style={{ borderRadius:16, padding:"24px", background:`linear-gradient(145deg,${C.pink}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.pink}35`, position:"relative", overflow:"hidden" }}>
+        <div data-card style={{ borderRadius:16, padding:isMobile?"20px 18px":"24px", background:`linear-gradient(145deg,${C.pink}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.pink}35`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.pink},${C.purple},${C.pink}00)` }} />
           <div style={{ fontSize:18, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:4 }}>{selected.title?.slice(0,50)}</div>
           <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:20 }}>Analysed {result.analysed_at?.slice(0,10)}</div>
@@ -3657,7 +3657,7 @@ Return ONLY JSON: {
           {/* Why it performed */}
           {result.why_it_performed && (
             <div style={{ padding:isMobile?"18px 18px":"14px 16px", borderRadius:12, background:"rgba(255,255,255,0.04)", border:`1px solid rgba(255,255,255,0.08)`, marginBottom:isMobile?22:14 }}>
-              <div style={{ fontSize:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>WHY IT PERFORMED THIS WAY</div>
+              <div style={{ fontSize:isMobile?14:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>WHY IT PERFORMED THIS WAY</div>
               <div style={{ fontSize:isMobile?15:14, color:"rgba(255,255,255,0.9)", lineHeight:1.7, fontFamily:C.fontBody }}>{result.why_it_performed}</div>
               {result.biggest_factor && <div style={{ marginTop:8, fontSize:14, color:C.yellow }}>⚡ Biggest factor: {result.biggest_factor}</div>}
             </div>
@@ -3666,8 +3666,8 @@ Return ONLY JSON: {
           {/* Gemini hook analysis */}
           {result.gemini?.hook_analysis && (
             <div style={{ padding:isMobile?"18px 18px":"14px 16px", borderRadius:12, background:`${C.cyan}08`, border:`1px solid ${C.cyan}20`, marginBottom:isMobile?22:14 }}>
-              <div style={{ fontSize:17, color:C.cyan, fontWeight:700, letterSpacing:"0.1em", marginBottom:isMobile?14:10 }}>🎬 GEMINI HOOK ANALYSIS</div>
-              <div style={{ fontSize:17, color:"#fff", marginBottom:6 }}>First 3 seconds: <span style={{color:C.cyan}}>{result.gemini.hook_analysis.first_3_seconds}</span></div>
+              <div style={{ fontSize:isMobile?14:17, color:C.cyan, fontWeight:700, letterSpacing:"0.1em", marginBottom:isMobile?14:10 }}>🎬 GEMINI HOOK ANALYSIS</div>
+              <div style={{ fontSize:isMobile?13:17, color:"#fff", marginBottom:6 }}>First 3 seconds: <span style={{color:C.cyan}}>{result.gemini.hook_analysis.first_3_seconds}</span></div>
               <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:8 }}>{result.gemini.hook_analysis.what_works}</div>
               <div style={{ display:"flex", gap:8 }}>
                 <Tag color={C.cyan} sm>Hook: {result.gemini.hook_analysis.hook_strength}/100</Tag>
@@ -3680,13 +3680,13 @@ Return ONLY JSON: {
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:10, marginBottom:isMobile?22:14 }}>
             {result.replicate_these?.length>0 && (
               <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.green}08`, border:`1px solid ${C.green}20` }}>
-                <div style={{ fontSize:17, color:C.green, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>DO THIS AGAIN</div>
+                <div style={{ fontSize:isMobile?14:17, color:C.green, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>DO THIS AGAIN</div>
                 {result.replicate_these.map((r,i)=><div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:4 }}>✓ {r}</div>)}
               </div>
             )}
             {result.never_again?.length>0 && (
               <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.pink}08`, border:`1px solid ${C.pink}20` }}>
-                <div style={{ fontSize:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>NEVER AGAIN</div>
+                <div style={{ fontSize:isMobile?14:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>NEVER AGAIN</div>
                 {result.never_again.map((r,i)=><div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:4 }}>✗ {r}</div>)}
               </div>
             )}
@@ -3695,9 +3695,9 @@ Return ONLY JSON: {
           {/* Refilm brief */}
           {result.refilm_brief && (
             <div style={{ padding:"16px 18px", borderRadius:16, background:`linear-gradient(135deg,${C.purple}12,${C.pink}06)`, border:`1px solid ${C.purple}30`, marginBottom:isMobile?22:14 }}>
-              <div style={{ fontSize:17, color:C.purple, fontWeight:700, letterSpacing:"0.1em", marginBottom:isMobile?14:10 }}>HOW TO REFILM THIS FOR 3X VIEWS</div>
+              <div style={{ fontSize:isMobile?14:17, color:C.purple, fontWeight:700, letterSpacing:"0.1em", marginBottom:isMobile?14:10 }}>HOW TO REFILM THIS FOR 3X VIEWS</div>
               <div style={{ fontSize:16, fontWeight:700, color:"#fff", marginBottom:4 }}>{result.refilm_brief.concept}</div>
-              <div style={{ fontSize:17, color:C.cyan, fontStyle:"italic", marginBottom:isMobile?14:10 }}>"{result.refilm_brief.hook}"</div>
+              <div style={{ fontSize:isMobile?14:17, color:C.cyan, fontStyle:"italic", marginBottom:isMobile?14:10 }}>"{result.refilm_brief.hook}"</div>
               {result.refilm_brief.key_changes?.map((c,i)=>(
                 <div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:3 }}>→ {c}</div>
               ))}
