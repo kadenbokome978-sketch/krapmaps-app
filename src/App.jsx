@@ -476,7 +476,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
 
       {/* ══ WEEKLY RITUAL — the retention loop that feeds the AI ══════ */}
       {ritual.pending > 0 ? (
-        <div data-card style={{ borderRadius:18, padding:"20px 24px", background:`linear-gradient(135deg,${C.pink}10,${C.purple}08)`, border:`1px solid ${C.pink}30`, position:"relative", overflow:"hidden" }}>
+        <div data-card style={{ borderRadius:18, padding:isMobile?"12px 14px":"20px 24px", background:`linear-gradient(135deg,${C.pink}10,${C.purple}08)`, border:`1px solid ${C.pink}30`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${C.pink}70,transparent)` }}/>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
             <span style={{ fontSize:20 }}>🎯</span>
@@ -600,21 +600,21 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             <div style={{ fontSize:isMobile?52:88, fontWeight:400, lineHeight:0.85, fontFamily:C.fontHead, color:"#fff", letterSpacing:"-0.01em", textShadow:`0 0 100px ${C.pink}35` }}>
               {allViewsDisplay>=1e6?(allViewsDisplay/1e6).toFixed(1)+"M":allViewsDisplay>=1e3?(allViewsDisplay/1e3).toFixed(1)+"K":String(allViewsDisplay||0)}
             </div>
-            <div style={{ marginTop:24, display:"flex", alignItems:"center", gap:24 }}>
-              <div style={{ height:40, width:1, background:"rgba(255,255,255,0.08)" }}/>
+            <div style={{ marginTop:16, display:"flex", flexWrap:"wrap", alignItems:"center", gap:isMobile?12:24 }}>
+              {!isMobile && <div style={{ height:40, width:1, background:"rgba(255,255,255,0.08)" }}/>}
               {[
                 {l:WL.statLabels?.followers||"Followers",v:m?.tt_followers||0,c:C.pink},
                 {l:WL.statLabels?.custom1Label||"Stat",v:m?.[WL.statLabels?.custom1Key||"bins"]||0,c:C.yellow},
               ].map((s,i)=>(
                 <div key={i}>
-                  <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", letterSpacing:"0.14em", textTransform:"uppercase" }}>{s.l}</div>
-                  <div style={{ fontSize:28, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1.1, textShadow:`0 0 16px ${s.c}50` }}>{s.v.toLocaleString()}</div>
+                  <div style={{ fontSize:isMobile?10:14, color:"rgba(255,255,255,0.6)", letterSpacing:"0.14em", textTransform:"uppercase" }}>{s.l}</div>
+                  <div style={{ fontSize:isMobile?20:28, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1.1, textShadow:`0 0 16px ${s.c}50` }}>{s.v.toLocaleString()}</div>
                 </div>
               ))}
-              <div style={{ height:40, width:1, background:"rgba(255,255,255,0.08)" }}/>
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <div style={{ width:8, height:8, borderRadius:"50%", background:scrapedStats?.scraped_at?C.green:"rgba(255,255,255,0.85)", boxShadow:scrapedStats?.scraped_at?`0 0 8px ${C.green}`:""  }}/>
-                <span style={{ fontSize:17, color:scrapedStats?.scraped_at?"rgba(255,255,255,0.8)":"rgba(255,255,255,0.8)", letterSpacing:"0.1em" }}>{scrapedStats?.scraped_at?"SYNCED":"NOT SYNCED"}</span>
+              {!isMobile && <div style={{ height:40, width:1, background:"rgba(255,255,255,0.08)" }}/>}
+              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                <div style={{ width:7, height:7, borderRadius:"50%", background:scrapedStats?.scraped_at?C.green:"rgba(255,255,255,0.4)", boxShadow:scrapedStats?.scraped_at?`0 0 8px ${C.green}`:""  }}/>
+                <span style={{ fontSize:isMobile?12:17, color:"rgba(255,255,255,0.7)", letterSpacing:"0.08em" }}>{scrapedStats?.scraped_at?"SYNCED":"NOT SYNCED"}</span>
               </div>
             </div>
           </div>
@@ -626,7 +626,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
       </div>
 
       {/* ══ STAT CARDS ════════════════════════════════════════════ */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:14, marginBottom:32 }}>
+      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fit,minmax(200px,1fr))", gap:isMobile?10:14, marginBottom:isMobile?16:32 }}>
         {[
           { label:"TT Followers", value:m?.tt_followers>=1e3?(m.tt_followers/1e3).toFixed(1)+"K":String(m?.tt_followers||0), color:C.pink, icon:I.tt },
           { label:"TT Views", value:ttViewsDisplay>=1e6?(ttViewsDisplay/1e6).toFixed(1)+"M":ttViewsDisplay>=1e3?(ttViewsDisplay/1e3).toFixed(1)+"K":String(ttViewsDisplay||0), color:C.cyan, icon:I.eye },
@@ -655,21 +655,21 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
       <div style={{ borderRadius:22, overflow:"hidden", background:"linear-gradient(145deg,#0E0B1E,#080514)", border:"1px solid rgba(255,255,255,0.07)", position:"relative", boxShadow:"0 8px 40px rgba(0,0,0,0.4)" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.pink},${C.purple},${C.cyan},transparent)` }}/>
         <div style={{ position:"absolute", top:0, right:0, width:300, height:300, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}08,transparent 70%)`, pointerEvents:"none" }}/>
-        <div style={{ padding:"28px 32px 0" }}>
-          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:24 }}>
+        <div style={{ padding:isMobile?"16px 16px 0":"28px 32px 0" }}>
+          <div style={{ display:"flex", flexDirection:isMobile?"column":"row", alignItems:isMobile?"flex-start":"flex-start", justifyContent:"space-between", gap:12, marginBottom:16 }}>
             <div>
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.18em", textTransform:"uppercase", marginBottom:10, fontWeight:600 }}>Platform Views — 7 Days</div>
-              <div style={{ fontSize:isMobile?30:48, fontWeight:400, fontFamily:C.fontHead, color:"#fff", lineHeight:1, letterSpacing:"-0.01em" }}>{(last7.reduce((s,d)=>s+d.value,0)+igLast7.reduce((s,d)=>s+d.value,0)).toLocaleString()}</div>
-              <div style={{ fontSize:12, color:"rgba(255,255,255,0.25)", marginTop:8 }}>Total across both platforms this week</div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.18em", textTransform:"uppercase", marginBottom:8, fontWeight:600 }}>Platform Views — 7 Days</div>
+              <div style={{ fontSize:isMobile?28:48, fontWeight:400, fontFamily:C.fontHead, color:"#fff", lineHeight:1, letterSpacing:"-0.01em" }}>{(last7.reduce((s,d)=>s+d.value,0)+igLast7.reduce((s,d)=>s+d.value,0)).toLocaleString()}</div>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.25)", marginTop:6 }}>Total across both platforms this week</div>
             </div>
-            <div style={{ display:"flex", gap:10 }}>
-              {[{c:C.pink,l:"TikTok",v:last7.reduce((s,d)=>s+d.value,0),dash:false},{c:C.purple,l:"Instagram",v:igLast7.reduce((s,d)=>s+d.value,0),dash:true}].map((p,i)=>(
-                <div key={i} style={{ padding:"14px 20px", borderRadius:16, background:`linear-gradient(145deg,${p.c}12,rgba(8,5,18,0.8))`, border:`1px solid ${p.c}25`, minWidth:120, textAlign:"center", boxShadow:`0 4px 20px ${p.c}08` }}>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginBottom:8 }}>
-                    <div style={{ width:8, height:8, borderRadius:"50%", background:p.c, boxShadow:`0 0 8px ${p.c}` }}/>
-                    <span style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.1em", textTransform:"uppercase" }}>{p.l}</span>
+            <div style={{ display:"flex", gap:8, alignSelf:isMobile?"stretch":"flex-start" }}>
+              {[{c:C.pink,l:"TikTok",v:last7.reduce((s,d)=>s+d.value,0)},{c:C.purple,l:"Instagram",v:igLast7.reduce((s,d)=>s+d.value,0)}].map((p,i)=>(
+                <div key={i} style={{ padding:isMobile?"10px 14px":"14px 20px", borderRadius:14, background:`linear-gradient(145deg,${p.c}12,rgba(8,5,18,0.8))`, border:`1px solid ${p.c}25`, flex:isMobile?1:undefined, minWidth:isMobile?undefined:110, textAlign:"center" }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:5, marginBottom:5 }}>
+                    <div style={{ width:7, height:7, borderRadius:"50%", background:p.c }}/>
+                    <span style={{ fontSize:10, color:"rgba(255,255,255,0.5)", letterSpacing:"0.1em", textTransform:"uppercase" }}>{p.l}</span>
                   </div>
-                  <div style={{ fontSize:24, fontWeight:400, color:p.c, fontFamily:C.fontHead, textShadow:`0 0 20px ${p.c}40` }}>{p.v.toLocaleString()}</div>
+                  <div style={{ fontSize:isMobile?18:24, fontWeight:400, color:p.c, fontFamily:C.fontHead }}>{p.v.toLocaleString()}</div>
                 </div>
               ))}
             </div>
@@ -720,7 +720,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
 
         if(!action) return null;
         return (
-          <div style={{ padding:"20px 24px", borderRadius:20, background:"rgba(10,6,20,0.6)", border:`1px solid rgba(255,255,255,0.06)`, borderLeft:`3px solid ${action.color}`, display:"flex", alignItems:"center", gap:16 }}>
+          <div style={{ padding:isMobile?"12px 14px":"20px 24px", borderRadius:20, background:"rgba(10,6,20,0.6)", border:`1px solid rgba(255,255,255,0.06)`, borderLeft:`3px solid ${action.color}`, display:"flex", alignItems:"center", gap:16 }}>
             <div style={{ flex:1, fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.5, fontFamily:C.fontBody }}>
               <span style={{ fontWeight:700, color:action.color }}>Next: </span>{action.msg}
             </div>
@@ -793,7 +793,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           { title:"Top Ideas", sub:"Highest virality score", icon:I.idea, color:C.purple, items:topIdeas, empty:"No ideas yet",
             renderItem:(idea,i,arr)=>(
               <div key={idea.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:i<arr.length-1?`1px solid rgba(255,255,255,0.05)`:"none" }}>
-                <div style={{ fontSize:30, fontWeight:400, fontFamily:C.fontHead, color:Number(idea.viral)>=70?C.green:Number(idea.viral)>=50?C.yellow:C.dim, width:36, lineHeight:1, textShadow:`0 0 10px currentColor`, flexShrink:0 }}>{idea.viral||0}</div>
+                <div style={{ fontSize:isMobile?20:30, fontWeight:400, fontFamily:C.fontHead, color:Number(idea.viral)>=70?C.green:Number(idea.viral)>=50?C.yellow:C.dim, width:36, lineHeight:1, textShadow:`0 0 10px currentColor`, flexShrink:0 }}>{idea.viral||0}</div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)", lineHeight:1.5, flex:1, fontWeight:500 }}>{idea.title?.slice(0,52)}{(idea.title?.length||0)>52?"...":""}</div>
               </div>
             )
@@ -916,7 +916,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         });
         const hasAny = posted.length > 0;
         return (
-          <div style={{ borderRadius:16, padding:"20px 24px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ borderRadius:16, padding:isMobile?"12px 14px":"20px 24px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.06)" }}>
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.16em", textTransform:"uppercase", fontWeight:700, marginBottom:14 }}>Content Pillar Health</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               {pillarsWithGap.map(p=>{
@@ -1645,6 +1645,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 };
 
 const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={}, commentInsights=null, visualDNA=null, setIdeas }) => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [sentIdeas, setSentIdeas] = useState({});
   const sendVidToIdeas = (v, key) => {
     if(!setIdeas || sentIdeas[key]) return;
@@ -1750,7 +1751,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                         const watchLabel = watchProxy!==null ? (watchProxy>avgLikeRate*1.3?"STRONG":watchProxy<avgLikeRate*0.7?"WEAK":"AVG") : null;
                         return null;
                       })()}
-                      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:8 }}>
+                      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
                         {[
                           {l:"VIEWS", v:fmt(v.views||0), c:C.cyan},
                           {l:"LIKES", v:fmt(v.likes||0), c:C.pink},
@@ -1837,7 +1838,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
 
           {/* Platform stat cards — TikTok row */}
-          <div style={{ borderRadius:16, padding:"18px 22px", background:"linear-gradient(145deg,rgba(255,45,120,0.08),rgba(10,6,20,0.95))", border:"1px solid rgba(255,45,120,0.2)", position:"relative", overflow:"hidden" }}>
+          <div style={{ borderRadius:16, padding:isMobile?"14px 16px":"18px 22px", background:"linear-gradient(145deg,rgba(255,45,120,0.08),rgba(10,6,20,0.95))", border:"1px solid rgba(255,45,120,0.2)", position:"relative", overflow:"hidden" }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
               <div style={{ width:32, height:32, borderRadius:10, background:`${C.pink}20`, border:`1px solid ${C.pink}35`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.tt(15,C.pink)}</div>
@@ -1848,27 +1849,25 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 <span style={{ fontSize:11, color:WL.accentColor, fontWeight:700, letterSpacing:"0.08em" }}>{ttVids.length} VIDEOS</span>
               </div>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:12 }}>
+            <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:isMobile?8:12 }}>
               {[
                 {l:"Total Views", v:fmt(ttTotal), c:C.pink},
                 {l:"Avg Views", v:fmt(ttAvg), c:C.cyan},
                 {l:"Like Ratio", v:ttRatio.toFixed(1)+"%", c:ttRatio>=5?C.green:C.yellow},
                 {l:"TT Followers", v:fmt(m?.tt_followers||0), c:C.purple},
               ].map((s,i)=>(
-                <div key={i} style={{ padding:"14px 16px", borderRadius:16, background:`${s.c}10`, border:`1px solid ${s.c}20` }}>
-                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)", letterSpacing:"0.1em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>{s.l}</div>
-                  <div style={{ fontSize:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1, textShadow:`0 0 16px ${s.c}40` }}>{s.v}</div>
+                <div key={i} style={{ padding:isMobile?"10px 12px":"14px 16px", borderRadius:14, background:`${s.c}10`, border:`1px solid ${s.c}20` }}>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.08em", textTransform:"uppercase", fontWeight:700, marginBottom:6 }}>{s.l}</div>
+                  <div style={{ fontSize:isMobile?22:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
                 </div>
               ))}
             </div>
           </div>
 
-
-
           {/* Platform stat cards — Instagram row */}
-          <div style={{ borderRadius:16, padding:"18px 22px", background:"linear-gradient(145deg,rgba(197,102,255,0.08),rgba(10,6,20,0.95))", border:"1px solid rgba(197,102,255,0.2)", position:"relative", overflow:"hidden" }}>
+          <div style={{ borderRadius:16, padding:isMobile?"14px 16px":"18px 22px", background:"linear-gradient(145deg,rgba(197,102,255,0.08),rgba(10,6,20,0.95))", border:"1px solid rgba(197,102,255,0.2)", position:"relative", overflow:"hidden" }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.purple},${C.purple}00)` }}/>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
               <div style={{ width:32, height:32, borderRadius:10, background:`${C.purple}20`, border:`1px solid ${C.purple}35`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.ig(15,C.purple)}</div>
               <span style={{ fontSize:15, fontWeight:700, color:"#fff" }}>Instagram</span>
               <span style={{ fontSize:13, color:"rgba(255,255,255,0.4)" }}>{WL.handle}</span>
@@ -1877,16 +1876,16 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 <span style={{ fontSize:11, color:C.purple, fontWeight:700, letterSpacing:"0.08em" }}>{igVids.length} REELS</span>
               </div>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:12 }}>
+            <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:isMobile?8:12 }}>
               {[
                 {l:"Total Views", v:fmt(igTotal), c:C.purple},
                 {l:"Avg Views", v:fmt(igAvg), c:C.cyan},
                 {l:"Like Ratio", v:igRatio.toFixed(1)+"%", c:igRatio>=5?C.green:C.yellow},
                 {l:"IG Followers", v:fmt(igFollowers), c:C.pink},
               ].map((s,i)=>(
-                <div key={i} style={{ padding:"14px 16px", borderRadius:16, background:`${s.c}10`, border:`1px solid ${s.c}20` }}>
-                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)", letterSpacing:"0.1em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>{s.l}</div>
-                  <div style={{ fontSize:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1, textShadow:`0 0 16px ${s.c}40` }}>{s.v}</div>
+                <div key={i} style={{ padding:isMobile?"10px 12px":"14px 16px", borderRadius:14, background:`${s.c}10`, border:`1px solid ${s.c}20` }}>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.08em", textTransform:"uppercase", fontWeight:700, marginBottom:6 }}>{s.l}</div>
+                  <div style={{ fontSize:isMobile?22:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
                 </div>
               ))}
             </div>
@@ -2377,7 +2376,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                     <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, marginBottom:12 }}>
                       <div style={{ fontSize:14, color:"#fff", fontWeight:600, lineHeight:1.5, flex:1 }}>{idea.text}</div>
                       <div style={{ textAlign:"center", flexShrink:0 }}>
-                        <div style={{ fontSize:40, fontWeight:400, fontFamily:C.fontHead, color:sc_c, lineHeight:1, textShadow:`0 0 16px ${sc_c}50` }}>{sc}</div>
+                        <div style={{ fontSize:isMobile?24:40, fontWeight:400, fontFamily:C.fontHead, color:sc_c, lineHeight:1, textShadow:`0 0 16px ${sc_c}50` }}>{sc}</div>
                         <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700 }}>SCORE</div>
                       </div>
                     </div>
@@ -2818,7 +2817,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
       {/* Header */}
-      <div style={{ borderRadius:16, padding:"24px 28px", background:`linear-gradient(135deg,${C.purple}25,${C.cyan}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.purple}40`, position:"relative", overflow:"hidden" }}>
+      <div style={{ borderRadius:16, padding:isMobile?"12px 14px":"24px 28px", background:`linear-gradient(135deg,${C.purple}25,${C.cyan}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.purple}40`, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.purple},${C.cyan},${C.purple}00)` }} />
         <div style={{ position:"absolute", top:-40, right:-40, width:180, height:180, borderRadius:"50%", background:`${C.purple}20`, filter:"blur(50px)", pointerEvents:"none" }} />
         <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:14 }}>
@@ -3506,7 +3505,7 @@ Return ONLY JSON: {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
       {/* Header */}
-      <div style={{ borderRadius:16, padding:"24px 28px", background:`linear-gradient(135deg,${C.pink}20,${C.purple}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.pink}40`, position:"relative", overflow:"hidden" }}>
+      <div style={{ borderRadius:16, padding:isMobile?"12px 14px":"24px 28px", background:`linear-gradient(135deg,${C.pink}20,${C.purple}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.pink}40`, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.pink},${C.purple},${C.pink}00)` }} />
         <div style={{ display:"flex", alignItems:"center", gap:14 }}>
           <div style={{ width:52, height:52, borderRadius:16, background:`${C.pink}25`, border:`1px solid ${C.pink}50`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 0 24px ${C.pink}40` }}>{I.vid(24,C.pink)}</div>
@@ -3675,6 +3674,7 @@ Return ONLY JSON: {
 };
 
 const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scrapedStats, saveManual, setManualData, videos=[], ideas=[] }) => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [shareMsg, setShareMsg] = React.useState(null);
 
   // --- Derived data ---
@@ -3735,7 +3735,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
   const card = (children, accent=C.cyan) => (
     <div style={{ borderRadius:18, background:C.card, border:`1px solid ${C.border}`, overflow:"hidden", position:"relative" }}>
       <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${accent},${accent}50,transparent)` }}/>
-      <div style={{ padding:"24px 28px" }}>{children}</div>
+      <div style={{ padding:isMobile?"12px 14px":"24px 28px" }}>{children}</div>
     </div>
   );
 
@@ -3755,7 +3755,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
       {card(
         <>
           {sectionHead("Performance Overview", C.cyan)}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:0 }}>
+          <div style={{ display:"grid", gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(5,1fr)", gap:0 }}>
             {[
               { l:"IDEAS SCORED", v:scoredIdeas.length || "--", c:C.cyan },
               { l:"IDEAS POSTED", v:postedIdeas.length || "--", c:C.purple },
@@ -3881,7 +3881,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
       <div style={{ borderRadius:18, overflow:"hidden", background:`linear-gradient(135deg,rgba(20,10,40,0.98),rgba(10,6,25,0.98))`, border:`1px solid ${C.border}`, position:"relative" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.purple},${C.pink},${C.cyan})` }}/>
         <div style={{ position:"absolute", top:-60, right:-60, width:260, height:260, borderRadius:"50%", background:`${C.purple}08`, filter:"blur(80px)", pointerEvents:"none" }}/>
-        <div style={{ padding:"28px 32px" }}>
+        <div style={{ padding:isMobile?"14px 16px":"28px 32px" }}>
           {sectionHead("Creator Score Card", C.purple)}
           <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:24, flexWrap:"wrap" }}>
             <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
@@ -3936,6 +3936,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
 };
 
 const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[], onBulkImport }) => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [editing, setEditing] = useState(null);
   const [draftKey, setDraftKey] = useState("");
   const [wlDraft, setWlDraft] = useState(null);
@@ -4065,7 +4066,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
     <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
 
       {/* Sync button — prominent at top */}
-      <div style={{ borderRadius:16, padding:"20px 24px", background:"linear-gradient(145deg,rgba(0,207,255,0.1),rgba(10,6,20,0.95))", border:`1px solid ${C.cyan}30`, display:"flex", alignItems:"center", justifyContent:"space-between", position:"relative", overflow:"hidden" }}>
+      <div style={{ borderRadius:16, padding:isMobile?"12px 14px":"20px 24px", background:"linear-gradient(145deg,rgba(0,207,255,0.1),rgba(10,6,20,0.95))", border:`1px solid ${C.cyan}30`, display:"flex", alignItems:"center", justifyContent:"space-between", position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }}/>
         <div>
           <div style={{ fontSize:16, fontWeight:700, color:"#fff", marginBottom:4 }}>Auto Sync</div>
@@ -4232,7 +4233,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
       </div>
 
       {/* Bulk Video Import (CSV) */}
-      <div style={{ padding:"20px 24px", borderRadius:16, border:`1px solid ${C.yellow}20`, background:`${C.yellow}05` }}>
+      <div style={{ padding:isMobile?"12px 14px":"20px 24px", borderRadius:16, border:`1px solid ${C.yellow}20`, background:`${C.yellow}05` }}>
         <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:4 }}>Bulk Video Import (CSV)</div>
         <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginBottom:12 }}>Paste rows: <span style={{color:C.yellow}}>title, views, likes, type, hook, platform</span> (one per line, comma-separated). Header row optional.</div>
         <textarea value={csvDraft} onChange={e=>setCsvDraft(e.target.value)} rows={5} placeholder={"title,views,likes,type,hook,platform\nMy first video,12000,900,facecam,achievement,tiktok\n..."} style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.yellow}25`, borderRadius:12, color:"#fff", padding:"12px 14px", fontSize:12, fontFamily:"monospace", outline:"none", boxSizing:"border-box", resize:"vertical" }}/>
@@ -4256,7 +4257,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
       </div>
 
       {/* Channel Intelligence Export */}
-      <div style={{ padding:"20px 24px", borderRadius:16, border:`1px solid ${C.cyan}20`, background:`${C.cyan}05` }}>
+      <div style={{ padding:isMobile?"12px 14px":"20px 24px", borderRadius:16, border:`1px solid ${C.cyan}20`, background:`${C.cyan}05` }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
           <div>
             <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>Channel Intelligence Export</div>
@@ -6031,6 +6032,7 @@ async function callAI(prompt, maxTokens=2000) {
 // ── DEALS ─────────────────────────────────────────────────────────
 const DEALS_KEY = "krapmaps_v1_deals";
 const DealsView = () => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [deals, setDeals] = useState(()=>loadJSON(DEALS_KEY,[]));
   const [form, setForm] = useState({ brand:"", type:"Sponsored Post", value:"", status:"Enquiry", platform:"TikTok", deliverable:"", deadline:"", notes:"" });
   const [showForm, setShowForm] = useState(false);
@@ -6124,6 +6126,7 @@ const NAV = [
 
 // ── AI CHAT VIEW ──────────────────────────────────────────────────
 function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, preloadMsg }) {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const CHAT_KEY = "krapmaps_v1_chat";
   const [msgs, setMsgs] = useState(()=>{
     const saved = loadJSON(CHAT_KEY, null);
@@ -6729,7 +6732,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
       )}
 
       {/* Input bar */}
-      <div style={{ display:"flex", gap:10, padding:"12px 14px", background:"rgba(255,255,255,0.05)", borderRadius:20, border:`1px solid rgba(255,255,255,0.1)`, marginTop:12, alignItems:"center", flexShrink:0, boxShadow:"0 4px 24px rgba(0,0,0,0.2)" }}>
+      <div style={{ display:"flex", gap:10, padding:"12px 14px", background:"rgba(255,255,255,0.05)", borderRadius:20, border:`1px solid rgba(255,255,255,0.1)`, marginTop:12, alignItems:"center", flexShrink:0, boxShadow:"0 4px 24px rgba(0,0,0,0.2)", paddingBottom:isMobile?16:12 }}>
         <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e=>{ if(e.target.files[0]) setVideoFile(e.target.files[0]); }} />
         <button onClick={()=>fileRef.current?.click()} title="Upload video clip"
           style={{ width:36, height:36, borderRadius:11, border:`1px solid rgba(255,255,255,0.12)`, background:"rgba(255,255,255,0.06)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.15s" }}>
@@ -8648,7 +8651,7 @@ function OnboardingPage({ onComplete }) {
             <div style={{ width:6, height:6, borderRadius:"50%", background:ac, boxShadow:`0 0 6px ${ac}` }}/>
             <span style={{ fontSize:12, color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", fontWeight:500 }}>{WL.appName}</span>
           </div>
-          <div style={{ fontSize:40, fontWeight:700, color:"#fff", lineHeight:1.15, marginBottom:16, letterSpacing:"-0.02em" }}>
+          <div style={{ fontSize:isMobile?24:40, fontWeight:700, color:"#fff", lineHeight:1.15, marginBottom:16, letterSpacing:"-0.02em" }}>
             The content system<br/><span style={{ color:ac }}>serious creators</span><br/>actually use.
           </div>
           <div style={{ fontSize:16, color:"rgba(255,255,255,0.45)", lineHeight:1.7 }}>Score ideas before filming. Track every deal. Get AI strategy that knows your niche. All in one place.</div>
