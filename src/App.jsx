@@ -6129,6 +6129,13 @@ const NAV = [
 // ── AI CHAT VIEW ──────────────────────────────────────────────────
 function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, preloadMsg }) {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const [viewH, setViewH] = useState(typeof window !== 'undefined' ? window.innerHeight : 700);
+  useEffect(() => {
+    const onResize = () => setViewH(window.innerHeight);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const chatH = isMobile ? `${Math.max(300, viewH - 170)}px` : 'calc(100dvh - 160px)';
   const CHAT_KEY = "krapmaps_v1_chat";
   const [msgs, setMsgs] = useState(()=>{
     const saved = loadJSON(CHAT_KEY, null);
@@ -6626,7 +6633,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
   const creator1Init = (WL.creator1||"U").slice(0,2).toUpperCase();
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", height:isMobile?"calc(100dvh - 200px)":"calc(100dvh - 160px)", minHeight:isMobile?400:480 }}>
+    <div style={{ display:"flex", flexDirection:"column", height:chatH, minHeight:isMobile?280:480 }}>
 
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?10:16, flexShrink:0 }}>
