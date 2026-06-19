@@ -5807,30 +5807,39 @@ async function callPerplexity(prompt, wl=WL) {
 
 async function callAI(prompt, maxTokens=2000) {
   const storedCfg = loadJSON(KEYS_KEY,{});
-  const apiKey = storedCfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
+  const apiKey = (storedCfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY || "").trim();
+  console.log("[callAI] key present:", !!apiKey, "key prefix:", apiKey.slice(0,8));
   if(!apiKey) throw new Error("NO API KEY -- go to Settings tab and add your Anthropic key");
   const currentWL = loadWL();
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "x-api-key": apiKey,
-      "anthropic-version":"2023-06-01",
-      "anthropic-dangerous-direct-browser-access":"true"
-    },
-    body: JSON.stringify({
-      model:"claude-sonnet-4-6",
-      max_tokens: maxTokens,
-      system:buildSystem(currentWL),
-      messages:[{ role:"user", content:prompt }]
-    })
-  });
+  let r;
+  try {
+    r = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "x-api-key": apiKey,
+        "anthropic-version":"2023-06-01",
+        "anthropic-dangerous-direct-browser-access":"true"
+      },
+      body: JSON.stringify({
+        model:"claude-sonnet-4-6",
+        max_tokens: maxTokens,
+        system:buildSystem(currentWL),
+        messages:[{ role:"user", content:prompt }]
+      })
+    });
+  } catch(fetchErr) {
+    console.error("[callAI] fetch threw (network/CORS):", fetchErr);
+    throw new Error("Network error calling Anthropic: "+fetchErr.message);
+  }
   if(!r.ok) {
     let errTxt = "";
     try { errTxt = await r.text(); } catch {}
-    if(r.status===401) throw new Error("Invalid API key -- go to Settings and update your Anthropic key");
-    if(r.status===429) throw new Error("Rate limited -- wait 30 seconds and try again");
-    throw new Error(`API error ${r.status}: ${errTxt.slice(0,80)}`);
+    console.error("[callAI] HTTP", r.status, errTxt);
+    if(r.status===401) throw new Error("Invalid API key (401) -- go to Settings and update your Anthropic key. Raw: "+errTxt.slice(0,120));
+    if(r.status===429) throw new Error("Rate limited (429) -- wait 30 seconds and try again");
+    if(r.status===400) throw new Error("Bad request (400): "+errTxt.slice(0,200));
+    throw new Error(`API error ${r.status}: ${errTxt.slice(0,200)}`);
   }
   const d = await r.json();
   if(d.error) throw new Error(d.error.message||"API error");
@@ -7541,7 +7550,11 @@ REASONING DISCIPLINE: Before scoring, identify the 2-3 strongest data signals ab
 Return ONLY valid JSON:
 {"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","hookVariants":[{"hook":"A/B variant 1 under 10 words — a DISTINCT angle (different trigger type than the others)","trigger":"open-loop|contrast|identity|social-proof|visual-disruption","predictedLift":"+X% vs the original hook, grounded in this channel's OUTCOME LEARNING + VISUAL DNA above","why":"one line: which channel data signal makes this variant win"},{"hook":"A/B variant 2 — different trigger","trigger":"...","predictedLift":"+X%","why":"..."},{"hook":"A/B variant 3 — different trigger","trigger":"...","predictedLift":"+X%","why":"..."}],"bestVariantIndex":"0|1|2 — which variant you predict wins and would test first","retentionFix":"the single biggest retention improvement","openLoopStrength":"rate 1-10 how well this video creates and sustains curiosity gaps — what is the open loop and when does it close?","reHookMoments":["specific moment at ~3s to re-engage","specific moment at ~15s","specific moment at ~30s if video is longer"],"emotionalArc":"setup→tension→payoff analysis — what emotion does viewer feel at start, middle, end? Where does it escalate?","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic RANGE corrected by outcome learning + bias σ e.g. 24K-56K","contentPillar":"niche-specific pillar name","competitorAngle":"how to differentiate from what competitors are already doing in this niche","optimalPostSlot":"best day+time to post this based on the channel's day/time performance data above, e.g. 'Saturday 6-9pm'","confidenceLevel":"HIGH|MEDIUM|LOW — based on how much real data backs this score","scoreRationale":"1 sentence: which 2-3 data signals drove this specific score up or down vs a generic idea"}`;
       const _consensus = await callConsensus(_scorePrompt, _scorePrompt, wl);
-      if(!_consensus.claude && !_consensus.gpt && !_consensus.gemini) throw new Error("Scoring failed. Anthropic said: "+(_consensus.claudeErr||"unknown"));
+      if(!_consensus.claude && !_consensus.gpt && !_consensus.gemini) {
+        const errDetail = _consensus.claudeErr || "unknown — check browser console for [callAI] logs";
+        console.error("[scoreIdea] all models failed. claudeErr:", errDetail);
+        throw new Error("Scoring failed: "+errDetail);
+      }
       const r = reconcileScores(_consensus.claude, _consensus.gpt, _consensus.gemini);
       // Neural blend: fuse the trained net's data-driven view prediction with the LLM's estimate.
       // Weight is the net's earned, cross-validated trust — 0 when it can't beat baseline.
