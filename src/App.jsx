@@ -8369,19 +8369,18 @@ Return JSON:
         <div className="web-inner" style={{ position:"relative", zIndex:1 }}>
 
           {/* MOBILE HEADER */}
-          <div className="mobile-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px 0" }}>
-            <div>
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:600, lineHeight:1 }}>{WL.appName}</div>
-              <div style={{ fontSize:20, fontWeight:900, color:"#fff", fontFamily:C.fontHead, lineHeight:1.2, marginTop:2 }}>{NAV.find(n=>n.id===nav)?.label||nav}</div>
+          <div className="mobile-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 20px", background:"rgba(8,5,18,0.95)", borderBottom:"1px solid rgba(255,255,255,0.06)", backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ width:32, height:32, borderRadius:10, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:900, color:"#fff", flexShrink:0 }}>{(WL.creator1||"B")[0]}</div>
+              <div style={{ fontSize:17, fontWeight:700, color:"#fff", fontFamily:C.fontHead, letterSpacing:"0.01em" }}>{NAV.find(n=>n.id===nav)?.label||nav}</div>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               {scrapedStats?.scraped_at && (
-                <div style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 10px", borderRadius:8, background:"rgba(0,255,148,0.08)", border:"1px solid rgba(0,255,148,0.18)" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:4, padding:"4px 9px", borderRadius:7, background:"rgba(0,255,148,0.08)", border:"1px solid rgba(0,255,148,0.18)" }}>
                   <div style={{ width:5, height:5, borderRadius:"50%", background:C.green }} />
                   <span style={{ fontSize:10, color:C.green, fontWeight:700, letterSpacing:"0.06em" }}>LIVE</span>
                 </div>
               )}
-              <div style={{ width:36, height:36, borderRadius:12, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:900, color:"#fff" }}>{(WL.creator1||"B")[0]}</div>
             </div>
           </div>
 
