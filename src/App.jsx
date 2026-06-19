@@ -3412,10 +3412,10 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
 
       {/* ── AI MEMORY LOG ──────────────────────────────────────── */}
       {memory.entries?.length>0 && (
-        <div data-card style={{ borderRadius:16, padding:"24px", background:`linear-gradient(145deg,${C.orange}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.orange}30`, position:"relative", overflow:"hidden" }}>
+        <div data-card style={{ borderRadius:16, padding:isMobile?"20px 18px":"24px", background:`linear-gradient(145deg,${C.orange}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.orange}30`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.orange},${C.orange}00)` }} />
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?24:16 }}>
-            <div style={{ fontSize:20, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase" }}>AI MEMORY LOG</div>
+            <div style={{ fontSize:isMobile?16:20, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase" }}>AI MEMORY LOG</div>
             <div style={{ fontSize:15, color:"rgba(255,255,255,0.85)" }}>{memory.entries.length} entries</div>
           </div>
           {[...memory.entries].reverse().slice(0,10).map((e,i)=>(
@@ -3559,7 +3559,7 @@ Return ONLY JSON: {
         <div style={{ display:"flex", alignItems:"center", gap:14 }}>
           <div style={{ width:52, height:52, borderRadius:16, background:`${C.pink}25`, border:`1px solid ${C.pink}50`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 0 24px ${C.pink}40` }}>{I.vid(24,C.pink)}</div>
           <div>
-            <div style={{ fontSize:28, fontWeight:700, color:"#fff", letterSpacing:"0.04em", textTransform:"uppercase" }}>VIDEO AI READER</div>
+            <div style={{ fontSize:isMobile?20:28, fontWeight:700, color:"#fff", letterSpacing:"0.04em", textTransform:"uppercase" }}>VIDEO AI READER</div>
             <div style={{ fontSize:14, color:`${C.pink}cc`, marginTop:2 }}>
               {hasGemini?"Gemini watches • Claude analyses • Full teardown":"Add Gemini key in Settings to enable video watching"}
             </div>
@@ -3936,20 +3936,20 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
             <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:28 }}>
               <div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.4)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:4 }}>Creator</div>
-                <div style={{ fontSize:28, fontWeight:700, fontFamily:C.fontHead, color:"#fff" }}>{WL.handle||"@creator"}</div>
+                <div style={{ fontSize:isMobile?22:28, fontWeight:700, fontFamily:C.fontHead, color:"#fff" }}>{WL.handle||"@creator"}</div>
               </div>
               <div style={{ display:"flex", flexWrap:"wrap", gap:isMobile?20:32 }}>
                 <div>
                   <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:4 }}>Videos Tracked</div>
-                  <div style={{ fontSize:32, fontWeight:700, fontFamily:C.fontHead, color:C.cyan }}>{videos.length}</div>
+                  <div style={{ fontSize:isMobile?24:32, fontWeight:700, fontFamily:C.fontHead, color:C.cyan }}>{videos.length}</div>
                 </div>
                 <div>
                   <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:4 }}>Avg Views</div>
-                  <div style={{ fontSize:32, fontWeight:700, fontFamily:C.fontHead, color:C.green }}>{avgPostedViews ? fmt(avgPostedViews) : fmt(channelAvg||0)}</div>
+                  <div style={{ fontSize:isMobile?24:32, fontWeight:700, fontFamily:C.fontHead, color:C.green }}>{avgPostedViews ? fmt(avgPostedViews) : fmt(channelAvg||0)}</div>
                 </div>
                 <div>
                   <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:4 }}>Ideas Scored</div>
-                  <div style={{ fontSize:32, fontWeight:700, fontFamily:C.fontHead, color:C.yellow }}>{scoredIdeas.length}</div>
+                  <div style={{ fontSize:isMobile?24:32, fontWeight:700, fontFamily:C.fontHead, color:C.yellow }}>{scoredIdeas.length}</div>
                 </div>
               </div>
               {bestIdea && (
@@ -4261,14 +4261,14 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
       </div>
 
       {/* Channel Viral Theory — the deep "why this channel goes viral" model */}
-      <div style={{ borderRadius:16, padding:"22px 24px", background:`linear-gradient(145deg,rgba(139,92,246,0.08),rgba(10,6,20,0.95))`, border:`1px solid ${C.purple}25`, position:"relative", overflow:"hidden" }}>
+      <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"22px 24px", background:`linear-gradient(145deg,rgba(139,92,246,0.08),rgba(10,6,20,0.95))`, border:`1px solid ${C.purple}25`, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.purple},${C.purple}00)` }}/>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?14:10 }}>
-          <div>
+        <div style={{ display:"flex", alignItems:isMobile?"flex-start":"center", justifyContent:"space-between", gap:12, marginBottom:isMobile?14:10, flexWrap:isMobile?"wrap":"nowrap" }}>
+          <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>Channel Viral Theory</div>
             <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:3 }}>The deep "why this channel goes viral" — injected into every score. Generate from your data or write it yourself.</div>
           </div>
-          <div style={{ display:"flex", gap:8 }}>
+          <div style={{ display:"flex", gap:8, flexShrink:0 }}>
             <button onClick={generateChannelTheory} disabled={!keys?.anthropic||theoryLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.purple}50`, background:`${C.purple}18`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:(!keys?.anthropic||theoryLoading)?0.5:1 }}>{theoryLoading?"GENERATING...":"⚡ GENERATE"}</button>
             <button onClick={saveTheory} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${theorySaved?C.green:C.purple}50`, background:theorySaved?`${C.green}20`:`${C.purple}18`, color:theorySaved?C.green:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{theorySaved?"SAVED ✓":"SAVE"}</button>
           </div>
@@ -8885,7 +8885,7 @@ function OnboardingPage({ onComplete }) {
 
           {/* Step 1 — Welcome */}
           {step === 1 && (
-            <div style={{ position:"fixed", inset:0, display:"flex", overflow:"hidden" }}>
+            <div style={{ position:"fixed", inset:0, display:"flex", overflow:"hidden", flexDirection:isMobile?"column":"row" }}>
 
               <style>{`
                 @keyframes slideInRight{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:translateX(0)}}
@@ -8903,8 +8903,8 @@ function OnboardingPage({ onComplete }) {
                 <div key={i} style={{ position:"absolute", ...pos, width:16, height:16, borderTop:i<2?"1px solid rgba(255,255,255,0.12)":undefined, borderBottom:i>=2?"1px solid rgba(255,255,255,0.12)":undefined, borderLeft:i%2===0?"1px solid rgba(255,255,255,0.12)":undefined, borderRight:i%2===1?"1px solid rgba(255,255,255,0.12)":undefined, pointerEvents:"none", zIndex:1 }}/>
               ))}
 
-              {/* LEFT PANEL — 42% wide, full height, copy + CTA */}
-              <div style={{ width:"42%", flexShrink:0, display:"flex", flexDirection:"column", justifyContent:"center", padding:"0 5% 0 6%", position:"relative", zIndex:2, animation:"fadeLeft 0.7s ease forwards" }}>
+              {/* LEFT PANEL — 42% wide on desktop, full width on mobile */}
+              <div style={{ width:isMobile?"100%":"42%", flexShrink:0, display:"flex", flexDirection:"column", justifyContent:"center", padding:isMobile?"40px 28px":"0 5% 0 6%", position:"relative", zIndex:2, animation:"fadeLeft 0.7s ease forwards" }}>
 
                 <div style={{ fontSize:10, color:"rgba(255,255,255,0.1)", letterSpacing:"0.5em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:48, display:"flex", alignItems:"center", gap:14 }}>
                   <div style={{ width:24, height:"1px", background:"rgba(255,255,255,0.07)" }}/>
@@ -8934,10 +8934,10 @@ function OnboardingPage({ onComplete }) {
               </div>
 
               {/* DIVIDER */}
-              <div style={{ width:1, background:"linear-gradient(180deg,transparent,rgba(255,255,255,0.08) 20%,rgba(255,255,255,0.08) 80%,transparent)", flexShrink:0, zIndex:2 }}/>
+              {!isMobile && <div style={{ width:1, background:"linear-gradient(180deg,transparent,rgba(255,255,255,0.08) 20%,rgba(255,255,255,0.08) 80%,transparent)", flexShrink:0, zIndex:2 }}/>}
 
-              {/* RIGHT PANEL */}
-              {true ? (
+              {/* RIGHT PANEL — hidden on mobile */}
+              {!isMobile && (true ? (
                 /* ── EDITORIAL BRIEF — same layout on every build, content from BRIEF config ── */
                 <div style={{ flex:1, overflowY:"auto", padding:"48px 52px", position:"relative", zIndex:2, animation:"slideInRight 0.9s cubic-bezier(0.16,1,0.3,1) forwards" }}>
                   <style>{`
@@ -9012,7 +9012,7 @@ function OnboardingPage({ onComplete }) {
                   <div style={{ width:"100%", height:1, background:"rgba(255,255,255,0.06)", marginBottom:36 }}/>
 
                   {/* Brand */}
-                  <div className="braz-section" style={{ display:"flex", gap:40 }}>
+                  <div className="braz-section" style={{ display:"flex", gap:isMobile?24:40, flexDirection:isMobile?"column":"row" }}>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:9, color:BRIEF.cols.c3, letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:isMobile?14:10 }}>BRAND</div>
                       <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", lineHeight:1.7 }}>{BRIEF.brand}</div>
@@ -9388,7 +9388,7 @@ function OnboardingPage({ onComplete }) {
                   </div>
                 </div>
               </div>
-              )} {/* end KrapMaps right panel */}
+              ))} {/* end KrapMaps right panel */}
 
             </div>
           )}
