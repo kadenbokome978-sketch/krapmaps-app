@@ -8009,22 +8009,22 @@ Return JSON:
   const ModalBase = ({ children, onClose }) => (
     <div
       data-lenis-prevent
-      style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",zIndex:200,overflowY:"auto",WebkitOverflowScrolling:"touch" }}
+      style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",zIndex:200,overflowY:"auto",WebkitOverflowScrolling:"touch" }}
     >
-      <div style={{ minHeight:"12vh",cursor:"pointer" }} onClick={onClose} />
+      <div style={{ minHeight:"10vh",cursor:"pointer" }} onClick={onClose} />
       <div
         data-lenis-prevent
         onClick={e=>e.stopPropagation()}
-        style={{ background:"#0F0B1E",border:"1px solid rgba(255,255,255,0.12)",borderRadius:"28px 28px 0 0",width:"100%",maxWidth:480,margin:"0 auto",padding:"20px 18px calc(48px + env(safe-area-inset-bottom))" }}
+        style={{ background:"linear-gradient(180deg,#14102A,#0F0B1E)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"32px 32px 0 0",width:"100%",maxWidth:500,margin:"0 auto",padding:"22px 22px calc(52px + env(safe-area-inset-bottom))",boxShadow:"0 -20px 60px rgba(0,0,0,0.5)" }}
       >
-        <div onClick={onClose} style={{ width:48,height:4,borderRadius:2,background:"rgba(255,255,255,0.35)",margin:"0 auto 24px",cursor:"pointer" }} />
+        <div onClick={onClose} style={{ width:44,height:4,borderRadius:2,background:"rgba(255,255,255,0.25)",margin:"0 auto 28px",cursor:"pointer" }} />
         {children}
       </div>
     </div>
   );
-  const MLabel = ({children}) => <div style={{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",color:C.dim,marginBottom:5,textTransform:"uppercase" }}>{children}</div>;
-  const MInput = ({value,onChange,placeholder,type="text"}) => <input type={type} value={value||""} onChange={onChange} placeholder={placeholder} style={{ width:"100%",background:"#1a1330",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#fff",padding:isMobile?"13px 16px":"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12,colorScheme:"dark" }} />;
-  const MBtn = ({children,onClick,color=C.pink}) => <button onClick={onClick} style={{ width:"100%",padding:"13px",borderRadius:12,border:"none",background:color,color:"#fff",fontFamily:C.fontHead,fontWeight:700,fontSize:15,cursor:"pointer",marginTop:6 }}>{children}</button>;
+  const MLabel = ({children}) => <div style={{ fontSize:11,fontWeight:700,letterSpacing:"0.12em",color:"rgba(255,255,255,0.45)",marginBottom:7,textTransform:"uppercase" }}>{children}</div>;
+  const MInput = ({value,onChange,placeholder,type="text"}) => <input type={type} value={value||""} onChange={onChange} placeholder={placeholder} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,color:"#fff",padding:"14px 16px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:14,colorScheme:"dark" }} />;
+  const MBtn = ({children,onClick,color=C.pink}) => <button onClick={onClick} style={{ width:"100%",padding:"16px",borderRadius:14,border:"none",background:`linear-gradient(135deg,${color},${color}cc)`,color:"#fff",fontFamily:C.fontHead,fontWeight:700,fontSize:16,cursor:"pointer",marginTop:8,boxShadow:`0 4px 20px ${color}40` }}>{children}</button>;
 
   const AddVideoModal = () => {
     const [tab, setTab] = useState("manual");
@@ -8032,7 +8032,7 @@ Return JSON:
     const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
     return (
       <ModalBase onClose={()=>closeModal("addVideo")}>
-        <div style={{ fontSize:20,fontWeight:700,color:C.text,marginBottom:isMobile?24:16 }}>Log Video</div>
+        <div style={{ fontSize:22,fontWeight:700,color:C.text,marginBottom:24 }}>Log Video</div>
         <div style={{ display:"flex",gap:6,marginBottom:isMobile?24:16 }}>
           {["manual","scan"].map(t=><button key={t} onClick={()=>setTab(t)} style={{ flex:1,padding:"8px",borderRadius:10,border:`1px solid ${tab===t?C.pink:C.border}`,background:tab===t?C.pink+"20":"transparent",color:tab===t?C.pink:C.dim,fontFamily:C.fontHead,fontWeight:700,fontSize:17,cursor:"pointer",textTransform:"uppercase",letterSpacing:"0.06em" }}>{t}</button>)}
         </div>
@@ -8040,11 +8040,11 @@ Return JSON:
           <>
             <MLabel>Title</MLabel><MInput value={form.title} onChange={set("title")} placeholder="Video title" />
             <MLabel>Type</MLabel>
-            <select value={form.type} onChange={set("type")} style={{ width:"100%",background:"#1a1330",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#fff",padding:isMobile?"13px 16px":"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" }}>
+            <select value={form.type} onChange={set("type")} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,color:"#fff",padding:"14px 16px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:14,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" }}>
               {VIDEO_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
             <MLabel>Hook</MLabel>
-            <select value={form.hook} onChange={set("hook")} style={{ width:"100%",background:"#1a1330",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#fff",padding:isMobile?"13px 16px":"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" }}>
+            <select value={form.hook} onChange={set("hook")} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,color:"#fff",padding:"14px 16px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:14,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" }}>
               {HOOK_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:isMobile?16:12 }}>
@@ -8097,10 +8097,10 @@ Return JSON:
   const AddIdeaModal = () => {
     const [form, setForm] = useState({ title:"", type:"facecam", hook:"achievement", thumbnail:"text overlay", notes:"", collab: false });
     const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
-    const selStyle = { width:"100%",background:"#1a1330",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#fff",padding:isMobile?"13px 16px":"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" };
+    const selStyle = { width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,color:"#fff",padding:"14px 16px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:14,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" };
     return (
       <ModalBase onClose={()=>closeModal("addIdea")}>
-        <div style={{ fontSize:20,fontWeight:700,color:C.text,marginBottom:isMobile?24:16 }}>Add Idea</div>
+        <div style={{ fontSize:22,fontWeight:700,color:C.text,marginBottom:24 }}>Add Idea</div>
         <MLabel>Idea Title</MLabel><MInput value={form.title} onChange={set("title")} placeholder="Describe the video idea" />
         <MLabel>Type</MLabel>
         <select value={form.type} onChange={set("type")} style={selStyle}>
@@ -8224,7 +8224,7 @@ Return JSON:
     if(!idea) return null;
     return (
       <ModalBase onClose={()=>closeModal("editAppIdea")}>
-        <div style={{ fontSize:20,fontWeight:700,color:C.text,marginBottom:isMobile?24:16 }}>Edit App Idea</div>
+        <div style={{ fontSize:22,fontWeight:700,color:C.text,marginBottom:24 }}>Edit App Idea</div>
         <MLabel>Idea</MLabel>
         <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Feature idea..." rows={4} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:C.text,padding:isMobile?"13px 16px":"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",resize:"vertical",marginBottom:isMobile?16:12 }} />
         <MBtn onClick={()=>{ setAppIdeas(is=>is.map(i=>i.id===idea.id?{...i,text:text.trim()}:i)); closeModal("editAppIdea"); }}>Save</MBtn>
@@ -8237,15 +8237,15 @@ Return JSON:
     const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
     return (
       <ModalBase onClose={()=>closeModal("addCal")}>
-        <div style={{ fontSize:20,fontWeight:700,color:C.text,marginBottom:isMobile?24:16 }}>Schedule Content</div>
+        <div style={{ fontSize:22,fontWeight:700,color:C.text,marginBottom:24 }}>Schedule Content</div>
         <MLabel>Title</MLabel><MInput value={form.title} onChange={set("title")} placeholder="Content title" />
         <MLabel>Date</MLabel><MInput value={form.date} onChange={set("date")} type="date" />
         <MLabel>Platform</MLabel>
-        <select value={form.platform} onChange={set("platform")} style={{ width:"100%",background:"#1a1330",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#fff",padding:isMobile?"13px 16px":"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" }}>
+        <select value={form.platform} onChange={set("platform")} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,color:"#fff",padding:"14px 16px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:14,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" }}>
           {["TikTok","Instagram","Both","YouTube"].map(p=><option key={p} value={p}>{p}</option>)}
         </select>
         <MLabel>Status</MLabel>
-        <select value={form.status} onChange={set("status")} style={{ width:"100%",background:"#1a1330",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#fff",padding:isMobile?"13px 16px":"10px 12px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:12,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" }}>
+        <select value={form.status} onChange={set("status")} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,color:"#fff",padding:"14px 16px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:14,appearance:"none",WebkitAppearance:"none",colorScheme:"dark" }}>
           {STATUSES.map(s=><option key={s} value={s}>{s}</option>)}
         </select>
         <MBtn onClick={()=>{ if(!form.title.trim()) return; setCalItems(cs=>[{id:Date.now(),...form,statusColor:STATUS_C[form.status]||C.dim},...cs]); closeModal("addCal"); }}>Add to Calendar</MBtn>
@@ -8258,7 +8258,7 @@ Return JSON:
     const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
     return (
       <ModalBase onClose={()=>closeModal("editStats")}>
-        <div style={{ fontSize:20,fontWeight:700,color:C.text,marginBottom:isMobile?24:16 }}>Update Stats</div>
+        <div style={{ fontSize:22,fontWeight:700,color:C.text,marginBottom:24 }}>Update Stats</div>
         {[["TT Followers","tt_followers","Your TikTok follower count"],["TT Total Views","tt_views","All-time TikTok views"],["TT Total Likes","tt_likes","All-time TikTok likes"],[WL.statLabels?.custom1Label||"Custom Stat 1",WL.statLabels?.custom1Key||"custom1",""],[WL.statLabels?.custom2Label||"Custom Stat 2",WL.statLabels?.custom2Key||"custom2",""],["IG Followers","ig_followers","Enter manually from Instagram app"],["Spotify Monthly Listeners","monthly_listeners","From Spotify for Artists"]].filter(([l,k])=>k).map(([l,k])=>(
           <div key={k}><MLabel>{l}</MLabel><MInput value={form[k]||""} onChange={set(k)} placeholder="0" type="number" /></div>
         ))}
