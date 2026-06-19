@@ -7882,7 +7882,7 @@ Return JSON:
   // ── MODALS ─────────────────────────────────────────────────────
   const ModalBase = ({ children, onClose }) => (
     <div onClick={e=>e.target===e.currentTarget&&onClose()} style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 0 0 0" }}>
-      <div style={{ background:"#0F0B1E",border:"1px solid rgba(255,255,255,0.12)",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:480,maxHeight:"88vh",overflowY:"auto",padding:"20px 18px 36px" }}>
+      <div style={{ background:"#0F0B1E",border:"1px solid rgba(255,255,255,0.12)",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:480,maxHeight:"92dvh",overflowY:"auto",padding:"20px 18px calc(40px + env(safe-area-inset-bottom))",WebkitOverflowScrolling:"touch" }}>
         <div onClick={onClose} style={{ width:36,height:4,borderRadius:2,background:"rgba(255,255,255,0.85)",margin:"0 auto 20px" }} />
         {children}
       </div>
