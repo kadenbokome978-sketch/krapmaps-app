@@ -2872,7 +2872,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
         <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:isMobile?22:14 }}>
           <div style={{ width:52, height:52, borderRadius:16, background:`${C.purple}25`, border:`1px solid ${C.purple}50`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 0 24px ${C.purple}40` }}>{I.brain(24,C.purple)}</div>
           <div>
-            <div style={{ fontSize:28, fontWeight:700, color:"#fff", letterSpacing:"0.04em", textTransform:"uppercase" }}>NICHE AI</div>
+            <div style={{ fontSize:isMobile?20:28, fontWeight:700, color:"#fff", letterSpacing:"0.04em", textTransform:"uppercase" }}>NICHE AI</div>
             <div style={{ fontSize:13, color:`${C.purple}cc`, marginTop:2 }}>Powered by Perplexity live search + Claude strategy</div>
           </div>
         </div>
@@ -2924,7 +2924,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
         <div data-card style={{ borderRadius:16, padding:isMobile?"20px 18px":"24px", background:`linear-gradient(145deg,${C.cyan}12,rgba(7,5,15,0.95))`, border:`1px solid ${C.cyan}35`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }} />
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?24:16 }}>
-            <div style={{ fontSize:20, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase" }}>LIVE TRENDS — {loadWL()?.niche?.toUpperCase()}</div>
+            <div style={{ fontSize:isMobile?15:20, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase", flex:1, marginRight:8 }}>LIVE TRENDS — {loadWL()?.niche?.toUpperCase()}</div>
             <Tag color={trends.data_source==="perplexity_live"?C.green:C.yellow} sm>{trends.data_source==="perplexity_live"?"LIVE NOW":"AI KNOWLEDGE"}</Tag>
           </div>
 
@@ -3293,8 +3293,8 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
               <div style={{ padding:isMobile?"18px 18px":"14px 16px", borderRadius:16, background:`${C.purple}08`, border:`1px solid ${C.purple}20` }}>
                 <div style={{ fontSize:11, color:C.purple, fontWeight:700, letterSpacing:"0.1em", marginBottom:isMobile?14:10 }}>CROSS-POST IMPACT</div>
                 <div style={{ display:"flex", justifyContent:"space-between" }}>
-                  <div><div style={{ fontSize:20, fontWeight:700, color:C.purple }}>{patterns.crossAvg?.toLocaleString()}</div><div style={{ fontSize:13, color:"rgba(255,255,255,0.85)" }}>TT+IG avg</div></div>
-                  <div><div style={{ fontSize:20, fontWeight:700, color:"rgba(255,255,255,0.8)" }}>{patterns.singleAvg?.toLocaleString()}</div><div style={{ fontSize:13, color:"rgba(255,255,255,0.85)" }}>TikTok only</div></div>
+                  <div><div style={{ fontSize:isMobile?17:20, fontWeight:700, color:C.purple }}>{patterns.crossAvg?.toLocaleString()}</div><div style={{ fontSize:13, color:"rgba(255,255,255,0.85)" }}>TT+IG avg</div></div>
+                  <div><div style={{ fontSize:isMobile?17:20, fontWeight:700, color:"rgba(255,255,255,0.8)" }}>{patterns.singleAvg?.toLocaleString()}</div><div style={{ fontSize:13, color:"rgba(255,255,255,0.85)" }}>TikTok only</div></div>
                 </div>
                 <div style={{ marginTop:8, fontSize:13, color:patterns.crossAvg>patterns.singleAvg?C.green:C.pink }}>
                   Cross-posting {patterns.crossAvg>patterns.singleAvg?"HELPS":"HURTS"} by {Math.abs(Math.round((patterns.crossAvg/patterns.singleAvg-1)*100))}%
