@@ -684,14 +684,14 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
       </div>
 
       {/* ══ QUICK ACTIONS ══════════════════════════════════════════ */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:12 }}>
+      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:isMobile?10:12 }}>
         {[
           { icon:I.idea, label:"Add Idea",     desc:"Brainstorm content", color:C.purple, fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); } },
           { icon:I.cal,  label:"Schedule",     desc:"Plan your calendar",  color:C.cyan,   fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addCal"),50); } },
           { icon:I.vid,  label:"Log Video",    desc:"Track performance",   color:C.pink,   fn:()=>openModal&&openModal("addVideo") },
           { icon:I.bar,  label:"Update Stats", desc:"Manual stat entry",   color:C.yellow, fn:()=>openModal&&openModal("editStats") },
         ].map((a,i)=>(
-          <button data-btn key={i} onClick={a.fn} style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", gap:14, padding:"22px 20px", borderRadius:16, background:`linear-gradient(145deg,${a.color}12,rgba(8,5,18,0.9))`, border:`1px solid ${a.color}25`, cursor:"pointer", fontFamily:C.fontHead, transition:"all 0.2s", position:"relative", overflow:"hidden", textAlign:"left" }}>
+          <button data-btn key={i} onClick={a.fn} style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", gap:isMobile?10:14, padding:isMobile?"14px 14px":"22px 20px", minHeight:44, borderRadius:16, background:`linear-gradient(145deg,${a.color}12,rgba(8,5,18,0.9))`, border:`1px solid ${a.color}25`, cursor:"pointer", fontFamily:C.fontHead, transition:"all 0.2s", position:"relative", overflow:"hidden", textAlign:"left" }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,${a.color}50,transparent)` }}/>
             <div style={{ position:"absolute", bottom:-20, right:-20, width:80, height:80, borderRadius:"50%", background:`${a.color}0c`, filter:"blur(24px)" }}/>
             <div style={{ width:46, height:46, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", background:`linear-gradient(135deg,${a.color}25,${a.color}08)`, border:`1px solid ${a.color}30`, boxShadow:`0 6px 20px ${a.color}15` }}>{a.icon(22,a.color)}</div>
@@ -1495,9 +1495,9 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
       {sub==="CALENDAR" && (
         <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
           {/* Filter pills */}
-          <div style={{ display:"flex", gap:8 }}>
+          <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:2 }}>
             {["ALL","TIKTOK","INSTAGRAM","BOTH"].map(p=>(
-              <button key={p} onClick={()=>setCalFilter(p)} style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${calFilter===p?C.cyan:"rgba(255,255,255,0.08)"}`, background:calFilter===p?`${C.cyan}15`:"transparent", color:calFilter===p?C.cyan:"rgba(255,255,255,0.45)", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>
+              <button key={p} onClick={()=>setCalFilter(p)} style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${calFilter===p?C.cyan:"rgba(255,255,255,0.08)"}`, background:calFilter===p?`${C.cyan}15`:"transparent", color:calFilter===p?C.cyan:"rgba(255,255,255,0.45)", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
                 {p}
               </button>
             ))}
@@ -1751,7 +1751,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                         const watchLabel = watchProxy!==null ? (watchProxy>avgLikeRate*1.3?"STRONG":watchProxy<avgLikeRate*0.7?"WEAK":"AVG") : null;
                         return null;
                       })()}
-                      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+                      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:6 }}>
                         {[
                           {l:"VIEWS", v:fmt(v.views||0), c:C.cyan},
                           {l:"LIKES", v:fmt(v.likes||0), c:C.pink},
@@ -2179,6 +2179,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
   );
 };
 const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarget, setModals }) => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [sub, setSub]             = useState("TO DO");
   const [taskInput, setTaskInput] = useState("");
   const [taskFilter, setTaskFilter] = useState("ALL");
@@ -2294,7 +2295,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                 {l:"TOTAL", v:tasks.length, c:C.cyan},
               ].map((s,i)=>(
                 <div key={i} style={{ borderRadius:16, padding:"14px 16px", background:`${s.c}10`, border:`1px solid ${s.c}25`, textAlign:"center" }}>
-                  <div style={{ fontSize:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+                  <div style={{ fontSize:isMobile?22:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
                   <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.12em", textTransform:"uppercase", marginTop:6, fontWeight:700 }}>{s.l}</div>
                 </div>
               ))}
@@ -2412,6 +2413,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
 
 
 const NicheView = ({ WL, keys, aiLoad, setAiLoad, setAiErr, videos=[], ideas=[] }) => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [trends, setTrends]           = useState(null);
   const [strategy, setStrategy]       = useState(null);
   const [contentPlan, setContentPlan] = useState(null);
@@ -3022,7 +3024,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
               {idea.why_beats_average && <div style={{ fontSize:15, color:C.cyan, lineHeight:1.4 }}>📈 {idea.why_beats_average}</div>}
                 </div>
                 <div style={{ textAlign:"center", flexShrink:0 }}>
-                  <div style={{ fontSize:36, fontWeight:400, fontFamily:C.fontHead, color:scoreColor(idea.score), lineHeight:1, textShadow:`0 0 20px ${scoreColor(idea.score)}50` }}>{idea.score}</div>
+                  <div style={{ fontSize:isMobile?22:36, fontWeight:400, fontFamily:C.fontHead, color:scoreColor(idea.score), lineHeight:1, textShadow:`0 0 20px ${scoreColor(idea.score)}50` }}>{idea.score}</div>
                   <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", letterSpacing:"0.1em", marginTop:4 }}>VIRAL</div>
                 </div>
               </div>
@@ -6091,13 +6093,13 @@ const DealsView = () => {
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
           {deals.map(deal=>(
-            <div key={deal.id} data-card style={{ borderRadius:16, padding:"16px 20px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.08)", display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
-              <div style={{ flex:1, minWidth:160 }}>
+            <div key={deal.id} data-card style={{ borderRadius:16, padding:isMobile?"14px 16px":"16px 20px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.08)", display:"flex", flexDirection:isMobile?"column":"row", alignItems:isMobile?"stretch":"center", gap:isMobile?12:16, flexWrap:"wrap" }}>
+              <div style={{ flex:1, minWidth:isMobile?0:160 }}>
                 <div style={{ fontSize:15, fontWeight:700, color:"#fff", fontFamily:C.fontHead, marginBottom:4 }}>{deal.brand}</div>
                 <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody }}>{deal.type} · {deal.platform}{deal.deadline?` · Due ${deal.deadline}`:""}</div>
                 {deal.deliverable && <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", fontFamily:C.fontBody, marginTop:4 }}>{deal.deliverable}</div>}
               </div>
-              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, justifyContent:isMobile?"space-between":"flex-end" }}>
                 {deal.value && <div style={{ fontSize:20, fontWeight:400, fontFamily:C.fontHead, color:C.green }}>£{parseFloat(deal.value).toLocaleString()}</div>}
                 <select value={deal.status} onChange={e=>setDeals(ds=>ds.map(d=>d.id===deal.id?{...d,status:e.target.value}:d))} style={{ background:"#0C0A1A", border:`1px solid ${STATUS_C[deal.status]||C.dim}40`, borderRadius:8, color:STATUS_C[deal.status]||"#fff", padding:"6px 10px", fontSize:12, fontFamily:C.fontHead, fontWeight:700, cursor:"pointer", outline:"none", appearance:"none", colorScheme:"dark" }}>
                   {["Enquiry","Negotiating","Signed","Live","Delivered","Paid","Declined"].map(s=><option key={s} value={s} style={{background:"#0C0A1A"}}>{s}</option>)}
@@ -6624,7 +6626,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
   const creator1Init = (WL.creator1||"U").slice(0,2).toUpperCase();
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", height:isMobile?"calc(100dvh - 180px)":"calc(100dvh - 160px)", minHeight:isMobile?400:480 }}>
+    <div style={{ display:"flex", flexDirection:"column", height:isMobile?"calc(100dvh - 200px)":"calc(100dvh - 160px)", minHeight:isMobile?400:480 }}>
 
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?10:16, flexShrink:0 }}>
@@ -7881,9 +7883,17 @@ Return JSON:
 
   // ── MODALS ─────────────────────────────────────────────────────
   const ModalBase = ({ children, onClose }) => (
-    <div onClick={e=>e.target===e.currentTarget&&onClose()} style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 0 0 0" }}>
-      <div style={{ background:"#0F0B1E",border:"1px solid rgba(255,255,255,0.12)",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:480,maxHeight:"92dvh",overflowY:"auto",padding:"20px 18px calc(40px + env(safe-area-inset-bottom))",WebkitOverflowScrolling:"touch" }}>
-        <div onClick={onClose} style={{ width:36,height:4,borderRadius:2,background:"rgba(255,255,255,0.85)",margin:"0 auto 20px" }} />
+    <div
+      data-lenis-prevent
+      style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",zIndex:200,overflowY:"auto",WebkitOverflowScrolling:"touch" }}
+    >
+      <div style={{ minHeight:"12vh",cursor:"pointer" }} onClick={onClose} />
+      <div
+        data-lenis-prevent
+        onClick={e=>e.stopPropagation()}
+        style={{ background:"#0F0B1E",border:"1px solid rgba(255,255,255,0.12)",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:480,margin:"0 auto",padding:"20px 18px calc(48px + env(safe-area-inset-bottom))" }}
+      >
+        <div onClick={onClose} style={{ width:36,height:4,borderRadius:2,background:"rgba(255,255,255,0.85)",margin:"0 auto 20px",cursor:"pointer" }} />
         {children}
       </div>
     </div>
@@ -8809,7 +8819,7 @@ function OnboardingPage({ onComplete }) {
                   {/* Stats */}
                   <div className="braz-section">
                     <div style={{ fontSize:9, color:BRIEF.cols.c1, letterSpacing:"0.22em", fontFamily:"Courier New,monospace", marginBottom:14 }}>{BRIEF.numbersLabel}</div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:16 }}>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(120px,calc(50% - 8px)),1fr))", gap:16 }}>
                       {BRIEF.numbers.map(({platform,val,label,col})=>(
                         <div key={platform}>
                           <div style={{ fontSize:9, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace", marginBottom:4 }}>{platform.toUpperCase()}</div>
