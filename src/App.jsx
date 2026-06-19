@@ -472,7 +472,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
   ];
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:20 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:28 }}>
 
       {/* ══ WEEKLY RITUAL — the retention loop that feeds the AI ══════ */}
       {ritual.pending > 0 ? (
@@ -633,7 +633,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           { label:"IG Followers", value:(()=>{ const f=igData?.profile?.followers_count||m?.ig_followers||0; return f>=1e3?(f/1e3).toFixed(1)+"K":f?String(f):"--"; })(), color:C.yellow, icon:I.ig },
           { label:"IG Views", value:(()=>{ const t=videos.filter(v=>v.platform==="instagram").reduce((s,v)=>s+(v.views||0),0); return t>=1e6?(t/1e6).toFixed(1)+"M":t>=1e3?(t/1e3).toFixed(1)+"K":String(t||0); })(), color:C.purple, icon:I.ig },
         ].map((s,i)=>(
-          <div key={i} data-card style={{ borderRadius:22, padding:isMobile?"20px 16px 16px":"24px 24px 22px", background:`linear-gradient(145deg,${s.color}16 0%,rgba(8,5,18,0.95) 70%)`, border:`1px solid ${s.color}30`, position:"relative", overflow:"hidden", boxShadow:`0 8px 32px ${s.color}08` }}>
+          <div key={i} data-card style={{ borderRadius:22, padding:isMobile?"20px 16px 16px":"26px 26px 22px", background:`linear-gradient(145deg,${s.color}16 0%,rgba(8,5,18,0.95) 70%)`, border:`1px solid ${s.color}30`, position:"relative", overflow:"hidden", boxShadow:`0 8px 32px ${s.color}08` }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${s.color},${s.color}00)`, borderRadius:"22px 22px 0 0" }}/>
             <div style={{ position:"absolute", bottom:-40, right:-40, width:130, height:130, borderRadius:"50%", background:`${s.color}12`, filter:"blur(40px)", pointerEvents:"none" }}/>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
@@ -684,14 +684,14 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
       </div>
 
       {/* ══ QUICK ACTIONS ══════════════════════════════════════════ */}
-      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:isMobile?24:12 }}>
+      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fit,minmax(min(160px,100%),1fr))", gap:isMobile?24:12 }}>
         {[
           { icon:I.idea, label:"Add Idea",     desc:"Brainstorm content", color:C.purple, fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); } },
           { icon:I.cal,  label:"Schedule",     desc:"Plan your calendar",  color:C.cyan,   fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addCal"),50); } },
           { icon:I.vid,  label:"Log Video",    desc:"Track performance",   color:C.pink,   fn:()=>openModal&&openModal("addVideo") },
           { icon:I.bar,  label:"Update Stats", desc:"Manual stat entry",   color:C.yellow, fn:()=>openModal&&openModal("editStats") },
         ].map((a,i)=>(
-          <button data-btn key={i} onClick={a.fn} style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", gap:isMobile?18:14, padding:isMobile?"28px 20px":"22px 20px", minHeight:44, borderRadius:16, background:`linear-gradient(145deg,${a.color}12,rgba(8,5,18,0.9))`, border:`1px solid ${a.color}25`, cursor:"pointer", fontFamily:C.fontHead, transition:"all 0.2s", position:"relative", overflow:"hidden", textAlign:"left" }}>
+          <button data-btn key={i} onClick={a.fn} style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", gap:isMobile?18:16, padding:isMobile?"28px 20px":"24px 22px", minHeight:44, borderRadius:16, background:`linear-gradient(145deg,${a.color}12,rgba(8,5,18,0.9))`, border:`1px solid ${a.color}25`, cursor:"pointer", fontFamily:C.fontHead, transition:"all 0.2s", position:"relative", overflow:"hidden", textAlign:"left" }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,${a.color}50,transparent)` }}/>
             <div style={{ position:"absolute", bottom:-20, right:-20, width:80, height:80, borderRadius:"50%", background:`${a.color}0c`, filter:"blur(24px)" }}/>
             <div style={{ width:46, height:46, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", background:`linear-gradient(135deg,${a.color}25,${a.color}08)`, border:`1px solid ${a.color}30`, boxShadow:`0 6px 20px ${a.color}15` }}>{a.icon(22,a.color)}</div>
@@ -743,7 +743,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         {weeklyDebrief ? (
           <div style={{ padding:"16px 20px", display:"flex", flexDirection:"column", gap:isMobile?22:12 }}>
             <div style={{ fontSize:15, fontWeight:700, color:"#fff", fontFamily:C.fontBody, lineHeight:1.5 }}>{weeklyDebrief.headline}</div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:10 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(160px,100%),1fr))", gap:10 }}>
               <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.green}08`, border:`1px solid ${C.green}18` }}>
                 <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:8, fontFamily:C.fontHead }}>WHAT WORKED</div>
                 {weeklyDebrief.whatWorked?.map((w,i)=><div key={i} style={{ fontSize:12, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, marginBottom:4, lineHeight:1.5 }}>✓ {w}</div>)}
@@ -1125,7 +1125,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
             </button>
           </div>
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr", gap:isMobile?24:14, alignItems:"start" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr", gap:isMobile?24:18, alignItems:"start" }}>
           {sorted.length===0
             ? <div style={{ gridColumn:"1/-1", padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?22:12 }}>
                 <div style={{ fontSize:32 }}>🎬</div>
@@ -1441,7 +1441,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
         {/* ── HOOK A/B TESTER ─────────────────────────────────── */}
         <div style={{ marginTop:20, borderRadius:16, padding:"20px 22px", background:`${C.purple}0a`, border:`1px solid ${C.purple}25` }}>
           <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.14em", marginBottom:isMobile?22:14 }}>HOOK A/B TESTER</div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:10, marginBottom:isMobile?20:12 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(160px,100%),1fr))", gap:10, marginBottom:isMobile?20:12 }}>
             {[["A", hookA, setHookA], ["B", hookB, setHookB]].map(([label, val, setter])=>(
               <div key={label}>
                 <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.12em", marginBottom:6, fontFamily:C.fontHead }}>HOOK {label}</div>
@@ -1462,7 +1462,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
           </button>
           {hookABResult && (
             <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:10 }}>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:10 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(160px,100%),1fr))", gap:10 }}>
                 {[{label:"A",score:hookABResult.hookAScore,analysis:hookABResult.hookAAnalysis,hook:hookA},{label:"B",score:hookABResult.hookBScore,analysis:hookABResult.hookBAnalysis,hook:hookB}].map((h,i)=>(
                   <div key={i} style={{ borderRadius:12, padding:"14px", background:hookABResult.winner===h.label?`${C.green}10`:"rgba(255,255,255,0.02)", border:`1px solid ${hookABResult.winner===h.label?C.green:"rgba(255,255,255,0.06)"}` }}>
                     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
@@ -1493,7 +1493,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
       {/* ── CALENDAR ──────────────────────────────────────────── */}
       {sub==="CALENDAR" && (
-        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:20 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:28 }}>
           {/* Filter pills */}
           <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:2 }}>
             {["ALL","TIKTOK","INSTAGRAM","BOTH"].map(p=>(
@@ -1509,7 +1509,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                 <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>Nothing scheduled</div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Plan your posting schedule — tap Schedule to add your first date</div>
               </div>
-            : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(180px,100%),1fr))", gap:12 }}>
+            : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(140px,100%),1fr))", gap:12 }}>
               {filteredCal.map(c=>(
                 <div key={c.id} style={{ borderRadius:16, padding:"18px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.cyan}20`, position:"relative", overflow:"hidden" }}>
                   <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }}/>
@@ -1531,7 +1531,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
       {/* ── CAPTIONS ──────────────────────────────────────────── */}
       {sub==="CAPTIONS" && (
-        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:20 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:28 }}>
           {/* Idea picker — horizontal scroll row */}
           <div style={{ overflowX:"auto", paddingBottom:4 }}>
             <div style={{ display:"flex", gap:8, minWidth:"max-content" }}>
@@ -1813,7 +1813,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
   const tabs = ["OVERVIEW","VIDEOS","AI INSIGHTS"];
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?36:24 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?36:28 }}>
       {/* Tabs */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
         {tabs.map(t=>(
@@ -1881,7 +1881,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                   {plt.stats.map((s,i)=>(
                     <div key={i} style={{ padding:isMobile?"18px 18px":"14px 16px", borderRadius:14, background:`${s.c}10`, border:`1px solid ${s.c}20` }}>
                       <div style={{ fontSize:isMobile?12:10, color:"rgba(255,255,255,0.45)", letterSpacing:"0.08em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>{s.l}</div>
-                      <div style={{ fontSize:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+                      <div style={{ fontSize:isMobile?28:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
                     </div>
                   ))}
                 </div>
@@ -1892,7 +1892,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
           {/* Side by side charts */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:14 }}>
             {/* TikTok top videos */}
-            <div style={{ borderRadius:16, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.pink}20`, position:"relative", overflow:"hidden" }}>
+            <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"24px 26px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.pink}20`, position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?24:16 }}>
                 <div style={{ fontSize:14, fontWeight:700, color:"#fff", letterSpacing:"0.06em" }}>TikTok Top Videos</div>
@@ -1903,7 +1903,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
             </div>
 
             {/* Instagram top reels */}
-            <div style={{ borderRadius:16, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.purple}20`, position:"relative", overflow:"hidden" }}>
+            <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"24px 26px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.purple}20`, position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.purple},${C.purple}00)` }}/>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?24:16 }}>
                 <div style={{ fontSize:14, fontWeight:700, color:"#fff", letterSpacing:"0.06em" }}>Instagram Top Reels</div>
@@ -1915,9 +1915,9 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
           </div>
 
           {/* Like ratio comparison + hook performance */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(260px,100%),1fr))", gap:14 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:14 }}>
             {/* Ratio comparison */}
-            <div style={{ borderRadius:16, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)" }}>
+            <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"24px 26px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)" }}>
               <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", letterSpacing:"0.12em", textTransform:"uppercase", fontWeight:700, marginBottom:18 }}>Like Ratio</div>
               {[{l:"TikTok",v:ttRatio,c:C.pink},{l:"Instagram",v:igRatio,c:C.purple}].map((p,i)=>(
                 <div key={i} style={{ marginBottom:i===0?18:0 }}>
@@ -1938,7 +1938,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
 
             {/* Hook performance */}
             {hookStats.length>0 ? (
-              <div data-card style={{ borderRadius:16, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.cyan}20`, position:"relative", overflow:"hidden" }}>
+              <div data-card style={{ borderRadius:16, padding:isMobile?"18px 18px":"24px 26px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.cyan}20`, position:"relative", overflow:"hidden" }}>
                 <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }}/>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:16 }}>
                   <div>
@@ -1960,7 +1960,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 </div>
               </div>
             ) : (
-              <div style={{ borderRadius:16, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"rgba(255,255,255,0.45)" }}>
+              <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"24px 26px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"rgba(255,255,255,0.45)" }}>
                 Log videos with hook types to see hook performance
               </div>
             )}
@@ -2014,7 +2014,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
 
       {/* ── AI INSIGHTS ─────────────────────────────────────────── */}
       {sub==="AI INSIGHTS" && (
-        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:20 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:28 }}>
 
           {/* Run buttons */}
           <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:10 }}>
@@ -2255,7 +2255,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
   const assignees = ["ALL",_c1.toUpperCase(),...(_c2?[_c2.toUpperCase(),"BOTH"]:[])].filter((v,i,a)=>a.indexOf(v)===i);
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:16 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:24 }}>
       {/* Tab bar */}
       <div style={{ display:"flex", gap:8 }}>
         {["TO DO","APP IDEAS"].map(t=>(
@@ -2313,7 +2313,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                     <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Nothing pending — you're on top of your workflow</div>
                   </div>
                 : pending.map((t,i)=>(
-                  <div key={t.id} style={{ display:"flex", alignItems:"center", gap:12, padding:isMobile?"20px 22px":"18px 22px", borderBottom:i<pending.length-1?"1px solid rgba(255,255,255,0.05)":"none", transition:"background 0.15s" }}>
+                  <div key={t.id} style={{ display:"flex", alignItems:"center", gap:12, padding:isMobile?"20px 22px":"20px 24px", borderBottom:i<pending.length-1?"1px solid rgba(255,255,255,0.05)":"none", transition:"background 0.15s" }}>
                     <button
                       onClick={()=>setTasks(ts=>ts.map(x=>x.id===t.id?{...x,done:true}:x))}
                       style={{ width:24, height:24, borderRadius:7, border:`2px solid ${ac(t.assignee)}`, background:"transparent", cursor:"pointer", flexShrink:0, transition:"all 0.2s" }}
@@ -2335,14 +2335,14 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
           <div style={{ display:"flex", flexDirection:"column", gap:isMobile?22:12 }}>
 
             {/* Stats row */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(180px,100%),1fr))", gap:12 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(140px,100%),1fr))", gap:12 }}>
               {[
                 {l:"PENDING", v:pending.length, c:C.yellow},
                 {l:"DONE", v:done.length, c:C.green},
                 {l:"TOTAL", v:tasks.length, c:C.cyan},
               ].map((s,i)=>(
                 <div key={i} style={{ borderRadius:16, padding:isMobile?"18px 18px":"14px 16px", background:`${s.c}10`, border:`1px solid ${s.c}25`, textAlign:"center" }}>
-                  <div style={{ fontSize:isMobile?22:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+                  <div style={{ fontSize:isMobile?24:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
                   <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.12em", textTransform:"uppercase", marginTop:6, fontWeight:700 }}>{s.l}</div>
                 </div>
               ))}
@@ -2408,7 +2408,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
           </div>
 
           {/* Ideas grid */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(260px,100%),1fr))", gap:14 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(200px,100%),1fr))", gap:14 }}>
             {appIdeas.length===0
               ? <div style={{ gridColumn:"1/-1", padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?22:12 }}>
                   <div style={{ fontSize:32 }}>💡</div>
@@ -2419,7 +2419,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                 const sc = idea.score||0;
                 const sc_c = sc>=80?C.green:sc>=65?C.yellow:sc>=50?C.cyan:C.pink;
                 return (
-                  <div key={idea.id} style={{ borderRadius:16, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:`1px solid ${sc_c}25`, position:"relative", overflow:"hidden" }}>
+                  <div key={idea.id} style={{ borderRadius:16, padding:isMobile?"18px 18px":"24px 26px", background:"rgba(255,255,255,0.025)", border:`1px solid ${sc_c}25`, position:"relative", overflow:"hidden" }}>
                     <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${sc_c},${sc_c}00)` }}/>
                     <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, marginBottom:isMobile?20:12 }}>
                       <div style={{ fontSize:14, color:"#fff", fontWeight:600, lineHeight:1.5, flex:1 }}>{idea.text}</div>
@@ -2864,7 +2864,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
   const scoreColor = s => s>=80?C.green:s>=60?C.yellow:s>=40?C.orange:C.pink;
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:16 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:24 }}>
       {/* Header */}
       <div style={{ borderRadius:16, padding:isMobile?"26px 20px":"24px 28px", background:`linear-gradient(135deg,${C.purple}25,${C.cyan}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.purple}40`, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.purple},${C.cyan},${C.purple}00)` }} />
@@ -2877,7 +2877,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
           </div>
         </div>
         {/* Current niche config */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(180px,100%),1fr))", gap:8 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(140px,100%),1fr))", gap:8 }}>
           {[
             {l:"NICHE", v:loadWL()?.niche, c:C.purple},
             {l:"AUDIENCE", v:loadWL()?.targetAudience, c:C.cyan},
@@ -2897,7 +2897,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
       </div>
 
       {/* Action buttons */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(180px,100%),1fr))", gap:10 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(140px,100%),1fr))", gap:10 }}>
         {[
           { label:"LIVE TRENDS", desc:"What's hot right now", icon:I.globe, color:C.cyan, action:runTrends, key:"trends" },
           { label:"4-WEEK STRATEGY", desc:"Full content roadmap", icon:I.target, color:C.green, action:runStrategy, key:"strategy" },
@@ -3071,7 +3071,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
               {idea.why_beats_average && <div style={{ fontSize:15, color:C.cyan, lineHeight:1.4 }}>📈 {idea.why_beats_average}</div>}
                 </div>
                 <div style={{ textAlign:"center", flexShrink:0 }}>
-                  <div style={{ fontSize:isMobile?22:36, fontWeight:400, fontFamily:C.fontHead, color:scoreColor(idea.score), lineHeight:1, textShadow:`0 0 20px ${scoreColor(idea.score)}50` }}>{idea.score}</div>
+                  <div style={{ fontSize:isMobile?24:36, fontWeight:400, fontFamily:C.fontHead, color:scoreColor(idea.score), lineHeight:1, textShadow:`0 0 20px ${scoreColor(idea.score)}50` }}>{idea.score}</div>
                   <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", letterSpacing:"0.1em", marginTop:4 }}>VIRAL</div>
                 </div>
               </div>
@@ -3109,7 +3109,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
         {predictResult && (
           <div style={{ marginTop:4 }}>
             {/* Score overview */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(180px,100%),1fr))", gap:10, marginBottom:isMobile?24:16 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(140px,100%),1fr))", gap:10, marginBottom:isMobile?24:16 }}>
               {[
                 {l:"PREDICTED VIEWS", v:`${(predictResult.predicted_views_low||0).toLocaleString()}–${(predictResult.predicted_views_high||0).toLocaleString()}`, c:predictResult.beat_average?C.green:C.yellow},
                 {l:"OVERALL SCORE", v:`${predictResult.overall_score||0}/100`, c:predictResult.overall_score>=70?C.green:predictResult.overall_score>=50?C.yellow:C.pink},
@@ -3552,7 +3552,7 @@ Return ONLY JSON: {
   const result = selected ? analysis[selected.id] : null;
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:16 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:24 }}>
       {/* Header */}
       <div style={{ borderRadius:16, padding:isMobile?"26px 20px":"24px 28px", background:`linear-gradient(135deg,${C.pink}20,${C.purple}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.pink}40`, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.pink},${C.purple},${C.pink}00)` }} />
@@ -3641,7 +3641,7 @@ Return ONLY JSON: {
           <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:20 }}>Analysed {result.analysed_at?.slice(0,10)}</div>
 
           {/* Score + verdict */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(180px,100%),1fr))", gap:10, marginBottom:20 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(140px,100%),1fr))", gap:10, marginBottom:20 }}>
             {[
               {l:"OVERALL SCORE", v:(result.overall_score||"?")+"/100", c:scoreColor(result.overall_score||0)},
               {l:"VERDICT", v:(result.performance_verdict||"analysed").replace("_"," ").toUpperCase(), c:verdictColor(result.performance_verdict)},
@@ -3798,7 +3798,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
   };
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:20 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:28 }}>
 
       {/* 1. KEY STATS ROW */}
       {card(
@@ -3933,7 +3933,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
         <div style={{ padding:isMobile?"18px 18px":"28px 32px" }}>
           {sectionHead("Creator Score Card", C.purple)}
           <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:24, flexWrap:"wrap" }}>
-            <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:20 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:28 }}>
               <div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.4)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:4 }}>Creator</div>
                 <div style={{ fontSize:28, fontWeight:700, fontFamily:C.fontHead, color:"#fff" }}>{WL.handle||"@creator"}</div>
@@ -4112,10 +4112,10 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
   ];
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:16 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:24 }}>
 
       {/* Sync button — prominent at top */}
-      <div style={{ borderRadius:16, padding:isMobile?"26px 20px":"20px 24px", background:"linear-gradient(145deg,rgba(0,207,255,0.1),rgba(10,6,20,0.95))", border:`1px solid ${C.cyan}30`, display:"flex", alignItems:"center", justifyContent:"space-between", position:"relative", overflow:"hidden" }}>
+      <div style={{ borderRadius:16, padding:isMobile?"26px 20px":"24px 28px", background:"linear-gradient(145deg,rgba(0,207,255,0.1),rgba(10,6,20,0.95))", border:`1px solid ${C.cyan}30`, display:"flex", alignItems:"center", justifyContent:"space-between", position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }}/>
         <div>
           <div style={{ fontSize:16, fontWeight:700, color:"#fff", marginBottom:4 }}>Auto Sync</div>
@@ -4134,10 +4134,11 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
         {/* LEFT — API Keys */}
         <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"22px 24px", background:"linear-gradient(145deg,rgba(255,45,120,0.07),rgba(10,6,20,0.95))", border:`1px solid ${C.pink}25`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
-          <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:20 }}>API Keys</div>
+          <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>API Keys</div>
+          <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginBottom:20, lineHeight:1.5 }}>Keys auto-save to cloud (Supabase) — persist across devices &amp; new builds. Requires a <code style={{background:"rgba(255,255,255,0.07)",padding:"1px 5px",borderRadius:4}}>km_config</code> table in your Supabase project.</div>
           <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:10 }}>
             {apiKeys.map(k=>(
-              <div key={k.id} style={{ borderRadius:16, padding:isMobile?"18px 18px":"14px 16px", background:"rgba(255,255,255,0.025)", border:`1px solid ${keys?.[k.id]?k.color+"30":"rgba(255,255,255,0.07)"}`, transition:"all 0.2s" }}>
+              <div key={k.id} style={{ borderRadius:16, padding:isMobile?"18px 18px":"18px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${keys?.[k.id]?k.color+"30":"rgba(255,255,255,0.07)"}`, transition:"all 0.2s" }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: editing===k.id ? 12 : 0 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                     <div style={{ width:36, height:36, borderRadius:10, background:"rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><ApiLogo id={k.id}/></div>
@@ -6097,7 +6098,7 @@ const DealsView = () => {
   const totalEarned = deals.filter(d=>["Paid","Delivered","Live"].includes(d.status)).reduce((s,d)=>s+parseFloat(d.value||0),0);
   const pipeline = deals.filter(d=>["Enquiry","Negotiating","Signed"].includes(d.status)).reduce((s,d)=>s+parseFloat(d.value||0),0);
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:20 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:28 }}>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(150px,100%),1fr))", gap:12 }}>
         {[{l:"TOTAL EARNED",v:`£${totalEarned.toLocaleString()}`,c:C.green},{l:"IN PIPELINE",v:`£${pipeline.toLocaleString()}`,c:C.yellow},{l:"ACTIVE DEALS",v:deals.filter(d=>!["Paid","Declined"].includes(d.status)).length,c:C.cyan},{l:"ALL DEALS",v:deals.length,c:C.purple}].map((s,i)=>(
           <div key={i} data-card style={{ borderRadius:16, padding:"18px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${s.c}25` }}>
@@ -6110,8 +6111,8 @@ const DealsView = () => {
         <button onClick={()=>setShowForm(f=>!f)} style={{ padding:"10px 20px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${C.pink},${C.purple})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>{showForm?"CANCEL":"+ ADD DEAL"}</button>
       </div>
       {showForm && (
-        <div style={{ borderRadius:16, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.pink}25` }}>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:12, marginBottom:isMobile?20:12 }}>
+        <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"24px 26px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.pink}25` }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(160px,100%),1fr))", gap:12, marginBottom:isMobile?20:12 }}>
             {[["Brand Name","brand","text"],["Value (£)","value","number"],["Deliverable","deliverable","text"],["Deadline","deadline","date"]].map(([l,k,t])=>(
               <div key={k}>
                 <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:6, fontFamily:C.fontHead }}>{l.toUpperCase()}</div>
@@ -6140,7 +6141,7 @@ const DealsView = () => {
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:10 }}>
           {deals.map(deal=>(
-            <div key={deal.id} data-card style={{ borderRadius:16, padding:isMobile?"18px 18px":"16px 20px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.08)", display:"flex", flexDirection:isMobile?"column":"row", alignItems:isMobile?"stretch":"center", gap:isMobile?16:16, flexWrap:"wrap" }}>
+            <div key={deal.id} data-card style={{ borderRadius:16, padding:isMobile?"18px 18px":"16px 20px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.08)", display:"flex", flexDirection:isMobile?"column":"row", alignItems:isMobile?"stretch":"center", gap:isMobile?20:16, flexWrap:"wrap" }}>
               <div style={{ flex:1, minWidth:isMobile?0:160 }}>
                 <div style={{ fontSize:15, fontWeight:700, color:"#fff", fontFamily:C.fontHead, marginBottom:4 }}>{deal.brand}</div>
                 <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody }}>{deal.type} · {deal.platform}{deal.deadline?` · Due ${deal.deadline}`:""}</div>
@@ -8317,24 +8318,24 @@ Return JSON:
 
         {/* Nav */}
         <div style={{ fontSize:10, color:"rgba(255,255,255,0.25)", letterSpacing:"0.16em", fontWeight:700, marginBottom:8, paddingLeft:12, textTransform:"uppercase" }}>Navigation</div>
-        <div style={{ display:"flex", flexDirection:"column", gap:6, flex:1 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:3, flex:1 }}>
           {NAV.map(n=>{
             const active = nav===n.id;
             return (
               <button data-nav-btn key={n.id} onClick={()=>{ setNav(n.id); setSub(null); }}
-                style={{ display:"flex", alignItems:"center", gap:14, padding:"13px 16px", borderRadius:16, border:"none", cursor:"pointer", transition:"all 0.18s", position:"relative", overflow:"hidden",
-                  background: active ? `rgba(255,45,120,0.12)` : "transparent",
-                  color: active ? "#fff" : "rgba(255,255,255,0.85)",
-                  boxShadow: active ? `inset 0 0 0 1px ${C.pink}25, 0 4px 20px ${C.pink}08` : "none"
+                style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 16px", borderRadius:16, border:"none", cursor:"pointer", transition:"all 0.18s", position:"relative", overflow:"hidden",
+                  background: active ? `linear-gradient(135deg,${WL.accentColor}18,${WL.accentColor2}0c)` : "transparent",
+                  color: active ? "#fff" : "rgba(255,255,255,0.6)",
+                  boxShadow: active ? `inset 0 0 0 1px ${WL.accentColor}30, 0 4px 20px ${WL.accentColor}08` : "none"
                 }}>
-                {active && <div style={{ position:"absolute", left:0, top:"20%", bottom:"20%", width:3, borderRadius:"0 3px 3px 0", background:`linear-gradient(180deg,${C.pink},${C.purple})`, boxShadow:`0 0 8px ${C.pink}` }} />}
-                <div style={{ width:36, height:36, borderRadius:11, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.18s",
-                  background: active ? `rgba(255,45,120,0.2)` : "rgba(255,255,255,0.04)",
-                  boxShadow: active ? `0 4px 16px ${C.pink}25` : "none"
+                {active && <div style={{ position:"absolute", left:0, top:"18%", bottom:"18%", width:3, borderRadius:"0 3px 3px 0", background:`linear-gradient(180deg,${WL.accentColor},${WL.accentColor2})`, boxShadow:`0 0 10px ${WL.accentColor}80` }} />}
+                <div style={{ width:34, height:34, borderRadius:11, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.18s",
+                  background: active ? `linear-gradient(135deg,${WL.accentColor}30,${WL.accentColor2}18)` : "rgba(255,255,255,0.05)",
+                  boxShadow: active ? `0 4px 16px ${WL.accentColor}25` : "none"
                 }}>
-                  {n.ic(18, active ? C.pink : "rgba(255,255,255,0.5)")}
+                  {n.ic(17, active ? WL.accentColor : "rgba(255,255,255,0.4)")}
                 </div>
-                <span style={{ fontSize:13, fontWeight:active?600:400, letterSpacing:"0.02em", flex:1 }}>{n.label}</span>
+                <span style={{ fontSize:13, fontWeight:active?700:400, letterSpacing:"0.02em", flex:1, color:active?"#fff":"rgba(255,255,255,0.65)" }}>{n.label}</span>
                 {/* Badge: unscored ideas on content tab */}
                 {n.id==="content" && !active && (() => {
                   const unscored = (ideas||[]).filter(i=>!(i.viral>0)&&i.status!=="posted").length;
@@ -8432,7 +8433,7 @@ Return JSON:
           )}
 
           {/* STICKY DESKTOP TOP BAR */}
-          <div className="web-topbar" style={{ position:"sticky", top:0, zIndex:100, background:"rgba(6,4,14,0.92)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", borderBottom:"1px solid rgba(255,255,255,0.05)", padding:"0 40px", height:60, display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 1px 0 rgba(255,255,255,0.04)" }}>
+          <div className="web-topbar" style={{ position:"sticky", top:0, zIndex:100, background:"rgba(6,4,14,0.92)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", borderBottom:"1px solid rgba(255,255,255,0.05)", padding:"0 40px", height:64, display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 1px 0 rgba(255,255,255,0.04)" }}>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
               <span style={{ fontSize:13, color:"rgba(255,255,255,0.35)" }}>{WL.appName}</span>
               <span style={{ fontSize:14, color:"rgba(255,255,255,0.2)" }}>/</span>
@@ -8458,7 +8459,7 @@ Return JSON:
           {/* PAGE CONTENT */}
           <div className="web-page-content" style={{ padding:isMobile?"0":"32px 44px 60px" }}>
             {/* PAGE TITLE — desktop only */}
-            {!isMobile && <div style={{ marginBottom:32, display:"flex", alignItems:"flex-end", justifyContent:"space-between" }}>
+            {!isMobile && <div style={{ marginBottom:40, display:"flex", alignItems:"flex-end", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:600, marginBottom:6 }}>
                   {nav==="home"?"Dashboard":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":"Settings"}
@@ -9035,7 +9036,7 @@ function OnboardingPage({ onComplete }) {
                 </div>
               ) : (
               /* ── KRAPMAS — dashboard carousel ── */
-              <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px 40px 32px", position:"relative", zIndex:2, gap:isMobile?28:16 }}>
+              <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px 40px 32px", position:"relative", zIndex:2, gap:isMobile?28:24 }}>
                 {/* Tagline above dashboard */}
                 <div style={{ textAlign:"center", animation:"fadeLeft 0.7s ease forwards" }}>
                   <div style={{ fontSize:13, fontWeight:700, color:"rgba(255,255,255,0.85)", letterSpacing:"0.22em", fontFamily:"Courier New,monospace" }}>6 TOOLS &nbsp;·&nbsp; 1 SYSTEM</div>
@@ -9493,10 +9494,31 @@ export default function App() {
   const [config, setConfig] = useState(()=>loadJSON(KEYS_KEY,{}));
   const [onboarded, setOnboarded] = useState(()=>loadJSON("krapmaps_v1_onboarded", false));
 
+  // On mount: pull config from Supabase so keys survive across devices/builds
+  useEffect(()=>{
+    sbFetch("km_config","select=*&id=eq.workspace_config").then(rows=>{
+      if(!rows||!rows.length) return;
+      const remote = rows[0]?.data;
+      if(!remote) return;
+      // Merge: local keys win over remote (most recent manual entry takes priority)
+      const local = loadJSON(KEYS_KEY,{});
+      const merged = {
+        ...remote,
+        ...local,
+        keys:{ ...(remote.keys||{}), ...(local.keys||{}) },
+      };
+      setConfig(merged);
+      saveJSON(KEYS_KEY, merged);
+    }).catch(()=>{});
+  },[]);
+
   const handleEditKeys = (keys) => {
     const u={...config,keys};
     setConfig(u);
     saveJSON(KEYS_KEY,u);
+    // Sync to Supabase — persists keys across devices and new builds
+    // Requires a km_config table: id text PK, data jsonb, updated_at timestamptz
+    sbUpsert("km_config",[{id:"workspace_config",data:u,updated_at:new Date().toISOString()}]).catch(()=>{});
   };
 
   if(!onboarded) {
