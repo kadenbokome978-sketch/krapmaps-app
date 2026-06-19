@@ -5654,22 +5654,37 @@ const perfScore = v => {
 };
 
 // ── SUPABASE ──────────────────────────────────────────────────────
+const _sbHeaders = () => ({ apikey:getSbKey(),"Authorization":"Bearer "+getSbKey(),"Content-Type":"application/json" });
 const sbFetch = async (table,filter="") => {
   try {
-    const r = await fetch(`${getSbUrl()}/rest/v1/${table}?${filter}&limit=1000`,{ headers:{ apikey:getSbKey(),"Authorization":"Bearer "+getSbKey(),"Content-Type":"application/json" } });
-    if(!r.ok) return null;
+    const r = await fetch(`${getSbUrl()}/rest/v1/${table}?${filter}&limit=1000`,{ headers:_sbHeaders() });
+    if(r.status===401||r.status===403) { console.warn("[sb] auth error on",table,"— project may be paused"); return null; }
+    if(!r.ok) { console.warn("[sb] fetch error",r.status,"on",table); return null; }
     return r.json();
-  } catch { return null; }
+  } catch(e) { console.warn("[sb] network error on",table,":",e.message); return null; }
 };
 const sbUpsert = async (table,data) => {
   try {
-    await fetch(`${getSbUrl()}/rest/v1/${table}`,{ method:"POST", headers:{ apikey:getSbKey(),"Authorization":"Bearer "+getSbKey(),"Content-Type":"application/json","Prefer":"resolution=merge-duplicates" }, body:JSON.stringify(data) });
-  } catch {}
+    const r = await fetch(`${getSbUrl()}/rest/v1/${table}`,{ method:"POST", headers:{..._sbHeaders(),"Prefer":"resolution=merge-duplicates"}, body:JSON.stringify(data) });
+    if(!r.ok) console.warn("[sb] upsert error",r.status,"on",table);
+  } catch(e) { console.warn("[sb] upsert network error:",e.message); }
 };
 const sbDelete = async (table,id) => {
   try {
-    await fetch(`${getSbUrl()}/rest/v1/${table}?id=eq.${id}`,{ method:"DELETE", headers:{ apikey:getSbKey(),"Authorization":"Bearer "+getSbKey() } });
+    await fetch(`${getSbUrl()}/rest/v1/${table}?id=eq.${id}`,{ method:"DELETE", headers:_sbHeaders() });
   } catch {}
+};
+// Sync a full array of objects to a table — each item must have an `id` field.
+// Stores the full object as `data` JSON so we never need to alter schema per-field.
+const sbSyncArray = async (table, arr) => {
+  if(!arr||!arr.length) return;
+  const rows = arr.map(item=>({ id:String(item.id), data:item, updated_at:new Date().toISOString() }));
+  await sbUpsert(table, rows);
+};
+const sbLoadArray = async (table) => {
+  const rows = await sbFetch(table, "select=*&order=updated_at.desc");
+  if(!rows||!rows.length) return null;
+  return rows.map(r=>r.data).filter(Boolean);
 };
 
 // ── CROSS-CLIENT ANONYMISED PRIORS ────────────────────────────────
@@ -5861,7 +5876,7 @@ const DealsView = () => {
   const [deals, setDeals] = useState(()=>loadJSON(DEALS_KEY,[]));
   const [form, setForm] = useState({ brand:"", type:"Sponsored Post", value:"", status:"Enquiry", platform:"TikTok", deliverable:"", deadline:"", notes:"" });
   const [showForm, setShowForm] = useState(false);
-  useEffect(()=>saveJSON(DEALS_KEY,deals),[deals]);
+  useEffect(()=>{ saveJSON(DEALS_KEY,deals); if(deals.length) sbSyncArray("km_deals",deals).catch(()=>{}); },[deals]);
   const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
   const addDeal = () => {
     if(!form.brand.trim()) return;
@@ -6668,8 +6683,8 @@ function Dashboard({ keys, onEditKeys }) {
   // ── PERSIST TO LOCALSTORAGE ────────────────────────────────────
   // Strip ephemeral TikTok CDN URLs before saving — they expire and bloat localStorage
   useEffect(()=>{ saveJSON(VIDEOS_KEY, videos.map(v=>{ const {videoUrl,...rest}=v; return rest; })); },[videos]);
-  useEffect(()=>{ saveJSON(IDEAS_KEY,ideas); },[ideas]);
-  useEffect(()=>{ saveJSON(CAL_KEY,calItems); },[calItems]);
+  useEffect(()=>{ saveJSON(IDEAS_KEY,ideas); if(sbLoaded&&ideas.length) sbSyncArray("km_ideas",ideas).catch(()=>{}); },[ideas]);
+  useEffect(()=>{ saveJSON(CAL_KEY,calItems); if(sbLoaded&&calItems.length) sbSyncArray("km_cal",calItems).catch(()=>{}); },[calItems]);
   useEffect(()=>{ saveJSON(TASKS_KEY,tasks); },[tasks]);
   useEffect(()=>{ saveJSON(APPIDEAS_KEY,appIdeas); },[appIdeas]);
   useEffect(()=>{ saveJSON(MANUAL_KEY,manualData); },[manualData]);
@@ -6682,9 +6697,9 @@ function Dashboard({ keys, onEditKeys }) {
   useEffect(()=>{
     const load = async () => {
       try {
-        // Load videos from km_videos
+        // Videos
         const vids = await sbFetch("km_videos","select=*&order=created_at.desc");
-        if(vids===null) { setStatsError("Supabase error -- check URL/key"); }
+        if(vids===null) { setStatsError("Supabase offline — data saved locally"); }
         else if(vids?.length) {
           setVideos(prev => {
             const merged = [...vids];
@@ -6692,7 +6707,25 @@ function Dashboard({ keys, onEditKeys }) {
             return merged;
           });
         }
-        // Load scraped stats
+        // Ideas
+        const sbIdeas = await sbLoadArray("km_ideas");
+        if(sbIdeas?.length) {
+          setIdeas(prev => {
+            const merged = [...sbIdeas];
+            prev.forEach(p=>{ if(!merged.find(i=>i.id===p.id)) merged.push(p); });
+            return merged;
+          });
+        }
+        // Calendar
+        const sbCal = await sbLoadArray("km_cal");
+        if(sbCal?.length) {
+          setCalItems(prev => {
+            const merged = [...sbCal];
+            prev.forEach(p=>{ if(!merged.find(i=>i.id===p.id)) merged.push(p); });
+            return merged;
+          });
+        }
+        // Scraped stats
         const stats = await sbFetch("km_scraped_stats","select=*&order=scraped_at.desc&limit=1");
         if(stats?.[0]) { setScrapedStats(stats[0]); saveJSON(SCRAPE_KEY,stats[0]); }
       } catch(e) { setStatsError("Sync error: "+e.message); }
