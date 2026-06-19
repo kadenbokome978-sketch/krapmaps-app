@@ -1184,7 +1184,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
                     {/* Verdict — only when scored, single line clamped */}
                     {idea.verdict && (
-                      <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.55, fontFamily:C.fontBody, marginBottom:12, fontFamily:C.fontBody, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:isExpanded?20:2, WebkitBoxOrient:"vertical" }}>
+                      <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.55, fontFamily:C.fontBody, marginBottom:12, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:isExpanded?20:2, WebkitBoxOrient:"vertical" }}>
                         {idea.verdict}
                       </div>
                     )}
@@ -2429,7 +2429,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                       </div>
                     </div>
                     {idea.verdict && (
-                      <div style={{ padding:isMobile?"13px 16px":"10px 12px", background:`${C.cyan}08`, border:`1px solid ${C.cyan}18`, borderRadius:10, fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.55, fontFamily:C.fontBody, marginBottom:12, fontFamily:C.fontBody }}>{idea.verdict}</div>
+                      <div style={{ padding:isMobile?"13px 16px":"10px 12px", background:`${C.cyan}08`, border:`1px solid ${C.cyan}18`, borderRadius:10, fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.55, fontFamily:C.fontBody, marginBottom:12 }}>{idea.verdict}</div>
                     )}
                     <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:8, marginBottom:isMobile?22:14 }}>
                       {[
@@ -2979,7 +2979,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
         <div data-card style={{ borderRadius:16, padding:"24px", background:`linear-gradient(145deg,${C.green}12,rgba(7,5,15,0.95))`, border:`1px solid ${C.green}35`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.green},${C.green}00)` }} />
           <div style={{ fontSize:20, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:isMobile?14:10 }}>4-WEEK STRATEGY</div>
-          <div style={{ fontSize:isMobile?15:14, color:"rgba(255,255,255,0.9)", lineHeight:1.7, fontFamily:C.fontBody, fontFamily:C.fontBody, marginBottom:20 }}>{strategy.overview}</div>
+          <div style={{ fontSize:isMobile?15:14, color:"rgba(255,255,255,0.9)", lineHeight:1.7, fontFamily:C.fontBody, marginBottom:20 }}>{strategy.overview}</div>
           
           {strategy.channel_diagnosis && (
             <div style={{ marginBottom:20, padding:"16px 18px", borderRadius:16, background:"rgba(255,255,255,0.04)", border:`1px solid ${C.green}25` }}>
