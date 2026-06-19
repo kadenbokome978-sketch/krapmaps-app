@@ -8354,51 +8354,20 @@ Return JSON:
         </div>{/* end web-inner */}
       </div>{/* end web-content */}
 
-      {/* NAV BAR — mobile: 5 primary items + More drawer */}
-      {(() => {
-        const PRIMARY = ["home","content","ai","growth","settings"];
-        const primaryNav = NAV.filter(n=>PRIMARY.includes(n.id));
-        const secondaryNav = NAV.filter(n=>!PRIMARY.includes(n.id));
-        const moreActive = secondaryNav.some(n=>n.id===nav);
-        return (
-          <>
-            <div className="mobile-nav" style={{ position:"fixed", bottom:20, left:12, right:12, background:"rgba(10,6,20,0.95)", backdropFilter:"blur(32px)", WebkitBackdropFilter:"blur(32px)", borderRadius:28, border:"1px solid rgba(255,255,255,0.1)", display:"flex", padding:"6px", zIndex:99, gap:2, boxShadow:"0 8px 40px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.06)" }}>
-              {primaryNav.map(n=>{
-                const active = nav===n.id;
-                return (
-                  <button key={n.id} data-nav-btn onClick={()=>{ setNav(n.id); setSub(null); setModals(m=>({...m,moreMenu:false})); }}
-                    style={{ background:active?`linear-gradient(135deg,${WL.accentColor}35,${WL.accentColor2}18)`:"transparent", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:3, padding:"8px 6px 6px", borderRadius:22, transition:"all 0.2s", flex:1, minWidth:0 }}>
-                    {n.ic(20, active?"#fff":"rgba(255,255,255,0.38)")}
-                    <span style={{ fontSize:9, fontWeight:700, color:active?WL.accentColor:"rgba(255,255,255,0.35)", letterSpacing:"0.04em", lineHeight:1 }}>{n.label}</span>
-                  </button>
-                );
-              })}
-              {/* More button */}
-              <button data-nav-btn onClick={()=>setModals(m=>({...m,moreMenu:!m.moreMenu}))}
-                style={{ background:moreActive||modals.moreMenu?`linear-gradient(135deg,${WL.accentColor}35,${WL.accentColor2}18)`:"transparent", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:3, padding:"8px 6px 6px", borderRadius:22, transition:"all 0.2s", flex:1, minWidth:0 }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="2" fill={moreActive||modals.moreMenu?"#fff":"rgba(255,255,255,0.38)"}/><circle cx="12" cy="12" r="2" fill={moreActive||modals.moreMenu?"#fff":"rgba(255,255,255,0.38)"}/><circle cx="19" cy="12" r="2" fill={moreActive||modals.moreMenu?"#fff":"rgba(255,255,255,0.38)"}/></svg>
-                <span style={{ fontSize:9, fontWeight:700, color:moreActive||modals.moreMenu?WL.accentColor:"rgba(255,255,255,0.35)", letterSpacing:"0.04em", lineHeight:1 }}>MORE</span>
-              </button>
-            </div>
-            {/* More drawer */}
-            {modals.moreMenu && (
-              <div className="mobile-nav" style={{ position:"fixed", bottom:100, left:12, right:12, background:"rgba(10,6,20,0.97)", backdropFilter:"blur(32px)", WebkitBackdropFilter:"blur(32px)", borderRadius:24, border:"1px solid rgba(255,255,255,0.12)", display:"flex", flexDirection:"column", padding:"8px", zIndex:98, gap:2, boxShadow:"0 8px 40px rgba(0,0,0,0.7)" }}>
-                {secondaryNav.map(n=>{
-                  const active = nav===n.id;
-                  return (
-                    <button key={n.id} data-nav-btn onClick={()=>{ setNav(n.id); setSub(null); setModals(m=>({...m,moreMenu:false})); }}
-                      style={{ background:active?`linear-gradient(135deg,${WL.accentColor}25,${WL.accentColor2}12)`:"transparent", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:14, padding:"12px 16px", borderRadius:16, transition:"all 0.2s" }}>
-                      {n.ic(20, active?"#fff":"rgba(255,255,255,0.5)")}
-                      <span style={{ fontSize:14, fontWeight:active?700:500, color:active?"#fff":"rgba(255,255,255,0.7)", letterSpacing:"0.02em" }}>{n.label}</span>
-                      {active && <div style={{ marginLeft:"auto", width:6, height:6, borderRadius:"50%", background:WL.accentColor, boxShadow:`0 0 8px ${WL.accentColor}` }} />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        );
-      })()}
+      {/* NAV BAR — all 8 items, icon-only, label only on active */}
+      <div className="mobile-nav" style={{ position:"fixed", bottom:16, left:10, right:10, background:"rgba(10,6,20,0.95)", backdropFilter:"blur(32px)", WebkitBackdropFilter:"blur(32px)", borderRadius:26, border:"1px solid rgba(255,255,255,0.1)", display:"flex", padding:"5px", zIndex:99, boxShadow:"0 8px 40px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.06)" }}>
+        {NAV.map(n=>{
+          const active = nav===n.id;
+          return (
+            <button key={n.id} data-nav-btn onClick={()=>{ setNav(n.id); setSub(null); }}
+              style={{ background:active?`linear-gradient(135deg,${WL.accentColor}30,${WL.accentColor2}15)`:"transparent", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:active?2:0, padding:active?"7px 4px 5px":"7px 4px", borderRadius:20, transition:"all 0.18s", flex:1, minWidth:0, position:"relative" }}>
+              {n.ic(active?18:17, active?"#fff":"rgba(255,255,255,0.35)")}
+              {active && <span style={{ fontSize:8, fontWeight:800, color:WL.accentColor, letterSpacing:"0.06em", lineHeight:1, whiteSpace:"nowrap" }}>{n.label}</span>}
+              {active && <div style={{ position:"absolute", bottom:3, left:"50%", transform:"translateX(-50%)", width:3, height:3, borderRadius:"50%", background:WL.accentColor, boxShadow:`0 0 6px ${WL.accentColor}` }} />}
+            </button>
+          );
+        })}
+      </div>
 
       {/* MODALS */}
       {modals.addVideo    && <AddVideoModal />}
