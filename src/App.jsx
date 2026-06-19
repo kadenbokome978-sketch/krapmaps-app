@@ -1090,18 +1090,18 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
   const perfLabel = s => s>=80?"VIRAL":s>=65?"STRONG":s>=50?"DECENT":s>=35?"WEAK":"NEW";
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?14:20 }}>
       {/* Tabs + Add button */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <div style={{ display:"flex", gap:8 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+        <div style={{ display:"flex", gap:isMobile?4:8, flex:1, overflowX:"auto" }}>
           {["IDEAS","CALENDAR","CAPTIONS"].map(t=>(
-            <button key={t} onClick={()=>setSub(t)} style={{ padding:"10px 20px", borderRadius:12, border:`1px solid ${sub===t?C.pink:"rgba(255,255,255,0.08)"}`, background:sub===t?`${C.pink}15`:"transparent", color:sub===t?C.pink:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", letterSpacing:"0.06em" }}>
+            <button key={t} onClick={()=>setSub(t)} style={{ padding:isMobile?"8px 12px":"10px 20px", borderRadius:10, border:`1px solid ${sub===t?C.pink:"rgba(255,255,255,0.08)"}`, background:sub===t?`${C.pink}15`:"transparent", color:sub===t?C.pink:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?12:14, cursor:"pointer", letterSpacing:"0.04em", whiteSpace:"nowrap", flexShrink:0 }}>
               {t}{t==="IDEAS"&&` (${ideas.length})`}{t==="CALENDAR"&&` (${calItems.length})`}
             </button>
           ))}
         </div>
-        <button onClick={()=>openModal&&openModal(sub==="CALENDAR"?"addCal":"addIdea")} style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 20px", borderRadius:12, border:`1px solid ${C.pink}40`, background:`linear-gradient(135deg,${C.pink}20,${C.pink}08)`, color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer" }}>
-          + {sub==="CALENDAR"?"SCHEDULE":"ADD IDEA"}
+        <button onClick={()=>openModal&&openModal(sub==="CALENDAR"?"addCal":"addIdea")} style={{ display:"flex", alignItems:"center", gap:6, padding:isMobile?"8px 14px":"10px 20px", borderRadius:10, border:`1px solid ${C.pink}40`, background:`linear-gradient(135deg,${C.pink}20,${C.pink}08)`, color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?12:14, cursor:"pointer", flexShrink:0 }}>
+          + {sub==="CALENDAR"?"SCHEDULE":"ADD"}
         </button>
       </div>
 
@@ -1109,23 +1109,23 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
       {sub==="IDEAS" && (
         <>
         {/* Quick expand panel */}
-        <div style={{ borderRadius:16, padding:"16px 20px", background:`${C.purple}0a`, border:`1px solid ${C.purple}25`, marginBottom:14 }}>
-          <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", marginBottom:10 }}>Quick Expand</div>
-          <div style={{ display:"flex", gap:10 }}>
+        <div style={{ borderRadius:14, padding:isMobile?"12px 14px":"16px 20px", background:`${C.purple}0a`, border:`1px solid ${C.purple}25` }}>
+          {!isMobile && <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", marginBottom:10 }}>Quick Expand</div>}
+          <div style={{ display:"flex", gap:8 }}>
             <input
               value={quickExpand}
               onChange={e=>setQuickExpand(e.target.value)}
               onKeyDown={e=>e.key==="Enter"&&doQuickExpand()}
-              placeholder={`Rough concept e.g. '${WL.creator1} ${WL.niche?.split(" ").slice(0,4).join(" ")}...' `}
-              style={{ flex:1, background:"rgba(255,255,255,0.05)", border:`1px solid ${C.purple}30`, borderRadius:11, color:"#fff", padding:"10px 14px", fontSize:13, fontFamily:C.fontHead, outline:"none" }}
+              placeholder="Drop a rough concept, AI expands it..."
+              style={{ flex:1, background:"rgba(255,255,255,0.05)", border:`1px solid ${C.purple}30`, borderRadius:10, color:"#fff", padding:"10px 12px", fontSize:14, fontFamily:C.fontHead, outline:"none" }}
             />
             <button onClick={doQuickExpand} disabled={!quickExpand.trim()||expanding}
-              style={{ padding:"10px 20px", borderRadius:11, border:"none", background:expanding||!quickExpand.trim()?`${C.purple}30`:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:expanding||!quickExpand.trim()?"not-allowed":"pointer", whiteSpace:"nowrap", opacity:expanding||!quickExpand.trim()?0.6:1 }}>
-              {expanding ? "EXPANDING..." : "EXPAND →"}
+              style={{ padding:"10px 16px", borderRadius:10, border:"none", background:expanding||!quickExpand.trim()?`${C.purple}30`:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:expanding||!quickExpand.trim()?"not-allowed":"pointer", whiteSpace:"nowrap", opacity:expanding||!quickExpand.trim()?0.6:1 }}>
+              {expanding ? "..." : "GO →"}
             </button>
           </div>
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(300px,100%),1fr))", gap:14, alignItems:"start" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr", gap:isMobile?10:14, alignItems:"start" }}>
           {sorted.length===0
             ? <div style={{ gridColumn:"1/-1", padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
                 <div style={{ fontSize:32 }}>🎬</div>
@@ -1813,9 +1813,9 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
       {/* Tabs */}
-      <div style={{ display:"flex", gap:8 }}>
+      <div style={{ display:"flex", gap:isMobile?4:8, overflowX:"auto" }}>
         {tabs.map(t=>(
-          <button key={t} onClick={()=>setSub(t)} style={{ padding:"10px 20px", borderRadius:12, border:`1px solid ${sub===t?C.pink:"rgba(255,255,255,0.08)"}`, background:sub===t?`${C.pink}15`:"transparent", color:sub===t?C.pink:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", letterSpacing:"0.06em" }}>
+          <button key={t} onClick={()=>setSub(t)} style={{ padding:isMobile?"8px 14px":"10px 20px", borderRadius:10, border:`1px solid ${sub===t?C.pink:"rgba(255,255,255,0.08)"}`, background:sub===t?`${C.pink}15`:"transparent", color:sub===t?C.pink:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?12:14, cursor:"pointer", letterSpacing:"0.04em", whiteSpace:"nowrap", flexShrink:0 }}>
             {t}
           </button>
         ))}
@@ -4074,8 +4074,8 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             {scrapedStats ? "Last synced: "+(()=>{try{const h=Math.round((Date.now()-new Date(scrapedStats.scraped_at))/3600000);return h<1?"less than 1 hour ago":h+" hours ago";}catch{return "unknown";}})() : "Never synced — add TIKWM key to auto-sync"}
           </div>
         </div>
-        <button onClick={onSyncTikTok} style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 28px", borderRadius:16, border:`1px solid ${C.cyan}50`, background:`linear-gradient(135deg,${C.cyan}30,${C.cyan}15)`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:16, cursor:"pointer", boxShadow:`0 0 24px ${C.cyan}20` }}>
-          {I.refresh(18,C.cyan)} {syncMsg || "SYNC NOW"}
+        <button onClick={onSyncTikTok} style={{ display:"flex", alignItems:"center", gap:8, padding:isMobile?"10px 16px":"14px 28px", borderRadius:12, border:`1px solid ${C.cyan}50`, background:`linear-gradient(135deg,${C.cyan}30,${C.cyan}15)`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?13:16, cursor:"pointer", flexShrink:0 }}>
+          {I.refresh(16,C.cyan)} {syncMsg || "SYNC"}
         </button>
       </div>
 
@@ -4083,7 +4083,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(280px,100%),1fr))", gap:16, alignItems:"start" }}>
 
         {/* LEFT — API Keys */}
-        <div style={{ borderRadius:16, padding:"22px 24px", background:"linear-gradient(145deg,rgba(255,45,120,0.07),rgba(10,6,20,0.95))", border:`1px solid ${C.pink}25`, position:"relative", overflow:"hidden" }}>
+        <div style={{ borderRadius:16, padding:isMobile?"14px 16px":"22px 24px", background:"linear-gradient(145deg,rgba(255,45,120,0.07),rgba(10,6,20,0.95))", border:`1px solid ${C.pink}25`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
           <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:20 }}>API Keys</div>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -4121,7 +4121,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
         {/* RIGHT — Status + Creator Config */}
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           {/* System Status */}
-          <div style={{ borderRadius:16, padding:"22px 24px", background:"linear-gradient(145deg,rgba(0,255,148,0.06),rgba(10,6,20,0.95))", border:`1px solid ${C.green}25`, position:"relative", overflow:"hidden" }}>
+          <div style={{ borderRadius:16, padding:isMobile?"14px 16px":"22px 24px", background:"linear-gradient(145deg,rgba(0,255,148,0.06),rgba(10,6,20,0.95))", border:`1px solid ${C.green}25`, position:"relative", overflow:"hidden" }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.green},${C.green}00)` }}/>
             <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:16 }}>System Status</div>
             {statusItems.map((s,i)=>(
