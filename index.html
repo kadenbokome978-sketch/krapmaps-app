@@ -129,9 +129,13 @@
     .web-inner { padding:28px 22px calc(48px + env(safe-area-inset-bottom)) !important; }
     .mobile-nav { display:none !important; }
 
-    /* Ensure section cards never touch each other on mobile */
-    @media(max-width:767px) {
-      [data-card] { margin-bottom:4px !important; }
+    /* Section separation on ALL phones — portrait AND landscape */
+    /* CSS attribute selector targets React's inline flex-direction:column containers */
+    @media(max-width:900px) {
+      /* Force 32px between every direct child of column flex containers */
+      [style*="flex-direction: column"] > * + * { margin-top:32px !important; }
+      /* But NOT inside tight inner lists (pills, items within a card body) */
+      [style*="flex-direction: column"] > * + [style*="border-bottom"] { margin-top:0 !important; }
     }
 
     /* Small phones */

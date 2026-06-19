@@ -1815,9 +1815,9 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?36:24 }}>
       {/* Tabs */}
-      <div style={{ display:"flex", gap:isMobile?6:8 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
         {tabs.map(t=>(
-          <button key={t} onClick={()=>setSub(t)} style={{ flex:isMobile?1:undefined, padding:isMobile?"11px 8px":"10px 20px", borderRadius:12, border:`1px solid ${sub===t?C.pink:"rgba(255,255,255,0.08)"}`, background:sub===t?`${C.pink}15`:"transparent", color:sub===t?C.pink:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?12:14, cursor:"pointer", letterSpacing:"0.03em", whiteSpace:"nowrap", textAlign:"center" }}>
+          <button key={t} onClick={()=>setSub(t)} style={{ padding:"11px 4px", borderRadius:12, border:`1px solid ${sub===t?C.pink:"rgba(255,255,255,0.08)"}`, background:sub===t?`${C.pink}15`:"transparent", color:sub===t?C.pink:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", letterSpacing:"0.02em", textAlign:"center" }}>
             {t}
           </button>
         ))}
