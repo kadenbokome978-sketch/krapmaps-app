@@ -433,7 +433,7 @@ const Sparkline = ({ data=[], color=C.pink, height=40 }) => {
 };
 
 const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calItems, setNav, runAI, aiLoad, openModal, ttViewsDisplay, igViewsTotal=0, allViewsDisplay=0, m, scrapedStats, statsError, igData, videos=[], weeklyDebrief, debriefLoading, runDebrief }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const _allIdeas = allIdeas.length ? allIdeas : (ideas||[]);
   const topIdeas = [..._allIdeas].sort((a,b)=>(Number(b.viral)||0)-(Number(a.viral)||0)).slice(0,3);
   const ritual = React.useMemo(()=>buildRitual(allIdeas.length?allIdeas:(ideas||[]), videos),[allIdeas, ideas, videos]);
@@ -1018,7 +1018,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
 };
 
 const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCaption, aiLoad, captionResult, captionIdea, copied, copyText, openModal, setEditIdeaTarget, setModals, setNavSub, onBuildScript, markPosted }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [sub, setSub]         = useState("IDEAS");
   const [expanded, setExpanded] = useState(null);
   const [calFilter, setCalFilter] = useState("ALL");
@@ -1645,7 +1645,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 };
 
 const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={}, commentInsights=null, visualDNA=null, setIdeas }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [sentIdeas, setSentIdeas] = useState({});
   const [hiddenInsights, setHiddenInsights] = useState({});
   const toggleHide = (key) => setHiddenInsights(h=>({...h,[key]:!h[key]}));
@@ -2226,7 +2226,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
   );
 };
 const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarget, setModals }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [sub, setSub]             = useState("TO DO");
   const [taskInput, setTaskInput] = useState("");
   const [taskFilter, setTaskFilter] = useState("ALL");
@@ -2460,7 +2460,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
 
 
 const NicheView = ({ WL, keys, aiLoad, setAiLoad, setAiErr, videos=[], ideas=[] }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [trends, setTrends]           = useState(null);
   const [strategy, setStrategy]       = useState(null);
   const [contentPlan, setContentPlan] = useState(null);
@@ -3723,7 +3723,7 @@ Return ONLY JSON: {
 };
 
 const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scrapedStats, saveManual, setManualData, videos=[], ideas=[] }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [shareMsg, setShareMsg] = React.useState(null);
 
   // --- Derived data ---
@@ -3985,7 +3985,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
 };
 
 const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[], onBulkImport }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [editing, setEditing] = useState(null);
   const [draftKey, setDraftKey] = useState("");
   const [wlDraft, setWlDraft] = useState(null);
@@ -6081,7 +6081,7 @@ async function callAI(prompt, maxTokens=2000) {
 // ── DEALS ─────────────────────────────────────────────────────────
 const DEALS_KEY = "krapmaps_v1_deals";
 const DealsView = () => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [deals, setDeals] = useState(()=>loadJSON(DEALS_KEY,[]));
   const [form, setForm] = useState({ brand:"", type:"Sponsored Post", value:"", status:"Enquiry", platform:"TikTok", deliverable:"", deadline:"", notes:"" });
   const [showForm, setShowForm] = useState(false);
@@ -6175,7 +6175,7 @@ const NAV = [
 
 // ── AI CHAT VIEW ──────────────────────────────────────────────────
 function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, preloadMsg }) {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [viewH, setViewH] = useState(typeof window !== 'undefined' ? window.innerHeight : 700);
   useEffect(() => {
     const onResize = () => setViewH(window.innerHeight);
@@ -6879,7 +6879,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
 // ── DASHBOARD ─────────────────────────────────────────────────────
 function Dashboard({ keys, onEditKeys }) {
   const isPhone = typeof window!=="undefined" && window.innerWidth < 520;
-  const [isMobile] = useState(() => (typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 768)));
+  const [isMobile] = useState(() => (typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900)));
 
   // ── STATE ──────────────────────────────────────────────────────
   const [nav, setNav]   = useState("home");
@@ -8373,10 +8373,7 @@ Return JSON:
           <div className="mobile-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px", background:"rgba(8,5,18,0.97)", borderBottom:"1px solid rgba(255,255,255,0.07)", backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", position:"sticky", top:0, zIndex:150 }}>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
               <div style={{ width:36, height:36, borderRadius:11, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:900, color:"#fff", flexShrink:0 }}>{(WL.creator1||"B")[0]}</div>
-              <div>
-                <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", lineHeight:1 }}>{WL.appName}</div>
-                <div style={{ fontSize:18, fontWeight:700, color:"#fff", fontFamily:C.fontHead, letterSpacing:"0.01em", lineHeight:1.2, marginTop:2 }}>{NAV.find(n=>n.id===nav)?.label||nav}</div>
-              </div>
+              <div style={{ fontSize:20, fontWeight:700, color:"#fff", fontFamily:C.fontHead, letterSpacing:"0.01em" }}>{NAV.find(n=>n.id===nav)?.label||nav}</div>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
               {scrapedStats?.scraped_at && (
