@@ -1647,6 +1647,8 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={}, commentInsights=null, visualDNA=null, setIdeas }) => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [sentIdeas, setSentIdeas] = useState({});
+  const [hiddenInsights, setHiddenInsights] = useState({});
+  const toggleHide = (key) => setHiddenInsights(h=>({...h,[key]:!h[key]}));
   const sendVidToIdeas = (v, key) => {
     if(!setIdeas || sentIdeas[key]) return;
     const now = new Date().toISOString();
@@ -2017,163 +2019,212 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
       {/* ── AI INSIGHTS ─────────────────────────────────────────── */}
       {sub==="AI INSIGHTS" && (
         <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-          {/* Audience voice — mined from real comments */}
-          {commentInsights && (
-            <div style={{ borderRadius:16, padding:"18px 20px", background:`${C.purple}08`, border:`1px solid ${C.purple}22` }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-                <span style={{ fontSize:16 }}>💬</span>
-                <div style={{ fontSize:13, fontWeight:700, color:C.purple, letterSpacing:"0.08em" }}>AUDIENCE VOICE</div>
-                <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)", marginLeft:"auto" }}>{commentInsights.sampleSize||0} comments · auto-mined</span>
-              </div>
-              {commentInsights.overall_sentiment && (
-                <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)", lineHeight:1.5, marginBottom:12, fontFamily:C.fontBody }}>{commentInsights.overall_sentiment}</div>
-              )}
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(220px,100%),1fr))", gap:12 }}>
-                {[
-                  {l:"THEY KEEP MENTIONING", arr:commentInsights.top_themes, c:C.cyan},
-                  {l:"THEY'RE ASKING FOR", arr:commentInsights.audience_requests, c:C.green},
-                  {l:"THEIR EXACT WORDS", arr:commentInsights.language_patterns, c:C.yellow},
-                  {l:"VIDEOS THEY WANT", arr:commentInsights.content_ideas, c:C.pink},
-                ].filter(x=>x.arr?.length).map((x,i)=>(
-                  <div key={i} style={{ padding:"10px 12px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${x.c}18` }}>
-                    <div style={{ fontSize:10, color:x.c, fontWeight:700, letterSpacing:"0.08em", marginBottom:6 }}>{x.l}</div>
-                    {x.arr.slice(0,4).map((t,j)=>(
-                      <div key={j} style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, marginBottom:3, fontFamily:C.fontBody }}>• {t}</div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {visualDNA && (
-            <div style={{ borderRadius:16, padding:"18px 20px", background:`${C.cyan}08`, border:`1px solid ${C.cyan}22` }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-                <span style={{ fontSize:16 }}>🖼️</span>
-                <div style={{ fontSize:13, fontWeight:700, color:C.cyan, letterSpacing:"0.08em" }}>VISUAL DNA</div>
-                <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)", marginLeft:"auto" }}>{visualDNA.sampleSize||0} thumbnails · vision-analyzed</span>
-              </div>
-              {visualDNA.one_rule && (
-                <div style={{ fontSize:13, color:C.cyan, lineHeight:1.5, marginBottom:12, fontFamily:C.fontBody, fontWeight:600 }}>★ {visualDNA.one_rule}</div>
-              )}
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(220px,100%),1fr))", gap:12 }}>
-                {[
-                  {l:"WINNING TRAITS", arr:visualDNA.winning_traits, c:C.green},
-                  {l:"WHAT LOSES", arr:visualDNA.losing_traits, c:C.pink},
-                ].filter(x=>x.arr?.length).map((x,i)=>(
-                  <div key={i} style={{ padding:"10px 12px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${x.c}18` }}>
-                    <div style={{ fontSize:10, color:x.c, fontWeight:700, letterSpacing:"0.08em", marginBottom:6 }}>{x.l}</div>
-                    {x.arr.slice(0,4).map((t,j)=>(
-                      <div key={j} style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, marginBottom:3, fontFamily:C.fontBody }}>• {t}</div>
-                    ))}
-                  </div>
-                ))}
-                {[
-                  {l:"COLOR / CONTRAST", v:visualDNA.color_palette, c:C.yellow},
-                  {l:"COMPOSITION", v:visualDNA.composition, c:C.purple},
-                  {l:"FACES", v:visualDNA.face_pattern, c:C.cyan},
-                  {l:"TEXT OVERLAY", v:visualDNA.text_overlay, c:C.green},
-                ].filter(x=>x.v).map((x,i)=>(
-                  <div key={"v"+i} style={{ padding:"10px 12px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${x.c}18` }}>
-                    <div style={{ fontSize:10, color:x.c, fontWeight:700, letterSpacing:"0.08em", marginBottom:6 }}>{x.l}</div>
-                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, fontFamily:C.fontBody }}>{x.v}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {/* Action buttons */}
-          <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
+
+          {/* Run buttons */}
+          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:10 }}>
             {[
-              {l:"WHAT'S WORKING", c:C.cyan, m:"analysis", load:aiLoad.analysis},
-              {l:"NEXT VIDEOS", c:C.green, m:"nextVids", load:aiLoad.nextVids},
-              {l:`${(WL.creator2||"WEEKLY").toUpperCase()} BRIEF`, c:C.yellow, m:"weekly", load:aiLoad.weekly},
-              {l:"TRENDS", c:C.orange, m:"trends", load:aiLoad.trends},
+              {l:"What's Working", c:C.cyan,   m:"analysis", load:aiLoad.analysis},
+              {l:"Next Videos",    c:C.green,  m:"nextVids", load:aiLoad.nextVids},
+              {l:`${(WL.creator2||"Weekly").slice(0,8)} Brief`, c:C.yellow, m:"weekly", load:aiLoad.weekly},
+              {l:"Trends",         c:C.orange, m:"trends",   load:aiLoad.trends},
             ].map((a,i)=>(
               <button key={i} onClick={()=>runAI&&runAI(a.m)} disabled={a.load}
-                style={{ flex:"1 1 120px", padding:"14px 12px", borderRadius:16, border:`1px solid rgba(255,255,255,0.08)`, background:`linear-gradient(135deg,${a.c}12,${a.c}05)`, color:a.c, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:a.load?0.5:1, letterSpacing:"0.08em", position:"relative", overflow:"hidden" }}>
+                style={{ padding:"14px 10px", borderRadius:14, border:`1px solid ${a.c}30`, background:`linear-gradient(135deg,${a.c}15,${a.c}05)`, color:a.c, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:a.load?0.5:1, letterSpacing:"0.06em", position:"relative", overflow:"hidden" }}>
                 <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${a.c},${a.c}00)` }}/>
-                {a.load?"RUNNING...":a.l}
+                {a.load?"Running...":a.l}
               </button>
             ))}
           </div>
 
-          {/* Results grid */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(300px,100%),1fr))", gap:14 }}>
-            {/* What's working */}
-            <div data-card style={{ borderRadius:16, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.cyan}20`, position:"relative", overflow:"hidden" }}>
-              <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }}/>
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:14, display:"flex", alignItems:"center", gap:6 }}><span style={{width:6,height:6,borderRadius:"50%",background:C.cyan,display:"inline-block",flexShrink:0}}/>What's Working</div>
-              {analysis?.whatIsWorking?.length>0 ? analysis.whatIsWorking.map((a,i)=>(
-                <div key={i} style={{ padding:"12px 14px", borderRadius:12, background:`${a.impact==="high"?C.green:C.cyan}08`, border:`1px solid ${a.impact==="high"?C.green:C.cyan}18`, marginBottom:10 }}>
-                  <div style={{ fontSize:14, fontWeight:700, color:a.impact==="high"?C.green:C.cyan, marginBottom:4, lineHeight:1.3 }}>{a.insight}</div>
-                  <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.55, fontFamily:C.fontBody }}>{a.evidence}</div>
-                </div>
-              )) : <div style={{ fontSize:13, color:"rgba(255,255,255,0.25)", fontStyle:"italic" }}>Run "What's Working" to see insights</div>}
-              {analysis?.whatIsNotWorking?.length>0 && (
+          {/* InsightCard helper */}
+          {[
+            {
+              key:"whatsWorking",
+              label:"What's Working",
+              dot:C.cyan,
+              color:C.cyan,
+              runKey:"analysis",
+              hasData:analysis?.whatIsWorking?.length>0||analysis?.whatIsNotWorking?.length>0,
+              emptyMsg:"Run \"What's Working\" to see insights",
+              content: analysis && (
                 <>
-                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", margin:"16px 0 10px" }}>Needs Fixing</div>
-                  {analysis.whatIsNotWorking.map((a,i)=>(
-                    <div key={i} style={{ padding:"12px 14px", borderRadius:12, background:`${C.orange}08`, border:`1px solid ${C.orange}18`, marginBottom:8 }}>
-                      <div style={{ fontSize:14, fontWeight:700, color:C.orange, marginBottom:4, lineHeight:1.3 }}>{a.insight}</div>
-                      <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.55, fontFamily:C.fontBody }}>{a.evidence}</div>
-                      {a.fix && <div style={{ fontSize:13, color:C.green, fontWeight:600, marginTop:4 }}>Fix: {a.fix}</div>}
+                  {analysis.whatIsWorking?.map((a,i)=>(
+                    <div key={i} style={{ padding:"14px 16px", borderRadius:12, background:`${a.impact==="high"?C.green:C.cyan}08`, border:`1px solid ${a.impact==="high"?C.green:C.cyan}18`, marginBottom:10 }}>
+                      <div style={{ fontSize:14, fontWeight:700, color:a.impact==="high"?C.green:C.cyan, marginBottom:6, lineHeight:1.3 }}>{a.insight}</div>
+                      <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.6, fontFamily:C.fontBody }}>{a.evidence}</div>
                     </div>
                   ))}
+                  {analysis.whatIsNotWorking?.length>0 && (
+                    <>
+                      <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", margin:"18px 0 12px" }}>Needs Fixing</div>
+                      {analysis.whatIsNotWorking.map((a,i)=>(
+                        <div key={i} style={{ padding:"14px 16px", borderRadius:12, background:`${C.orange}08`, border:`1px solid ${C.orange}18`, marginBottom:10 }}>
+                          <div style={{ fontSize:14, fontWeight:700, color:C.orange, marginBottom:6, lineHeight:1.3 }}>{a.insight}</div>
+                          <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.6, fontFamily:C.fontBody }}>{a.evidence}</div>
+                          {a.fix && <div style={{ fontSize:13, color:C.green, fontWeight:600, marginTop:6 }}>→ Fix: {a.fix}</div>}
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </>
-              )}
-            </div>
-
-            {/* Next videos */}
-            <div data-card style={{ borderRadius:16, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.green}20`, position:"relative", overflow:"hidden" }}>
-              <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.green},${C.green}00)` }}/>
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:14, display:"flex", alignItems:"center", gap:6 }}><span style={{width:6,height:6,borderRadius:"50%",background:C.green,display:"inline-block",flexShrink:0}}/>Next Videos</div>
-              {nextVids?.tiktok?.length>0 ? nextVids.tiktok.map((v,i)=>(
-                <div key={i} style={{ borderRadius:12, border:`1px solid rgba(255,255,255,0.07)`, background:"rgba(255,255,255,0.025)", marginBottom:10, overflow:"hidden" }}>
-                  <div style={{ padding:"12px 14px", borderBottom:"1px solid rgba(255,255,255,0.05)", display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10 }}>
+              ),
+            },
+            {
+              key:"nextVids",
+              label:"Next Videos",
+              dot:C.green,
+              color:C.green,
+              runKey:"nextVids",
+              hasData:nextVids?.tiktok?.length>0,
+              emptyMsg:'Run "Next Videos" for AI recommendations',
+              content: nextVids?.tiktok?.map((v,i)=>(
+                <div key={i} style={{ borderRadius:12, border:`1px solid rgba(255,255,255,0.08)`, background:"rgba(255,255,255,0.025)", marginBottom:12, overflow:"hidden" }}>
+                  <div style={{ padding:"14px 16px", borderBottom:"1px solid rgba(255,255,255,0.05)", display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10 }}>
                     <div style={{ fontSize:14, fontWeight:700, color:"#fff", lineHeight:1.4, flex:1 }}>{v.title}</div>
                     {v.priority && <span style={{ fontSize:10, fontWeight:700, color:v.priority==="HIGH"?C.green:C.yellow, background:v.priority==="HIGH"?`${C.green}12`:`${C.yellow}12`, border:`1px solid ${v.priority==="HIGH"?C.green:C.yellow}25`, borderRadius:6, padding:"3px 8px", flexShrink:0 }}>{v.priority}</span>}
                   </div>
-                  <div style={{ padding:"10px 14px", display:"flex", flexDirection:"column", gap:8 }}>
-                    <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.55, fontFamily:C.fontBody }}>{v.whyItWillWork}</div>
+                  <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:10 }}>
+                    <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.6, fontFamily:C.fontBody }}>{v.whyItWillWork}</div>
                     {v.openingLine && (
-                      <div style={{ padding:"8px 12px", background:`${C.green}08`, border:`1px solid ${C.green}15`, borderRadius:8, fontSize:13, color:"rgba(255,255,255,0.8)", fontStyle:"italic" }}>"{v.openingLine}"</div>
+                      <div style={{ padding:"10px 14px", background:`${C.green}08`, border:`1px solid ${C.green}15`, borderRadius:10, fontSize:13, color:"rgba(255,255,255,0.8)", fontStyle:"italic" }}>"{v.openingLine}"</div>
                     )}
                     <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
                       {v.type && <span style={{ fontSize:10, fontWeight:700, color:C.pink, background:`${C.pink}10`, borderRadius:5, padding:"2px 8px" }}>{v.type}</span>}
                       {v.estimated_views && <span style={{ fontSize:10, fontWeight:700, color:C.cyan, background:`${C.cyan}10`, borderRadius:5, padding:"2px 8px" }}>{v.estimated_views}</span>}
-                      {v.winning_combo_used && <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)" }}>✓ winning combo</span>}
-                      <button onClick={()=>sendVidToIdeas(v,i)} disabled={!!sentIdeas[i]} style={{ marginLeft:"auto", fontSize:10, fontWeight:700, letterSpacing:"0.04em", color:sentIdeas[i]?"rgba(255,255,255,0.4)":C.green, background:sentIdeas[i]?"rgba(255,255,255,0.04)":`${C.green}12`, border:`1px solid ${sentIdeas[i]?"rgba(255,255,255,0.08)":C.green+"30"}`, borderRadius:6, padding:"4px 10px", cursor:sentIdeas[i]?"default":"pointer", whiteSpace:"nowrap" }}>{sentIdeas[i]?"✓ Added":"+ Send to Ideas"}</button>
+                      <button onClick={()=>sendVidToIdeas(v,i)} disabled={!!sentIdeas[i]} style={{ marginLeft:"auto", fontSize:10, fontWeight:700, color:sentIdeas[i]?"rgba(255,255,255,0.4)":C.green, background:sentIdeas[i]?"rgba(255,255,255,0.04)":`${C.green}12`, border:`1px solid ${sentIdeas[i]?"rgba(255,255,255,0.08)":C.green+"30"}`, borderRadius:6, padding:"5px 12px", cursor:sentIdeas[i]?"default":"pointer" }}>{sentIdeas[i]?"✓ Added":"+ Ideas"}</button>
                     </div>
                   </div>
                 </div>
-              )) : <div style={{ fontSize:13, color:"rgba(255,255,255,0.25)", fontStyle:"italic" }}>Run "Next Videos" for AI recommendations</div>}
-            </div>
-
-            {/* Harley brief */}
-            <div data-card style={{ borderRadius:16, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.yellow}20`, position:"relative", overflow:"hidden" }}>
-              <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.yellow},${C.yellow}00)` }}/>
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:14, display:"flex", alignItems:"center", gap:6 }}><span style={{width:6,height:6,borderRadius:"50%",background:C.yellow,display:"inline-block",flexShrink:0}}/>{(WL.creator2||"Weekly")} Brief</div>
-              {weekly ? <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)", lineHeight:1.6, fontFamily:C.fontBody }}>{weekly.brief||weekly.harleyBrief||weekly.rawSummaryText}</div>
-                : <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", fontStyle:"italic" }}>Run the weekly brief for filming instructions</div>}
-            </div>
-
-            {/* Trends */}
-            <div data-card style={{ borderRadius:16, padding:"20px 22px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.orange}20`, position:"relative", overflow:"hidden" }}>
-              <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.orange},${C.orange}00)` }}/>
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:14, display:"flex", alignItems:"center", gap:6 }}><span style={{width:6,height:6,borderRadius:"50%",background:C.orange,display:"inline-block",flexShrink:0}}/>Trending Now</div>
-              {trends?.trends?.length>0 ? trends.trends.map((t,i)=>(
-                <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start", padding:"10px 0", borderBottom:i<trends.trends.length-1?"1px solid rgba(255,255,255,0.05)":"none" }}>
-                  <div style={{ width:24, height:24, borderRadius:6, background:`${C.orange}15`, border:`1px solid ${C.orange}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11, fontWeight:700, color:C.orange }}>{i+1}</div>
+              )),
+            },
+            {
+              key:"weekly",
+              label:`${WL.creator2||"Weekly"} Brief`,
+              dot:C.yellow,
+              color:C.yellow,
+              runKey:"weekly",
+              hasData:!!(weekly?.brief||weekly?.harleyBrief||weekly?.rawSummaryText),
+              emptyMsg:"Run the weekly brief for filming instructions",
+              content: weekly && <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.7, fontFamily:C.fontBody }}>{weekly.brief||weekly.harleyBrief||weekly.rawSummaryText}</div>,
+            },
+            {
+              key:"trends",
+              label:"Trending Now",
+              dot:C.orange,
+              color:C.orange,
+              runKey:"trends",
+              hasData:trends?.trends?.length>0,
+              emptyMsg:'Run "Trends" for live trending topics',
+              content: trends?.trends?.map((t,i)=>(
+                <div key={i} style={{ display:"flex", gap:14, alignItems:"flex-start", padding:"14px 0", borderBottom:i<trends.trends.length-1?"1px solid rgba(255,255,255,0.05)":"none" }}>
+                  <div style={{ width:26, height:26, borderRadius:7, background:`${C.orange}15`, border:`1px solid ${C.orange}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11, fontWeight:700, color:C.orange }}>{i+1}</div>
                   <div style={{ flex:1 }}>
-                    <div style={{ fontSize:14, fontWeight:700, color:"#fff", marginBottom:4, lineHeight:1.3 }}>{t.trend}</div>
-                    <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.5, fontFamily:C.fontBody }}>{t.tiktokAngle}</div>
-                    {t.urgency && <div style={{ marginTop:4 }}><Tag color={t.urgency==="POST NOW"?C.pink:t.urgency==="THIS WEEK"?C.yellow:C.cyan} sm>{t.urgency}</Tag></div>}
+                    <div style={{ fontSize:14, fontWeight:700, color:"#fff", marginBottom:5, lineHeight:1.3 }}>{t.trend}</div>
+                    <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.55, fontFamily:C.fontBody, marginBottom:6 }}>{t.tiktokAngle}</div>
+                    {t.urgency && <Tag color={t.urgency==="POST NOW"?C.pink:t.urgency==="THIS WEEK"?C.yellow:C.cyan} sm>{t.urgency}</Tag>}
                   </div>
                 </div>
-              )) : <div style={{ fontSize:13, color:"rgba(255,255,255,0.25)", fontStyle:"italic" }}>Run "Trends" for live trending topics</div>}
+              )),
+            },
+            ...(commentInsights ? [{
+              key:"audience",
+              label:"Audience Voice",
+              dot:C.purple,
+              color:C.purple,
+              runKey:null,
+              hasData:true,
+              emptyMsg:"",
+              badge:`${commentInsights.sampleSize||0} comments`,
+              content: (
+                <>
+                  {commentInsights.overall_sentiment && <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.6, marginBottom:14, fontFamily:C.fontBody }}>{commentInsights.overall_sentiment}</div>}
+                  <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:10 }}>
+                    {[
+                      {l:"They Keep Mentioning", arr:commentInsights.top_themes, c:C.cyan},
+                      {l:"They're Asking For", arr:commentInsights.audience_requests, c:C.green},
+                      {l:"Their Exact Words", arr:commentInsights.language_patterns, c:C.yellow},
+                      {l:"Videos They Want", arr:commentInsights.content_ideas, c:C.pink},
+                    ].filter(x=>x.arr?.length).map((x,i)=>(
+                      <div key={i} style={{ padding:"12px 14px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${x.c}18` }}>
+                        <div style={{ fontSize:10, color:x.c, fontWeight:700, letterSpacing:"0.08em", marginBottom:8 }}>{x.l.toUpperCase()}</div>
+                        {x.arr.slice(0,4).map((t,j)=><div key={j} style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, marginBottom:4, fontFamily:C.fontBody }}>• {t}</div>)}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ),
+            }] : []),
+            ...(visualDNA ? [{
+              key:"visualDNA",
+              label:"Visual DNA",
+              dot:C.cyan,
+              color:C.cyan,
+              runKey:null,
+              hasData:true,
+              emptyMsg:"",
+              badge:`${visualDNA.sampleSize||0} thumbnails`,
+              content: (
+                <>
+                  {visualDNA.one_rule && <div style={{ fontSize:13, color:C.cyan, lineHeight:1.5, marginBottom:14, fontFamily:C.fontBody, fontWeight:600 }}>★ {visualDNA.one_rule}</div>}
+                  <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:10 }}>
+                    {[
+                      {l:"Winning Traits", arr:visualDNA.winning_traits, c:C.green},
+                      {l:"What Loses", arr:visualDNA.losing_traits, c:C.pink},
+                    ].filter(x=>x.arr?.length).map((x,i)=>(
+                      <div key={i} style={{ padding:"12px 14px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${x.c}18` }}>
+                        <div style={{ fontSize:10, color:x.c, fontWeight:700, letterSpacing:"0.08em", marginBottom:8 }}>{x.l.toUpperCase()}</div>
+                        {x.arr.slice(0,4).map((t,j)=><div key={j} style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, marginBottom:4, fontFamily:C.fontBody }}>• {t}</div>)}
+                      </div>
+                    ))}
+                    {[
+                      {l:"Color / Contrast", v:visualDNA.color_palette, c:C.yellow},
+                      {l:"Composition", v:visualDNA.composition, c:C.purple},
+                      {l:"Faces", v:visualDNA.face_pattern, c:C.cyan},
+                      {l:"Text Overlay", v:visualDNA.text_overlay, c:C.green},
+                    ].filter(x=>x.v).map((x,i)=>(
+                      <div key={"v"+i} style={{ padding:"12px 14px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${x.c}18` }}>
+                        <div style={{ fontSize:10, color:x.c, fontWeight:700, letterSpacing:"0.08em", marginBottom:8 }}>{x.l.toUpperCase()}</div>
+                        <div style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, fontFamily:C.fontBody }}>{x.v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ),
+            }] : []),
+          ].map(card=>(
+            <div key={card.key} data-card style={{ borderRadius:18, background:"rgba(255,255,255,0.025)", border:`1px solid ${card.color}22`, position:"relative", overflow:"hidden" }}>
+              <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.4, background:`linear-gradient(90deg,${card.color},${card.color}00)` }}/>
+              {/* Card header */}
+              <div style={{ display:"flex", alignItems:"center", gap:8, padding:"16px 18px", borderBottom:hiddenInsights[card.key]?"none":`1px solid rgba(255,255,255,0.05)` }}>
+                <span style={{ width:8, height:8, borderRadius:"50%", background:card.dot, display:"inline-block", flexShrink:0 }}/>
+                <span style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.04em", flex:1 }}>{card.label}</span>
+                {card.badge && <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)" }}>{card.badge}</span>}
+                <div style={{ display:"flex", gap:6 }}>
+                  {card.runKey && (
+                    <button onClick={()=>runAI&&runAI(card.runKey)} disabled={aiLoad[card.runKey]}
+                      style={{ padding:"5px 12px", borderRadius:8, border:`1px solid ${card.color}40`, background:`${card.color}12`, color:card.color, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", opacity:aiLoad[card.runKey]?0.5:1 }}>
+                      {aiLoad[card.runKey]?"...":"↺ Re-run"}
+                    </button>
+                  )}
+                  <button onClick={()=>toggleHide(card.key)}
+                    style={{ padding:"5px 10px", borderRadius:8, border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.05)", color:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer" }}>
+                    {hiddenInsights[card.key]?"Show":"Hide"}
+                  </button>
+                </div>
+              </div>
+              {/* Card body */}
+              {!hiddenInsights[card.key] && (
+                <div style={{ padding:"16px 18px" }}>
+                  {card.hasData && card.content
+                    ? card.content
+                    : <div style={{ fontSize:13, color:"rgba(255,255,255,0.3)", fontStyle:"italic", padding:"8px 0" }}>{card.emptyMsg}</div>
+                  }
+                </div>
+              )}
             </div>
-          </div>
+          ))}
         </div>
+      )}
       )}
     </div>
   );
