@@ -3124,7 +3124,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
             {/* Reasoning */}
             <div style={{ padding:isMobile?"18px 18px":"14px 16px", borderRadius:12, background:"rgba(255,255,255,0.04)", border:`1px solid rgba(255,255,255,0.08)`, marginBottom:isMobile?16:12 }}>
               <div style={{ fontSize:15, color:C.purple, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>AI REASONING</div>
-              <div style={{ fontSize:isMobile?15:14, color:"rgba(255,255,255,0.9)", lineHeight:1.7, fontFamily:C.fontBody, fontFamily:C.fontBody }}>{predictResult.reasoning}</div>
+              <div style={{ fontSize:isMobile?15:14, color:"rgba(255,255,255,0.9)", lineHeight:1.7, fontFamily:C.fontBody }}>{predictResult.reasoning}</div>
             </div>
             {/* Will work / will fail */}
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:10, marginBottom:isMobile?16:12 }}>
@@ -3804,17 +3804,17 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
       {card(
         <>
           {sectionHead("Performance Overview", C.cyan)}
-          <div style={{ display:"grid", gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(5,1fr)", gap:isMobile?0:0 }}>
+          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr 1fr":"repeat(5,1fr)", gap:0 }}>
             {[
               { l:"IDEAS SCORED", v:scoredIdeas.length || "--", c:C.cyan },
               { l:"IDEAS POSTED", v:postedIdeas.length || "--", c:C.purple },
               { l:"AVG AI SCORE", v:avgAIScore ? `${avgAIScore}/100` : "--", c:C.yellow },
-              { l:"AVG ACTUAL VIEWS", v:avgPostedViews ? fmt(avgPostedViews) : "--", c:C.green },
-              { l:"AI ACCURACY", v:accuracy != null ? `${accuracy}% accurate` : "building model", c:accuracy!=null ? C.orange : "rgba(255,255,255,0.35)" },
+              { l:"AVG VIEWS", v:avgPostedViews ? fmt(avgPostedViews) : "--", c:C.green },
+              { l:"AI ACCURACY", v:accuracy != null ? `${accuracy}%` : "—", c:accuracy!=null ? C.orange : "rgba(255,255,255,0.35)" },
             ].map((s,si,arr)=>(
-              <div key={si} style={{ padding:isMobile?"20px 18px":"18px 20px", borderRight:!isMobile&&si<arr.length-1?`1px solid ${C.border}`:"none", borderBottom:isMobile&&si<arr.length-1&&si%2===1?`1px solid ${C.border}`:isMobile&&si<arr.length-2&&si%2===0?`1px solid ${C.border}`:"none" }}>
-                <div style={{ fontSize:isMobile?10:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.12em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>{s.l}</div>
-                <div style={{ fontSize:isMobile?22:24, fontWeight:600, fontFamily:C.fontHead, color:s.c, lineHeight:1.1 }}>{s.v}</div>
+              <div key={si} style={{ padding:isMobile?"16px 14px":"18px 20px", borderRight:si<arr.length-1?`1px solid ${C.border}`:"none", borderBottom:"none" }}>
+                <div style={{ fontSize:isMobile?9:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.10em", textTransform:"uppercase", fontWeight:700, marginBottom:6 }}>{s.l}</div>
+                <div style={{ fontSize:isMobile?18:24, fontWeight:600, fontFamily:C.fontHead, color:s.c, lineHeight:1.1 }}>{s.v}</div>
               </div>
             ))}
           </div>
@@ -4115,15 +4115,15 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:24 }}>
 
       {/* Sync button — prominent at top */}
-      <div style={{ borderRadius:16, padding:isMobile?"26px 20px":"24px 28px", background:"linear-gradient(145deg,rgba(0,207,255,0.1),rgba(10,6,20,0.95))", border:`1px solid ${C.cyan}30`, display:"flex", alignItems:"center", justifyContent:"space-between", position:"relative", overflow:"hidden" }}>
+      <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"24px 28px", background:"linear-gradient(145deg,rgba(0,207,255,0.1),rgba(10,6,20,0.95))", border:`1px solid ${C.cyan}30`, display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }}/>
-        <div>
+        <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontSize:16, fontWeight:700, color:"#fff", marginBottom:4 }}>Auto Sync</div>
-          <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)" }}>
-            {scrapedStats ? "Last synced: "+(()=>{try{const h=Math.round((Date.now()-new Date(scrapedStats.scraped_at))/3600000);return h<1?"less than 1 hour ago":h+" hours ago";}catch{return "unknown";}})() : "Never synced — add TIKWM key to auto-sync"}
+          <div style={{ fontSize:isMobile?12:13, color:"rgba(255,255,255,0.5)", lineHeight:1.4 }}>
+            {scrapedStats ? "Synced "+(()=>{try{const h=Math.round((Date.now()-new Date(scrapedStats.scraped_at))/3600000);return h<1?"<1h ago":h+"h ago";}catch{return "unknown";}})() : "Add TikTok API key to auto-sync"}
           </div>
         </div>
-        <button onClick={onSyncTikTok} style={{ display:"flex", alignItems:"center", gap:8, padding:isMobile?"10px 16px":"14px 28px", borderRadius:12, border:`1px solid ${C.cyan}50`, background:`linear-gradient(135deg,${C.cyan}30,${C.cyan}15)`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?13:16, cursor:"pointer", flexShrink:0 }}>
+        <button onClick={onSyncTikTok} style={{ display:"flex", alignItems:"center", gap:8, padding:isMobile?"10px 18px":"14px 28px", borderRadius:12, border:`1px solid ${C.cyan}50`, background:`linear-gradient(135deg,${C.cyan}30,${C.cyan}15)`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?13:16, cursor:"pointer", flexShrink:0 }}>
           {I.refresh(16,C.cyan)} {syncMsg || "SYNC"}
         </button>
       </div>
@@ -4175,16 +4175,16 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.green},${C.green}00)` }}/>
             <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:isMobile?24:16 }}>System Status</div>
             {statusItems.map((s,i)=>(
-              <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:isMobile?"14px 0":"12px 0", borderBottom:i<statusItems.length-1?"1px solid rgba(255,255,255,0.05)":"none" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, padding:isMobile?"14px 0":"12px 0", borderBottom:i<statusItems.length-1?"1px solid rgba(255,255,255,0.05)":"none", flexWrap:"wrap" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
                   <div style={{ width:24, height:24, borderRadius:7, background:"rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                     {s.id==="db" ? <span style={{fontSize:12}}>🗄</span> : <ApiLogo id={s.id}/>}
                   </div>
                   <span style={{ fontSize:14, color:"rgba(255,255,255,0.85)", fontWeight:500 }}>{s.label}</span>
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                  <div style={{ width:6, height:6, borderRadius:"50%", background:s.color, boxShadow:`0 0 6px ${s.color}` }}/>
-                  <span style={{ fontSize:13, fontWeight:700, color:s.color }}>{s.value}</span>
+                  <div style={{ width:6, height:6, borderRadius:"50%", background:s.color, boxShadow:`0 0 6px ${s.color}`, flexShrink:0 }}/>
+                  <span style={{ fontSize:isMobile?11:13, fontWeight:700, color:s.color }}>{s.value}</span>
                 </div>
               </div>
             ))}
