@@ -2976,9 +2976,9 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
 
       {/* 4-WEEK STRATEGY */}
       {strategy && (
-        <div data-card style={{ borderRadius:16, padding:"24px", background:`linear-gradient(145deg,${C.green}12,rgba(7,5,15,0.95))`, border:`1px solid ${C.green}35`, position:"relative", overflow:"hidden" }}>
+        <div data-card style={{ borderRadius:16, padding:isMobile?"20px 18px":"24px", background:`linear-gradient(145deg,${C.green}12,rgba(7,5,15,0.95))`, border:`1px solid ${C.green}35`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.green},${C.green}00)` }} />
-          <div style={{ fontSize:20, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:isMobile?14:10 }}>4-WEEK STRATEGY</div>
+          <div style={{ fontSize:isMobile?17:20, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:isMobile?14:10 }}>4-WEEK STRATEGY</div>
           <div style={{ fontSize:isMobile?15:14, color:"rgba(255,255,255,0.9)", lineHeight:1.7, fontFamily:C.fontBody, marginBottom:20 }}>{strategy.overview}</div>
           
           {strategy.channel_diagnosis && (
@@ -2986,28 +2986,28 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
               <div style={{ fontSize:15, fontWeight:700, color:C.green, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:isMobile?16:12 }}>CHANNEL DIAGNOSIS</div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:10, marginBottom:isMobile?16:12 }}>
                 <div style={{ padding:isMobile?"13px 16px":"10px 14px", borderRadius:10, background:`${C.green}10`, border:`1px solid ${C.green}20` }}>
-                  <div style={{ fontSize:17, color:C.green, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>STRENGTHS</div>
+                  <div style={{ fontSize:isMobile?14:17, color:C.green, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>STRENGTHS</div>
                   {strategy.channel_diagnosis.strengths?.map((s,i)=><div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:3 }}>✓ {s}</div>)}
                 </div>
                 <div style={{ padding:isMobile?"13px 16px":"10px 14px", borderRadius:10, background:`${C.pink}10`, border:`1px solid ${C.pink}20` }}>
-                  <div style={{ fontSize:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>WEAKNESSES</div>
+                  <div style={{ fontSize:isMobile?14:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>WEAKNESSES</div>
                   {strategy.channel_diagnosis.weaknesses?.map((s,i)=><div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:3 }}>✗ {s}</div>)}
                 </div>
               </div>
               <div style={{ padding:isMobile?"13px 16px":"10px 14px", borderRadius:10, background:`${C.yellow}10`, border:`1px solid ${C.yellow}25` }}>
-                <div style={{ fontSize:17, color:C.yellow, fontWeight:700, letterSpacing:"0.1em", marginBottom:4 }}>BIGGEST OPPORTUNITY</div>
-                <div style={{ fontSize:17, color:"#fff" }}>{strategy.channel_diagnosis.biggest_opportunity}</div>
+                <div style={{ fontSize:isMobile?14:17, color:C.yellow, fontWeight:700, letterSpacing:"0.1em", marginBottom:4 }}>BIGGEST OPPORTUNITY</div>
+                <div style={{ fontSize:isMobile?14:17, color:"#fff" }}>{strategy.channel_diagnosis.biggest_opportunity}</div>
               </div>
             </div>
           )}
           {(strategy.stop_doing?.length>0||strategy.start_doing?.length>0) && (
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:10, marginBottom:isMobile?24:16 }}>
               {strategy.stop_doing?.length>0 && <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.pink}08`, border:`1px solid ${C.pink}20` }}>
-                <div style={{ fontSize:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>STOP DOING</div>
+                <div style={{ fontSize:isMobile?14:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>STOP DOING</div>
                 {strategy.stop_doing.map((s,i)=><div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:4 }}>✗ {s}</div>)}
               </div>}
               {strategy.start_doing?.length>0 && <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.green}08`, border:`1px solid ${C.green}20` }}>
-                <div style={{ fontSize:17, color:C.green, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>START DOING</div>
+                <div style={{ fontSize:isMobile?14:17, color:C.green, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>START DOING</div>
                 {strategy.start_doing.map((s,i)=><div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:4 }}>✓ {s}</div>)}
               </div>}
             </div>
@@ -3056,9 +3056,9 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
 
       {/* 10 VIDEO IDEAS */}
       {contentPlan && (
-        <div data-card style={{ borderRadius:16, padding:"24px", background:`linear-gradient(145deg,${C.yellow}12,rgba(7,5,15,0.95))`, border:`1px solid ${C.yellow}35`, position:"relative", overflow:"hidden" }}>
+        <div data-card style={{ borderRadius:16, padding:isMobile?"20px 18px":"24px", background:`linear-gradient(145deg,${C.yellow}12,rgba(7,5,15,0.95))`, border:`1px solid ${C.yellow}35`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.yellow},${C.yellow}00)` }} />
-          <div style={{ fontSize:20, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:isMobile?24:16 }}>10 NICHE VIDEO IDEAS</div>
+          <div style={{ fontSize:isMobile?17:20, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:isMobile?24:16 }}>10 NICHE VIDEO IDEAS</div>
           {contentPlan.ideas?.map((idea,i)=>(
             <div key={i} style={{ marginBottom:12, padding:"16px 18px", borderRadius:16, background:"rgba(255,255,255,0.025)", border:`1px solid ${scoreColor(idea.score)}25`, position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, left:0, width:3, height:"100%", background:`linear-gradient(180deg,${scoreColor(idea.score)},${scoreColor(idea.score)}40)`, borderRadius:"14px 0 0 14px" }} />
@@ -3087,7 +3087,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
       )}
 
       {/* ── PREDICTIVE SCORER ──────────────────────────────────── */}
-      <div id="predict-section" data-card style={{ borderRadius:16, padding:"24px", background:`linear-gradient(145deg,${C.purple}15,rgba(7,5,15,0.95))`, border:`1px solid ${C.purple}40`, position:"relative", overflow:"hidden" }}>
+      <div id="predict-section" data-card style={{ borderRadius:16, padding:isMobile?"20px 18px":"24px", background:`linear-gradient(145deg,${C.purple}15,rgba(7,5,15,0.95))`, border:`1px solid ${C.purple}40`, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.purple},${C.purple}00)` }} />
         <div style={{ fontSize:20, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:isMobile?24:16 }}>🔮 PREDICT BEFORE YOU FILM</div>
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:10, marginBottom:isMobile?22:14 }}>
@@ -3129,19 +3129,19 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
             {/* Will work / will fail */}
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:10, marginBottom:isMobile?16:12 }}>
               <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.green}08`, border:`1px solid ${C.green}20` }}>
-                <div style={{ fontSize:17, color:C.green, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>WILL WORK</div>
+                <div style={{ fontSize:isMobile?14:17, color:C.green, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>WILL WORK</div>
                 {predictResult.what_will_work?.map((w,i)=><div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:4 }}>✓ {w}</div>)}
               </div>
               <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.pink}08`, border:`1px solid ${C.pink}20` }}>
-                <div style={{ fontSize:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>WATCH OUT</div>
+                <div style={{ fontSize:isMobile?14:17, color:WL.accentColor, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>WATCH OUT</div>
                 {predictResult.what_will_fail?.map((w,i)=><div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:4 }}>✗ {w}</div>)}
               </div>
             </div>
             {/* Improved hook */}
             {predictResult.improved_hook && (
               <div style={{ padding:isMobile?"14px 18px":"12px 16px", borderRadius:12, background:`${C.cyan}10`, border:`1px solid ${C.cyan}30`, marginBottom:isMobile?16:12 }}>
-                <div style={{ fontSize:17, color:C.cyan, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>IMPROVED HOOK</div>
-                <div style={{ fontSize:16, color:"#fff", fontStyle:"italic" }}>"{predictResult.improved_hook}"</div>
+                <div style={{ fontSize:isMobile?14:17, color:C.cyan, fontWeight:700, letterSpacing:"0.1em", marginBottom:6 }}>IMPROVED HOOK</div>
+                <div style={{ fontSize:isMobile?14:16, color:"#fff", fontStyle:"italic" }}>"{predictResult.improved_hook}"</div>
               </div>
             )}
             {/* Hook variations */}
@@ -3150,7 +3150,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
                 <div style={{ fontSize:15, color:C.yellow, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>HOOK VARIATIONS</div>
                 {predictResult.variations.map((v,i)=>(
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:isMobile?"13px 16px":"10px 14px", borderRadius:10, background:"rgba(255,255,255,0.025)", border:`1px solid rgba(255,255,255,0.06)`, marginBottom:6 }}>
-                    <div style={{ flex:1, fontSize:17, color:"#fff", fontStyle:"italic" }}>"{v.hook}"</div>
+                    <div style={{ flex:1, fontSize:isMobile?14:17, color:"#fff", fontStyle:"italic" }}>"{v.hook}"</div>
                     <Tag color={v.predicted_uplift?.startsWith("+")?C.green:C.pink} sm>{v.predicted_uplift}</Tag>
                   </div>
                 ))}
@@ -3170,7 +3170,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
 
       {/* ── COMPETITOR INTELLIGENCE ──────────────────────────────── */}
       {competitors?.data && (
-        <div data-card style={{ borderRadius:16, padding:"24px", background:`linear-gradient(145deg,${C.pink}12,rgba(7,5,15,0.95))`, border:`1px solid ${C.pink}35`, position:"relative", overflow:"hidden" }}>
+        <div data-card style={{ borderRadius:16, padding:isMobile?"20px 18px":"24px", background:`linear-gradient(145deg,${C.pink}12,rgba(7,5,15,0.95))`, border:`1px solid ${C.pink}35`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }} />
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?24:16 }}>
             <div style={{ fontSize:15, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase" }}>COMPETITOR INTEL</div>
