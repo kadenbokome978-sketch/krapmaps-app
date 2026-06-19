@@ -8456,7 +8456,7 @@ Return JSON:
           </div>
 
           {/* PAGE CONTENT */}
-          <div className="web-page-content" style={{ padding:isMobile?"0":"32px 44px 60px" }}>
+          <div className="web-page-content" style={{ padding:isMobile?"24px 0 0":"32px 44px 60px" }}>
             {/* PAGE TITLE — desktop only */}
             {!isMobile && <div style={{ marginBottom:40, display:"flex", alignItems:"flex-end", justifyContent:"space-between" }}>
               <div>

@@ -126,7 +126,8 @@
     button { min-height:40px; }
 
     /* Mobile content padding — applies up to 899px (portrait + landscape iPhones) */
-    .web-inner { padding:28px 22px calc(48px + env(safe-area-inset-bottom)) !important; }
+    /* padding-top:0 so sticky mobile-header starts at viewport top */
+    .web-inner { padding:0 22px calc(48px + env(safe-area-inset-bottom)) !important; }
 
     /* Small phones */
     @media(max-width:374px) {
