@@ -125,9 +125,9 @@
     [data-card] { border-radius:16px !important; }
     button { min-height:40px; }
 
-    /* Mobile content padding + safe area for notched phones */
-    .web-inner { padding:28px 22px calc(110px + env(safe-area-inset-bottom)) !important; }
-    .mobile-nav { bottom:calc(16px + env(safe-area-inset-bottom)) !important; padding-bottom:0 !important; }
+    /* Mobile content padding */
+    .web-inner { padding:28px 22px calc(48px + env(safe-area-inset-bottom)) !important; }
+    .mobile-nav { display:none !important; }
 
     /* Small phones */
     @media(max-width:374px) {

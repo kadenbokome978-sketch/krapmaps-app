@@ -472,7 +472,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
   ];
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:20 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?56:20 }}>
 
       {/* ══ WEEKLY RITUAL — the retention loop that feeds the AI ══════ */}
       {ritual.pending > 0 ? (
@@ -741,7 +741,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           </button>
         </div>
         {weeklyDebrief ? (
-          <div style={{ padding:"16px 20px", display:"flex", flexDirection:"column", gap:isMobile?20:12 }}>
+          <div style={{ padding:"16px 20px", display:"flex", flexDirection:"column", gap:isMobile?40:12 }}>
             <div style={{ fontSize:15, fontWeight:700, color:"#fff", fontFamily:C.fontBody, lineHeight:1.5 }}>{weeklyDebrief.headline}</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:10 }}>
               <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.green}08`, border:`1px solid ${C.green}18` }}>
@@ -1127,7 +1127,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr", gap:isMobile?14:14, alignItems:"start" }}>
           {sorted.length===0
-            ? <div style={{ gridColumn:"1/-1", padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?20:12 }}>
+            ? <div style={{ gridColumn:"1/-1", padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?40:12 }}>
                 <div style={{ fontSize:32 }}>🎬</div>
                 <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>No ideas yet</div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Start building your content pipeline — add your first idea above</div>
@@ -1461,7 +1461,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
             {hookABLoading?"ANALYSING...":"⚡ TEST HOOKS"}
           </button>
           {hookABResult && (
-            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:isMobile?24:10 }}>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:10 }}>
                 {[{label:"A",score:hookABResult.hookAScore,analysis:hookABResult.hookAAnalysis,hook:hookA},{label:"B",score:hookABResult.hookBScore,analysis:hookABResult.hookBAnalysis,hook:hookB}].map((h,i)=>(
                   <div key={i} style={{ borderRadius:12, padding:"14px", background:hookABResult.winner===h.label?`${C.green}10`:"rgba(255,255,255,0.02)", border:`1px solid ${hookABResult.winner===h.label?C.green:"rgba(255,255,255,0.06)"}` }}>
@@ -1493,7 +1493,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
       {/* ── CALENDAR ──────────────────────────────────────────── */}
       {sub==="CALENDAR" && (
-        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:20 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?56:20 }}>
           {/* Filter pills */}
           <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:2 }}>
             {["ALL","TIKTOK","INSTAGRAM","BOTH"].map(p=>(
@@ -1504,7 +1504,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
           </div>
 
           {filteredCal.length===0
-            ? <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?20:12 }}>
+            ? <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?40:12 }}>
                 <div style={{ fontSize:32 }}>📅</div>
                 <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>Nothing scheduled</div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Plan your posting schedule — tap Schedule to add your first date</div>
@@ -1531,7 +1531,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
       {/* ── CAPTIONS ──────────────────────────────────────────── */}
       {sub==="CAPTIONS" && (
-        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:20 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?56:20 }}>
           {/* Idea picker — horizontal scroll row */}
           <div style={{ overflowX:"auto", paddingBottom:4 }}>
             <div style={{ display:"flex", gap:8, minWidth:"max-content" }}>
@@ -1547,13 +1547,13 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
           {/* Caption output */}
           {aiLoad&&aiLoad.caption ? (
-            <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?20:12 }}>
+            <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?40:12 }}>
               <div style={{ fontSize:32 }}>✍️</div>
               <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>Writing captions...</div>
               <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>AI is crafting your captions — this takes a few seconds</div>
             </div>
           ) : captionResult && captionIdea ? (
-            <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:12 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:isMobile?40:12 }}>
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.35)", letterSpacing:"0.12em", textTransform:"uppercase", fontWeight:700 }}>
                 Captions for: <span style={{color:"rgba(255,255,255,0.85)"}}>{captionIdea.title?.slice(0,50)}</span>
               </div>
@@ -1971,16 +1971,16 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
 
       {/* ── VIDEOS ──────────────────────────────────────────────── */}
       {sub==="VIDEOS" && (
-        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?24:10 }}>
           {videos.length===0
-            ? <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?20:12 }}>
+            ? <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?40:12 }}>
                 <div style={{ fontSize:32 }}>📊</div>
                 <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>No videos logged yet</div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Log your TikTok videos to track performance and spot trends</div>
               </div>
             : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(280px,100%),1fr))", gap:16 }}>
               {/* TikTok column */}
-              <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:12 }}>
+              <div style={{ display:"flex", flexDirection:"column", gap:isMobile?40:12 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, padding:"12px 16px", borderRadius:16, background:`${C.pink}10`, border:`1px solid ${C.pink}25` }}>
                   <div style={{ width:28, height:28, borderRadius:9, background:`${C.pink}20`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.tiktok?I.tiktok(14,C.pink):"🎵"}</div>
                   <span style={{ fontSize:15, fontWeight:700, color:C.pink, letterSpacing:"0.05em" }}>TIKTOK</span>
@@ -1989,14 +1989,14 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 {videos.filter(v=>v.platform!=="instagram").map((v,i)=>renderVidCard(v,i))}
               </div>
               {/* Instagram column */}
-              <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:12 }}>
+              <div style={{ display:"flex", flexDirection:"column", gap:isMobile?40:12 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, padding:"12px 16px", borderRadius:16, background:`${C.purple}10`, border:`1px solid ${C.purple}25` }}>
                   <div style={{ width:28, height:28, borderRadius:9, background:`${C.purple}20`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.ig(14,C.purple)}</div>
                   <span style={{ fontSize:15, fontWeight:700, color:C.purple, letterSpacing:"0.05em" }}>INSTAGRAM</span>
                   <span style={{ marginLeft:"auto", fontSize:12, color:`${C.purple}aa`, fontWeight:700 }}>{videos.filter(v=>v.platform==="instagram").length} REELS</span>
                 </div>
                 {videos.filter(v=>v.platform==="instagram").length===0 && (
-                  <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?20:12 }}>
+                  <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?40:12 }}>
                     <div style={{ fontSize:32 }}>📊</div>
                     <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>No reels synced yet</div>
                     <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Hit SYNC NOW in Settings to pull your Instagram reels</div>
@@ -2014,7 +2014,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
 
       {/* ── AI INSIGHTS ─────────────────────────────────────────── */}
       {sub==="AI INSIGHTS" && (
-        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:20 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?56:20 }}>
 
           {/* Run buttons */}
           <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:10 }}>
@@ -2079,7 +2079,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                     <div style={{ fontSize:14, fontWeight:700, color:"#fff", lineHeight:1.4, flex:1 }}>{v.title}</div>
                     {v.priority && <span style={{ fontSize:10, fontWeight:700, color:v.priority==="HIGH"?C.green:C.yellow, background:v.priority==="HIGH"?`${C.green}12`:`${C.yellow}12`, border:`1px solid ${v.priority==="HIGH"?C.green:C.yellow}25`, borderRadius:6, padding:"3px 8px", flexShrink:0 }}>{v.priority}</span>}
                   </div>
-                  <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:10 }}>
+                  <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:isMobile?24:10 }}>
                     <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.6, fontFamily:C.fontBody }}>{v.whyItWillWork}</div>
                     {v.openingLine && (
                       <div style={{ padding:"10px 14px", background:`${C.green}08`, border:`1px solid ${C.green}15`, borderRadius:10, fontSize:13, color:"rgba(255,255,255,0.8)", fontStyle:"italic" }}>"{v.openingLine}"</div>
@@ -2255,7 +2255,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
   const assignees = ["ALL",_c1.toUpperCase(),...(_c2?[_c2.toUpperCase(),"BOTH"]:[])].filter((v,i,a)=>a.indexOf(v)===i);
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:16 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?52:16 }}>
       {/* Tab bar */}
       <div style={{ display:"flex", gap:8 }}>
         {["TO DO","APP IDEAS"].map(t=>(
@@ -2269,7 +2269,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(320px,100%),1fr))", gap:20, alignItems:"start" }}>
 
           {/* LEFT — Input + Pending */}
-          <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:12 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:isMobile?40:12 }}>
 
             {/* Add task card */}
             <div style={{ borderRadius:16, padding:"20px 22px", background:"linear-gradient(145deg,rgba(255,213,10,0.08),rgba(10,6,20,0.9))", border:`1px solid ${C.yellow}25`, position:"relative", overflow:"hidden" }}>
@@ -2307,7 +2307,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
             {/* Pending tasks */}
             <div style={{ borderRadius:16, overflow:"hidden", border:"1px solid rgba(255,255,255,0.07)", background:"rgba(255,255,255,0.025)", minHeight:300 }}>
               {pending.length===0
-                ? <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?20:12 }}>
+                ? <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?40:12 }}>
                     <div style={{ fontSize:32 }}>✅</div>
                     <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>All clear</div>
                     <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Nothing pending — you're on top of your workflow</div>
@@ -2332,7 +2332,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
           </div>
 
           {/* RIGHT — Completed + Stats */}
-          <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:12 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:isMobile?40:12 }}>
 
             {/* Stats row */}
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(180px,100%),1fr))", gap:12 }}>
@@ -2390,7 +2390,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
       )}
 
       {sub==="APP IDEAS" && (
-        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:12 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?40:12 }}>
           {/* Add idea */}
           <div style={{ borderRadius:16, padding:"20px 22px", background:"linear-gradient(145deg,rgba(197,102,255,0.08),rgba(10,6,20,0.9))", border:`1px solid ${C.purple}25`, position:"relative", overflow:"hidden" }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.purple},${C.purple}00)` }}/>
@@ -2410,7 +2410,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
           {/* Ideas grid */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(260px,100%),1fr))", gap:14 }}>
             {appIdeas.length===0
-              ? <div style={{ gridColumn:"1/-1", padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?20:12 }}>
+              ? <div style={{ gridColumn:"1/-1", padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?40:12 }}>
                   <div style={{ fontSize:32 }}>💡</div>
                   <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>No app ideas yet</div>
                   <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Capture your best product ideas — add your first one above</div>
@@ -2864,7 +2864,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
   const scoreColor = s => s>=80?C.green:s>=60?C.yellow:s>=40?C.orange:C.pink;
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:16 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?52:16 }}>
       {/* Header */}
       <div style={{ borderRadius:16, padding:isMobile?"26px 20px":"24px 28px", background:`linear-gradient(135deg,${C.purple}25,${C.cyan}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.purple}40`, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.purple},${C.cyan},${C.purple}00)` }} />
@@ -2909,7 +2909,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
           { label:"CONSENSUS AI", desc:`Claude + GPT-4o${hasGPT?"":" (add GPT key)"}`, icon:I.zap, color:C.purple, action:runConsensus, key:"consensus" },
           { label:"HOOK DATABASE", desc:`${hookDB.length} hooks tracked`, icon:I.trend, color:C.yellow, action:()=>document.getElementById("hookdb-section")?.scrollIntoView({behavior:"smooth"}), key:"" },
         ].map((btn,i)=>(
-          <button key={i} data-btn onClick={btn.action} disabled={btn.key&&loading[btn.key]} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, padding:"20px 12px", borderRadius:16, background:`linear-gradient(145deg,${btn.color}18,${btn.color}06)`, border:`1px solid ${btn.color}35`, cursor:"pointer", fontFamily:C.fontHead, opacity:btn.key&&loading[btn.key]?0.6:1, transition:"all 0.2s", position:"relative", overflow:"hidden" }}>
+          <button key={i} data-btn onClick={btn.action} disabled={btn.key&&loading[btn.key]} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?24:10, padding:"20px 12px", borderRadius:16, background:`linear-gradient(145deg,${btn.color}18,${btn.color}06)`, border:`1px solid ${btn.color}35`, cursor:"pointer", fontFamily:C.fontHead, opacity:btn.key&&loading[btn.key]?0.6:1, transition:"all 0.2s", position:"relative", overflow:"hidden" }}>
             <div style={{ width:52, height:52, borderRadius:16, background:`${btn.color}22`, border:`1px solid ${btn.color}45`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 0 20px ${btn.color}25` }}>{btn.icon(22,btn.color)}</div>
             <div style={{ textAlign:"center" }}>
               <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>{btn.key&&loading[btn.key]?"RUNNING...":btn.label}</div>
@@ -3090,7 +3090,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
       <div id="predict-section" data-card style={{ borderRadius:16, padding:"24px", background:`linear-gradient(145deg,${C.purple}15,rgba(7,5,15,0.95))`, border:`1px solid ${C.purple}40`, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.purple},${C.purple}00)` }} />
         <div style={{ fontSize:20, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:isMobile?24:16 }}>🔮 PREDICT BEFORE YOU FILM</div>
-        <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:isMobile?22:14 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?24:10, marginBottom:isMobile?22:14 }}>
           <input value={predictInput.title} onChange={e=>setPredictInput(p=>({...p,title:e.target.value}))} placeholder="Video concept / title..." style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${C.purple}40`, borderRadius:12, color:"#fff", padding:"12px 16px", fontSize:17, fontFamily:C.fontHead, outline:"none" }} />
           <input value={predictInput.hook} onChange={e=>setPredictInput(p=>({...p,hook:e.target.value}))} placeholder="Opening hook (first 3 seconds)..." style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${C.purple}40`, borderRadius:12, color:"#fff", padding:"12px 16px", fontSize:17, fontFamily:C.fontHead, outline:"none" }} />
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(280px,100%),1fr))", gap:10 }}>
@@ -3552,7 +3552,7 @@ Return ONLY JSON: {
   const result = selected ? analysis[selected.id] : null;
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:16 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?52:16 }}>
       {/* Header */}
       <div style={{ borderRadius:16, padding:isMobile?"26px 20px":"24px 28px", background:`linear-gradient(135deg,${C.pink}20,${C.purple}10,rgba(7,5,15,0.95))`, border:`1px solid ${C.pink}40`, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.pink},${C.purple},${C.pink}00)` }} />
@@ -3798,7 +3798,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
   };
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:20 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?56:20 }}>
 
       {/* 1. KEY STATS ROW */}
       {card(
@@ -3887,7 +3887,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
               No videos tracked yet.
             </div>
           ) : (
-            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:isMobile?24:10 }}>
               {top5Videos.map((v,idx)=>{
                 const maxViews = top5Videos[0]?.views || 1;
                 const pct = Math.round(((v.views||0)/maxViews)*100);
@@ -3933,7 +3933,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
         <div style={{ padding:isMobile?"18px 18px":"28px 32px" }}>
           {sectionHead("Creator Score Card", C.purple)}
           <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:24, flexWrap:"wrap" }}>
-            <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:20 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:isMobile?56:20 }}>
               <div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.4)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:4 }}>Creator</div>
                 <div style={{ fontSize:28, fontWeight:700, fontFamily:C.fontHead, color:"#fff" }}>{WL.handle||"@creator"}</div>
@@ -3960,7 +3960,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
                 </div>
               )}
             </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:12, alignItems:"flex-end" }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:isMobile?40:12, alignItems:"flex-end" }}>
               <button
                 onClick={handleShare}
                 style={{ padding:"14px 28px", borderRadius:14, background:`linear-gradient(135deg,${C.purple},${C.pink})`, border:"none", color:"#fff", fontSize:15, fontWeight:700, cursor:"pointer", letterSpacing:"0.04em", boxShadow:`0 4px 20px ${C.purple}40` }}
@@ -4112,7 +4112,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
   ];
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:16 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?52:16 }}>
 
       {/* Sync button — prominent at top */}
       <div style={{ borderRadius:16, padding:isMobile?"26px 20px":"20px 24px", background:"linear-gradient(145deg,rgba(0,207,255,0.1),rgba(10,6,20,0.95))", border:`1px solid ${C.cyan}30`, display:"flex", alignItems:"center", justifyContent:"space-between", position:"relative", overflow:"hidden" }}>
@@ -4135,7 +4135,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
         <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"22px 24px", background:"linear-gradient(145deg,rgba(255,45,120,0.07),rgba(10,6,20,0.95))", border:`1px solid ${C.pink}25`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
           <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:20 }}>API Keys</div>
-          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:isMobile?24:10 }}>
             {apiKeys.map(k=>(
               <div key={k.id} style={{ borderRadius:16, padding:"14px 16px", background:"rgba(255,255,255,0.025)", border:`1px solid ${keys?.[k.id]?k.color+"30":"rgba(255,255,255,0.07)"}`, transition:"all 0.2s" }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: editing===k.id ? 12 : 0 }}>
@@ -4197,7 +4197,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
               {!wlDraft && <button onClick={startWL} style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${C.purple}40`, background:`${C.purple}15`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>EDIT</button>}
             </div>
             {wlDraft ? (
-              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <div style={{ display:"flex", flexDirection:"column", gap:isMobile?24:10 }}>
                 {[
                   {k:"appName",label:"App Name"},{k:"handle",label:"Handle"},
                   {k:"creator1",label:"Creator 1"},{k:"creator2",label:"Creator 2"},
@@ -6097,7 +6097,7 @@ const DealsView = () => {
   const totalEarned = deals.filter(d=>["Paid","Delivered","Live"].includes(d.status)).reduce((s,d)=>s+parseFloat(d.value||0),0);
   const pipeline = deals.filter(d=>["Enquiry","Negotiating","Signed"].includes(d.status)).reduce((s,d)=>s+parseFloat(d.value||0),0);
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:20 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?56:20 }}>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(150px,100%),1fr))", gap:12 }}>
         {[{l:"TOTAL EARNED",v:`£${totalEarned.toLocaleString()}`,c:C.green},{l:"IN PIPELINE",v:`£${pipeline.toLocaleString()}`,c:C.yellow},{l:"ACTIVE DEALS",v:deals.filter(d=>!["Paid","Declined"].includes(d.status)).length,c:C.cyan},{l:"ALL DEALS",v:deals.length,c:C.purple}].map((s,i)=>(
           <div key={i} data-card style={{ borderRadius:16, padding:"18px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${s.c}25` }}>
@@ -6132,13 +6132,13 @@ const DealsView = () => {
         </div>
       )}
       {deals.length===0 ? (
-        <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?20:12 }}>
+        <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?40:12 }}>
           <div style={{ fontSize:32 }}>🤝</div>
           <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>No deals yet</div>
           <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Track brand deals, sponsorships and collaborations here</div>
         </div>
       ) : (
-        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?24:10 }}>
           {deals.map(deal=>(
             <div key={deal.id} data-card style={{ borderRadius:16, padding:isMobile?"18px 18px":"16px 20px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.08)", display:"flex", flexDirection:isMobile?"column":"row", alignItems:isMobile?"stretch":"center", gap:isMobile?16:16, flexWrap:"wrap" }}>
               <div style={{ flex:1, minWidth:isMobile?0:160 }}>
@@ -6788,7 +6788,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
       )}
 
       {/* Messages */}
-      <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", gap:isMobile?20:12, paddingRight:2, paddingBottom:4 }}>
+      <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", gap:isMobile?40:12, paddingRight:2, paddingBottom:4 }}>
         {msgs.map((msg,i)=>(
           <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:msg.role==="user"?"flex-end":"flex-start", gap:8 }}>
             <div style={{ display:"flex", justifyContent:msg.role==="user"?"flex-end":"flex-start", gap:8, alignItems:"flex-end", maxWidth:isMobile?"92%":"85%" }}>
@@ -6885,6 +6885,7 @@ function Dashboard({ keys, onEditKeys }) {
   const [nav, setNav]   = useState("home");
   const [sub, setSub]   = useState(null);
   const [aiErr, setAiErr] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [assistPreload, setAssistPreload] = useState(null);
 
   const handleBuildScript = (idea) => {
@@ -8369,20 +8370,69 @@ Return JSON:
         <div className="web-inner" style={{ position:"relative", zIndex:1 }}>
 
           {/* MOBILE HEADER */}
-          <div className="mobile-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 20px", background:"rgba(8,5,18,0.95)", borderBottom:"1px solid rgba(255,255,255,0.06)", backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <div style={{ width:32, height:32, borderRadius:10, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:900, color:"#fff", flexShrink:0 }}>{(WL.creator1||"B")[0]}</div>
-              <div style={{ fontSize:17, fontWeight:700, color:"#fff", fontFamily:C.fontHead, letterSpacing:"0.01em" }}>{NAV.find(n=>n.id===nav)?.label||nav}</div>
+          <div className="mobile-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px", background:"rgba(8,5,18,0.97)", borderBottom:"1px solid rgba(255,255,255,0.07)", backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", position:"sticky", top:0, zIndex:150 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <div style={{ width:36, height:36, borderRadius:11, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:900, color:"#fff", flexShrink:0 }}>{(WL.creator1||"B")[0]}</div>
+              <div>
+                <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", lineHeight:1 }}>{WL.appName}</div>
+                <div style={{ fontSize:18, fontWeight:700, color:"#fff", fontFamily:C.fontHead, letterSpacing:"0.01em", lineHeight:1.2, marginTop:2 }}>{NAV.find(n=>n.id===nav)?.label||nav}</div>
+              </div>
             </div>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
               {scrapedStats?.scraped_at && (
-                <div style={{ display:"flex", alignItems:"center", gap:4, padding:"4px 9px", borderRadius:7, background:"rgba(0,255,148,0.08)", border:"1px solid rgba(0,255,148,0.18)" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, background:"rgba(0,255,148,0.08)", border:"1px solid rgba(0,255,148,0.18)" }}>
                   <div style={{ width:5, height:5, borderRadius:"50%", background:C.green }} />
                   <span style={{ fontSize:10, color:C.green, fontWeight:700, letterSpacing:"0.06em" }}>LIVE</span>
                 </div>
               )}
+              {/* Hamburger */}
+              <button onClick={()=>setDrawerOpen(true)} style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, width:40, height:40, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:5, cursor:"pointer", padding:0 }}>
+                <div style={{ width:18, height:2, borderRadius:1, background:"rgba(255,255,255,0.85)" }} />
+                <div style={{ width:14, height:2, borderRadius:1, background:"rgba(255,255,255,0.85)" }} />
+                <div style={{ width:18, height:2, borderRadius:1, background:"rgba(255,255,255,0.85)" }} />
+              </button>
             </div>
           </div>
+
+          {/* MOBILE DRAWER */}
+          {drawerOpen && (
+            <div data-lenis-prevent style={{ position:"fixed", inset:0, zIndex:500 }}>
+              {/* Backdrop */}
+              <div onClick={()=>setDrawerOpen(false)} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.6)", backdropFilter:"blur(6px)" }} />
+              {/* Drawer panel */}
+              <div style={{ position:"absolute", top:0, right:0, bottom:0, width:"72vw", maxWidth:300, background:"rgba(10,6,22,0.98)", borderLeft:"1px solid rgba(255,255,255,0.08)", display:"flex", flexDirection:"column", padding:"0 0 40px" }}>
+                {/* Drawer header */}
+                <div style={{ padding:"20px 24px 16px", borderBottom:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <div>
+                    <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" }}>{WL.appName}</div>
+                    <div style={{ fontSize:14, color:"rgba(255,255,255,0.6)", marginTop:2 }}>{WL.creator1}</div>
+                  </div>
+                  <button onClick={()=>setDrawerOpen(false)} style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:18, color:"rgba(255,255,255,0.7)" }}>×</button>
+                </div>
+                {/* Nav items */}
+                <div style={{ flex:1, overflowY:"auto", padding:"16px 16px" }}>
+                  {NAV.map(n=>{
+                    const active = nav===n.id;
+                    return (
+                      <button key={n.id} onClick={()=>{ setNav(n.id); setSub(null); setDrawerOpen(false); }}
+                        style={{ display:"flex", alignItems:"center", gap:16, width:"100%", padding:"16px 18px", borderRadius:16, border:`1px solid ${active?WL.accentColor+"40":"rgba(255,255,255,0.06)"}`, background:active?`linear-gradient(135deg,${WL.accentColor}20,${WL.accentColor2}10)`:"rgba(255,255,255,0.03)", marginBottom:8, cursor:"pointer", textAlign:"left" }}>
+                        <div style={{ width:38, height:38, borderRadius:12, background:active?`linear-gradient(135deg,${WL.accentColor}30,${WL.accentColor2}20)`:"rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                          {n.ic(18, active?WL.accentColor:"rgba(255,255,255,0.5)")}
+                        </div>
+                        <div>
+                          <div style={{ fontSize:15, fontWeight:700, color:active?"#fff":"rgba(255,255,255,0.65)", fontFamily:C.fontHead, letterSpacing:"0.03em" }}>{n.label}</div>
+                          <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:2 }}>
+                            {n.id==="home"?"Dashboard overview":n.id==="content"?"Ideas & calendar":n.id==="analytics"?"Stats & insights":n.id==="tasks"?"To-do & ideas":n.id==="deals"?"Brand partnerships":n.id==="ai"?"AI assistant":n.id==="growth"?"Growth metrics":"Workspace config"}
+                          </div>
+                        </div>
+                        {active && <div style={{ marginLeft:"auto", width:6, height:6, borderRadius:"50%", background:WL.accentColor, boxShadow:`0 0 8px ${WL.accentColor}` }} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* STICKY DESKTOP TOP BAR */}
           <div className="web-topbar" style={{ position:"sticky", top:0, zIndex:100, background:"rgba(6,4,14,0.92)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", borderBottom:"1px solid rgba(255,255,255,0.05)", padding:"0 40px", height:60, display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 1px 0 rgba(255,255,255,0.04)" }}>
@@ -8483,20 +8533,6 @@ Return JSON:
         </div>{/* end web-inner */}
       </div>{/* end web-content */}
 
-      {/* NAV BAR — all 8 items, icon-only, label only on active */}
-      <div className="mobile-nav" style={{ position:"fixed", bottom:16, left:10, right:10, background:"rgba(10,6,20,0.95)", backdropFilter:"blur(32px)", WebkitBackdropFilter:"blur(32px)", borderRadius:26, border:"1px solid rgba(255,255,255,0.1)", display:"flex", padding:"5px", zIndex:99, boxShadow:"0 8px 40px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.06)" }}>
-        {NAV.map(n=>{
-          const active = nav===n.id;
-          return (
-            <button key={n.id} data-nav-btn onClick={()=>{ setNav(n.id); setSub(null); }}
-              style={{ background:active?`linear-gradient(135deg,${WL.accentColor}30,${WL.accentColor2}15)`:"transparent", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:active?2:0, padding:active?"7px 4px 5px":"7px 4px", borderRadius:20, transition:"all 0.18s", flex:1, minWidth:0, position:"relative" }}>
-              {n.ic(active?18:17, active?"#fff":"rgba(255,255,255,0.35)")}
-              {active && <span style={{ fontSize:8, fontWeight:800, color:WL.accentColor, letterSpacing:"0.06em", lineHeight:1, whiteSpace:"nowrap" }}>{n.label}</span>}
-              {active && <div style={{ position:"absolute", bottom:3, left:"50%", transform:"translateX(-50%)", width:3, height:3, borderRadius:"50%", background:WL.accentColor, boxShadow:`0 0 6px ${WL.accentColor}` }} />}
-            </button>
-          );
-        })}
-      </div>
 
       {/* MODALS */}
       {modals.addVideo    && <AddVideoModal />}
@@ -9002,7 +9038,7 @@ function OnboardingPage({ onComplete }) {
                 </div>
               ) : (
               /* ── KRAPMAS — dashboard carousel ── */
-              <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px 40px 32px", position:"relative", zIndex:2, gap:isMobile?28:16 }}>
+              <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px 40px 32px", position:"relative", zIndex:2, gap:isMobile?52:16 }}>
                 {/* Tagline above dashboard */}
                 <div style={{ textAlign:"center", animation:"fadeLeft 0.7s ease forwards" }}>
                   <div style={{ fontSize:13, fontWeight:700, color:"rgba(255,255,255,0.85)", letterSpacing:"0.22em", fontFamily:"Courier New,monospace" }}>6 TOOLS &nbsp;·&nbsp; 1 SYSTEM</div>
@@ -9047,7 +9083,7 @@ function OnboardingPage({ onComplete }) {
 
                       {/* SLIDE 0 — Content / Ideas */}
                       {slideIdx===0 && (
-                        <div key="s0" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
+                        <div key="s0" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:isMobile?24:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
                           <div>
                             <div style={{ fontSize:7, color:SC.slideTitleColors[0], letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>{SC.slidePageLabels[0]}</div>
                             <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.4))", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>{isBraz?"Manage Releases":"Manage Content"}</div>
@@ -9091,7 +9127,7 @@ function OnboardingPage({ onComplete }) {
 
                       {/* SLIDE 1 — Script Builder */}
                       {slideIdx===1 && (
-                        <div key="s1" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
+                        <div key="s1" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:isMobile?24:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
                           <div>
                             <div style={{ fontSize:7, color:"#C566FF", letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>CONTENT</div>
                             <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.4))", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>Script Builder</div>
@@ -9128,7 +9164,7 @@ function OnboardingPage({ onComplete }) {
 
                       {/* SLIDE 2 — AI Assistant */}
                       {slideIdx===2 && (
-                        <div key="s2" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
+                        <div key="s2" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:isMobile?24:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
                           <div>
                             <div style={{ fontSize:7, color:SC.slideTitleColors[2], letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>{SC.slidePageLabels[2]}</div>
                             <div style={{ fontSize:20, fontWeight:800, background:`linear-gradient(135deg,${ac1},${ac2wl})`, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>AI Assistant</div>
@@ -9163,7 +9199,7 @@ function OnboardingPage({ onComplete }) {
 
                       {/* SLIDE 3 — Home / Debrief */}
                       {slideIdx===3 && (
-                        <div key="s3" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
+                        <div key="s3" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:isMobile?24:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                             <div>
                               <div style={{ fontSize:7, color:SC.slideTitleColors[3], letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>{SC.slidePageLabels[3]}</div>
@@ -9201,7 +9237,7 @@ function OnboardingPage({ onComplete }) {
 
                       {/* SLIDE 4 — Brand Deals */}
                       {slideIdx===4 && (
-                        <div key="s4" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
+                        <div key="s4" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:isMobile?24:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end" }}>
                             <div>
                               <div style={{ fontSize:7, color:SC.slideTitleColors[4], letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>{SC.slidePageLabels[4]}</div>
@@ -9244,7 +9280,7 @@ function OnboardingPage({ onComplete }) {
 
                       {/* SLIDE 5 — Analytics / Track Performance */}
                       {slideIdx===5 && (
-                        <div key="s5" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
+                        <div key="s5" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:isMobile?24:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
                           <div>
                             <div style={{ fontSize:7, color:SC.slideTitleColors[5], letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>{SC.slidePageLabels[5]}</div>
                             <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.4))", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>Track Performance</div>
@@ -9299,7 +9335,7 @@ function OnboardingPage({ onComplete }) {
 
                       {/* SLIDE 6 — Growth */}
                       {slideIdx===6 && (
-                        <div key="s6" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
+                        <div key="s6" style={{ position:"absolute", inset:0, padding:"16px 18px 32px", display:"flex", flexDirection:"column", gap:isMobile?24:10, animation:"slideIn 0.3s ease", overflow:"hidden" }}>
                           <div>
                             <div style={{ fontSize:7, color:SC.slideTitleColors[6], letterSpacing:"0.15em", fontFamily:"Courier New,monospace", marginBottom:3 }}>{SC.slidePageLabels[6]}</div>
                             <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.4))", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>Monitor Growth</div>
