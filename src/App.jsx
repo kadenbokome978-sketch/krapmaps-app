@@ -731,7 +731,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
 
       {/* ══ WEEKLY DEBRIEF ════════════════════════════════════════ */}
       <div style={{ borderRadius:16, overflow:"hidden", border:"1px solid rgba(255,255,255,0.08)", background:"rgba(255,255,255,0.025)" }}>
-        <div style={{ padding:"14px 20px", borderBottom:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <div style={{ padding:isMobile?"16px 20px":"16px 22px", borderBottom:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div>
             <div style={{ fontSize:13, fontWeight:700, color:"#fff", fontFamily:C.fontHead }}>Weekly Debrief</div>
             {weeklyDebrief?.generatedAt && <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, marginTop:2 }}>Generated {new Date(weeklyDebrief.generatedAt).toLocaleDateString()}</div>}
@@ -742,19 +742,19 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         </div>
         {weeklyDebrief ? (
           <div style={{ padding:isMobile?"20px 20px":"20px 24px", display:"flex", flexDirection:"column", gap:isMobile?22:12 }}>
-            <div style={{ fontSize:15, fontWeight:700, color:"#fff", fontFamily:C.fontBody, lineHeight:1.5 }}>{weeklyDebrief.headline}</div>
+            <div style={{ fontSize:isMobile?16:15, fontWeight:700, color:"#fff", fontFamily:C.fontBody, lineHeight:1.5 }}>{weeklyDebrief.headline}</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(160px,100%),1fr))", gap:10 }}>
-              <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.green}08`, border:`1px solid ${C.green}18` }}>
-                <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:8, fontFamily:C.fontHead }}>WHAT WORKED</div>
-                {weeklyDebrief.whatWorked?.map((w,i)=><div key={i} style={{ fontSize:12, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, marginBottom:4, lineHeight:1.5 }}>✓ {w}</div>)}
+              <div style={{ padding:isMobile?"16px 16px":"14px 16px", borderRadius:12, background:`${C.green}08`, border:`1px solid ${C.green}18` }}>
+                <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:10, fontFamily:C.fontHead }}>WHAT WORKED</div>
+                {weeklyDebrief.whatWorked?.map((w,i)=><div key={i} style={{ fontSize:13, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, marginBottom:5, lineHeight:1.5 }}>✓ {w}</div>)}
               </div>
-              <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.pink}08`, border:`1px solid ${C.pink}18` }}>
-                <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:8, fontFamily:C.fontHead }}>NEEDS WORK</div>
-                {weeklyDebrief.whatDidnt?.map((w,i)=><div key={i} style={{ fontSize:12, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, marginBottom:4, lineHeight:1.5 }}>✕ {w}</div>)}
+              <div style={{ padding:isMobile?"16px 16px":"14px 16px", borderRadius:12, background:`${C.pink}08`, border:`1px solid ${C.pink}18` }}>
+                <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:10, fontFamily:C.fontHead }}>NEEDS WORK</div>
+                {weeklyDebrief.whatDidnt?.map((w,i)=><div key={i} style={{ fontSize:13, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, marginBottom:5, lineHeight:1.5 }}>✕ {w}</div>)}
               </div>
             </div>
-            {weeklyDebrief.focusThisWeek && <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.cyan}08`, border:`1px solid ${C.cyan}18` }}>
-              <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:8, fontFamily:C.fontHead }}>FOCUS THIS WEEK</div>
+            {weeklyDebrief.focusThisWeek && <div style={{ padding:isMobile?"16px 16px":"14px 16px", borderRadius:12, background:`${C.cyan}08`, border:`1px solid ${C.cyan}18` }}>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:10, fontFamily:C.fontHead }}>FOCUS THIS WEEK</div>
               {weeklyDebrief.focusThisWeek.map((f,i)=>(
                 <div key={i} style={{ display:"flex", gap:8, alignItems:"flex-start", marginBottom:i<weeklyDebrief.focusThisWeek.length-1?6:0 }}>
                   <span style={{ fontSize:11, fontWeight:700, color:C.cyan, background:`${C.cyan}15`, borderRadius:4, padding:"1px 6px", flexShrink:0, marginTop:2, fontFamily:C.fontHead }}>{i+1}</span>
@@ -762,8 +762,8 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
                 </div>
               ))}
             </div>}
-            {weeklyDebrief.ideaToFilmNow && <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.yellow}08`, border:`1px solid ${C.yellow}20` }}>
-              <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:5, fontFamily:C.fontHead }}>FILM THIS WEEK</div>
+            {weeklyDebrief.ideaToFilmNow && <div style={{ padding:isMobile?"16px 16px":"14px 16px", borderRadius:12, background:`${C.yellow}08`, border:`1px solid ${C.yellow}20` }}>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginBottom:8, fontFamily:C.fontHead }}>FILM THIS WEEK</div>
               <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, lineHeight:1.5 }}>{weeklyDebrief.ideaToFilmNow}</div>
             </div>}
             {weeklyDebrief.watchOut && <div style={{ padding:isMobile?"13px 16px":"10px 14px", borderRadius:10, background:`${C.orange}08`, border:`1px solid ${C.orange}20`, display:"flex", gap:10, alignItems:"flex-start" }}>
@@ -1477,7 +1477,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                   </div>
                 ))}
               </div>
-              <div style={{ padding:"12px 14px", borderRadius:12, background:`${C.cyan}08`, border:`1px solid ${C.cyan}18` }}>
+              <div style={{ padding:isMobile?"16px 16px":"14px 16px", borderRadius:12, background:`${C.cyan}08`, border:`1px solid ${C.cyan}18` }}>
                 <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.12em", marginBottom:5, fontFamily:C.fontHead }}>WHY HOOK {hookABResult.winner} WINS</div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, lineHeight:1.5, marginBottom:8 }}>{hookABResult.whyWinner}</div>
                 {hookABResult.improvedWinner && <>
@@ -8299,7 +8299,7 @@ Return JSON:
       {/* ── SIDEBAR ───────────────────────────────────────────── */}
       <div className="web-sidebar">
         {/* Logo */}
-        <div style={{ marginBottom:36, paddingLeft:4 }}>
+        <div style={{ marginBottom:28, paddingLeft:4 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <div style={{ width:40, height:40, borderRadius:16, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:`0 0 20px ${WL.accentColor}40`, fontSize:18, fontWeight:900, color:"#fff", fontFamily:"Georgia,serif" }}>
               {WL.appName[0]}
@@ -8317,7 +8317,7 @@ Return JSON:
         </div>
 
         {/* Nav */}
-        <div style={{ fontSize:10, color:"rgba(255,255,255,0.25)", letterSpacing:"0.16em", fontWeight:700, marginBottom:8, paddingLeft:12, textTransform:"uppercase" }}>Navigation</div>
+        <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)", letterSpacing:"0.16em", fontWeight:700, marginBottom:6, paddingLeft:14, textTransform:"uppercase" }}>Navigation</div>
         <div style={{ display:"flex", flexDirection:"column", gap:3, flex:1 }}>
           {NAV.map(n=>{
             const active = nav===n.id;
@@ -8350,15 +8350,14 @@ Return JSON:
 
         {/* Workspace */}
         <div>
-          <div style={{ fontSize:10, color:"rgba(255,255,255,0.2)", letterSpacing:"0.18em", fontWeight:700, marginBottom:8, paddingLeft:12, textTransform:"uppercase" }}>Workspace</div>
-          <div style={{ padding:isMobile?"18px 18px":"14px 16px", borderRadius:16, background:`linear-gradient(135deg,${WL.accentColor}14,${WL.accentColor2}0a)`, border:`1px solid ${WL.accentColor}25`, boxShadow:"inset 0 1px 0 rgba(255,255,255,0.06)" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:11 }}>
-              <div style={{ width:38, height:38, borderRadius:12, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:900, color:"#fff", flexShrink:0, boxShadow:`0 4px 14px ${C.pink}30` }}>{(WL.creator1||"B")[0]}</div>
-              <div>
-                <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.02em" }}>{WL.creator1}{WL.creator2?` + ${WL.creator2}`:""}</div>
-                <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:3 }}>
-                  <div style={{ width:5, height:5, borderRadius:"50%", background:C.green, boxShadow:`0 0 8px ${C.green}` }} />
-                  <span style={{ fontSize:11, color:"rgba(255,255,255,0.85)" }}>{WL.handle} · Online</span>
+          <div style={{ padding:"16px 16px", borderRadius:16, background:`linear-gradient(135deg,${WL.accentColor}14,${WL.accentColor2}0a)`, border:`1px solid ${WL.accentColor}22` }}>
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <div style={{ width:40, height:40, borderRadius:13, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:17, fontWeight:900, color:"#fff", flexShrink:0, boxShadow:`0 4px 14px ${WL.accentColor}35` }}>{(WL.creator1||"B")[0]}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:14, fontWeight:700, color:"#fff", letterSpacing:"0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{WL.creator1}{WL.creator2?` + ${WL.creator2}`:""}</div>
+                <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:4 }}>
+                  <div style={{ width:6, height:6, borderRadius:"50%", background:C.green, boxShadow:`0 0 8px ${C.green}` }} />
+                  <span style={{ fontSize:11, color:"rgba(255,255,255,0.5)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{WL.handle}</span>
                 </div>
               </div>
             </div>
