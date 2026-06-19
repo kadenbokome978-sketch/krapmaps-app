@@ -3672,107 +3672,263 @@ Return ONLY JSON: {
   );
 };
 
-const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scrapedStats, saveManual, setManualData, videos=[] }) => {
-  const fmtG = n => n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n||0);
-  const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-  
-  // TikTok chart data
-  const ttFollHist = days.map((l,i)=>({ label:l, value:Math.round((m?.tt_followers||0)*[0.7,0.78,0.85,0.91,0.95,0.98,1][i]) }));
-  const ttViewHist = days.map((l,i)=>({ label:l, value:Math.round((ttViewsDisplay||0)*[0.5,0.62,0.71,0.8,0.88,0.95,1][i]) }));
-  
-  // Instagram chart data from scraped reels
-  const igReels = videos.filter(v=>v.platform==="instagram");
-  const igFollowers = igData?.profile?.followers_count || m?.ig_followers || 0;
-  const igFollHist = days.map((l,i)=>({ label:l, value:Math.round((igFollowers)*[0.75,0.8,0.85,0.88,0.92,0.96,1][i]) }));
-  const igViewHist = days.map((l,i)=>({ label:l, value:Math.round((igReels.reduce((s,v)=>s+(v.views||0),0)||0)*[0.5,0.6,0.7,0.78,0.86,0.94,1][i]) }));
-  const igAvgLikes = igReels.length ? Math.round(igReels.reduce((s,v)=>s+(v.likes||0),0)/igReels.length) : 0;
-  const igAvgViews = igReels.length ? Math.round(igReels.reduce((s,v)=>s+(v.views||0),0)/igReels.length) : 0;
+const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scrapedStats, saveManual, setManualData, videos=[], ideas=[] }) => {
+  const [shareMsg, setShareMsg] = React.useState(null);
 
-  const platforms = [
-    {
-      id:"tt", icon:I.tt, label:"TikTok", handle:WL.handle, color:C.pink,
-      live: !!scrapedStats,
-      stats:[
-        {l:"FOLLOWERS", v:fmtG(m?.tt_followers||0), c:C.pink},
-        {l:"TOTAL VIEWS", v:fmtG(ttViewsDisplay||0), c:C.cyan},
-        {l:"TOTAL LIKES", v:fmtG(m?.tt_likes||0), c:C.yellow},
-      ],
-      charts:[
-        {label:"Followers", data:ttFollHist, color:C.pink},
-        {label:"Views", data:ttViewHist, color:C.cyan},
-      ]
-    },
-    {
-      id:"ig", icon:I.ig, label:"Instagram", handle:WL.handle, color:C.purple,
-      live: igReels.length>0,
-      stats:[
-        {l:"FOLLOWERS", v:igFollowers?fmtG(igFollowers):"--", c:C.purple},
-        {l:"AVG VIEWS", v:igAvgViews?fmtG(igAvgViews):"--", c:C.cyan},
-        {l:"AVG LIKES", v:igAvgLikes?fmtG(igAvgLikes):"--", c:C.pink},
-      ],
-      charts:[
-        {label:"Followers", data:igFollHist, color:C.purple},
-        {label:"Reel Views", data:igViewHist, color:C.pink},
-      ]
-    },
-    {
-      id:"app", icon:I.map, label:`${WL.appName} App`, handle:"iOS + Android", color:C.green,
-      live: !!(m?.bins),
-      stats:[
-        {l:WL.statLabels?.custom1Label||"STAT 1", v:fmtG(m?.[WL.statLabels?.custom1Key||"bins"]||0), c:C.green},
-        {l:WL.statLabels?.custom2Label||"STAT 2", v:m?.[WL.statLabels?.custom2Key||"downloads"]?fmtG(m[WL.statLabels.custom2Key]):"--", c:C.cyan},
-      ],
-      charts:[
-        {label:`${WL.statLabels?.custom1Label||"Stat 1"} Growth`, data:days.map((l,i)=>({label:l,value:Math.round((m?.[WL.statLabels?.custom1Key||"bins"]||0)*[0.6,0.68,0.75,0.82,0.88,0.94,1][i])})), color:C.green},
-      ]
-    },
-  ];
+  // --- Derived data ---
+  const postedIdeas = ideas.filter(i => i.status === "posted");
+  const scoredIdeas = ideas.filter(i => i.viral != null);
+
+  // Channel average views across all videos
+  const allViews = videos.map(v => v.views || 0).filter(x => x > 0);
+  const channelAvg = allViews.length ? Math.round(allViews.reduce((a,b)=>a+b,0) / allViews.length) : 0;
+
+  // Avg views for posted ideas only
+  const postedWithViews = postedIdeas.filter(i => i.postedViews != null);
+  const avgPostedViews = postedWithViews.length
+    ? Math.round(postedWithViews.reduce((s,i)=>s+(i.postedViews||0),0) / postedWithViews.length)
+    : 0;
+
+  // Avg AI score
+  const avgAIScore = scoredIdeas.length
+    ? Math.round(scoredIdeas.reduce((s,i)=>s+(i.viral||0),0) / scoredIdeas.length)
+    : 0;
+
+  // AI accuracy: posted ideas where actual views within 50% of score-predicted views
+  // We use score as a 0-100 proxy: predicted = (score/100) * channelAvg * 2
+  const ideasForAccuracy = postedWithViews.filter(i => i.viral != null);
+  const accurateCount = ideasForAccuracy.filter(i => {
+    const predicted = (i.viral / 100) * channelAvg * 2;
+    return Math.abs((i.postedViews - predicted) / (predicted || 1)) <= 0.5;
+  }).length;
+  const accuracy = ideasForAccuracy.length >= 3
+    ? Math.round((accurateCount / ideasForAccuracy.length) * 100)
+    : null;
+
+  // Top 5 videos by views
+  const top5Videos = [...videos].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
+
+  // Best performing idea (highest actual views among posted)
+  const bestIdea = [...postedWithViews].sort((a,b)=>(b.postedViews||0)-(a.postedViews||0))[0];
+
+  // Share handler
+  const handleShare = async () => {
+    const text = `${WL.handle} Results — ${videos.length} videos tracked, avg ${fmt(avgPostedViews)} views. Scored with ${WL.appName}.`;
+    if (navigator.share) {
+      try { await navigator.share({ title: `${WL.handle} Results`, text }); }
+      catch(e) { /* cancelled */ }
+    } else {
+      setShareMsg("Take a screenshot of this card to share your results!");
+      setTimeout(() => setShareMsg(null), 4000);
+    }
+  };
+
+  const sectionHead = (label, color=C.cyan) => (
+    <div style={{ fontSize:13, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", color, marginBottom:16, display:"flex", alignItems:"center", gap:8 }}>
+      <div style={{ width:3, height:14, borderRadius:2, background:color }}/>
+      {label}
+    </div>
+  );
+
+  const card = (children, accent=C.cyan) => (
+    <div style={{ borderRadius:18, background:C.card, border:`1px solid ${C.border}`, overflow:"hidden", position:"relative" }}>
+      <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${accent},${accent}50,transparent)` }}/>
+      <div style={{ padding:"24px 28px" }}>{children}</div>
+    </div>
+  );
+
+  // Verdict label for AI score vs real views
+  const verdict = (idea) => {
+    if (idea.postedViews == null) return { label:"PENDING", color:"rgba(255,255,255,0.35)" };
+    if (!channelAvg) return { label:"PENDING", color:"rgba(255,255,255,0.35)" };
+    return idea.postedViews >= channelAvg
+      ? { label:"HIT", color:C.green }
+      : { label:"MISS", color:C.pink };
+  };
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-      {platforms.map((plat,pi)=>(
-        <div key={plat.id} style={{ borderRadius:22, overflow:"hidden", background:`linear-gradient(145deg,${plat.color}12,rgba(10,6,20,0.95))`, border:`1px solid ${plat.color}30`, position:"relative" }}>
-          {/* Top accent */}
-          <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${plat.color},${plat.color}50,transparent)` }}/>
-          {/* Ambient orb */}
-          <div style={{ position:"absolute", top:-40, right:-40, width:200, height:200, borderRadius:"50%", background:`${plat.color}10`, filter:"blur(60px)", pointerEvents:"none" }}/>
-          
-          {/* Header */}
-          <div style={{ padding:"24px 28px 20px", display:"flex", alignItems:"center", gap:16 }}>
-            <div style={{ width:52, height:52, borderRadius:16, background:`linear-gradient(135deg,${plat.color}30,${plat.color}10)`, border:`1px solid ${plat.color}40`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 0 24px ${plat.color}25`, flexShrink:0 }}>
-              {plat.icon(24,plat.color)}
-            </div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:22, fontWeight:700, color:"#fff", letterSpacing:"0.04em" }}>{plat.label}</div>
-              <div style={{ fontSize:14, color:`${plat.color}bb`, marginTop:2 }}>{plat.handle}</div>
-            </div>
-            <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:20, background:plat.live?`${C.green}12`:"rgba(255,255,255,0.05)", border:`1px solid ${plat.live?C.green:"rgba(255,255,255,0.1)"}` }}>
-              <div style={{ width:6, height:6, borderRadius:"50%", background:plat.live?C.green:"rgba(255,255,255,0.45)", boxShadow:plat.live?`0 0 6px ${C.green}`:""  }}/>
-              <span style={{ fontSize:12, color:plat.live?C.green:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.1em" }}>{plat.live?"LIVE":"NOT SYNCED"}</span>
-            </div>
-          </div>
 
-          {/* Stats row */}
-          <div style={{ display:"grid", gridTemplateColumns:`repeat(${plat.stats.length},1fr)`, gap:0, borderTop:`1px solid ${plat.color}15`, borderBottom:`1px solid ${plat.color}15` }}>
-            {plat.stats.map((s,si)=>(
-              <div key={si} style={{ padding:"20px 24px", borderRight:si<plat.stats.length-1?`1px solid ${plat.color}15`:"none" }}>
-                <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", letterSpacing:"0.12em", textTransform:"uppercase", fontWeight:700, marginBottom:10 }}>{s.l}</div>
-                <div style={{ fontSize:40, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1, textShadow:`0 0 20px ${s.c}40` }}>{s.v}</div>
+      {/* 1. KEY STATS ROW */}
+      {card(
+        <>
+          {sectionHead("Performance Overview", C.cyan)}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:0 }}>
+            {[
+              { l:"IDEAS SCORED", v:scoredIdeas.length || "--", c:C.cyan },
+              { l:"IDEAS POSTED", v:postedIdeas.length || "--", c:C.purple },
+              { l:"AVG AI SCORE", v:avgAIScore ? `${avgAIScore}/100` : "--", c:C.yellow },
+              { l:"AVG ACTUAL VIEWS", v:avgPostedViews ? fmt(avgPostedViews) : "--", c:C.green },
+              { l:"AI ACCURACY", v:accuracy != null ? `${accuracy}% accurate` : "building model", c:accuracy!=null ? C.orange : "rgba(255,255,255,0.35)" },
+            ].map((s,si,arr)=>(
+              <div key={si} style={{ padding:"18px 20px", borderRight:si<arr.length-1?`1px solid ${C.border}`:"none" }}>
+                <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>{s.l}</div>
+                <div style={{ fontSize:24, fontWeight:600, fontFamily:C.fontHead, color:s.c, lineHeight:1.1 }}>{s.v}</div>
               </div>
             ))}
           </div>
+        </>,
+        C.cyan
+      )}
 
-          {/* Charts row */}
-          <div style={{ display:"grid", gridTemplateColumns:`repeat(${plat.charts.length},1fr)`, gap:0 }}>
-            {plat.charts.map((ch,ci)=>(
-              <div key={ci} style={{ padding:"20px 24px", borderRight:ci<plat.charts.length-1?`1px solid ${plat.color}15`:"none" }}>
-                <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", letterSpacing:"0.12em", textTransform:"uppercase", fontWeight:700, marginBottom:14 }}>{ch.label} — 7 Days</div>
-                <GlowAreaChart data={ch.data} color={ch.color} height={110} dataKey="value" xKey="label"/>
+      {/* 2. AI SCORE VS REAL VIEWS TABLE */}
+      {card(
+        <>
+          {sectionHead("AI Score vs Real Views", C.pink)}
+          {postedIdeas.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"32px 0", color:"rgba(255,255,255,0.3)", fontSize:15 }}>
+              No posted ideas yet — mark ideas as posted to track accuracy.
+            </div>
+          ) : (
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
+                <thead>
+                  <tr>
+                    {["Title","AI Score","Actual Views","Verdict"].map(h=>(
+                      <th key={h} style={{ padding:"10px 14px", textAlign:"left", fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", color:"rgba(255,255,255,0.4)", borderBottom:`1px solid ${C.border}` }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {postedIdeas.map((idea,idx)=>{
+                    const vd = verdict(idea);
+                    return (
+                      <tr key={idea.id||idx} style={{ borderBottom:`1px solid ${C.border}` }}>
+                        <td style={{ padding:"12px 14px", color:"#fff", fontWeight:500, maxWidth:240, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{idea.title||idea.hook||"Untitled"}</td>
+                        <td style={{ padding:"12px 14px" }}>
+                          {idea.viral != null ? (
+                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                              <div style={{ width:80, height:6, borderRadius:3, background:"rgba(255,255,255,0.08)", overflow:"hidden" }}>
+                                <div style={{ width:`${idea.viral}%`, height:"100%", borderRadius:3, background:`linear-gradient(90deg,${C.yellow},${C.orange})` }}/>
+                              </div>
+                              <span style={{ color:C.yellow, fontWeight:700 }}>{idea.viral}</span>
+                            </div>
+                          ) : <span style={{ color:"rgba(255,255,255,0.25)" }}>—</span>}
+                        </td>
+                        <td style={{ padding:"12px 14px", color:idea.postedViews!=null?C.cyan:"rgba(255,255,255,0.25)", fontWeight:600 }}>
+                          {idea.postedViews != null ? fmt(idea.postedViews) : "—"}
+                        </td>
+                        <td style={{ padding:"12px 14px" }}>
+                          <span style={{ fontSize:11, fontWeight:700, letterSpacing:"0.1em", color:vd.color, background:`${vd.color}15`, padding:"3px 10px", borderRadius:20, border:`1px solid ${vd.color}40` }}>{vd.label}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {channelAvg > 0 && (
+                <div style={{ marginTop:12, fontSize:12, color:"rgba(255,255,255,0.3)" }}>
+                  Channel avg: {fmt(channelAvg)} views — used to determine Hit / Miss
+                </div>
+              )}
+            </div>
+          )}
+        </>,
+        C.pink
+      )}
+
+      {/* 3. TOP PERFORMING VIDEOS */}
+      {card(
+        <>
+          {sectionHead("Top Performing Videos", C.green)}
+          {top5Videos.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"32px 0", color:"rgba(255,255,255,0.3)", fontSize:15 }}>
+              No videos tracked yet.
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {top5Videos.map((v,idx)=>{
+                const maxViews = top5Videos[0]?.views || 1;
+                const pct = Math.round(((v.views||0)/maxViews)*100);
+                return (
+                  <div key={v.id||idx} style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 16px", borderRadius:12, background:"rgba(255,255,255,0.03)", border:`1px solid ${C.border}` }}>
+                    <div style={{ fontSize:20, fontWeight:700, fontFamily:C.fontHead, color:"rgba(255,255,255,0.18)", width:28, textAlign:"center", flexShrink:0 }}>#{idx+1}</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:14, fontWeight:600, color:"#fff", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginBottom:6 }}>{v.title||v.description||"Untitled"}</div>
+                      <div style={{ width:"100%", height:5, borderRadius:3, background:"rgba(255,255,255,0.07)", overflow:"hidden" }}>
+                        <div style={{ width:`${pct}%`, height:"100%", borderRadius:3, background:`linear-gradient(90deg,${C.green},${C.cyan})` }}/>
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", gap:16, flexShrink:0 }}>
+                      <div style={{ textAlign:"right" }}>
+                        <div style={{ fontSize:18, fontWeight:700, color:C.green }}>{fmt(v.views||0)}</div>
+                        <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.08em" }}>VIEWS</div>
+                      </div>
+                      {v.likes != null && (
+                        <div style={{ textAlign:"right" }}>
+                          <div style={{ fontSize:18, fontWeight:700, color:C.pink }}>{fmt(v.likes)}</div>
+                          <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.08em" }}>LIKES</div>
+                        </div>
+                      )}
+                      {v.hookType && (
+                        <div style={{ alignSelf:"center" }}>
+                          <span style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em", color:C.purple, background:`${C.purple}15`, padding:"3px 10px", borderRadius:20, border:`1px solid ${C.purple}40` }}>{v.hookType}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>,
+        C.green
+      )}
+
+      {/* 4. SHAREABLE SCORE CARD */}
+      <div style={{ borderRadius:18, overflow:"hidden", background:`linear-gradient(135deg,rgba(20,10,40,0.98),rgba(10,6,25,0.98))`, border:`1px solid ${C.border}`, position:"relative" }}>
+        <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.purple},${C.pink},${C.cyan})` }}/>
+        <div style={{ position:"absolute", top:-60, right:-60, width:260, height:260, borderRadius:"50%", background:`${C.purple}08`, filter:"blur(80px)", pointerEvents:"none" }}/>
+        <div style={{ padding:"28px 32px" }}>
+          {sectionHead("Creator Score Card", C.purple)}
+          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:24, flexWrap:"wrap" }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+              <div>
+                <div style={{ fontSize:13, color:"rgba(255,255,255,0.4)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:4 }}>Creator</div>
+                <div style={{ fontSize:28, fontWeight:700, fontFamily:C.fontHead, color:"#fff" }}>{WL.handle||"@creator"}</div>
               </div>
-            ))}
+              <div style={{ display:"flex", gap:32 }}>
+                <div>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:4 }}>Videos Tracked</div>
+                  <div style={{ fontSize:32, fontWeight:700, fontFamily:C.fontHead, color:C.cyan }}>{videos.length}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:4 }}>Avg Views</div>
+                  <div style={{ fontSize:32, fontWeight:700, fontFamily:C.fontHead, color:C.green }}>{avgPostedViews ? fmt(avgPostedViews) : fmt(channelAvg||0)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:4 }}>Ideas Scored</div>
+                  <div style={{ fontSize:32, fontWeight:700, fontFamily:C.fontHead, color:C.yellow }}>{scoredIdeas.length}</div>
+                </div>
+              </div>
+              {bestIdea && (
+                <div style={{ padding:"14px 18px", borderRadius:12, background:`${C.pink}10`, border:`1px solid ${C.pink}25` }}>
+                  <div style={{ fontSize:11, color:C.pink, letterSpacing:"0.12em", textTransform:"uppercase", fontWeight:700, marginBottom:6 }}>Best Performing Idea</div>
+                  <div style={{ fontSize:15, fontWeight:600, color:"#fff", marginBottom:4 }}>{bestIdea.title||bestIdea.hook||"Untitled"}</div>
+                  <div style={{ fontSize:13, color:C.green, fontWeight:700 }}>{fmt(bestIdea.postedViews)} views</div>
+                </div>
+              )}
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:12, alignItems:"flex-end" }}>
+              <button
+                onClick={handleShare}
+                style={{ padding:"14px 28px", borderRadius:14, background:`linear-gradient(135deg,${C.purple},${C.pink})`, border:"none", color:"#fff", fontSize:15, fontWeight:700, cursor:"pointer", letterSpacing:"0.04em", boxShadow:`0 4px 20px ${C.purple}40` }}
+              >
+                Share Results
+              </button>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.25)", textAlign:"right" }}>
+                Powered by {WL.appName}
+              </div>
+            </div>
           </div>
+          {shareMsg && (
+            <div style={{ marginTop:16, padding:"12px 16px", borderRadius:10, background:`${C.yellow}12`, border:`1px solid ${C.yellow}30`, color:C.yellow, fontSize:13, fontWeight:600 }}>
+              {shareMsg}
+            </div>
+          )}
         </div>
-      ))}
+      </div>
+
     </div>
   );
 };
@@ -8148,7 +8304,7 @@ Return JSON:
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
         {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic || BAKED_ANTHROPIC_KEY} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} preloadMsg={assistPreload} />}
-        {nav==="growth"    && <GrowthView m={m} ttViewsDisplay={ttViewsDisplay} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} scrapedStats={scrapedStats} saveManual={saveManual} setManualData={setManualData} videos={videos} />}
+        {nav==="growth"    && <GrowthView m={m} ttViewsDisplay={ttViewsDisplay} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} scrapedStats={scrapedStats} saveManual={saveManual} setManualData={setManualData} videos={videos} ideas={ideas} />}
         {nav==="settings"  && <SettingsView keys={keys} onEditKeys={onEditKeys} scrapedStats={scrapedStats} hasIG={hasIG} WL={activeWL} onEditWL={onEditWL} onSyncTikTok={async()=>{
               setSyncMsg("Syncing...");
               try {
