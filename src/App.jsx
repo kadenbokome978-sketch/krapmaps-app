@@ -5908,6 +5908,45 @@ const sbLoadArray = async (table) => {
   return rows.map(r=>r.data).filter(Boolean);
 };
 
+// ── SUPABASE AUTH ─────────────────────────────────────────────────
+// Dependency-free email/password auth over Supabase's REST auth API. When
+// VITE_REQUIRE_AUTH="true", the app requires a signed-in session and routes all
+// AI/scraper calls through the server proxies (server-held keys). When it's not
+// set, the app behaves exactly as before — this is a safe, opt-in rollout switch.
+const AUTH_KEY = "km_auth_session";
+const REQUIRE_AUTH = (_ENV.VITE_REQUIRE_AUTH === "true");
+const loadSession  = () => loadJSON(AUTH_KEY, null);
+const saveSession  = (s) => saveJSON(AUTH_KEY, s);
+const clearSession = () => { try { localStorage.removeItem(AUTH_KEY); } catch {} };
+const _mkSession = (d) => ({ access_token:d.access_token, refresh_token:d.refresh_token, expires_at: Date.now() + (d.expires_in||3600)*1000, user:d.user||null });
+
+async function authSignUp(email, password) {
+  const r = await fetch(`${getSbUrl()}/auth/v1/signup`, { method:"POST", headers:{ apikey:getSbKey(), "Content-Type":"application/json" }, body:JSON.stringify({ email, password }) });
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.error_description || d.msg || d.error || "Sign up failed");
+  if(d.access_token) { const s=_mkSession(d); saveSession(s); return { session:s }; }
+  return { needsConfirmation:true }; // email confirmation is enabled on the project
+}
+async function authSignIn(email, password) {
+  const r = await fetch(`${getSbUrl()}/auth/v1/token?grant_type=password`, { method:"POST", headers:{ apikey:getSbKey(), "Content-Type":"application/json" }, body:JSON.stringify({ email, password }) });
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.error_description || d.msg || d.error || "Sign in failed");
+  const s=_mkSession(d); saveSession(s); return s;
+}
+async function authRefresh() {
+  const s = loadSession(); if(!s?.refresh_token) return null;
+  const r = await fetch(`${getSbUrl()}/auth/v1/token?grant_type=refresh_token`, { method:"POST", headers:{ apikey:getSbKey(), "Content-Type":"application/json" }, body:JSON.stringify({ refresh_token:s.refresh_token }) });
+  if(!r.ok) { clearSession(); return null; }
+  const d = await r.json(); const ns=_mkSession(d); saveSession(ns); return ns;
+}
+// Valid access token, refreshing if within 60s of expiry. null if not signed in.
+async function getAccessToken() {
+  let s = loadSession(); if(!s) return null;
+  if(Date.now() > (s.expires_at||0) - 60000) s = await authRefresh();
+  return s?.access_token || null;
+}
+const authSignOut = () => clearSession();
+
 // ── CROSS-CLIENT ANONYMISED PRIORS ────────────────────────────────
 // Pools ONLY standard hook/type outcome ratios across channels in the same coarse niche
 // bucket. No titles, no handles, no content — a hashed client id + generic labels + stats.
@@ -9548,10 +9587,75 @@ class AppErrorBoundary extends React.Component {
   }
 }
 
+// ── AUTH GATE — login / signup screen (only shown when VITE_REQUIRE_AUTH="true") ──
+function AuthGate({ onAuthed }) {
+  const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900);
+  const [mode, setMode] = useState("signin"); // signin | signup
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [info, setInfo] = useState("");
+  const accent = (typeof WL !== "undefined" && WL?.accentColor) || "#FF2D78";
+  const accent2 = (typeof WL !== "undefined" && WL?.accentColor2) || "#C566FF";
+  const appName = (typeof WL !== "undefined" && WL?.appName) || "CreatorOS";
+
+  const submit = async () => {
+    setErr(""); setInfo("");
+    if(!email.trim() || !password) { setErr("Enter your email and password."); return; }
+    if(mode==="signup" && password.length < 6) { setErr("Password must be at least 6 characters."); return; }
+    setBusy(true);
+    try {
+      if(mode==="signup") {
+        const res = await authSignUp(email.trim(), password);
+        if(res.needsConfirmation) { setInfo("Check your email to confirm your account, then sign in."); setMode("signin"); }
+        else if(res.session) onAuthed(res.session);
+      } else {
+        const s = await authSignIn(email.trim(), password);
+        onAuthed(s);
+      }
+    } catch(e) { setErr(e.message || "Something went wrong."); }
+    setBusy(false);
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center", padding:isMobile?"24px":"48px", background:"#07050F", fontFamily:"'Space Grotesk',system-ui,sans-serif" }}>
+      <div style={{ position:"fixed", top:"-10%", left:"-8%", width:360, height:360, borderRadius:"50%", background:`radial-gradient(circle,${accent}18 0%,transparent 70%)`, pointerEvents:"none" }} />
+      <div style={{ position:"fixed", bottom:"-10%", right:"-8%", width:320, height:320, borderRadius:"50%", background:`radial-gradient(circle,${accent2}14 0%,transparent 70%)`, pointerEvents:"none" }} />
+      <div style={{ width:"100%", maxWidth:400, position:"relative", zIndex:1 }}>
+        <div style={{ textAlign:"center", marginBottom:32 }}>
+          <div style={{ fontSize:isMobile?28:34, fontWeight:800, background:`linear-gradient(135deg,${accent},${accent2})`, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", letterSpacing:"-0.02em" }}>{appName}</div>
+          <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:8 }}>{mode==="signin" ? "Sign in to your account" : "Create your account"}</div>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" autoComplete="email"
+            style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:15, outline:"none", boxSizing:"border-box" }} />
+          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Password" autoComplete={mode==="signup"?"new-password":"current-password"}
+            style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:15, outline:"none", boxSizing:"border-box" }} />
+          {err && <div style={{ fontSize:13, color:"#FF5C7C", lineHeight:1.5 }}>{err}</div>}
+          {info && <div style={{ fontSize:13, color:"#39FF14", lineHeight:1.5 }}>{info}</div>}
+          <button onClick={submit} disabled={busy}
+            style={{ width:"100%", padding:"15px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${accent},${accent2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:busy?"default":"pointer", opacity:busy?0.6:1, marginTop:4 }}>
+            {busy ? "…" : mode==="signin" ? "Sign In" : "Create Account"}
+          </button>
+        </div>
+        <div style={{ textAlign:"center", marginTop:22, fontSize:13, color:"rgba(255,255,255,0.45)" }}>
+          {mode==="signin" ? "No account yet? " : "Already have an account? "}
+          <button onClick={()=>{ setMode(mode==="signin"?"signup":"signin"); setErr(""); setInfo(""); }}
+            style={{ background:"none", border:"none", color:accent, fontWeight:700, cursor:"pointer", fontSize:13, padding:0 }}>
+            {mode==="signin" ? "Sign up" : "Sign in"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ROOT
 export default function App() {
   const [config, setConfig] = useState(()=>loadJSON(KEYS_KEY,{}));
   const [onboarded, setOnboarded] = useState(()=>loadJSON("krapmaps_v1_onboarded", false));
+  const [session, setSession] = useState(()=>loadSession());
 
   // On mount: pull config from Supabase so keys survive across devices/builds
   useEffect(()=>{
@@ -9579,6 +9683,12 @@ export default function App() {
     // Requires a km_config table: id text PK, data jsonb, updated_at timestamptz
     sbUpsert("km_config",[{id:"workspace_config",data:u,updated_at:new Date().toISOString()}]).catch(()=>{});
   };
+
+  // Auth gate — only enforced when VITE_REQUIRE_AUTH="true". Otherwise the app
+  // runs exactly as before (no login required), so this is a safe opt-in rollout.
+  if(REQUIRE_AUTH && !session) {
+    return <AppErrorBoundary><AuthGate onAuthed={(s)=>setSession(s)} /></AppErrorBoundary>;
+  }
 
   return (
     <AppErrorBoundary>
