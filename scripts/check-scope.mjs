@@ -54,3 +54,16 @@ if (problems.length) {
 }
 
 console.log("✓ scope-check passed — all guarded variables are defined where used.");
+
+// Also syntax-check every serverless function — a broken api/*.js would deploy
+// as a 500ing endpoint without this.
+import { readdirSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+const apiDir = join(root, "api");
+let apiOk = true;
+for (const f of readdirSync(apiDir).filter((n) => n.endsWith(".js"))) {
+  try { execFileSync(process.execPath, ["--check", join(apiDir, f)], { stdio: "pipe" }); }
+  catch (e) { apiOk = false; console.error(`✗ syntax error in api/${f}:\n${e.stderr}`); }
+}
+if (!apiOk) process.exit(1);
+console.log("✓ api functions syntax-checked.");

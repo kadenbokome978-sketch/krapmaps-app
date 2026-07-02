@@ -6054,6 +6054,20 @@ async function getAccessToken() {
   return s?.access_token || null;
 }
 const authSignOut = () => clearSession();
+async function authRecover(email) {
+  const r = await fetch(`${getSbUrl()}/auth/v1/recover`, { method:"POST", headers:{ apikey:getSbKey(), "Content-Type":"application/json" }, body:JSON.stringify({ email }) });
+  if(!r.ok) { const d=await r.json().catch(()=>({})); throw new Error(d.msg || d.error_description || d.error || "Could not send reset email"); }
+}
+// Completes the email-link recovery: sets the new password using the token from
+// the link's URL hash, then signs the user straight in with that session.
+async function authCompleteReset(tokens, newPassword) {
+  const r = await fetch(`${getSbUrl()}/auth/v1/user`, { method:"PUT", headers:{ apikey:getSbKey(), "Content-Type":"application/json", Authorization:"Bearer "+tokens.access_token }, body:JSON.stringify({ password:newPassword }) });
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.msg || d.error_description || d.error || "Could not set new password");
+  const sess = _mkSession({ access_token:tokens.access_token, refresh_token:tokens.refresh_token, expires_in:3600, user:d });
+  saveSession(sess);
+  return sess;
+}
 
 // ── BACKEND PROXY ─────────────────────────────────────────────────
 // When auth is on, all AI/scraper calls go through our serverless proxies, which
@@ -9767,18 +9781,46 @@ class AppErrorBoundary extends React.Component {
 // ── AUTH GATE — login / signup screen (only shown when VITE_REQUIRE_AUTH="true") ──
 function AuthGate({ onAuthed }) {
   const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900);
-  const [mode, setMode] = useState("signin"); // signin | signup
+  const [mode, setMode] = useState("signin"); // signin | signup | reset
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [info, setInfo] = useState("");
+  const [resetTok, setResetTok] = useState(null);
+  // Arriving from a password-reset email: Supabase puts tokens in the URL hash.
+  useEffect(()=>{
+    try {
+      const h = new URLSearchParams((window.location.hash||"").replace(/^#/,""));
+      if(h.get("type")==="recovery" && h.get("access_token")) {
+        setResetTok({ access_token:h.get("access_token"), refresh_token:h.get("refresh_token") });
+        setMode("reset");
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    } catch {}
+  },[]);
+  const forgot = async () => {
+    setErr(""); setInfo("");
+    if(!email.trim()) { setErr("Enter your email first, then tap Forgot password."); return; }
+    setBusy(true);
+    try { await authRecover(email.trim()); setInfo("Reset link sent — check your email."); }
+    catch(e) { setErr(e.message); }
+    setBusy(false);
+  };
   const accent = (typeof WL !== "undefined" && WL?.accentColor) || "#FF2D78";
   const accent2 = (typeof WL !== "undefined" && WL?.accentColor2) || "#C566FF";
   const appName = (typeof WL !== "undefined" && WL?.appName) || "CreatorOS";
 
   const submit = async () => {
     setErr(""); setInfo("");
+    if(mode==="reset") {
+      if(password.length < 6) { setErr("Password must be at least 6 characters."); return; }
+      setBusy(true);
+      try { const sess = await authCompleteReset(resetTok, password); onAuthed(sess); }
+      catch(e) { setErr(e.message || "Could not set new password."); }
+      setBusy(false);
+      return;
+    }
     if(!email.trim() || !password) { setErr("Enter your email and password."); return; }
     if(mode==="signup" && password.length < 6) { setErr("Password must be at least 6 characters."); return; }
     setBusy(true);
@@ -9802,27 +9844,34 @@ function AuthGate({ onAuthed }) {
       <div style={{ width:"100%", maxWidth:400, position:"relative", zIndex:1 }}>
         <div style={{ textAlign:"center", marginBottom:32 }}>
           <div style={{ fontSize:isMobile?28:34, fontWeight:800, background:`linear-gradient(135deg,${accent},${accent2})`, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", letterSpacing:"-0.02em" }}>{appName}</div>
-          <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:8 }}>{mode==="signin" ? "Sign in to your account" : "Create your account"}</div>
+          <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:8 }}>{mode==="signin" ? "Sign in to your account" : mode==="reset" ? "Choose a new password" : "Create your account"}</div>
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" autoComplete="email"
-            style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:15, outline:"none", boxSizing:"border-box" }} />
-          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Password" autoComplete={mode==="signup"?"new-password":"current-password"}
+          {mode!=="reset" && <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" autoComplete="email"
+            style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:15, outline:"none", boxSizing:"border-box" }} />}
+          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder={mode==="reset"?"New password":"Password"} autoComplete={mode==="signin"?"current-password":"new-password"}
             style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:15, outline:"none", boxSizing:"border-box" }} />
           {err && <div style={{ fontSize:13, color:"#FF5C7C", lineHeight:1.5 }}>{err}</div>}
           {info && <div style={{ fontSize:13, color:"#39FF14", lineHeight:1.5 }}>{info}</div>}
           <button onClick={submit} disabled={busy}
             style={{ width:"100%", padding:"15px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${accent},${accent2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:busy?"default":"pointer", opacity:busy?0.6:1, marginTop:4 }}>
-            {busy ? "…" : mode==="signin" ? "Sign In" : "Create Account"}
+            {busy ? "…" : mode==="signin" ? "Sign In" : mode==="reset" ? "Set New Password" : "Create Account"}
           </button>
         </div>
+        {mode!=="reset" && (
         <div style={{ textAlign:"center", marginTop:22, fontSize:13, color:"rgba(255,255,255,0.45)" }}>
           {mode==="signin" ? "No account yet? " : "Already have an account? "}
           <button onClick={()=>{ setMode(mode==="signin"?"signup":"signin"); setErr(""); setInfo(""); }}
             style={{ background:"none", border:"none", color:accent, fontWeight:700, cursor:"pointer", fontSize:13, padding:0 }}>
             {mode==="signin" ? "Sign up" : "Sign in"}
           </button>
+          {mode==="signin" && (
+            <div style={{ marginTop:10 }}>
+              <button onClick={forgot} disabled={busy} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", cursor:"pointer", fontSize:12, padding:0, textDecoration:"underline" }}>Forgot password?</button>
+            </div>
+          )}
         </div>
+        )}
       </div>
     </div>
   );
