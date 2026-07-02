@@ -7312,8 +7312,9 @@ function Dashboard({ keys, onEditKeys }) {
     const hasData = cachedVideos.filter(v=>v.platform==="tiktok"||!v.platform).length > 0;
     if(!force && hasData && Date.now() - lastFetch < 6 * 60 * 60 * 1000) return;
     
-    // On force sync reset videos state to empty so no stale data accumulates
-    if(force) { setVideos([]); try { localStorage.removeItem(VIDEOS_KEY); } catch(e){} }
+    // NOTE: force no longer wipes videos up-front — if the fetch then failed
+    // (bad key, 401, network), the whole local library was lost. The atomic
+    // replace below handles force-mode strictness only after a successful fetch.
     
     try {
       const wl = loadWL();
@@ -7376,8 +7377,10 @@ function Dashboard({ keys, onEditKeys }) {
       
       // Update existing videos with fresh stats
       setVideos(prev => {
-        // Keep non-tiktok videos (IG etc), replace all TT entries fresh from scrape
-        const nonTT = prev.filter(v => v.platform !== "tiktok");
+        // Keep non-tiktok videos (IG etc), replace all TT entries fresh from scrape.
+        // Force sync is stricter: also drops legacy unplatformed entries — but only
+        // now, AFTER a successful fetch, so a failed sync never loses data.
+        const nonTT = force ? prev.filter(v => v.platform === "instagram") : prev.filter(v => v.platform !== "tiktok");
         const fresh = tikVideos.map(tv => ({
           id: "tikwm_"+tv.video_id,
           title: tv.title||"",
