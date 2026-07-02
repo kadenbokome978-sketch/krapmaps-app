@@ -9493,6 +9493,36 @@ function OnboardingPage({ onComplete }) {
   );
 }
 
+// ── ERROR BOUNDARY — stops a bug in any view from blanking the whole app ──
+class AppErrorBoundary extends React.Component {
+  constructor(props){ super(props); this.state = { error:null }; }
+  static getDerivedStateFromError(error){ return { error }; }
+  componentDidCatch(error, info){ try { console.error("App crashed:", error, info?.componentStack); } catch {} }
+  render(){
+    if(this.state.error){
+      const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900);
+      const accent = (typeof WL !== "undefined" && WL?.accentColor) || "#FF2D78";
+      return (
+        <div style={{ position:"fixed", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:isMobile?"32px 24px":"48px", background:"#07050F", color:"#fff", textAlign:"center", fontFamily:"'Space Grotesk',system-ui,sans-serif" }}>
+          <div style={{ fontSize:isMobile?40:56, marginBottom:16 }}>⚠️</div>
+          <div style={{ fontSize:isMobile?20:26, fontWeight:700, marginBottom:10 }}>Something went wrong</div>
+          <div style={{ fontSize:isMobile?14:15, color:"rgba(255,255,255,0.55)", maxWidth:420, lineHeight:1.6, marginBottom:28 }}>
+            The app hit an unexpected error. Your saved data is safe — reloading usually fixes it.
+          </div>
+          <div style={{ display:"flex", flexDirection:isMobile?"column":"row", gap:12, width:isMobile?"100%":"auto", maxWidth:320 }}>
+            <button onClick={()=>window.location.reload()} style={{ padding:"14px 28px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${accent},${accent}bb)`, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer", width:isMobile?"100%":"auto" }}>Reload App</button>
+            <button onClick={()=>this.setState({ error:null })} style={{ padding:"14px 28px", borderRadius:12, border:"1px solid rgba(255,255,255,0.2)", background:"transparent", color:"rgba(255,255,255,0.8)", fontWeight:700, fontSize:15, cursor:"pointer", width:isMobile?"100%":"auto" }}>Try Again</button>
+          </div>
+          {this.state.error?.message && (
+            <div style={{ marginTop:28, fontSize:12, color:"rgba(255,255,255,0.3)", fontFamily:"monospace", maxWidth:420, wordBreak:"break-word" }}>{String(this.state.error.message).slice(0,180)}</div>
+          )}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ROOT
 export default function App() {
   const [config, setConfig] = useState(()=>loadJSON(KEYS_KEY,{}));
@@ -9525,9 +9555,11 @@ export default function App() {
     sbUpsert("km_config",[{id:"workspace_config",data:u,updated_at:new Date().toISOString()}]).catch(()=>{});
   };
 
-  if(!onboarded) {
-    return <OnboardingPage onComplete={()=>setOnboarded(true)} />;
-  }
-
-  return <Dashboard keys={config.keys||{}} onEditKeys={handleEditKeys} />;
+  return (
+    <AppErrorBoundary>
+      {!onboarded
+        ? <OnboardingPage onComplete={()=>setOnboarded(true)} />
+        : <Dashboard keys={config.keys||{}} onEditKeys={handleEditKeys} />}
+    </AppErrorBoundary>
+  );
 }
