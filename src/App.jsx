@@ -447,6 +447,18 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
   const intelLevel = React.useMemo(()=>getIntelligenceLevel(videos, ideas||[], loadJSON(MEMORY_KEY,{entries:[]}), loadJSON(CHANNEL_THEORY_KEY,"")),[videos, ideas]);
   const xpToNext = 100 * (xp.level * xp.level);
   const xpProgress = Math.min(((xp.total - 100*(xp.level-1)*(xp.level-1)) / (xpToNext - 100*(xp.level-1)*(xp.level-1) || 1)) * 100, 100) || 0;
+  // Integration health — surface sync failures that used to die silently in the console
+  const [health, setHealth] = React.useState(()=>loadHealth());
+  const [healthDismissedAt, setHealthDismissedAt] = React.useState(()=>loadJSON("km_health_dismissed", 0));
+  React.useEffect(()=>{
+    const onH = () => setHealth(loadHealth());
+    window.addEventListener("km-health", onH);
+    return ()=>window.removeEventListener("km-health", onH);
+  },[]);
+  const healthIssues = Object.entries(health)
+    .filter(([,h])=>h.state==="error" && h.at > healthDismissedAt)
+    .map(([service,h])=>({ service, ...h }));
+  const dismissHealth = () => { const now=Date.now(); saveJSON("km_health_dismissed", now); setHealthDismissedAt(now); };
   // Build chart data from videos
   const last7 = [...Array(7)].map((_,i) => {
     const d = new Date(); d.setDate(d.getDate()-6+i);
@@ -476,6 +488,25 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:28 }}>
+
+      {/* ══ INTEGRATION HEALTH — actionable, dismissible sync warnings ══ */}
+      {healthIssues.length > 0 && (
+        <div data-card style={{ borderRadius:14, padding:isMobile?"16px 16px":"16px 20px", background:`linear-gradient(135deg,${C.pink}12,rgba(10,6,20,0.95))`, border:`1px solid ${C.pink}35` }}>
+          <div style={{ display:"flex", alignItems:"flex-start", gap:12 }}>
+            <span style={{ fontSize:18, flexShrink:0, lineHeight:1.3 }}>⚠️</span>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.06em", marginBottom:6 }}>SYNC ISSUE{healthIssues.length>1?"S":""}</div>
+              {healthIssues.map(iss=>(
+                <div key={iss.service} style={{ fontSize:isMobile?12:13, color:"rgba(255,255,255,0.75)", lineHeight:1.55, marginBottom:4 }}>
+                  <span style={{ color:C.pink, fontWeight:700, textTransform:"capitalize" }}>{iss.service}: </span>{iss.msg}
+                </div>
+              ))}
+              <button onClick={()=>setNav&&setNav("settings")} style={{ marginTop:6, padding:"7px 14px", borderRadius:9, border:`1px solid ${C.pink}40`, background:`${C.pink}12`, color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", letterSpacing:"0.06em" }}>CHECK SETTINGS →</button>
+            </div>
+            <button onClick={dismissHealth} aria-label="Dismiss sync warnings" style={{ background:"none", border:"none", color:"rgba(255,255,255,0.45)", cursor:"pointer", fontSize:18, lineHeight:1, padding:"0 2px", flexShrink:0 }}>×</button>
+          </div>
+        </div>
+      )}
 
       {/* ══ WEEKLY RITUAL — the retention loop that feeds the AI ══════ */}
       {ritual.pending > 0 ? (
@@ -4096,9 +4127,26 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
     { id:"igscraper", label:"Instagram (RapidAPI)", desc:"Auto reel sync", color:"#E1306C" },
   ];
 
+  // Live integration health — updates when any sync reports a result
+  const [health, setHealth] = useState(()=>loadHealth());
+  useEffect(()=>{
+    const onH = () => setHealth(loadHealth());
+    window.addEventListener("km-health", onH);
+    return ()=>window.removeEventListener("km-health", onH);
+  },[]);
+  const _hStatus = (service, fallbackValue, fallbackColor) => {
+    const h = health[service];
+    if(!h) return { value:fallbackValue, color:fallbackColor, detail:null };
+    if(h.state==="error") return { value:"ERROR", color:C.pink, detail:h.msg };
+    return { value:fallbackValue, color:fallbackColor, detail:null };
+  };
+  const _sb = _hStatus("supabase", "CONNECTED", C.green);
+  const _tt = _hStatus("tiktok", scrapedStats?"SYNCED "+(()=>{try{const h=Math.round((Date.now()-new Date(scrapedStats.scraped_at))/3600000);return h<1?"<1h ago":h+"h ago";}catch{return "unknown";}})()+" ("+( scrapedStats.video_count||0)+" videos)":"NOT SYNCED", scrapedStats?C.green:C.yellow);
+  const _ig = _hStatus("instagram", keys?.igscraper?"KEY SET":"ADD KEY", keys?.igscraper?C.green:C.yellow);
   const statusItems = [
-    { label:"Supabase DB", value:"CONNECTED", color:C.green, id:"db" },
-    { label:"TikTok Scraper", value:scrapedStats?"SYNCED "+(()=>{try{const h=Math.round((Date.now()-new Date(scrapedStats.scraped_at))/3600000);return h<1?"<1h ago":h+"h ago";}catch{return "unknown";}})()+" ("+( scrapedStats.video_count||0)+" videos)":"NOT SYNCED", color:scrapedStats?C.green:C.yellow, id:"tikwm" },
+    { label:"Supabase DB", value:_sb.value, color:_sb.color, id:"db", detail:_sb.detail },
+    { label:"TikTok Scraper", value:_tt.value, color:_tt.color, id:"tikwm", detail:_tt.detail },
+    { label:"Instagram Scraper", value:_ig.value, color:_ig.color, id:"igscraper", detail:_ig.detail },
     { label:"Anthropic AI", value:keys?.anthropic?"KEY SET":"ADD KEY", color:keys?.anthropic?C.green:C.pink, id:"anthropic" },
     { label:"Perplexity", value:keys?.perplexity?"KEY SET":"ADD KEY", color:keys?.perplexity?C.green:C.yellow, id:"perplexity" },
     { label:"Gemini Video", value:keys?.gemini?"KEY SET":"ADD KEY", color:keys?.gemini?C.green:C.yellow, id:"gemini" },
@@ -4180,6 +4228,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
                   <div style={{ width:6, height:6, borderRadius:"50%", background:s.color, boxShadow:`0 0 6px ${s.color}`, flexShrink:0 }}/>
                   <span style={{ fontSize:isMobile?11:13, fontWeight:700, color:s.color }}>{s.value}</span>
                 </div>
+                {s.detail && <div style={{ flexBasis:"100%", fontSize:12, color:`${C.pink}cc`, lineHeight:1.5, paddingTop:2 }}>{s.detail}</div>}
               </div>
             ))}
           </div>
@@ -5912,10 +5961,27 @@ const perfScore = v => {
 
 // ── SUPABASE ──────────────────────────────────────────────────────
 const _sbHeaders = () => ({ apikey:getSbKey(),"Authorization":"Bearer "+getSbKey(),"Content-Type":"application/json" });
+// ── INTEGRATION HEALTH ────────────────────────────────────────────
+// Every integration failure used to be a silent console.warn — users saw empty
+// data with no explanation. Each integration now reports its last result here;
+// Settings shows the real status and Home surfaces actionable errors.
+const HEALTH_KEY = "km_health";
+const loadHealth = () => loadJSON(HEALTH_KEY, {});
+const reportHealth = (service, state, msg) => {
+  try {
+    const h = loadHealth();
+    const prev = h[service];
+    h[service] = { state, msg, at: Date.now() };
+    saveJSON(HEALTH_KEY, h);
+    if(!prev || prev.state !== state) window.dispatchEvent(new CustomEvent("km-health", { detail:{ service, state, msg } }));
+  } catch {}
+};
+
 const sbFetch = async (table,filter="") => {
   try {
     const r = await fetch(`${getSbUrl()}/rest/v1/${table}?${filter}&limit=1000`,{ headers:_sbHeaders() });
-    if(r.status===401||r.status===403) { console.warn("[sb] auth error on",table,"— project may be paused"); return null; }
+    if(r.status===401||r.status===403) { console.warn("[sb] auth error on",table,"— project may be paused"); reportHealth("supabase","error",`Cloud sync rejected (${r.status}) — Supabase project paused or key rotated. Data still saves on this device.`); return null; }
+    if(r.ok) reportHealth("supabase","ok","Connected");
     if(!r.ok) { console.warn("[sb] fetch error",r.status,"on",table); return null; }
     return r.json();
   } catch(e) { console.warn("[sb] network error on",table,":",e.message); return null; }
@@ -7272,9 +7338,9 @@ function Dashboard({ keys, onEditKeys }) {
         } catch(e) { console.warn("User info parse failed:", e.message); }
       }
 
-      if(!r.ok) return;
+      if(!r.ok) { reportHealth("tiktok","error",`TikTok scraper HTTP ${r.status}${r.status===403?" — RapidAPI key invalid or not subscribed":r.status===429?" — rate limited, retries automatically":""}`); return; }
       const data = await r.json();
-      if(data.code !== 0 || !data.data?.videos) return;
+      if(data.code !== 0 || !data.data?.videos) { reportHealth("tiktok","error","TikTok scraper returned no videos — check the handle in Settings ("+(wl.handle||"not set")+")"); return; }
       
       let tikVideos = data.data.videos;
 
@@ -7353,6 +7419,7 @@ function Dashboard({ keys, onEditKeys }) {
       setScrapedStats(scraped);
       saveJSON(SCRAPE_KEY, scraped);
       saveJSON("krapmaps_v1_tikwm_last", Date.now());
+      reportHealth("tiktok","ok",`Synced ${tikVideos.length} videos`);
 
       // Recalculate scores for all videos after stats update
       setVideos(prev => {
@@ -7375,7 +7442,7 @@ function Dashboard({ keys, onEditKeys }) {
         }
       } catch(e) { /* silent — local update already done */ }
       
-    } catch(e) { console.warn("TIKWM fetch failed:", e.message); }
+    } catch(e) { console.warn("TIKWM fetch failed:", e.message); reportHealth("tiktok","error","TikTok sync failed: "+e.message); }
   },[]);
 
   // Auto-fetch on load and every 12hrs
@@ -7462,7 +7529,7 @@ function Dashboard({ keys, onEditKeys }) {
       const wl = loadWL();
       const handle = (wl.handle||"@findkrap").replace("@","");
       const r = await rapidFetch("https://instagram-scraper-api2.p.rapidapi.com/v1/info?username_or_id_or_url=" + handle, rapidKey);
-      if(!r.ok) { console.warn("IG followers: HTTP", r.status); return; }
+      if(!r.ok) { console.warn("IG followers: HTTP", r.status); reportHealth("instagram","error",`Instagram scraper HTTP ${r.status}${r.status===403?" — RapidAPI key invalid or not subscribed to instagram-scraper-api2":r.status===429?" — rate limited":""}`); return; }
       const data = await r.json();
       const igFollowers = data?.data?.follower_count || data?.data?.edge_followed_by?.count || data?.follower_count || 0;
       console.log("IG followers raw:", JSON.stringify(data?.data).slice(0,200));
@@ -7524,7 +7591,7 @@ function Dashboard({ keys, onEditKeys }) {
           r = await rapidFetch(url, rapidKey);
           retries++;
         }
-        if(!r.ok) { console.warn("IG reels fetch HTTP", r.status, "on page", pages+1); break; }
+        if(!r.ok) { console.warn("IG reels fetch HTTP", r.status, "on page", pages+1); if(pages===0) reportHealth("instagram","error",`Instagram reels fetch HTTP ${r.status}${r.status===403?" — key invalid or not subscribed":""}`); break; }
         const data = await r.json();
         // instagram-scraper-api2 returns { data: { items: [...], pagination_token: "..." } }
         const items = data?.data?.items || data?.items || [];
@@ -7601,6 +7668,7 @@ function Dashboard({ keys, onEditKeys }) {
       } catch(e) { console.warn('Proxy view fetch failed:', e.message); }
 
       saveJSON("krapmaps_v1_igreels_last", Date.now());
+      reportHealth("instagram","ok",`Synced ${allItems.length} reels`);
 
       // IG follower count — enter manually via Update Stats
 
@@ -7622,7 +7690,7 @@ function Dashboard({ keys, onEditKeys }) {
         media: igReelVideos,
         scraped_at: new Date().toISOString()
       }));
-    } catch(e) { console.warn("IG reels fetch failed:", e.message); }
+    } catch(e) { console.warn("IG reels fetch failed:", e.message); reportHealth("instagram","error","Instagram sync failed: "+e.message); }
   },[]);
 
   // Immediately show cached IG followers from manualData on load
