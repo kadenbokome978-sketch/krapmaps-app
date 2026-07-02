@@ -4258,9 +4258,9 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             </div>
             {sbDraft && (
               <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                <input value={sbDraft.url} onChange={e=>setSbDraft(d=>({...d,url:e.target.value}))} placeholder="https://xxxx.supabase.co"
+                <input value={sbDraft.url} onChange={e=>setSbDraft(d=>({...d,url:e.target.value}))} placeholder="https://xxxx.supabase.co" aria-label="Supabase project URL"
                   style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1px solid ${C.cyan}25`, borderRadius:10, color:"#fff", padding:isMobile?"13px 16px":"10px 12px", fontSize:13, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box" }}/>
-                <input value={sbDraft.key} onChange={e=>setSbDraft(d=>({...d,key:e.target.value}))} placeholder="anon / publishable key"
+                <input value={sbDraft.key} onChange={e=>setSbDraft(d=>({...d,key:e.target.value}))} placeholder="anon / publishable key" aria-label="Supabase anon key"
                   style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1px solid ${C.cyan}25`, borderRadius:10, color:"#fff", padding:isMobile?"13px 16px":"10px 12px", fontSize:13, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box" }}/>
                 <div style={{ display:"flex", gap:8 }}>
                   <button onClick={testAndSaveSb} style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:`linear-gradient(135deg,${C.cyan},${C.cyan}bb)`, color:"#07050F", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>TEST &amp; SAVE</button>
@@ -9890,9 +9890,9 @@ function AuthGate({ onAuthed }) {
           <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:8 }}>{mode==="signin" ? "Sign in to your account" : mode==="reset" ? "Choose a new password" : "Create your account"}</div>
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          {mode!=="reset" && <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" autoComplete="email"
+          {mode!=="reset" && <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" aria-label="Email" autoComplete="email"
             style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:15, outline:"none", boxSizing:"border-box" }} />}
-          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder={mode==="reset"?"New password":"Password"} autoComplete={mode==="signin"?"current-password":"new-password"}
+          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder={mode==="reset"?"New password":"Password"} aria-label="Password" autoComplete={mode==="signin"?"current-password":"new-password"}
             style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, color:"#fff", padding:"14px 16px", fontSize:15, outline:"none", boxSizing:"border-box" }} />
           {err && <div style={{ fontSize:13, color:"#FF5C7C", lineHeight:1.5 }}>{err}</div>}
           {info && <div style={{ fontSize:13, color:"#39FF14", lineHeight:1.5 }}>{info}</div>}
