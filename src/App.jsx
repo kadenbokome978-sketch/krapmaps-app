@@ -4142,9 +4142,9 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
     { label:"Supabase DB", value:_sb.value, color:_sb.color, id:"db", detail:_sb.detail },
     { label:"TikTok Scraper", value:_tt.value, color:_tt.color, id:"tikwm", detail:_tt.detail },
     { label:"Instagram Scraper", value:_ig.value, color:_ig.color, id:"igscraper", detail:_ig.detail },
-    { label:"Anthropic AI", value:keys?.anthropic?"KEY SET":"ADD KEY", color:keys?.anthropic?C.green:C.pink, id:"anthropic" },
-    { label:"Perplexity", value:keys?.perplexity?"KEY SET":"ADD KEY", color:keys?.perplexity?C.green:C.yellow, id:"perplexity" },
-    { label:"Gemini Video", value:keys?.gemini?"KEY SET":"ADD KEY", color:keys?.gemini?C.green:C.yellow, id:"gemini" },
+    { label:"Anthropic AI", value:keys?.anthropic?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.anthropic||USE_BACKEND)?C.green:C.pink, id:"anthropic" },
+    { label:"Perplexity", value:keys?.perplexity?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.perplexity||USE_BACKEND)?C.green:C.yellow, id:"perplexity" },
+    { label:"Gemini Video", value:keys?.gemini?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.gemini||USE_BACKEND)?C.green:C.yellow, id:"gemini" },
   ];
 
   return (
@@ -6060,12 +6060,14 @@ const authSignOut = () => clearSession();
 // hold the provider keys server-side. Users need no keys. If a user set their own
 // key (BYO), we forward it as X-BYO-Key so the server uses theirs instead.
 const USE_BACKEND = REQUIRE_AUTH;
+const _signalSignedOut = () => { try { clearSession(); window.dispatchEvent(new Event("km-signed-out")); } catch {} };
 async function _postProxy(endpoint, body, byoKey) {
   const token = await getAccessToken();
-  if(!token) throw new Error("Your session expired — please sign in again.");
+  if(!token) { _signalSignedOut(); throw new Error("Your session expired — please sign in again."); }
   const headers = { "Content-Type":"application/json", "Authorization":"Bearer "+token };
   if(byoKey) headers["X-BYO-Key"] = byoKey;
   const r = await fetch(endpoint, { method:"POST", headers, body:JSON.stringify(body) });
+  if(r.status===401 && !byoKey) { _signalSignedOut(); throw new Error("Your session expired — please sign in again."); }
   if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e.error || ("Proxy error "+r.status)); }
   return r.json();
 }
@@ -9831,6 +9833,11 @@ export default function App() {
   const [config, setConfig] = useState(()=>loadJSON(KEYS_KEY,{}));
   const [onboarded, setOnboarded] = useState(()=>loadJSON("krapmaps_v1_onboarded", false));
   const [session, setSession] = useState(()=>loadSession());
+  useEffect(()=>{
+    const onOut = () => setSession(null);
+    window.addEventListener("km-signed-out", onOut);
+    return ()=>window.removeEventListener("km-signed-out", onOut);
+  },[]);
 
   // On mount: pull config from Supabase so keys survive across devices/builds
   useEffect(()=>{
