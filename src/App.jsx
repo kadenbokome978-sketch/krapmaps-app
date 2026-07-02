@@ -553,9 +553,9 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         </div>
         {/* Channel Intelligence */}
         <div data-card style={{ borderRadius:16, padding:"16px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.cyan}25` }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-            <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700 }}>AI INTELLIGENCE</div>
-            <div style={{ fontSize:11, fontWeight:700, color:C.cyan, background:`${C.cyan}12`, border:`1px solid ${C.cyan}25`, borderRadius:6, padding:"2px 8px" }}>{intelLevel<30?"LEARNING":intelLevel<60?"BUILDING":intelLevel<80?"SHARP":"ELITE"}</div>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:8 }}>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:isMobile?"0.04em":"0.1em", fontWeight:700, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{isMobile?"AI LEVEL":"AI INTELLIGENCE"}</div>
+            <div style={{ fontSize:isMobile?9:11, fontWeight:700, color:C.cyan, background:`${C.cyan}12`, border:`1px solid ${C.cyan}25`, borderRadius:6, padding:isMobile?"3px 6px":"2px 8px", flexShrink:0, whiteSpace:"nowrap", letterSpacing:"0.04em" }}>{intelLevel<30?"LEARNING":intelLevel<60?"BUILDING":intelLevel<80?"SHARP":"ELITE"}</div>
           </div>
           <div style={{ fontSize:22, fontWeight:400, fontFamily:C.fontHead, color:C.cyan, lineHeight:1, marginBottom:8 }}>{intelLevel}<span style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginLeft:2 }}>/100</span></div>
           <div style={{ height:4, borderRadius:2, background:"rgba(255,255,255,0.06)" }}>
@@ -1094,16 +1094,16 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:20 }}>
-      {/* Tabs + Add button */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
-        <div style={{ display:"flex", gap:isMobile?4:8, flex:1, overflowX:"auto" }}>
+      {/* Tabs + Add button — stacks on mobile so all tabs stay readable */}
+      <div style={{ display:"flex", alignItems:isMobile?"stretch":"center", justifyContent:"space-between", gap:isMobile?12:8, flexDirection:isMobile?"column":"row" }}>
+        <div style={{ display:"flex", gap:isMobile?6:8, flex:1, overflowX:"auto" }}>
           {["IDEAS","CALENDAR","CAPTIONS"].map(t=>(
-            <button key={t} onClick={()=>setSub(t)} style={{ padding:isMobile?"12px 16px":"10px 20px", borderRadius:10, border:`1px solid ${sub===t?C.pink:"rgba(255,255,255,0.08)"}`, background:sub===t?`${C.pink}15`:"transparent", color:sub===t?C.pink:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?13:14, cursor:"pointer", letterSpacing:"0.04em", whiteSpace:"nowrap", flexShrink:0 }}>
+            <button key={t} onClick={()=>setSub(t)} style={{ padding:isMobile?"12px 14px":"10px 20px", borderRadius:10, border:`1px solid ${sub===t?C.pink:"rgba(255,255,255,0.08)"}`, background:sub===t?`${C.pink}15`:"transparent", color:sub===t?C.pink:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?13:14, cursor:"pointer", letterSpacing:"0.04em", whiteSpace:"nowrap", flexShrink:0 }}>
               {t}{t==="IDEAS"&&` (${ideas.length})`}{t==="CALENDAR"&&` (${calItems.length})`}
             </button>
           ))}
         </div>
-        <button onClick={()=>openModal&&openModal(sub==="CALENDAR"?"addCal":"addIdea")} style={{ display:"flex", alignItems:"center", gap:6, padding:isMobile?"8px 14px":"10px 20px", borderRadius:10, border:`1px solid ${C.pink}40`, background:`linear-gradient(135deg,${C.pink}20,${C.pink}08)`, color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?12:14, cursor:"pointer", flexShrink:0 }}>
+        <button onClick={()=>openModal&&openModal(sub==="CALENDAR"?"addCal":"addIdea")} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:isMobile?"12px 14px":"10px 20px", borderRadius:10, border:`1px solid ${C.pink}40`, background:`linear-gradient(135deg,${C.pink}20,${C.pink}08)`, color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?13:14, cursor:"pointer", flexShrink:0 }}>
           + {sub==="CALENDAR"?"SCHEDULE":"ADD"}
         </button>
       </div>
