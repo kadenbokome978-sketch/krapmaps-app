@@ -167,8 +167,10 @@ const SectionHead = ({ title, color=C.text, action, actionColor=C.pink }) => (
     {action && <button onClick={action} style={{ width:36, height:36, borderRadius:10, background:`${actionColor}15`, border:`1px solid ${actionColor}35`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:actionColor }}>{I.plus(15,actionColor)}</button>}
   </Row>
 );
-const StatMini = ({ label, value, color, icon, delta, deltaUp }) => (
-  <Glass glow={color} style={{ padding:"22px 22px", position:"relative", overflow:"hidden" }}>
+const StatMini = ({ label, value, color, icon, delta, deltaUp }) => {
+  const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900);
+  return (
+  <Glass glow={color} style={{ padding:isMobile?"20px 18px":"22px 22px", position:"relative", overflow:"hidden" }}>
     <div style={{ position:"absolute", bottom:-30, right:-30, width:120, height:120, borderRadius:"50%", background:`${color}10`, filter:"blur(40px)", pointerEvents:"none" }} />
     <div style={{ position:"absolute", top:0, right:0, width:80, height:80, borderRadius:"50%", background:`${color}06`, filter:"blur(30px)", pointerEvents:"none" }} />
     <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:isMobile?24:16 }}>
@@ -182,7 +184,8 @@ const StatMini = ({ label, value, color, icon, delta, deltaUp }) => (
     <Num color={color} size={34}>{value}</Num>
     <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", marginTop:8 }}>{label}</div>
   </Glass>
-);
+  );
+};
 const SubTabs = ({ tabs, active, onChange, color=C.pink }) => (
   <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:2, marginBottom:14, scrollbarWidth:"none" }}>
     {tabs.map(t => <Pill key={t} active={active===t} color={color} onClick={()=>onChange(t)}>{t}</Pill>)}
@@ -3440,6 +3443,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
 
 
 const VideoReaderView = ({ videos=[], WL }) => {
+  const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900);
   const [selected, setSelected]   = useState(null);
   const [vidPlat, setVidPlat]      = useState("ALL");
   const [analysis, setAnalysis]   = useState({});
@@ -8546,6 +8550,7 @@ Return JSON:
 }
 // ── ONBOARDING PAGE ──────────────────────────────────────────────
 function OnboardingPage({ onComplete }) {
+  const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900);
   const _pendingStep = parseInt(localStorage.getItem("krapmaps_v1_pending_step")||"0",10);
   if(_pendingStep) { localStorage.removeItem("krapmaps_v1_pending_step"); }
   const [step, setStep] = useState(_pendingStep||0);
