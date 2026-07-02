@@ -2504,7 +2504,7 @@ const NicheView = ({ WL, keys, aiLoad, setAiLoad, setAiErr, videos=[], ideas=[] 
 
   useEffect(()=>{ 
     const cfg = loadJSON("krapmaps_v1_config",{});
-    setHasPPX(!!(cfg?.keys?.perplexity || BAKED_PERPLEXITY_KEY));
+    setHasPPX(!!(cfg?.keys?.perplexity || BAKED_PERPLEXITY_KEY) || USE_BACKEND);
     setHasGPT(!!(cfg?.keys?.gpt4o));
     // Build hook DB and patterns from videos on mount
     if(videos.length) {
@@ -2545,7 +2545,7 @@ const NicheView = ({ WL, keys, aiLoad, setAiLoad, setAiErr, videos=[], ideas=[] 
   const silentPPX = async (prompt) => {
     try {
       const cfg = loadJSON("krapmaps_v1_config",{});
-      if(!cfg?.keys?.perplexity && !BAKED_PERPLEXITY_KEY) return null;
+      if(!cfg?.keys?.perplexity && !BAKED_PERPLEXITY_KEY && !USE_BACKEND) return null;
       return await callPerplexity(prompt, loadWL());
     } catch { return null; }
   };
@@ -7767,7 +7767,7 @@ function Dashboard({ keys, onEditKeys }) {
     const lastTrendFetch = loadJSON("krapmaps_v1_trend_auto_last", 0);
     if(Date.now() - lastTrendFetch < 12*60*60*1000) return;
     const cfg = loadJSON(KEYS_KEY,{});
-    if(!cfg?.keys?.perplexity) return;
+    if(!cfg?.keys?.perplexity && !USE_BACKEND) return;
     const wl = loadWL();
     setTimeout(async()=>{
       try {
@@ -7789,7 +7789,7 @@ function Dashboard({ keys, onEditKeys }) {
   // Auto-refresh competitor scan every 7 days if stale
   useEffect(()=>{
     const cfg = loadJSON(KEYS_KEY,{});
-    if(!cfg?.keys?.perplexity) return;
+    if(!cfg?.keys?.perplexity && !USE_BACKEND) return;
     const compData = loadCompetitorData();
     if(!compData?.lastFetched) return; // never manually fetched — don't auto-start
     const daysSince = Math.floor((Date.now()-new Date(compData.lastFetched).getTime())/86400000);
@@ -7824,7 +7824,7 @@ function Dashboard({ keys, onEditKeys }) {
       let liveData = null;
       try {
         const cfg = loadJSON("krapmaps_v1_config",{});
-        if(cfg?.keys?.perplexity) {
+        if(cfg?.keys?.perplexity || USE_BACKEND) {
           if(mode==="trends"||mode==="nextVids") {
             liveData = await callPerplexity("What is trending RIGHT NOW in "+wl.niche+" TikTok content for "+wl.targetAudience+"? What formats, hooks and topics are getting high engagement this week? What are "+wl.competitors+" posting? Return JSON: { hot:[{topic,momentum:'rising|peak|fading',hook_example}], sounds:[string], competitor_moves:[{creator,what,opportunity}] }", wl);
           }
