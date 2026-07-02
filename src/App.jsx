@@ -3471,8 +3471,8 @@ const VideoReaderView = ({ videos=[], WL }) => {
   const [err, setErr]             = useState(null);
 
   const cfg = loadJSON("krapmaps_v1_config",{});
-  const hasGemini = !!(cfg?.keys?.gemini);
-  const hasAnthrop = !!(cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY);
+  const hasGemini = !!(cfg?.keys?.gemini) || USE_BACKEND;
+  const hasAnthrop = !!(cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY) || USE_BACKEND;
 
   const analyseVideo = async (video) => {
     if(loading[video.id]) return;
@@ -4561,7 +4561,6 @@ const getIntelligenceLevel = (videos=[], ideas=[], memory={}, theory="") => {
 };
 
 const DEFAULT_SB_URL = "https://xiudsyiinkqtmowkiqxh.supabase.co";
-const ANTHROPIC_KEY  = ""; // Add your key in Settings tab
 const DEFAULT_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpdWRzeWlpbmtxdG1vd2tpcXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NTcwNTMsImV4cCI6MjA1ODMzMzA1M30.xh1I8a8TUrPZ3YtElqCHv9LjI27BnCDp_YY-J_FDBDU";
 
 const WL_KEY = "krapmaps_v1_wl";
@@ -5818,6 +5817,18 @@ const formatSemanticContext = (ctx) => {
 async function callGeminiVideo(videoUrl, prompt) {
   const cfg = loadJSON("krapmaps_v1_config",{});
   const apiKey = cfg?.keys?.gemini;
+  if(USE_BACKEND) {
+    const byo = (apiKey||"").trim();
+    const mk = (contents) => _postProxy("/api/ai", { provider:"gemini", contents, maxTokens:2000 }, byo);
+    try {
+      const d = await mk([{ parts: [ { text: prompt }, { file_data: { mime_type: "video/mp4", file_uri: videoUrl } } ] }]);
+      return _extractJSON(d.candidates?.[0]?.content?.parts?.[0]?.text) ?? {};
+    } catch(e) {
+      if(!/400/.test(e.message||"")) throw e;
+      const d2 = await mk([{ parts: [{ text: "Video URL to analyse: "+videoUrl+"\n\n"+prompt }] }]);
+      return _extractJSON(d2.candidates?.[0]?.content?.parts?.[0]?.text) ?? {};
+    }
+  }
   if(!apiKey) throw new Error("NO GEMINI KEY — add it in Settings");
 
   // Try file_data first; if the model rejects it (400), fall back to URL-in-text.
@@ -6169,8 +6180,6 @@ ${wl.nicheLogic ? `NICHE-SPECIFIC PRINCIPLES:\n${wl.nicheLogic}` : ""}
 Always give brutally specific, actionable advice tailored to ${wl.appName}'s exact niche and voice. No generic social media advice.
 Respond ONLY with valid JSON.`;
 const SYSTEM = buildSystem(WL);
-
-const PPX_MODELS = ["llama-3.1-sonar-large-128k-online","llama-3.1-sonar-small-128k-online"];
 
 async function callPerplexity(prompt, wl=WL) {
   const storedCfg = loadJSON(KEYS_KEY,{});

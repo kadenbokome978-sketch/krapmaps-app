@@ -78,16 +78,26 @@ your server keys.
 | Live trends, competitor spy, gap radar | `/api/perplexity` | server key |
 | TikTok sync, IG reels/followers, comments | `/api/rapid` | RapidAPI, host-allowlisted |
 | IG public view counts | `/api/ig-views` | no key (public scrape) |
-| Gemini video upload | `/api/gemini-upload` | see phase 2 |
+| Gemini video upload | `/api/gemini-upload` | user-key header (legacy path) |
 
-### Phase 2 (not yet proxied — still call Anthropic directly)
+### Phase 2 — complete
 
-These work today with a **BYO Anthropic key**; without one they skip silently in
-backend mode. Proxying them is the next step:
+Every AI feature now routes through the proxy in backend mode, including the
+rich-payload ones: **AI Chat** (tool-calling via `messages`/`tools` passthrough),
+**Visual DNA** (multimodal thumbnails), **Channel Theory & post-mortem learning**
+(free-text), and **Video AI Reader** (Gemini `contents` passthrough). No feature
+requires a local key when backend mode is on.
 
-- **AI Chat (ASSIST tab)** — uses tool-calling; needs a chat-shaped proxy.
-- **Visual DNA** — multimodal (sends thumbnail images); needs image support in `/api/ai`.
-- **Channel Theory & post-mortem learning** — return free text (not JSON); need a text-mode proxy call.
+### Resilience (applies in both modes)
+
+- Model names are never pinned: Claude and Gemini calls try a fallback chain and
+  survive provider model retirements (this is what broke scoring when Google
+  retired `gemini-1.5-pro`).
+- Truncated AI responses are repaired instead of failing ("Could not parse").
+- 429/529 get an automatic retried call.
+- Perplexity is always routed through `/api/perplexity` (their API blocks
+  browser calls); direct-mode users' own keys are forwarded via `X-BYO-Key`,
+  which the endpoints accept without a session since the caller pays.
 
 ---
 

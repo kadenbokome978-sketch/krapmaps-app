@@ -36,7 +36,7 @@ export default async function handler(req, res) {
   const prompt = body.prompt || "";
   const system = body.system || "You are an expert TikTok content strategist. Return ONLY valid JSON.";
   const maxTokens = body.maxTokens || 2000;
-  if (!prompt && !body.messages) return res.status(400).json({ error: "prompt or messages required" });
+  if (!prompt && !body.messages && !body.contents) return res.status(400).json({ error: "prompt, messages, or contents required" });
 
   const send = async (r) => {
     const text = await r.text();
@@ -82,7 +82,8 @@ export default async function handler(req, res) {
         fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: system + "\n\n" + prompt }] }], generationConfig: { responseMimeType: "application/json", maxOutputTokens: maxTokens } }),
+          // body.contents allows rich payloads (video file_data, multi-part); prompt is the simple path.
+          body: JSON.stringify({ contents: body.contents || [{ parts: [{ text: system + "\n\n" + prompt }] }], generationConfig: { responseMimeType: "application/json", maxOutputTokens: maxTokens } }),
         })
       );
       return send(r);
