@@ -4027,7 +4027,7 @@ const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onS
   const saveWLEdit = () => { onEditWL&&onEditWL(wlDraft); setWlDraft(null); };
 
   const generateChannelTheory = async () => {
-    if(!keys?.anthropic) return;
+    if(!keys?.anthropic && !USE_BACKEND && !BAKED_ANTHROPIC_KEY) return;
     setTheoryLoading(true);
     try {
       const organicV = videos.filter(v=>!v.boosted&&v.views>0);
@@ -4039,10 +4039,7 @@ const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onS
       const compData = loadCompetitorData();
       const compSummary = compData?.data?.opportunities?.slice(0,2).map(o=>o.gap).join(", ")||"";
 
-      const res = await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",
-        headers:{"x-api-key":keys.anthropic,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:600,messages:[{role:"user",content:`You are a media psychologist analysing why a specific social media channel goes viral. Channel: ${loadWL().handle} (${loadWL().appName} — ${loadWL().niche}, creator${loadWL().creator2?`s: ${loadWL().creator1} + ${loadWL().creator2}`:`: ${loadWL().creator1}`}).
+      const d = await anthropicMessages({model:"claude-sonnet-4-6",max_tokens:600,messages:[{role:"user",content:`You are a media psychologist analysing why a specific social media channel goes viral. Channel: ${loadWL().handle} (${loadWL().appName} — ${loadWL().niche}, creator${loadWL().creator2?`s: ${loadWL().creator1} + ${loadWL().creator2}`:`: ${loadWL().creator1}`}).
 
 TOP PERFORMING VIDEOS: ${JSON.stringify(top5)}
 BOTTOM PERFORMING VIDEOS: ${JSON.stringify(bot5)}
@@ -4057,9 +4054,7 @@ Synthesise a CHANNEL VIRAL THEORY: the deep psychological mechanism that explain
 4. The single biggest mistake this channel makes that kills virality
 5. The unfair advantage this channel has that competitors can't easily copy
 
-Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — no generic advice.`}]})
-      });
-      const d = await res.json();
+Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — no generic advice.`}]}, keys?.anthropic);
       const theory = (d.content||[]).map(b=>b.text||"").join("").trim();
       if(theory) { setTheoryDraft(theory); saveJSON(CHANNEL_THEORY_KEY, theory); }
     } catch(e) { /* silent */ }
@@ -4312,7 +4307,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:3 }}>The deep "why this channel goes viral" — injected into every score. Generate from your data or write it yourself.</div>
           </div>
           <div style={{ display:"flex", gap:8, flexShrink:0 }}>
-            <button onClick={generateChannelTheory} disabled={!keys?.anthropic||theoryLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.purple}50`, background:`${C.purple}18`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:(!keys?.anthropic||theoryLoading)?0.5:1 }}>{theoryLoading?"GENERATING...":"⚡ GENERATE"}</button>
+            <button onClick={generateChannelTheory} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||theoryLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.purple}50`, background:`${C.purple}18`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||theoryLoading)?0.5:1 }}>{theoryLoading?"GENERATING...":"⚡ GENERATE"}</button>
             <button onClick={saveTheory} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${theorySaved?C.green:C.purple}50`, background:theorySaved?`${C.green}20`:`${C.purple}18`, color:theorySaved?C.green:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{theorySaved?"SAVED ✓":"SAVE"}</button>
           </div>
         </div>
@@ -6262,11 +6257,23 @@ async function callAI(prompt, maxTokens=2000) {
     if(k.gemini || BAKED_GEMINI_KEY) return callGeminiText(prompt);
     throw new Error("No AI key set — add at least one in Settings (Anthropic recommended). You don't need all of them.");
   }
-  // Model resilience: if the primary model is ever retired (the way gemini-1.5-pro
-  // 404'd), fall through to the next. Transient errors (429/529) get one retried call.
-  const CLAUDE_MODELS = ["claude-sonnet-4-6","claude-sonnet-5","claude-haiku-4-5-20251001"];
+  const d = await _anthropicFetch(apiKey, { max_tokens:maxTokens, system:buildSystem(currentWL), messages:[{ role:"user", content:prompt }] });
+  const text = (d.content||[]).map(b=>b.text||"").join("").trim();
+  if(!text) throw new Error("Empty AI response");
+  const parsed = _extractJSON(text);
+  if(parsed) return parsed;
+  throw new Error("Could not parse AI response -- try again");
+}
+
+// ── SHARED ANTHROPIC TRANSPORT ────────────────────────────────────
+// Model resilience for EVERY Anthropic call (chat, visual DNA, channel theory,
+// post-mortems, scoring): if the preferred model is retired (the way
+// gemini-1.5-pro 404'd), fall through the chain; 429/529 get one retried call.
+const CLAUDE_MODELS = ["claude-sonnet-4-6","claude-sonnet-5","claude-haiku-4-5-20251001"];
+async function _anthropicFetch(apiKey, payload) {
+  const preferred = payload.model ? [payload.model, ...CLAUDE_MODELS.filter(m=>m!==payload.model)] : CLAUDE_MODELS;
   let lastErr = null;
-  for(const model of CLAUDE_MODELS) {
+  for(const model of preferred) {
     for(let attempt=0; attempt<2; attempt++) {
       let r;
       try {
@@ -6278,15 +6285,10 @@ async function callAI(prompt, maxTokens=2000) {
             "anthropic-version":"2023-06-01",
             "anthropic-dangerous-direct-browser-access":"true"
           },
-          body: JSON.stringify({
-            model,
-            max_tokens: maxTokens,
-            system:buildSystem(currentWL),
-            messages:[{ role:"user", content:prompt }]
-          })
+          body: JSON.stringify({ ...payload, model })
         });
       } catch(fetchErr) {
-        console.error("[callAI] fetch threw (network/CORS):", fetchErr);
+        console.error("[anthropic] fetch threw (network/CORS):", fetchErr);
         throw new Error("Network error calling Anthropic: "+fetchErr.message);
       }
       if(r.status===429 || r.status===529 || r.status===503) {
@@ -6301,21 +6303,31 @@ async function callAI(prompt, maxTokens=2000) {
       if(!r.ok) {
         let errTxt = "";
         try { errTxt = await r.text(); } catch {}
-        console.error("[callAI] HTTP", r.status, errTxt);
+        console.error("[anthropic] HTTP", r.status, errTxt);
         if(r.status===401) throw new Error("Invalid API key (401) -- go to Settings and update your Anthropic key. Raw: "+errTxt.slice(0,120));
         if(r.status===400) throw new Error("Bad request (400): "+errTxt.slice(0,200));
         throw new Error(`API error ${r.status}: ${errTxt.slice(0,200)}`);
       }
       const d = await r.json();
       if(d.error) throw new Error(d.error.message||"API error");
-      const text = (d.content||[]).map(b=>b.text||"").join("").trim();
-      if(!text) throw new Error("Empty AI response");
-      const parsed = _extractJSON(text);
-      if(parsed) return parsed;
-      throw new Error("Could not parse AI response -- try again");
+      return d;
     }
   }
   throw lastErr || new Error("Anthropic call failed");
+}
+
+// High-level Anthropic messages call: routes through the server proxy in backend
+// mode (messages/tools passthrough), direct with the model chain otherwise.
+// Returns the RAW response JSON — callers keep their own parsing (text, tool_use...).
+async function anthropicMessages(payload, keyOverride) {
+  const storedCfg = loadJSON(KEYS_KEY,{});
+  const byo = (keyOverride || storedCfg?.keys?.anthropic || "").trim();
+  if(USE_BACKEND) {
+    return _postProxy("/api/ai", { provider:"anthropic", messages:payload.messages, system:payload.system, maxTokens:payload.max_tokens||1024, tools:payload.tools, model:payload.model }, byo);
+  }
+  const apiKey = byo || BAKED_ANTHROPIC_KEY;
+  if(!apiKey) throw new Error("No Anthropic key set — add one in Settings");
+  return _anthropicFetch(apiKey, payload);
 }
 
 // ── DEALS ─────────────────────────────────────────────────────────
@@ -6701,7 +6713,7 @@ Be specific with timestamps. Harsh but constructive. No generic advice.`;
   const send = async () => {
     const text = input.trim();
     if(!text || loading) return;
-    if(!anthropicKey) { setMsgs(m=>[...m,{role:"assistant",content:"No Anthropic API key set. Go to Settings to add one."}]); return; }
+    if(!anthropicKey && !USE_BACKEND) { setMsgs(m=>[...m,{role:"assistant",content:"No Anthropic API key set. Go to Settings to add one."}]); return; }
 
     const userMsg = { role:"user", content:text };
     const newMsgs = [...msgs, userMsg];
@@ -6785,18 +6797,7 @@ ${memCtx ? `━━ CHANNEL MEMORY ━━\n${memCtx}` : ""}`;
 
 
       let conversationMsgs = newMsgs.slice(1); // skip the initial assistant greeting
-      let response = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{ "x-api-key":anthropicKey, "anthropic-version":"2023-06-01", "content-type":"application/json", "anthropic-dangerous-direct-browser-access":"true" },
-        body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:conversationMsgs })
-      });
-
-      if(!response.ok) {
-        const err = await response.json().catch(()=>({}));
-        throw new Error(err.error?.message || `HTTP ${response.status}`);
-      }
-
-      let data = await response.json();
+      let data = await anthropicMessages({ model:"claude-sonnet-4-6", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:conversationMsgs }, anthropicKey);
       let assistantContent = data.content;
       let allMsgs = [...conversationMsgs, { role:"assistant", content:assistantContent }];
 
@@ -6811,14 +6812,7 @@ ${memCtx ? `━━ CHANNEL MEMORY ━━\n${memCtx}` : ""}`;
 
         allMsgs = [...allMsgs, { role:"user", content:toolResults }];
 
-        response = await fetch("https://api.anthropic.com/v1/messages", {
-          method:"POST",
-          headers:{ "x-api-key":anthropicKey, "anthropic-version":"2023-06-01", "content-type":"application/json", "anthropic-dangerous-direct-browser-access":"true" },
-          body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:allMsgs })
-        });
-
-        if(!response.ok) throw new Error(`HTTP ${response.status}`);
-        data = await response.json();
+        data = await anthropicMessages({ model:"claude-sonnet-4-6", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:allMsgs }, anthropicKey);
         assistantContent = data.content;
         allMsgs = [...allMsgs, { role:"assistant", content:assistantContent }];
       }
@@ -7487,7 +7481,7 @@ function Dashboard({ keys, onEditKeys }) {
   const analyzeThumbnails = useCallback(async()=>{
     const cfg = loadJSON(KEYS_KEY,{});
     const aiKey = cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
-    if(!aiKey) return;
+    if(!aiKey && !USE_BACKEND) return;
     if(Date.now() - loadJSON("krapmaps_v1_vision_last", 0) < 7*24*60*60*1000) return; // weekly
     const withCover = videos.filter(v=>v.cover && v.views>0 && /^https?:\/\//.test(v.cover));
     if(withCover.length < 6) return;
@@ -7501,16 +7495,9 @@ function Dashboard({ keys, onEditKeys }) {
       top.forEach((v,i)=>{ content.push({ type:"text", text:`HIGH PERFORMER #${i+1} — ${fmt(v.views)} views:` }); content.push({ type:"image", source:{ type:"url", url:v.cover } }); });
       bottom.forEach((v,i)=>{ content.push({ type:"text", text:`LOW PERFORMER #${i+1} — ${fmt(v.views)} views:` }); content.push({ type:"image", source:{ type:"url", url:v.cover } }); });
       content.push({ type:"text", text:`Return ONLY JSON: {"winning_traits":["specific visual traits the high performers share"],"losing_traits":["what the low performers do that hurts them"],"color_palette":"dominant colors/contrast that wins here","composition":"framing/subject placement that wins","face_pattern":"role of faces/expressions in winners","text_overlay":"how on-thumbnail text is used by winners vs losers","one_rule":"the single most important visual rule for this channel's thumbnails"}` });
-      const r = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json", "x-api-key":aiKey, "anthropic-version":"2023-06-01", "anthropic-dangerous-direct-browser-access":"true" },
-        body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:1200, messages:[{ role:"user", content }] })
-      });
-      if(!r.ok) return;
-      const d = await r.json();
-      const txt = (d.content||[]).map(b=>b.text||"").join("").replace(/```json/g,"").replace(/```/g,"").trim();
-      const m = txt.match(/\{[\s\S]*\}/); if(!m) return;
-      const dna = JSON.parse(m[0]);
+      const d = await anthropicMessages({ model:"claude-sonnet-4-6", max_tokens:1200, messages:[{ role:"user", content }] });
+      const dna = _extractJSON((d.content||[]).map(b=>b.text||"").join(""));
+      if(!dna) return;
       saveJSON(VISION_KEY, { ...dna, sampleSize:top.length+bottom.length, analyzedAt:new Date().toISOString() });
       saveJSON("krapmaps_v1_vision_last", Date.now());
       setVisualDNA(loadJSON(VISION_KEY,null));
@@ -7832,7 +7819,7 @@ function Dashboard({ keys, onEditKeys }) {
     if(actualViews > 0) {
       const cfg = loadJSON(KEYS_KEY,{});
       const key = cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
-      if(key) {
+      if(key || USE_BACKEND) {
         setTimeout(async()=>{
           try {
             const organicV = videos.filter(v=>!v.boosted);
@@ -7841,10 +7828,7 @@ function Dashboard({ keys, onEditKeys }) {
             const performance = avgV > 0 ? (actualViews > avgV*2 ? "OVERPERFORMED" : actualViews > avgV*0.5 ? "MET EXPECTATIONS" : "UNDERPERFORMED") : "POSTED";
             const channelTheory = loadJSON(CHANNEL_THEORY_KEY,"");
 
-            const res = await fetch("https://api.anthropic.com/v1/messages",{
-              method:"POST",
-              headers:{"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
-              body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:350,messages:[{role:"user",content:`A ${WL.handle} TikTok/Reels video was posted.
+            const d = await anthropicMessages({model:"claude-haiku-4-5-20251001",max_tokens:350,messages:[{role:"user",content:`A ${WL.handle} TikTok/Reels video was posted.
 
 RESULT: ${fmt(actualViews)} views — ${performance} (${multiple})
 IDEA SCORE: ${score}/100 | Hook type: "${idea.hook||"unknown"}" | Pillar: "${pillar}"
@@ -7859,9 +7843,7 @@ Do 3 things:
 Reply in this exact format:
 COUNTERFACTUAL: [why it performed this way]
 REPLICATION: [what must be true next time]
-LEARNING: [one sentence]`}]})
-            });
-            const d = await res.json();
+LEARNING: [one sentence]`}]}, key);
             const text = (d.content||[]).map(b=>b.text||"").join("").trim();
             const learningMatch = text.match(/LEARNING:\s*(.+)/);
             const counterfactualMatch = text.match(/COUNTERFACTUAL:\s*(.+?)(?=REPLICATION:|$)/s);

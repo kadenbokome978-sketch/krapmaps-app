@@ -36,7 +36,7 @@ export default async function handler(req, res) {
   const prompt = body.prompt || "";
   const system = body.system || "You are an expert TikTok content strategist. Return ONLY valid JSON.";
   const maxTokens = body.maxTokens || 2000;
-  if (!prompt) return res.status(400).json({ error: "prompt required" });
+  if (!prompt && !body.messages) return res.status(400).json({ error: "prompt or messages required" });
 
   const send = async (r) => {
     const text = await r.text();
@@ -53,6 +53,7 @@ export default async function handler(req, res) {
         // body.messages allows rich payloads (multimodal, chat history); prompt is the simple path.
         const payload = { model, max_tokens: maxTokens, messages: body.messages || [{ role: "user", content: prompt }] };
         if (body.system) payload.system = body.system;
+        if (body.tools) payload.tools = body.tools;
         return fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
           headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
