@@ -5621,13 +5621,68 @@ const projectFinalViews = (video, model) => {
 };
 
 // ── GPT-4o CALL ──────────────────────────────────────────────────
-async function callGPT(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.") {
+// ── ROBUST JSON EXTRACTION ────────────────────────────────────────
+// LLM responses get truncated when max_tokens runs out mid-JSON, which used to
+// fail scoring with "Could not parse AI response". This repairs truncated JSON:
+// closes unterminated strings, strips dangling keys/commas, balances brackets.
+function _repairJSON(src) {
+  let s = src;
+  // Track string/escape state and bracket stack
+  let inStr = false, esc = false; const stack = [];
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (esc) { esc = false; continue; }
+    if (c === "\\") { if (inStr) esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === "{" || c === "[") stack.push(c);
+    else if (c === "}" || c === "]") stack.pop();
+  }
+  if (inStr) s += '"';
+  // Remove trailing comma or dangling "key": with no value
+  s = s.replace(/,\s*$/, "").replace(/"[^"\n]*"\s*:\s*$/, "").replace(/,\s*$/, "");
+  while (stack.length) { const b = stack.pop(); s += (b === "{" ? "}" : "]"); }
+  return s;
+}
+// Parse JSON out of an LLM reply: strip fences, find the object, repair if truncated.
+function _extractJSON(text) {
+  const clean = String(text||"").replace(/```json/g,"").replace(/```/g,"").trim();
+  if(!clean) return null;
+  try { return JSON.parse(clean); } catch {}
+  const m = clean.match(/\{[\s\S]*/);
+  if(!m) return null;
+  // Try the widest balanced slice first, then repair the truncated remainder
+  const wide = m[0].match(/\{[\s\S]*\}/);
+  if(wide) { try { return JSON.parse(wide[0]); } catch {} }
+  try { return JSON.parse(_repairJSON(m[0])); } catch {}
+  return null;
+}
+
+// ── GEMINI MODEL CHAIN ────────────────────────────────────────────
+// Google retires model names (gemini-1.5-pro started 404ing) — never pin one.
+// Try current models in order; on 404/"not found" fall through to the next.
+const GEMINI_MODELS = ["gemini-2.5-flash","gemini-2.0-flash","gemini-1.5-pro"];
+async function _geminiGenerate(apiKey, body) {
+  let lastErr = null;
+  for(const model of GEMINI_MODELS) {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+      method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body)
+    });
+    if(r.ok) return r.json();
+    const err = await r.json().catch(()=>({}));
+    lastErr = new Error("Gemini error "+r.status+": "+(err.error?.message||"unknown"));
+    if(r.status !== 404) throw lastErr; // only model-gone falls through
+  }
+  throw lastErr || new Error("Gemini: no model available");
+}
+
+async function callGPT(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.", maxTokens=2000) {
   const storedCfg = loadJSON(KEYS_KEY,{});
   if(USE_BACKEND) {
     const byo = (storedCfg?.keys?.gpt4o||"").trim();
-    const d = await _postProxy("/api/ai", { provider:"openai", prompt, system:systemMsg, maxTokens:2000 }, byo);
+    const d = await _postProxy("/api/ai", { provider:"openai", prompt, system:systemMsg, maxTokens }, byo);
     const text = d.choices?.[0]?.message?.content||"{}";
-    try { return JSON.parse(text); } catch { return {}; }
+    return _extractJSON(text) ?? {};
   }
   const apiKey = storedCfg?.keys?.gpt4o || BAKED_GPT_KEY;
   if(!apiKey) throw new Error("NO GPT-4O KEY — add it in Settings");
@@ -5641,7 +5696,7 @@ async function callGPT(prompt, systemMsg="You are an expert TikTok content strat
         { role:"user", content:prompt }
       ],
       response_format:{ type:"json_object" },
-      max_tokens:2000
+      max_tokens:maxTokens
     })
   });
   if(!r.ok) {
@@ -5651,7 +5706,7 @@ async function callGPT(prompt, systemMsg="You are an expert TikTok content strat
   }
   const d = await r.json();
   const text = d.choices?.[0]?.message?.content||"{}";
-  try { return JSON.parse(text); } catch { return {}; }
+  return _extractJSON(text) ?? {};
 }
 
 // ── SEMANTIC EMBEDDINGS ───────────────────────────────────────────
@@ -5721,81 +5776,46 @@ async function callGeminiVideo(videoUrl, prompt) {
   const apiKey = cfg?.keys?.gemini;
   if(!apiKey) throw new Error("NO GEMINI KEY — add it in Settings");
 
-  // Step 1: Upload video URL for Gemini to fetch
-  const r = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key="+apiKey,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { file_data: { mime_type: "video/mp4", file_uri: videoUrl } }
-          ]
-        }],
-        generationConfig: { responseMimeType: "application/json", maxOutputTokens: 2000 }
-      })
-    }
-  );
-  if(!r.ok) {
-    const err = await r.json().catch(()=>({}));
-    // If file_data not supported, fall back to URL in text
-    if(r.status===400) {
-      const r2 = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key="+apiKey,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: "Video URL to analyse: "+videoUrl+"\n\n"+prompt }] }],
-            generationConfig: { responseMimeType: "application/json", maxOutputTokens: 2000 }
-          })
-        }
-      );
-      if(!r2.ok) throw new Error("Gemini error "+r2.status);
-      const d2 = await r2.json();
-      const t2 = d2.candidates?.[0]?.content?.parts?.[0]?.text||"{}";
-      try { return JSON.parse(t2.replace(/```json|```/g,"").trim()); } catch { return {}; }
-    }
-    throw new Error("Gemini error "+r.status+": "+(err.error?.message||"unknown"));
+  // Try file_data first; if the model rejects it (400), fall back to URL-in-text.
+  try {
+    const d = await _geminiGenerate(apiKey, {
+      contents: [{ parts: [ { text: prompt }, { file_data: { mime_type: "video/mp4", file_uri: videoUrl } } ] }],
+      generationConfig: { responseMimeType: "application/json", maxOutputTokens: 2000 }
+    });
+    return _extractJSON(d.candidates?.[0]?.content?.parts?.[0]?.text) ?? {};
+  } catch(e) {
+    if(!/400/.test(e.message||"")) throw e;
+    const d2 = await _geminiGenerate(apiKey, {
+      contents: [{ parts: [{ text: "Video URL to analyse: "+videoUrl+"\n\n"+prompt }] }],
+      generationConfig: { responseMimeType: "application/json", maxOutputTokens: 2000 }
+    });
+    return _extractJSON(d2.candidates?.[0]?.content?.parts?.[0]?.text) ?? {};
   }
-  const d = await r.json();
-  const text = d.candidates?.[0]?.content?.parts?.[0]?.text||"{}";
-  try { return JSON.parse(text.replace(/```json|```/g,"").trim()); } catch { return {}; }
 }
 
 // Multi-model consensus — run same prompt through Claude + GPT4o, merge insights
-// ── GEMINI 1.5 PRO — text JSON scoring (3rd ensemble model, optional) ──
-async function callGeminiText(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.") {
+// ── GEMINI — text JSON scoring (3rd ensemble model, optional) ──
+async function callGeminiText(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.", maxTokens=2000) {
   const cfg = loadJSON(KEYS_KEY,{});
   if(USE_BACKEND) {
     const byo = (cfg?.keys?.gemini||"").trim();
-    const d = await _postProxy("/api/ai", { provider:"gemini", prompt, system:systemMsg, maxTokens:2000, model:"gemini-1.5-pro" }, byo);
-    const text = d.candidates?.[0]?.content?.parts?.[0]?.text||"";
-    const clean = text.replace(/```json/g,"").replace(/```/g,"").trim();
-    try { return JSON.parse(clean); } catch { const m=clean.match(/\{[\s\S]*\}/); if(m){ try { return JSON.parse(m[0]); } catch {} } throw new Error("Could not parse Gemini response"); }
+    const d = await _postProxy("/api/ai", { provider:"gemini", prompt, system:systemMsg, maxTokens }, byo);
+    const parsed = _extractJSON(d.candidates?.[0]?.content?.parts?.[0]?.text);
+    if(parsed) return parsed;
+    throw new Error("Could not parse Gemini response");
   }
   const apiKey = cfg?.keys?.gemini || BAKED_GEMINI_KEY;
   if(!apiKey) throw new Error("NO GEMINI KEY");
-  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key="+apiKey, {
-    method:"POST", headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      contents:[{ parts:[{ text: systemMsg+"\n\n"+prompt }] }],
-      generationConfig:{ responseMimeType:"application/json", maxOutputTokens:2000 }
-    })
+  const d = await _geminiGenerate(apiKey, {
+    contents:[{ parts:[{ text: systemMsg+"\n\n"+prompt }] }],
+    generationConfig:{ responseMimeType:"application/json", maxOutputTokens:maxTokens }
   });
-  if(!r.ok) throw new Error("Gemini error "+r.status);
-  const d = await r.json();
-  const text = d.candidates?.[0]?.content?.parts?.[0]?.text||"";
-  const clean = text.replace(/```json/g,"").replace(/```/g,"").trim();
-  try { return JSON.parse(clean); } catch {
-    const m = clean.match(/\{[\s\S]*\}/); if(m){ try { return JSON.parse(m[0]); } catch {} }
-    throw new Error("Could not parse Gemini response");
-  }
+  const parsed = _extractJSON(d.candidates?.[0]?.content?.parts?.[0]?.text);
+  if(parsed) return parsed;
+  throw new Error("Could not parse Gemini response");
 }
 
-async function callConsensus(claudePrompt, gptPrompt, wl=WL) {
+async function callConsensus(claudePrompt, gptPrompt, wl=WL, maxTokens=4096) {
   // Key-aware: only call the providers the user actually configured. Nobody is forced
   // to add every key — one AI provider is enough. This means a user who only wants
   // Claude (or only GPT, or only Gemini) gets scoring with no spurious calls or errors.
@@ -5813,9 +5833,9 @@ async function callConsensus(claudePrompt, gptPrompt, wl=WL) {
 
   const sys = `You are an expert ${wl.niche} content strategist for ${wl.appName}. Return ONLY valid JSON.`;
   const jobs = [];
-  if(hasClaude) jobs.push({ name:"claude", p: callAI(claudePrompt, 2000) });
-  if(hasGPT)    jobs.push({ name:"gpt",    p: callGPT(gptPrompt, sys) });
-  if(hasGemini) jobs.push({ name:"gemini", p: callGeminiText(gptPrompt, sys) });
+  if(hasClaude) jobs.push({ name:"claude", p: callAI(claudePrompt, maxTokens) });
+  if(hasGPT)    jobs.push({ name:"gpt",    p: callGPT(gptPrompt, sys, maxTokens) });
+  if(hasGemini) jobs.push({ name:"gemini", p: callGeminiText(gptPrompt, sys, maxTokens) });
 
   const settled = await Promise.allSettled(jobs.map(j=>j.p));
   const out = { claude:null, gpt:null, gemini:null, claudeErr:null };
@@ -6101,41 +6121,59 @@ async function callPerplexity(prompt, wl=WL) {
     const clean = text.replace(/```json/g,"").replace(/```/g,"").trim();
     try { return JSON.parse(clean); } catch { const m=clean.match(/\{[\s\S]*\}/); if(m){ try { return JSON.parse(m[0]); } catch {} } throw new Error("Could not parse Perplexity response"); }
   }
-  const apiKey = storedCfg?.keys?.perplexity || BAKED_PERPLEXITY_KEY;
+  const apiKey = (storedCfg?.keys?.perplexity || BAKED_PERPLEXITY_KEY || "").trim();
   if(!apiKey) throw new Error("NO PERPLEXITY KEY -- go to Settings and add your Perplexity API key");
-  const r = await fetch("https://api.perplexity.ai/chat/completions", {
+  // Perplexity blocks browser-direct calls (no CORS headers), so even in direct mode
+  // we route through our serverless proxy, forwarding the user's own key as BYO.
+  // If the proxy isn't reachable (e.g. plain vite dev), fall back to a direct call.
+  try {
+    const r = await fetch("/api/perplexity", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "X-BYO-Key":apiKey },
+      body: JSON.stringify({ prompt, system:ppxSystem, model:"sonar-pro" })
+    });
+    const ct = r.headers.get("content-type")||"";
+    if(ct.includes("application/json")) {
+      const d = await r.json();
+      if(!r.ok) {
+        if(r.status===401 && /perplexity/i.test(d.error||"")) throw new Error("Invalid Perplexity key -- check Settings");
+        throw new Error(d.error || ("Perplexity error "+r.status));
+      }
+      const parsed = _extractJSON(d.choices?.[0]?.message?.content||"");
+      if(parsed) return parsed;
+      throw new Error("Could not parse Perplexity response");
+    }
+    // Non-JSON response = proxy not deployed here — fall through to direct call.
+  } catch(e) {
+    if(!/Failed to fetch|NetworkError|Load failed/i.test(e.message||"")) throw e;
+    // network error reaching our own proxy — fall through to direct call
+  }
+  const r2 = await fetch("https://api.perplexity.ai/chat/completions", {
     method:"POST",
     headers:{ "Authorization":`Bearer ${apiKey}`, "Content-Type":"application/json" },
     body: JSON.stringify({
       model:"sonar-pro",
-      messages:[
-        { role:"system", content:`You are a niche content strategist for ${wl.appName}. Niche: ${wl.niche}. Target audience: ${wl.targetAudience}. Platforms: ${wl.platforms}. Return ONLY valid JSON.` },
-        { role:"user", content:prompt }
-      ]
+      messages:[ { role:"system", content:ppxSystem }, { role:"user", content:prompt } ]
     })
   });
-  if(!r.ok) {
-    if(r.status===401) throw new Error("Invalid Perplexity key -- check Settings");
-    throw new Error(`Perplexity error ${r.status}`);
+  if(!r2.ok) {
+    if(r2.status===401) throw new Error("Invalid Perplexity key -- check Settings");
+    throw new Error(`Perplexity error ${r2.status}`);
   }
-  const d = await r.json();
-  const text = d.choices?.[0]?.message?.content||"";
-  const clean = text.replace(/```json/g,"").replace(/```/g,"").trim();
-  try { return JSON.parse(clean); } catch {
-    const match = clean.match(/\{[\s\S]*\}/);
-    if(match) { try { return JSON.parse(match[0]); } catch {} }
-    throw new Error("Could not parse Perplexity response");
-  }
+  const d2 = await r2.json();
+  const parsed2 = _extractJSON(d2.choices?.[0]?.message?.content||"");
+  if(parsed2) return parsed2;
+  throw new Error("Could not parse Perplexity response");
 }
 
 // Parse Claude's native /v1/messages response into the JSON object the app expects.
 function _parseClaude(d) {
   if(d.error) throw new Error(d.error.message||"API error");
   const text = (d.content||[]).map(b=>b.text||"").join("").trim();
-  const clean = text.replace(/```json/g,"").replace(/```/g,"").trim();
-  if(!clean) throw new Error("Empty AI response");
-  try { return JSON.parse(clean); }
-  catch { const m = clean.match(/\{[\s\S]*\}/); if(m){ try { return JSON.parse(m[0]); } catch {} } throw new Error("Could not parse AI response -- try again"); }
+  if(!text) throw new Error("Empty AI response");
+  const parsed = _extractJSON(text);
+  if(parsed) return parsed;
+  throw new Error("Could not parse AI response -- try again");
 }
 
 async function callAI(prompt, maxTokens=2000) {
@@ -6145,7 +6183,7 @@ async function callAI(prompt, maxTokens=2000) {
   // Backend mode: server holds the key (BYO forwarded if the user set their own).
   if(USE_BACKEND) {
     const byo = (storedCfg?.keys?.anthropic||"").trim();
-    const d = await _postProxy("/api/ai", { provider:"anthropic", prompt, maxTokens, model:"claude-sonnet-4-6", system:buildSystem(currentWL) }, byo);
+    const d = await _postProxy("/api/ai", { provider:"anthropic", prompt, maxTokens, system:buildSystem(currentWL) }, byo);
     return _parseClaude(d);
   }
 
@@ -6158,48 +6196,60 @@ async function callAI(prompt, maxTokens=2000) {
     if(k.gemini || BAKED_GEMINI_KEY) return callGeminiText(prompt);
     throw new Error("No AI key set — add at least one in Settings (Anthropic recommended). You don't need all of them.");
   }
-  let r;
-  try {
-    r = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "x-api-key": apiKey,
-        "anthropic-version":"2023-06-01",
-        "anthropic-dangerous-direct-browser-access":"true"
-      },
-      body: JSON.stringify({
-        model:"claude-sonnet-4-6",
-        max_tokens: maxTokens,
-        system:buildSystem(currentWL),
-        messages:[{ role:"user", content:prompt }]
-      })
-    });
-  } catch(fetchErr) {
-    console.error("[callAI] fetch threw (network/CORS):", fetchErr);
-    throw new Error("Network error calling Anthropic: "+fetchErr.message);
+  // Model resilience: if the primary model is ever retired (the way gemini-1.5-pro
+  // 404'd), fall through to the next. Transient errors (429/529) get one retried call.
+  const CLAUDE_MODELS = ["claude-sonnet-4-6","claude-sonnet-5","claude-haiku-4-5-20251001"];
+  let lastErr = null;
+  for(const model of CLAUDE_MODELS) {
+    for(let attempt=0; attempt<2; attempt++) {
+      let r;
+      try {
+        r = await fetch("https://api.anthropic.com/v1/messages", {
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json",
+            "x-api-key": apiKey,
+            "anthropic-version":"2023-06-01",
+            "anthropic-dangerous-direct-browser-access":"true"
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens: maxTokens,
+            system:buildSystem(currentWL),
+            messages:[{ role:"user", content:prompt }]
+          })
+        });
+      } catch(fetchErr) {
+        console.error("[callAI] fetch threw (network/CORS):", fetchErr);
+        throw new Error("Network error calling Anthropic: "+fetchErr.message);
+      }
+      if(r.status===429 || r.status===529 || r.status===503) {
+        lastErr = new Error(r.status===429 ? "Rate limited (429) -- wait 30 seconds and try again" : "Anthropic overloaded ("+r.status+") -- try again shortly");
+        if(attempt===0) { await new Promise(res=>setTimeout(res, 2500)); continue; }
+        break;
+      }
+      if(r.status===404) { // model retired — fall through to the next in the chain
+        lastErr = new Error("Model "+model+" unavailable (404)");
+        break;
+      }
+      if(!r.ok) {
+        let errTxt = "";
+        try { errTxt = await r.text(); } catch {}
+        console.error("[callAI] HTTP", r.status, errTxt);
+        if(r.status===401) throw new Error("Invalid API key (401) -- go to Settings and update your Anthropic key. Raw: "+errTxt.slice(0,120));
+        if(r.status===400) throw new Error("Bad request (400): "+errTxt.slice(0,200));
+        throw new Error(`API error ${r.status}: ${errTxt.slice(0,200)}`);
+      }
+      const d = await r.json();
+      if(d.error) throw new Error(d.error.message||"API error");
+      const text = (d.content||[]).map(b=>b.text||"").join("").trim();
+      if(!text) throw new Error("Empty AI response");
+      const parsed = _extractJSON(text);
+      if(parsed) return parsed;
+      throw new Error("Could not parse AI response -- try again");
+    }
   }
-  if(!r.ok) {
-    let errTxt = "";
-    try { errTxt = await r.text(); } catch {}
-    console.error("[callAI] HTTP", r.status, errTxt);
-    if(r.status===401) throw new Error("Invalid API key (401) -- go to Settings and update your Anthropic key. Raw: "+errTxt.slice(0,120));
-    if(r.status===429) throw new Error("Rate limited (429) -- wait 30 seconds and try again");
-    if(r.status===400) throw new Error("Bad request (400): "+errTxt.slice(0,200));
-    throw new Error(`API error ${r.status}: ${errTxt.slice(0,200)}`);
-  }
-  const d = await r.json();
-  if(d.error) throw new Error(d.error.message||"API error");
-  const text = (d.content||[]).map(b=>b.text||"").join("").trim();
-  const clean = text.replace(/```json/g,"").replace(/```/g,"").trim();
-  if(!clean) throw new Error("Empty AI response");
-  try {
-    return JSON.parse(clean);
-  } catch(e) {
-    const match = clean.match(/\{[\s\S]*\}/);
-    if(match) { try { return JSON.parse(match[0]); } catch {} }
-    throw new Error("Could not parse AI response -- try again");
-  }
+  throw lastErr || new Error("Anthropic call failed");
 }
 
 // ── DEALS ─────────────────────────────────────────────────────────

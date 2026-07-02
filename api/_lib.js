@@ -13,7 +13,14 @@ export function cors(res) {
 // Verify the Supabase session by asking Supabase who the token belongs to.
 // Works regardless of the project's JWT signing algorithm (HS256 or asymmetric).
 // Returns the user object, or null after writing an error response.
+//
+// BYO exception: if the caller supplied their own provider key (X-BYO-Key), no
+// session is required — they're spending their own quota, not our server keys.
+// This also lets the deployed proxy solve browser CORS for direct-mode users
+// (e.g. Perplexity blocks browser calls entirely).
 export async function requireUser(req, res) {
+  const byo = req.headers["x-byo-key"];
+  if (byo && String(byo).trim()) return { byoOnly: true };
   const auth = req.headers["authorization"] || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   if (!token) { res.status(401).json({ error: "Not signed in" }); return null; }
