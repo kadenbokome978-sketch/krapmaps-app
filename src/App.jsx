@@ -1518,7 +1518,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                   <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }}/>
                   <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10, marginBottom:isMobile?16:12 }}>
                     <div style={{ fontSize:15, fontWeight:700, color:"#fff", lineHeight:1.35, flex:1 }}>{c.title}</div>
-                    <button onClick={()=>setCalItems(cs=>cs.filter(x=>x.id!==c.id))} style={{ padding:"4px 8px", borderRadius:8, border:`1px solid ${C.pink}20`, background:`${C.pink}08`, color:C.pink, cursor:"pointer", flexShrink:0 }}>{I.trash(12,C.pink)}</button>
+                    <button onClick={()=>setCalItems(cs=>cs.filter(x=>x.id!==c.id))} aria-label="Delete" style={{ padding:"4px 8px", borderRadius:8, border:`1px solid ${C.pink}20`, background:`${C.pink}08`, color:C.pink, cursor:"pointer", flexShrink:0 }}>{I.trash(12,C.pink)}</button>
                   </div>
                   <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                     <Tag color={C.cyan} sm>{c.date?.slice(5)||"TBD"}</Tag>
@@ -1776,7 +1776,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                       <button onClick={()=>analyseVideo&&analyseVideo(v)} style={{ padding:"6px 14px", borderRadius:9, border:`1px solid ${C.purple}30`, background:vidAnalysis?.[v.id]?`${C.purple}25`:vidLoading?.[v.id]?`${C.purple}20`:`${C.purple}10`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:vidLoading?.[v.id]?"wait":"pointer", opacity:vidLoading?.[v.id]?0.7:1, transition:"all 0.2s" }}>
                         {vidLoading?.[v.id] ? "⏳ ANALYSING..." : vidAnalysis?.[v.id] ? "✓ TEARDOWN" : "AI TEARDOWN"}
                       </button>
-                      <button onClick={()=>deleteVideo&&deleteVideo(v.id)} style={{ marginLeft:"auto", padding:isMobile?"10px 12px":"6px 10px", borderRadius:9, border:`1px solid ${C.pink}20`, background:`${C.pink}08`, color:C.pink, fontFamily:C.fontHead, cursor:"pointer" }}>{I.trash(13,C.pink)}</button>
+                      <button onClick={()=>deleteVideo&&deleteVideo(v.id)} aria-label="Delete" style={{ marginLeft:"auto", padding:isMobile?"10px 12px":"6px 10px", borderRadius:9, border:`1px solid ${C.pink}20`, background:`${C.pink}08`, color:C.pink, fontFamily:C.fontHead, cursor:"pointer" }}>{I.trash(13,C.pink)}</button>
                     </div>
                     {/* Loading state */}
                     {vidLoading?.[v.id] && (
@@ -2325,7 +2325,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                     <div style={{ width:32, height:32, borderRadius:9, background:`${ac(t.assignee)}20`, border:`1px solid ${ac(t.assignee)}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:ac(t.assignee), flexShrink:0 }}>
                       {acLabel(t.assignee)}
                     </div>
-                    <button onClick={()=>setTasks(ts=>ts.filter(x=>x.id!==t.id))} style={{ width:28, height:28, borderRadius:8, border:"1px solid rgba(255,45,120,0.2)", background:"rgba(255,45,120,0.08)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <button onClick={()=>setTasks(ts=>ts.filter(x=>x.id!==t.id))} aria-label="Delete task" style={{ width:28, height:28, borderRadius:8, border:"1px solid rgba(255,45,120,0.2)", background:"rgba(255,45,120,0.08)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                       {I.trash(12,C.pink)}
                     </button>
                   </div>
@@ -2448,7 +2448,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                     <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                       <button onClick={()=>{ setEditAppIdeaTarget&&setEditAppIdeaTarget(idea); setModals&&setModals(m=>({...m,editAppIdea:true})); }} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.yellow}30`, background:`${C.yellow}10`, color:C.yellow, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>EDIT</button>
                       <button onClick={()=>setTasks(ts=>[{id:Date.now(),text:idea.text,assignee:WL.creator1||"Me",done:false},...ts])} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.cyan}30`, background:`${C.cyan}10`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>→ TO DO</button>
-                      <button onClick={()=>setAppIdeas(is=>is.filter(x=>x.id!==idea.id))} style={{ padding:"8px 12px", borderRadius:10, border:`1px solid ${C.pink}20`, background:`${C.pink}08`, color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>{I.trash(13,C.pink)}</button>
+                      <button onClick={()=>setAppIdeas(is=>is.filter(x=>x.id!==idea.id))} aria-label="Delete" style={{ padding:"8px 12px", borderRadius:10, border:`1px solid ${C.pink}20`, background:`${C.pink}08`, color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>{I.trash(13,C.pink)}</button>
                     </div>
                   </div>
                 );
@@ -6156,7 +6156,7 @@ const DealsView = () => {
                 <select value={deal.status} onChange={e=>setDeals(ds=>ds.map(d=>d.id===deal.id?{...d,status:e.target.value}:d))} style={{ background:"#0C0A1A", border:`1px solid ${STATUS_C[deal.status]||C.dim}40`, borderRadius:8, color:STATUS_C[deal.status]||"#fff", padding:isMobile?"10px 12px":"6px 10px", fontSize:12, fontFamily:C.fontHead, fontWeight:700, cursor:"pointer", outline:"none", appearance:"none", colorScheme:"dark" }}>
                   {["Enquiry","Negotiating","Signed","Live","Delivered","Paid","Declined"].map(s=><option key={s} value={s} style={{background:"#0C0A1A"}}>{s}</option>)}
                 </select>
-                <button onClick={()=>{ if(window.confirm("Delete this deal?")) setDeals(ds=>ds.filter(d=>d.id!==deal.id)); }} style={{ padding:"6px 8px", borderRadius:8, border:`1px solid ${C.pink}20`, background:"transparent", color:`${C.pink}70`, cursor:"pointer" }}>{I.trash(12,C.pink)}</button>
+                <button onClick={()=>{ if(window.confirm("Delete this deal?")) setDeals(ds=>ds.filter(d=>d.id!==deal.id)); }} aria-label="Delete" style={{ padding:"6px 8px", borderRadius:8, border:`1px solid ${C.pink}20`, background:"transparent", color:`${C.pink}70`, cursor:"pointer" }}>{I.trash(12,C.pink)}</button>
               </div>
             </div>
           ))}
@@ -6842,7 +6842,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
           <div style={{ display:"flex", alignItems:"center", gap:8, padding:isMobile?"13px 16px":"10px 12px" }}>
             <div style={{ width:28, height:28, borderRadius:8, background:`${C.purple}35`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{I.vid(13,C.purple)}</div>
             <span style={{ fontSize:12, color:"rgba(255,255,255,0.85)", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{videoFile.name}</span>
-            <button onClick={()=>{ setVideoFile(null); setVideoContext(""); if(fileRef.current) fileRef.current.value=""; }} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.45)", cursor:"pointer", fontSize:18, lineHeight:1, padding:"0 4px", flexShrink:0 }}>×</button>
+            <button onClick={()=>{ setVideoFile(null); setVideoContext(""); if(fileRef.current) fileRef.current.value=""; }} aria-label="Remove file" style={{ background:"none", border:"none", color:"rgba(255,255,255,0.45)", cursor:"pointer", fontSize:18, lineHeight:1, padding:"0 4px", flexShrink:0 }}>×</button>
           </div>
           <div style={{ padding:"0 12px 10px" }}>
             <input value={videoContext} onChange={e=>setVideoContext(e.target.value)} placeholder="Goal for this clip? (optional)"
@@ -8010,9 +8010,17 @@ Return JSON:
   const upcomingCal   = calItems.filter(c=>c.date&&c.date>=today()).sort((a,b)=>(a.date||"").localeCompare(b.date||"")).slice(0,3);
 
   // ── MODALS ─────────────────────────────────────────────────────
-  const ModalBase = ({ children, onClose }) => (
+  const ModalBase = ({ children, onClose }) => {
+    useEffect(()=>{
+      const onKey = e => { if(e.key==="Escape") onClose&&onClose(); };
+      window.addEventListener("keydown", onKey);
+      return ()=>window.removeEventListener("keydown", onKey);
+    },[onClose]);
+    return (
     <div
       data-lenis-prevent
+      role="dialog"
+      aria-modal="true"
       style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",zIndex:200,overflowY:"auto",WebkitOverflowScrolling:"touch" }}
     >
       <div style={{ minHeight:"10vh",cursor:"pointer" }} onClick={onClose} />
@@ -8021,11 +8029,12 @@ Return JSON:
         onClick={e=>e.stopPropagation()}
         style={{ background:"linear-gradient(180deg,#14102A,#0F0B1E)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"32px 32px 0 0",width:"100%",maxWidth:500,margin:"0 auto",padding:"22px 22px calc(52px + env(safe-area-inset-bottom))",boxShadow:"0 -20px 60px rgba(0,0,0,0.5)" }}
       >
-        <div onClick={onClose} style={{ width:44,height:4,borderRadius:2,background:"rgba(255,255,255,0.25)",margin:"0 auto 28px",cursor:"pointer" }} />
+        <button onClick={onClose} aria-label="Close" style={{ display:"block",width:44,height:4,borderRadius:2,background:"rgba(255,255,255,0.25)",margin:"0 auto 28px",cursor:"pointer",border:"none",padding:0 }} />
         {children}
       </div>
     </div>
-  );
+    );
+  };
   const MLabel = ({children}) => <div style={{ fontSize:11,fontWeight:700,letterSpacing:"0.12em",color:"rgba(255,255,255,0.45)",marginBottom:7,textTransform:"uppercase" }}>{children}</div>;
   const MInput = ({value,onChange,placeholder,type="text"}) => <input type={type} value={value||""} onChange={onChange} placeholder={placeholder} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,color:"#fff",padding:"14px 16px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:14,colorScheme:"dark" }} />;
   const MBtn = ({children,onClick,color=C.pink}) => <button onClick={onClick} style={{ width:"100%",padding:"16px",borderRadius:14,border:"none",background:`linear-gradient(135deg,${color},${color}cc)`,color:"#fff",fontFamily:C.fontHead,fontWeight:700,fontSize:16,cursor:"pointer",marginTop:8,boxShadow:`0 4px 20px ${color}40` }}>{children}</button>;
@@ -8387,7 +8396,7 @@ Return JSON:
                 </div>
               )}
               {/* Hamburger */}
-              <button onClick={()=>setDrawerOpen(true)} style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, width:40, height:40, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:5, cursor:"pointer", padding:0 }}>
+              <button onClick={()=>setDrawerOpen(true)} aria-label="Open navigation menu" style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, width:40, height:40, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:5, cursor:"pointer", padding:0 }}>
                 <div style={{ width:18, height:2, borderRadius:1, background:"rgba(255,255,255,0.85)" }} />
                 <div style={{ width:14, height:2, borderRadius:1, background:"rgba(255,255,255,0.85)" }} />
                 <div style={{ width:18, height:2, borderRadius:1, background:"rgba(255,255,255,0.85)" }} />
@@ -8408,7 +8417,7 @@ Return JSON:
                     <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" }}>{WL.appName}</div>
                     <div style={{ fontSize:14, color:"rgba(255,255,255,0.6)", marginTop:2 }}>{WL.creator1}</div>
                   </div>
-                  <button onClick={()=>setDrawerOpen(false)} style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:18, color:"rgba(255,255,255,0.7)" }}>×</button>
+                  <button onClick={()=>setDrawerOpen(false)} aria-label="Close menu" style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:18, color:"rgba(255,255,255,0.7)" }}>×</button>
                 </div>
                 {/* Nav items */}
                 <div style={{ flex:1, overflowY:"auto", padding:"16px 16px" }}>
@@ -8528,7 +8537,7 @@ Return JSON:
         {aiErr && (
           <div style={{ position:"fixed", top:54, left:14, right:14, background:"rgba(10,5,20,0.98)", border:`1px solid ${C.pink}60`, borderRadius:16, padding:isMobile?"14px 18px":"12px 16px", color:"#FF8888", fontSize:15, zIndex:999, display:"flex", gap:10, alignItems:"flex-start", backdropFilter:"blur(20px)", boxShadow:`0 8px 32px rgba(0,0,0,0.6)` }}>
             <div style={{ flex:1, lineHeight:1.5 }}>{aiErr}{aiErr.includes("Settings")&&<span onClick={()=>{setAiErr(null);setNav("settings");}} style={{ color:WL.accentColor, fontWeight:700, cursor:"pointer", display:"block", marginTop:6 }}>→ TAP TO GO TO SETTINGS</span>}</div>
-            <button onClick={()=>setAiErr(null)} style={{ background:"none",border:"none",color:"rgba(255,255,255,0.85)",cursor:"pointer",fontSize:18,lineHeight:1,flexShrink:0 }}>×</button>
+            <button onClick={()=>setAiErr(null)} aria-label="Dismiss error" style={{ background:"none",border:"none",color:"rgba(255,255,255,0.85)",cursor:"pointer",fontSize:18,lineHeight:1,flexShrink:0 }}>×</button>
           </div>
         )}
         </div>{/* end web-inner */}
@@ -9487,7 +9496,9 @@ function OnboardingPage({ onComplete }) {
         [data-btn]:hover { transform:translateY(-1px); filter:brightness(1.15); }
         [data-card]:hover { border-color:rgba(255,255,255,0.18) !important; }
         [data-nav-btn]:hover { background:rgba(255,255,255,0.08) !important; }
-        button:focus-visible,a:focus-visible { outline:2px solid #9B59B6; outline-offset:2px; }
+        button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible,[role="button"]:focus-visible {
+          outline:2px solid #00E5FF; outline-offset:2px; border-radius:4px;
+        }
       `}</style>
     </div>
   );
