@@ -4020,6 +4020,24 @@ const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onS
   const [theoryLoading, setTheoryLoading] = useState(false);
   const [csvDraft, setCsvDraft] = useState("");
   const [csvMsg, setCsvMsg] = useState("");
+  const [sbDraft, setSbDraft] = useState(null); // { url, key } while editing
+  const [sbMsg, setSbMsg] = useState(null);
+  const testAndSaveSb = async () => {
+    const url = (sbDraft?.url||"").trim().replace(/\/+$/,"");
+    const key = (sbDraft?.key||"").trim();
+    if(!url || !key) { setSbMsg({ ok:false, text:"Enter both the project URL and the key." }); return; }
+    setSbMsg({ ok:true, text:"Testing connection…" });
+    try {
+      const r = await fetch(`${url}/rest/v1/km_config?select=id&limit=1`, { headers:{ apikey:key, Authorization:"Bearer "+key } });
+      if(r.status===401||r.status===403) { setSbMsg({ ok:false, text:`Rejected (${r.status}) — wrong key, or the project is paused. Copy the anon / publishable key from Supabase → Settings → API.` }); return; }
+      if(!r.ok && r.status!==404) { setSbMsg({ ok:false, text:`Connection failed (HTTP ${r.status}).` }); return; }
+      localStorage.setItem(SB_URL_KEY, url);
+      localStorage.setItem(SB_KEY_KEY, key);
+      reportHealth("supabase","ok","Connected");
+      setSbMsg({ ok:true, text:"Connected ✓ — cloud sync will use these from now on." });
+      setSbDraft(null);
+    } catch(e) { setSbMsg({ ok:false, text:"Could not reach that URL — check it and try again." }); }
+  };
   const saveTrends = () => { saveJSON(CUR_TRENDS_KEY, trendsDraft); setTrendsSaved(true); setTimeout(()=>setTrendsSaved(false),2000); };
   const saveTheory = () => { saveJSON(CHANNEL_THEORY_KEY, theoryDraft); setTheorySaved(true); setTimeout(()=>setTheorySaved(false),2000); };
   const saveKey = (field) => { onEditKeys&&onEditKeys({...keys,[field]:draftKey.trim()}); setEditing(null); setDraftKey(""); };
@@ -4226,6 +4244,31 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
                 {s.detail && <div style={{ flexBasis:"100%", fontSize:12, color:`${C.pink}cc`, lineHeight:1.5, paddingTop:2 }}>{s.detail}</div>}
               </div>
             ))}
+          </div>
+
+          {/* Cloud Sync (Supabase) — fixable in-app when the project key rotates */}
+          <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"22px 24px", background:"linear-gradient(145deg,rgba(0,207,255,0.05),rgba(10,6,20,0.95))", border:`1px solid ${C.cyan}20`, position:"relative", overflow:"hidden" }}>
+            <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }}/>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase" }}>Cloud Sync</div>
+              {!sbDraft && <button onClick={()=>{ setSbDraft({ url:getSbUrl(), key:"" }); setSbMsg(null); }} style={{ padding:isMobile?"12px 18px":"8px 16px", borderRadius:10, border:`1px solid ${C.cyan}40`, background:`${C.cyan}12`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>EDIT</button>}
+            </div>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", lineHeight:1.5, marginBottom:sbDraft?14:0 }}>
+              {sbDraft ? "Paste your Supabase project URL and anon/publishable key (Supabase → Settings → API). Saved on this device only." : "If cloud sync shows an auth error, the Supabase key was likely rotated — tap EDIT to paste the new one, no rebuild needed."}
+            </div>
+            {sbDraft && (
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                <input value={sbDraft.url} onChange={e=>setSbDraft(d=>({...d,url:e.target.value}))} placeholder="https://xxxx.supabase.co"
+                  style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1px solid ${C.cyan}25`, borderRadius:10, color:"#fff", padding:isMobile?"13px 16px":"10px 12px", fontSize:13, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box" }}/>
+                <input value={sbDraft.key} onChange={e=>setSbDraft(d=>({...d,key:e.target.value}))} placeholder="anon / publishable key"
+                  style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1px solid ${C.cyan}25`, borderRadius:10, color:"#fff", padding:isMobile?"13px 16px":"10px 12px", fontSize:13, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box" }}/>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={testAndSaveSb} style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:`linear-gradient(135deg,${C.cyan},${C.cyan}bb)`, color:"#07050F", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>TEST &amp; SAVE</button>
+                  <button onClick={()=>{ setSbDraft(null); setSbMsg(null); }} style={{ padding:"12px 16px", borderRadius:10, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>CANCEL</button>
+                </div>
+              </div>
+            )}
+            {sbMsg && <div style={{ marginTop:10, fontSize:12, fontWeight:600, lineHeight:1.5, color:sbMsg.ok?C.green:C.pink }}>{sbMsg.text}</div>}
           </div>
 
           {/* Creator Config */}
