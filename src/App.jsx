@@ -1045,20 +1045,9 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
     if(!quickExpand.trim()||expanding) return;
     setExpanding(true);
     try {
-      const cfg = loadJSON(KEYS_KEY,{});
-      const key = cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
-      if(!key) { alert("Add Anthropic key in Settings first"); return; }
-      const r = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{ "x-api-key":key, "anthropic-version":"2023-06-01", "content-type":"application/json", "anthropic-dangerous-direct-browser-access":"true" },
-        body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:800, messages:[{role:"user",content:`Expand this rough content concept into a full video idea for ${WL.handle} (${WL.appName} — ${WL.niche}).\n\nConcept: "${quickExpand}"\n\nReturn ONLY valid JSON:\n{"title":"compelling title under 12 words","type":"facecam|broll|voiceover|collab","hook":"hook type: achievement|contrast|challenge|curiosity|emotion|location|local|story","hookLine":"exact opening line under 10 words","body":"2 sentences on what happens in the video","cta":"what to say at the end","viralityScore":0-100,"contentPillar":"niche-specific pillar name","estimated_views":"e.g. 20K-80K"}`}] })
-      });
-      const d = await r.json();
-      const text = (d.content||[]).map(b=>b.text||"").join("").trim();
-      const clean = text.replace(/```json/g,"").replace(/```/g,"").trim();
-      const match = clean.match(/\{[\s\S]*\}/);
-      if(!match) throw new Error("Parse failed");
-      const result = JSON.parse(match[0]);
+      // Uses callAI, which falls back to whichever LLM the user configured —
+      // no single provider is required.
+      const result = await callAI(`Expand this rough content concept into a full video idea for ${WL.handle} (${WL.appName} — ${WL.niche}).\n\nConcept: "${quickExpand}"\n\nReturn ONLY valid JSON:\n{"title":"compelling title under 12 words","type":"facecam|broll|voiceover|collab","hook":"hook type: achievement|contrast|challenge|curiosity|emotion|location|local|story","hookLine":"exact opening line under 10 words","body":"2 sentences on what happens in the video","cta":"what to say at the end","viralityScore":0-100,"contentPillar":"niche-specific pillar name","estimated_views":"e.g. 20K-80K"}`, 800);
       const newIdea = {
         id: Date.now().toString(),
         title: result.title,
@@ -4139,7 +4128,8 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
         <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"22px 24px", background:"linear-gradient(145deg,rgba(255,45,120,0.07),rgba(10,6,20,0.95))", border:`1px solid ${C.pink}25`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
           <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>API Keys</div>
-          <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginBottom:20, lineHeight:1.5 }}>Keys auto-save to cloud (Supabase) — persist across devices &amp; new builds. Requires a <code style={{background:"rgba(255,255,255,0.07)",padding:"1px 5px",borderRadius:4}}>km_config</code> table in your Supabase project.</div>
+          <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginBottom:12, lineHeight:1.5 }}>Keys auto-save to cloud (Supabase) — persist across devices &amp; new builds. Requires a <code style={{background:"rgba(255,255,255,0.07)",padding:"1px 5px",borderRadius:4}}>km_config</code> table in your Supabase project.</div>
+          <div style={{ fontSize:12, color:C.green, marginBottom:20, lineHeight:1.5, fontWeight:600 }}>You only need <strong>one</strong> AI provider for scoring &amp; ideas (Anthropic recommended). The rest are optional: Perplexity adds live trends, Gemini adds video reading, GPT-4o adds a 2nd scoring vote.</div>
           <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:10 }}>
             {apiKeys.map(k=>(
               <div key={k.id} style={{ borderRadius:16, padding:isMobile?"18px 18px":"18px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${keys?.[k.id]?k.color+"30":"rgba(255,255,255,0.07)"}`, transition:"all 0.2s" }}>
@@ -5793,18 +5783,36 @@ async function callGeminiText(prompt, systemMsg="You are an expert TikTok conten
 }
 
 async function callConsensus(claudePrompt, gptPrompt, wl=WL) {
-  const hasGemini = !!(loadJSON(KEYS_KEY,{})?.keys?.gemini || BAKED_GEMINI_KEY);
-  const calls = [
-    callAI(claudePrompt, 2000),
-    callGPT(gptPrompt, `You are an expert ${wl.niche} content strategist for ${wl.appName}. Return ONLY valid JSON.`)
-  ];
-  if(hasGemini) calls.push(callGeminiText(gptPrompt, `You are an expert ${wl.niche} content strategist for ${wl.appName}. Return ONLY valid JSON.`));
-  const results = await Promise.allSettled(calls);
-  const claudeResult = results[0].status==="fulfilled" ? results[0].value : null;
-  const gptResult    = results[1].status==="fulfilled" ? results[1].value : null;
-  const geminiResult = hasGemini && results[2]?.status==="fulfilled" ? results[2].value : null;
-  const claudeErr = results[0].status==="rejected" ? (results[0].reason?.message||String(results[0].reason)) : null;
-  return { claude:claudeResult, gpt:gptResult, gemini:geminiResult, claudeErr, bothSucceeded: !!(claudeResult && gptResult) };
+  // Key-aware: only call the providers the user actually configured. Nobody is forced
+  // to add every key — one AI provider is enough. This means a user who only wants
+  // Claude (or only GPT, or only Gemini) gets scoring with no spurious calls or errors.
+  const k = loadJSON(KEYS_KEY,{})?.keys || {};
+  const hasClaude = !!(k.anthropic || BAKED_ANTHROPIC_KEY);
+  const hasGPT    = !!(k.gpt4o || BAKED_GPT_KEY);
+  const hasGemini = !!(k.gemini || BAKED_GEMINI_KEY);
+
+  if(!hasClaude && !hasGPT && !hasGemini) {
+    throw new Error("No AI key set — add at least one in Settings (Anthropic recommended). You don't need all of them.");
+  }
+
+  const sys = `You are an expert ${wl.niche} content strategist for ${wl.appName}. Return ONLY valid JSON.`;
+  const jobs = [];
+  if(hasClaude) jobs.push({ name:"claude", p: callAI(claudePrompt, 2000) });
+  if(hasGPT)    jobs.push({ name:"gpt",    p: callGPT(gptPrompt, sys) });
+  if(hasGemini) jobs.push({ name:"gemini", p: callGeminiText(gptPrompt, sys) });
+
+  const settled = await Promise.allSettled(jobs.map(j=>j.p));
+  const out = { claude:null, gpt:null, gemini:null, claudeErr:null };
+  const errs = [];
+  settled.forEach((res, i) => {
+    const name = jobs[i].name;
+    if(res.status==="fulfilled") out[name] = res.value;
+    else { const msg = res.reason?.message||String(res.reason); if(name==="claude") out.claudeErr = msg; errs.push(`${name}: ${msg}`); }
+  });
+  // Surface a combined error only when EVERY configured provider failed.
+  if(!out.claude && !out.gpt && !out.gemini && errs.length) out.claudeErr = errs.join(" | ");
+  out.bothSucceeded = !!(out.claude && out.gpt);
+  return out;
 }
 
 // ── ENSEMBLE RECONCILIATION ───────────────────────────────────────
@@ -6036,8 +6044,14 @@ async function callPerplexity(prompt, wl=WL) {
 async function callAI(prompt, maxTokens=2000) {
   const storedCfg = loadJSON(KEYS_KEY,{});
   const apiKey = (storedCfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY || "").trim();
-  console.log("[callAI] key present:", !!apiKey, "key prefix:", apiKey.slice(0,8));
-  if(!apiKey) throw new Error("NO API KEY -- go to Settings tab and add your Anthropic key");
+  if(!apiKey) {
+    // No Anthropic key — fall back to whatever LLM the user DID configure, so no
+    // single provider is mandatory. Anthropic stays the default when it's present.
+    const k = storedCfg?.keys || {};
+    if(k.gpt4o || BAKED_GPT_KEY) return callGPT(prompt);
+    if(k.gemini || BAKED_GEMINI_KEY) return callGeminiText(prompt);
+    throw new Error("No AI key set — add at least one in Settings (Anthropic recommended). You don't need all of them.");
+  }
   const currentWL = loadWL();
   let r;
   try {
