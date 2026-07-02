@@ -7119,6 +7119,7 @@ function Dashboard({ keys, onEditKeys }) {
   const [nav, setNav]   = useState("home");
   const [sub, setSub]   = useState(null);
   const [aiErr, setAiErr] = useState(null);
+  useEffect(()=>{ if(!aiErr) return; const t=setTimeout(()=>setAiErr(null), 15000); return ()=>clearTimeout(t); },[aiErr]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [assistPreload, setAssistPreload] = useState(null);
 
@@ -8735,13 +8736,26 @@ Return JSON:
 
           </div>{/* end page content padding */}
 
-          {/* AI ERROR */}
-        {aiErr && (
-          <div style={{ position:"fixed", top:54, left:14, right:14, background:"rgba(10,5,20,0.98)", border:`1px solid ${C.pink}60`, borderRadius:16, padding:isMobile?"14px 18px":"12px 16px", color:"#FF8888", fontSize:15, zIndex:999, display:"flex", gap:10, alignItems:"flex-start", backdropFilter:"blur(20px)", boxShadow:`0 8px 32px rgba(0,0,0,0.6)` }}>
-            <div style={{ flex:1, lineHeight:1.5 }}>{aiErr}{aiErr.includes("Settings")&&<span onClick={()=>{setAiErr(null);setNav("settings");}} style={{ color:WL.accentColor, fontWeight:700, cursor:"pointer", display:"block", marginTop:6 }}>→ TAP TO GO TO SETTINGS</span>}</div>
-            <button onClick={()=>setAiErr(null)} aria-label="Dismiss error" style={{ background:"none",border:"none",color:"rgba(255,255,255,0.85)",cursor:"pointer",fontSize:18,lineHeight:1,flexShrink:0 }}>×</button>
+          {/* AI ERROR — human lead line + technical detail, auto-dismisses in 15s */}
+        {aiErr && (()=>{ 
+          const friendly = /rate limit|429/i.test(aiErr) ? "The AI is rate-limited — wait ~30 seconds and try again."
+            : /overloaded|529|503/i.test(aiErr) ? "The AI service is briefly overloaded — try again in a moment."
+            : /invalid.*key|401/i.test(aiErr) ? "An API key looks invalid — check Settings."
+            : /could not parse|try again/i.test(aiErr) ? "The AI response came back malformed — hitting the button again usually fixes it."
+            : /network/i.test(aiErr) ? "Network problem reaching the AI — check your connection and retry."
+            : "That didn't work — try again in a moment.";
+          return (
+          <div style={{ position:"fixed", top:isMobile?54:20, left:"50%", transform:"translateX(-50%)", width:isMobile?"calc(100% - 28px)":"auto", maxWidth:520, background:"rgba(10,5,20,0.98)", border:`1px solid ${C.pink}60`, borderRadius:16, padding:isMobile?"14px 16px":"14px 18px", zIndex:999, display:"flex", gap:12, alignItems:"flex-start", backdropFilter:"blur(20px)", boxShadow:`0 8px 32px rgba(0,0,0,0.6)`, boxSizing:"border-box" }}>
+            <span style={{ fontSize:16, flexShrink:0, lineHeight:1.4 }}>⚠️</span>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:isMobile?14:15, fontWeight:700, color:"#fff", lineHeight:1.45, marginBottom:4 }}>{friendly}</div>
+              <div style={{ fontSize:12, color:"rgba(255,136,136,0.85)", lineHeight:1.5, wordBreak:"break-word" }}>{String(aiErr).slice(0,260)}</div>
+              {aiErr.includes("Settings")&&<span onClick={()=>{setAiErr(null);setNav("settings");}} style={{ color:WL.accentColor, fontWeight:700, cursor:"pointer", display:"block", marginTop:6, fontSize:13 }}>→ Go to Settings</span>}
+            </div>
+            <button onClick={()=>setAiErr(null)} aria-label="Dismiss error" style={{ background:"none",border:"none",color:"rgba(255,255,255,0.85)",cursor:"pointer",fontSize:18,lineHeight:1,flexShrink:0,padding:0 }}>×</button>
           </div>
-        )}
+          );
+        })()}
         </div>{/* end web-inner */}
       </div>{/* end web-content */}
 
