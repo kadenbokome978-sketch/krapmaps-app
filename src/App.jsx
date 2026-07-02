@@ -5623,6 +5623,12 @@ const projectFinalViews = (video, model) => {
 // ── GPT-4o CALL ──────────────────────────────────────────────────
 async function callGPT(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.") {
   const storedCfg = loadJSON(KEYS_KEY,{});
+  if(USE_BACKEND) {
+    const byo = (storedCfg?.keys?.gpt4o||"").trim();
+    const d = await _postProxy("/api/ai", { provider:"openai", prompt, system:systemMsg, maxTokens:2000 }, byo);
+    const text = d.choices?.[0]?.message?.content||"{}";
+    try { return JSON.parse(text); } catch { return {}; }
+  }
   const apiKey = storedCfg?.keys?.gpt4o || BAKED_GPT_KEY;
   if(!apiKey) throw new Error("NO GPT-4O KEY — add it in Settings");
   const r = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -5763,6 +5769,13 @@ async function callGeminiVideo(videoUrl, prompt) {
 // ── GEMINI 1.5 PRO — text JSON scoring (3rd ensemble model, optional) ──
 async function callGeminiText(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.") {
   const cfg = loadJSON(KEYS_KEY,{});
+  if(USE_BACKEND) {
+    const byo = (cfg?.keys?.gemini||"").trim();
+    const d = await _postProxy("/api/ai", { provider:"gemini", prompt, system:systemMsg, maxTokens:2000, model:"gemini-1.5-pro" }, byo);
+    const text = d.candidates?.[0]?.content?.parts?.[0]?.text||"";
+    const clean = text.replace(/```json/g,"").replace(/```/g,"").trim();
+    try { return JSON.parse(clean); } catch { const m=clean.match(/\{[\s\S]*\}/); if(m){ try { return JSON.parse(m[0]); } catch {} } throw new Error("Could not parse Gemini response"); }
+  }
   const apiKey = cfg?.keys?.gemini || BAKED_GEMINI_KEY;
   if(!apiKey) throw new Error("NO GEMINI KEY");
   const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key="+apiKey, {
@@ -5787,9 +5800,12 @@ async function callConsensus(claudePrompt, gptPrompt, wl=WL) {
   // to add every key — one AI provider is enough. This means a user who only wants
   // Claude (or only GPT, or only Gemini) gets scoring with no spurious calls or errors.
   const k = loadJSON(KEYS_KEY,{})?.keys || {};
-  const hasClaude = !!(k.anthropic || BAKED_ANTHROPIC_KEY);
-  const hasGPT    = !!(k.gpt4o || BAKED_GPT_KEY);
-  const hasGemini = !!(k.gemini || BAKED_GEMINI_KEY);
+  // In backend mode the keys live server-side; attempt every provider and let the
+  // proxy reject the ones it has no key for (tolerated below). In direct mode, only
+  // call the providers whose keys exist locally.
+  const hasClaude = USE_BACKEND || !!(k.anthropic || BAKED_ANTHROPIC_KEY);
+  const hasGPT    = USE_BACKEND || !!(k.gpt4o || BAKED_GPT_KEY);
+  const hasGemini = USE_BACKEND || !!(k.gemini || BAKED_GEMINI_KEY);
 
   if(!hasClaude && !hasGPT && !hasGemini) {
     throw new Error("No AI key set — add at least one in Settings (Anthropic recommended). You don't need all of them.");
@@ -5947,6 +5963,30 @@ async function getAccessToken() {
 }
 const authSignOut = () => clearSession();
 
+// ── BACKEND PROXY ─────────────────────────────────────────────────
+// When auth is on, all AI/scraper calls go through our serverless proxies, which
+// hold the provider keys server-side. Users need no keys. If a user set their own
+// key (BYO), we forward it as X-BYO-Key so the server uses theirs instead.
+const USE_BACKEND = REQUIRE_AUTH;
+async function _postProxy(endpoint, body, byoKey) {
+  const token = await getAccessToken();
+  if(!token) throw new Error("Your session expired — please sign in again.");
+  const headers = { "Content-Type":"application/json", "Authorization":"Bearer "+token };
+  if(byoKey) headers["X-BYO-Key"] = byoKey;
+  const r = await fetch(endpoint, { method:"POST", headers, body:JSON.stringify(body) });
+  if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e.error || ("Proxy error "+r.status)); }
+  return r.json();
+}
+// GET proxy for RapidAPI scraper calls — returns the native RapidAPI response.
+async function rapidFetch(targetUrl, byoKey) {
+  if(!USE_BACKEND) return fetch(targetUrl, { headers:{ "x-rapidapi-host": new URL(targetUrl).hostname, "x-rapidapi-key": byoKey||"", "Content-Type":"application/json" } });
+  const token = await getAccessToken();
+  if(!token) throw new Error("Your session expired — please sign in again.");
+  const headers = { "Authorization":"Bearer "+token };
+  if(byoKey) headers["X-BYO-Key"] = byoKey;
+  return fetch("/api/rapid?url="+encodeURIComponent(targetUrl), { headers });
+}
+
 // ── CROSS-CLIENT ANONYMISED PRIORS ────────────────────────────────
 // Pools ONLY standard hook/type outcome ratios across channels in the same coarse niche
 // bucket. No titles, no handles, no content — a hashed client id + generic labels + stats.
@@ -6053,6 +6093,14 @@ const PPX_MODELS = ["llama-3.1-sonar-large-128k-online","llama-3.1-sonar-small-1
 
 async function callPerplexity(prompt, wl=WL) {
   const storedCfg = loadJSON(KEYS_KEY,{});
+  const ppxSystem = `You are a niche content strategist for ${wl.appName}. Niche: ${wl.niche}. Target audience: ${wl.targetAudience}. Platforms: ${wl.platforms}. Return ONLY valid JSON.`;
+  if(USE_BACKEND) {
+    const byo = (storedCfg?.keys?.perplexity||"").trim();
+    const d = await _postProxy("/api/perplexity", { prompt, system:ppxSystem, model:"sonar-pro" }, byo);
+    const text = d.choices?.[0]?.message?.content||"";
+    const clean = text.replace(/```json/g,"").replace(/```/g,"").trim();
+    try { return JSON.parse(clean); } catch { const m=clean.match(/\{[\s\S]*\}/); if(m){ try { return JSON.parse(m[0]); } catch {} } throw new Error("Could not parse Perplexity response"); }
+  }
   const apiKey = storedCfg?.keys?.perplexity || BAKED_PERPLEXITY_KEY;
   if(!apiKey) throw new Error("NO PERPLEXITY KEY -- go to Settings and add your Perplexity API key");
   const r = await fetch("https://api.perplexity.ai/chat/completions", {
@@ -6080,8 +6128,27 @@ async function callPerplexity(prompt, wl=WL) {
   }
 }
 
+// Parse Claude's native /v1/messages response into the JSON object the app expects.
+function _parseClaude(d) {
+  if(d.error) throw new Error(d.error.message||"API error");
+  const text = (d.content||[]).map(b=>b.text||"").join("").trim();
+  const clean = text.replace(/```json/g,"").replace(/```/g,"").trim();
+  if(!clean) throw new Error("Empty AI response");
+  try { return JSON.parse(clean); }
+  catch { const m = clean.match(/\{[\s\S]*\}/); if(m){ try { return JSON.parse(m[0]); } catch {} } throw new Error("Could not parse AI response -- try again"); }
+}
+
 async function callAI(prompt, maxTokens=2000) {
   const storedCfg = loadJSON(KEYS_KEY,{});
+  const currentWL = loadWL();
+
+  // Backend mode: server holds the key (BYO forwarded if the user set their own).
+  if(USE_BACKEND) {
+    const byo = (storedCfg?.keys?.anthropic||"").trim();
+    const d = await _postProxy("/api/ai", { provider:"anthropic", prompt, maxTokens, model:"claude-sonnet-4-6", system:buildSystem(currentWL) }, byo);
+    return _parseClaude(d);
+  }
+
   const apiKey = (storedCfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY || "").trim();
   if(!apiKey) {
     // No Anthropic key — fall back to whatever LLM the user DID configure, so no
@@ -6091,7 +6158,6 @@ async function callAI(prompt, maxTokens=2000) {
     if(k.gemini || BAKED_GEMINI_KEY) return callGeminiText(prompt);
     throw new Error("No AI key set — add at least one in Settings (Anthropic recommended). You don't need all of them.");
   }
-  const currentWL = loadWL();
   let r;
   try {
     r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -7118,7 +7184,7 @@ function Dashboard({ keys, onEditKeys }) {
   const fetchTikToks = useCallback(async(force=false)=>{
     const cfg = loadJSON(KEYS_KEY,{});
     const tikwmKey = cfg?.keys?.tikwm;
-    if(!tikwmKey) return; // no key, skip silently
+    if(!tikwmKey && !USE_BACKEND) return; // no key and no server proxy — skip silently
     
     // Skip if fetched recently AND we already have video data
     const lastFetch = loadJSON("krapmaps_v1_tikwm_last", 0);
@@ -7135,14 +7201,8 @@ function Dashboard({ keys, onEditKeys }) {
       
       // Fetch user info for followers in parallel with first page of videos
       const [r, rUser] = await Promise.all([
-        fetch(
-          "https://tiktok-scraper7.p.rapidapi.com/user/posts?unique_id="+handle+"&count=35&cursor=0&sort_type=0",
-          { headers: { "x-rapidapi-host":"tiktok-scraper7.p.rapidapi.com", "x-rapidapi-key":tikwmKey, "Content-Type":"application/json" }}
-        ),
-        fetch(
-          "https://tiktok-scraper7.p.rapidapi.com/user/info?unique_id="+handle,
-          { headers: { "x-rapidapi-host":"tiktok-scraper7.p.rapidapi.com", "x-rapidapi-key":tikwmKey, "Content-Type":"application/json" }}
-        )
+        rapidFetch("https://tiktok-scraper7.p.rapidapi.com/user/posts?unique_id="+handle+"&count=35&cursor=0&sort_type=0", tikwmKey),
+        rapidFetch("https://tiktok-scraper7.p.rapidapi.com/user/info?unique_id="+handle, tikwmKey)
       ]);
 
       // Auto-update TT followers from user info
@@ -7174,10 +7234,7 @@ function Dashboard({ keys, onEditKeys }) {
       let ttPages = 1;
       while(ttMore && ttCursor && ttPages < 10) {
         await new Promise(res => setTimeout(res, 600));
-        const r2 = await fetch(
-          "https://tiktok-scraper7.p.rapidapi.com/user/posts?unique_id="+handle+"&count=35&cursor="+ttCursor+"&sort_type=0",
-          { headers: { "x-rapidapi-host":"tiktok-scraper7.p.rapidapi.com", "x-rapidapi-key":tikwmKey, "Content-Type":"application/json" }}
-        );
+        const r2 = await rapidFetch("https://tiktok-scraper7.p.rapidapi.com/user/posts?unique_id="+handle+"&count=35&cursor="+ttCursor+"&sort_type=0", tikwmKey);
         if(!r2.ok) break;
         const d2 = await r2.json();
         if(d2.code !== 0 || !d2.data?.videos?.length) break;
@@ -7281,7 +7338,7 @@ function Dashboard({ keys, onEditKeys }) {
     const cfg = loadJSON(KEYS_KEY,{});
     const rapidKey = cfg?.keys?.tikwm || cfg?.keys?.igscraper;
     const aiKey = cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
-    if(!rapidKey || !aiKey) return;
+    if((!rapidKey || !aiKey) && !USE_BACKEND) return;
     if(Date.now() - loadJSON("krapmaps_v1_comments_last", 0) < 3*24*60*60*1000) return; // every 3 days
     const top = [...videos].filter(v=>v.platform==="tiktok"&&v.views>0&&(v._tikwmId||v.url)).sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
     if(top.length < 2) return;
@@ -7289,8 +7346,7 @@ function Dashboard({ keys, onEditKeys }) {
       let pool = [];
       for(const v of top) {
         const idOrUrl = v._tikwmId || v.url;
-        const r = await fetch("https://tiktok-scraper7.p.rapidapi.com/comment/list?url="+encodeURIComponent(idOrUrl)+"&count=20&cursor=0",
-          { headers:{ "x-rapidapi-host":"tiktok-scraper7.p.rapidapi.com","x-rapidapi-key":rapidKey } });
+        const r = await rapidFetch("https://tiktok-scraper7.p.rapidapi.com/comment/list?url="+encodeURIComponent(idOrUrl)+"&count=20&cursor=0", rapidKey);
         if(!r.ok) continue;
         const d = await r.json();
         (d?.data?.comments||[]).forEach(c=>{ if(c.text) pool.push(c.text); });
@@ -7349,16 +7405,13 @@ function Dashboard({ keys, onEditKeys }) {
   const fetchIGFollowers = useCallback(async()=>{
     const cfg = loadJSON(KEYS_KEY,{});
     const rapidKey = cfg?.keys?.igscraper; // IG needs a dedicated scraper key; tikwm fallback causes 403
-    if(!rapidKey) return;
+    if(!rapidKey && !USE_BACKEND) return;
     const lastFollowerFetch = loadJSON("krapmaps_v1_igfollowers_last", 0);
     if(Date.now() - lastFollowerFetch < 6 * 60 * 60 * 1000) return; // 6hr cache
     try {
       const wl = loadWL();
       const handle = (wl.handle||"@findkrap").replace("@","");
-      const r = await fetch(
-        "https://instagram-scraper-api2.p.rapidapi.com/v1/info?username_or_id_or_url=" + handle,
-        { headers: { "x-rapidapi-host": "instagram-scraper-api2.p.rapidapi.com", "x-rapidapi-key": rapidKey } }
-      );
+      const r = await rapidFetch("https://instagram-scraper-api2.p.rapidapi.com/v1/info?username_or_id_or_url=" + handle, rapidKey);
       if(!r.ok) { console.warn("IG followers: HTTP", r.status); return; }
       const data = await r.json();
       const igFollowers = data?.data?.follower_count || data?.data?.edge_followed_by?.count || data?.follower_count || 0;
@@ -7378,7 +7431,7 @@ function Dashboard({ keys, onEditKeys }) {
   const fetchIGReels = useCallback(async(force=false)=>{
     const cfg = loadJSON(KEYS_KEY,{});
     const rapidKey = cfg?.keys?.igscraper; // IG needs a dedicated scraper key; tikwm fallback causes 403
-    if(!rapidKey) return;
+    if(!rapidKey && !USE_BACKEND) return;
 
     const lastFetch = loadJSON("krapmaps_v1_igreels_last", 0);
     if(!force && Date.now() - lastFetch < 3 * 60 * 60 * 1000) return;
@@ -7393,10 +7446,7 @@ function Dashboard({ keys, onEditKeys }) {
       let userId = cachedUserId;
       if(!userId) {
         try {
-          const infoRes = await fetch(
-            "https://instagram-scraper-api2.p.rapidapi.com/v1/info?username_or_id_or_url="+handle,
-            { headers:{ "x-rapidapi-host":"instagram-scraper-api2.p.rapidapi.com", "x-rapidapi-key":rapidKey } }
-          );
+          const infoRes = await rapidFetch("https://instagram-scraper-api2.p.rapidapi.com/v1/info?username_or_id_or_url="+handle, rapidKey);
           if(infoRes.ok) {
             const infoData = await infoRes.json();
             userId = infoData?.data?.id || infoData?.data?.user?.pk;
@@ -7408,21 +7458,20 @@ function Dashboard({ keys, onEditKeys }) {
 
       // Fetch ALL reels via pagination using max_id cursor
       const baseUrl = "https://instagram-scraper-api2.p.rapidapi.com/v1/clips?user_id=" + userId;
-      const headers = { "x-rapidapi-host": "instagram-scraper-api2.p.rapidapi.com", "x-rapidapi-key": rapidKey };
-      
+
       let allItems = [];
       let cursor = null;
       let pages = 0;
       const maxPages = 5; // cap at 5 pages (~50+ reels) to avoid rate limits
-      
+
       while(pages < maxPages) {
         const url = cursor ? baseUrl + "&pagination_token=" + encodeURIComponent(cursor) : baseUrl;
-        let r = await fetch(url, { headers });
+        let r = await rapidFetch(url, rapidKey);
         let retries = 0;
         while(r.status===429 && retries < 2) {
           console.warn("IG 429 — backing off", (retries+1)*3, "s");
           await new Promise(res => setTimeout(res, (retries+1)*3000));
-          r = await fetch(url, { headers });
+          r = await rapidFetch(url, rapidKey);
           retries++;
         }
         if(!r.ok) { console.warn("IG reels fetch HTTP", r.status, "on page", pages+1); break; }

@@ -27,10 +27,12 @@ export default async function handler(req, res) {
     if (provider === "anthropic" || provider === "claude") {
       const key = resolveKey(req, "ANTHROPIC_KEY");
       if (!key) return res.status(400).json({ error: "No Anthropic key configured on server" });
+      const msgBody = { model: body.model || "claude-sonnet-4-6", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] };
+      if (body.system) msgBody.system = body.system;
       const r = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ model: body.model || "claude-sonnet-4-6", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] }),
+        body: JSON.stringify(msgBody),
       });
       const text = await r.text();
       res.setHeader("Content-Type", "application/json");
