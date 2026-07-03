@@ -12,7 +12,30 @@ const CLIENTS = {
 // Detect active client at module load (before React)
 const _activeCfg = (()=>{ try { const s=localStorage.getItem("krapmaps_v1_client"); return s?JSON.parse(s):CLIENT_CONFIG; } catch { return CLIENT_CONFIG; } })();
 const _isThiernoClient = _activeCfg.clientId === "thierno";
-if(typeof document !== "undefined") document.title = _activeCfg.appName || "CreatorOS";
+if(typeof document !== "undefined") {
+  document.title = _activeCfg.appName || "CreatorOS";
+  // Whitelabel the PWA install: iOS reads the apple title meta and browsers read
+  // the manifest at add-to-home-screen time, so runtime rebranding sticks.
+  try {
+    const appName = _activeCfg.appName || "CreatorOS";
+    const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if(appleTitle) appleTitle.setAttribute("content", appName);
+    const mLink = document.querySelector('link[rel="manifest"]');
+    if(mLink && appName !== "CreatorOS") {
+      const manifest = {
+        name: appName, short_name: appName,
+        description: `${appName} — AI content strategist`,
+        start_url: "/", display: "standalone",
+        background_color: "#07050F", theme_color: "#07050F",
+        icons: [
+          { src: location.origin+"/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+          { src: location.origin+"/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+        ],
+      };
+      mLink.setAttribute("href", "data:application/manifest+json,"+encodeURIComponent(JSON.stringify(manifest)));
+    }
+  } catch {}
+}
 
 // Baked-in shared keys (set as build-time env vars in Vercel — NOT committed to git).
 // Used as a fallback so a build works out-of-the-box without the user adding their own key.
