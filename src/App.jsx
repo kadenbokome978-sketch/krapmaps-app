@@ -7311,6 +7311,34 @@ function Dashboard({ keys, onEditKeys }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [assistPreload, setAssistPreload] = useState(null);
 
+  // ── PULL-TO-REFRESH (installed PWA only) ───────────────────────
+  // Standalone mode has no browser chrome — without this, a stale or stuck
+  // screen means force-killing the app. Native pull-to-refresh covers browser
+  // tabs, so this only activates in display-mode: standalone.
+  const [ptr, setPtr] = useState(0); // 0 idle · pull distance while dragging · -1 refreshing
+  useEffect(()=>{
+    const standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+    if(!standalone) return;
+    let startY = null, pulling = false, dist = 0;
+    const THRESH = 90;
+    const onStart = (e) => { if(window.scrollY <= 0 && e.touches?.length===1){ startY = e.touches[0].clientY; pulling = true; dist = 0; } };
+    const onMove = (e) => {
+      if(!pulling || startY==null) return;
+      if(window.scrollY > 0){ pulling=false; setPtr(0); return; }
+      dist = e.touches[0].clientY - startY;
+      if(dist > 12) setPtr(Math.min(dist, 140)); else setPtr(0);
+    };
+    const onEnd = () => {
+      if(pulling && dist >= THRESH){ setPtr(-1); setTimeout(()=>window.location.reload(), 250); }
+      else setPtr(0);
+      pulling = false; startY = null; dist = 0;
+    };
+    window.addEventListener("touchstart", onStart, { passive:true });
+    window.addEventListener("touchmove", onMove, { passive:true });
+    window.addEventListener("touchend", onEnd, { passive:true });
+    return ()=>{ window.removeEventListener("touchstart", onStart); window.removeEventListener("touchmove", onMove); window.removeEventListener("touchend", onEnd); };
+  },[]);
+
   const handleBuildScript = (idea) => {
     const msg = `Build me a full script for this idea:\n\nTitle: "${idea.title}"\nType: ${idea.type||"facecam"}\nHook: ${idea.hook||""}\n${idea.improvedHook?`Improved hook: "${idea.improvedHook}"\n`:""}\nInclude: opening hook (exact words to say), main body (what to show + say at each moment), and a closing CTA. Give timestamps and CapCut text overlay suggestions. Make it optimised for maximum virality.`;
     setAssistPreload({ text: msg, id: Date.now() });
@@ -8927,6 +8955,13 @@ Return JSON:
 
           </div>{/* end page content padding */}
 
+          {/* PULL-TO-REFRESH indicator (installed PWA) */}
+        {ptr !== 0 && (
+          <div style={{ position:"fixed", top:Math.min(ptr===-1?70:ptr*0.55, 80)-36, left:"50%", transform:"translateX(-50%)", zIndex:998, width:38, height:38, borderRadius:"50%", background:"rgba(12,8,24,0.95)", border:`1px solid ${ptr>=90||ptr===-1?C.cyan:"rgba(255,255,255,0.2)"}`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 4px 16px rgba(0,0,0,0.5)", transition:ptr===-1?"top 0.2s":"none" }}>
+            <span style={{ fontSize:16, color:ptr>=90||ptr===-1?C.cyan:"rgba(255,255,255,0.5)", display:"inline-block", transform:ptr===-1?"none":`rotate(${Math.min(ptr,120)*1.5}deg)`, animation:ptr===-1?"spin 0.8s linear infinite":"none" }}>↻</span>
+          </div>
+        )}
+
           {/* AI ERROR — human lead line + technical detail, auto-dismisses in 15s */}
         {aiErr && (()=>{ 
           const friendly = /rate limit|429/i.test(aiErr) ? "The AI is rate-limited — wait ~30 seconds and try again."
@@ -9900,6 +9935,7 @@ function OnboardingPage({ onComplete }) {
         @keyframes fadeInLine{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
         @keyframes blink{0%,100%{opacity:0.2}50%{opacity:1}}
         @keyframes expandBar{from{width:0}to{width:100%}}
+        @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
         [data-btn]:hover { transform:translateY(-1px); filter:brightness(1.15); }
         [data-card]:hover { border-color:rgba(255,255,255,0.18) !important; }
         [data-nav-btn]:hover { background:rgba(255,255,255,0.08) !important; }
