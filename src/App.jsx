@@ -3846,6 +3846,76 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
         C.cyan
       )}
 
+      {/* 1.5 SCORE TRUST — does the score actually predict views? */}
+      {(() => {
+        const pts = postedIdeas.filter(i=>i.viral!=null && i.postedViews>0).map(i=>({ score:i.viral, views:i.postedViews }));
+        const n = pts.length;
+        const NEED = 5;
+        // Spearman rank correlation — robust to view-count outliers
+        const rank = (arr) => { const idx=[...arr.keys()].sort((a,b)=>arr[a]-arr[b]); const r=Array(arr.length); idx.forEach((orig,i)=>r[orig]=i+1); return r; };
+        let rho = null;
+        if(n >= NEED) {
+          const rs = rank(pts.map(p=>p.score)), rv = rank(pts.map(p=>p.views));
+          const mr = (n+1)/2;
+          let num=0, ds=0, dv=0;
+          for(let i=0;i<n;i++){ num+=(rs[i]-mr)*(rv[i]-mr); ds+=(rs[i]-mr)**2; dv+=(rv[i]-mr)**2; }
+          rho = (ds&&dv) ? num/Math.sqrt(ds*dv) : 0;
+        }
+        const BANDS = [ {label:"85+", min:85, max:100, c:C.green}, {label:"70–84", min:70, max:84, c:C.cyan}, {label:"50–69", min:50, max:69, c:C.yellow}, {label:"<50", min:0, max:49, c:C.pink} ];
+        const bandRows = BANDS.map(b=>{
+          const inB = pts.filter(p=>p.score>=b.min && p.score<=b.max);
+          if(!inB.length) return null;
+          const avg = Math.round(inB.reduce((s,p)=>s+p.views,0)/inB.length);
+          return { ...b, n:inB.length, avg, mult: channelAvg>0 ? avg/channelAvg : null };
+        }).filter(Boolean);
+        const maxAvg = Math.max(1, ...bandRows.map(r=>r.avg));
+        const verdictOf = (r) => r>=0.6 ? { t:"STRONG SIGNAL", d:"Higher scores are reliably getting more views on this channel — trust the ranking.", c:C.green }
+          : r>=0.3 ? { t:"MODERATE SIGNAL", d:"Higher scores tend to do better, with exceptions — use scores as a guide, not gospel.", c:C.cyan }
+          : r>=0 ? { t:"WEAK SO FAR", d:"Scores and results barely align yet — keep logging outcomes so the model can calibrate.", c:C.yellow }
+          : { t:"INVERTED", d:"Low scores are outperforming high ones — the AI is mis-modelling this channel. Regenerate the Channel Theory and rescore.", c:C.pink };
+        const v = rho!=null ? verdictOf(rho) : null;
+        return card(
+          <>
+            {sectionHead("Does The Score Predict Reality?", C.yellow)}
+            {n < NEED ? (
+              <div style={{ padding:isMobile?"8px 0 4px":"4px 0" }}>
+                <div style={{ fontSize:14, color:"rgba(255,255,255,0.6)", lineHeight:1.6, marginBottom:14 }}>
+                  Post <span style={{color:"#fff",fontWeight:700}}>{NEED-n} more scored idea{NEED-n===1?"":"s"}</span> (and log their views) to unlock your accuracy report — the proof of whether this AI actually works on your channel.
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                  <div style={{ flex:1, height:8, borderRadius:4, background:"rgba(255,255,255,0.06)", overflow:"hidden" }}>
+                    <div style={{ width:`${(n/NEED)*100}%`, height:"100%", borderRadius:4, background:`linear-gradient(90deg,${C.yellow},${C.orange})`, transition:"width 0.4s" }}/>
+                  </div>
+                  <span style={{ fontSize:13, fontWeight:700, color:C.yellow, flexShrink:0 }}>{n}/{NEED}</span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{ display:"flex", alignItems:isMobile?"flex-start":"center", gap:isMobile?10:16, flexDirection:isMobile?"column":"row", marginBottom:20, padding:isMobile?"14px 16px":"14px 18px", borderRadius:12, background:`${v.c}0d`, border:`1px solid ${v.c}30` }}>
+                  <div style={{ fontSize:isMobile?15:17, fontWeight:800, color:v.c, letterSpacing:"0.06em", flexShrink:0 }}>{v.t}</div>
+                  <div style={{ fontSize:isMobile?13:14, color:"rgba(255,255,255,0.75)", lineHeight:1.55 }}>{v.d} <span style={{color:"rgba(255,255,255,0.35)"}}>(rank correlation {rho.toFixed(2)} across {n} posted ideas)</span></div>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:isMobile?14:10 }}>
+                  {bandRows.map(r=>(
+                    <div key={r.label}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:5 }}>
+                        <span style={{ fontSize:13, fontWeight:700, color:"#fff" }}>Score {r.label} <span style={{ color:"rgba(255,255,255,0.35)", fontWeight:500 }}>· {r.n} posted</span></span>
+                        <span style={{ fontSize:isMobile?14:15, fontWeight:700, fontFamily:C.fontHead, color:r.c }}>{fmt(r.avg)} avg{r.mult!=null && <span style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody, fontWeight:600 }}> · {r.mult.toFixed(1)}× channel avg</span>}</span>
+                      </div>
+                      <div style={{ height:10, borderRadius:5, background:"rgba(255,255,255,0.05)", overflow:"hidden" }}>
+                        <div style={{ width:`${Math.max(3,(r.avg/maxAvg)*100)}%`, height:"100%", borderRadius:5, background:`linear-gradient(90deg,${r.c},${r.c}70)`, boxShadow:`0 0 12px ${r.c}40` }}/>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {channelAvg>0 && <div style={{ marginTop:14, fontSize:12, color:"rgba(255,255,255,0.3)", lineHeight:1.5 }}>Channel average: {fmt(channelAvg)} views. If the bars step down with the scores, the AI is calibrated to your channel.</div>}
+              </>
+            )}
+          </>,
+          C.yellow
+        );
+      })()}
+
       {/* 2. AI SCORE VS REAL VIEWS TABLE */}
       {card(
         <>
