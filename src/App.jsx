@@ -469,6 +469,12 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
   ];
   const gsNext = gsSteps.find(st=>!st.done);
   const isFirstRun = !!gsNext && ((videos||[]).length===0 || _ideasAll.length===0 || !_ideasAll.some(i=>i.viral!=null));
+  // "Since you were away" — the comeback moment. Snapshot total views per visit;
+  // show the delta when returning after 6+ hours with real growth.
+  const prevSeen = React.useMemo(()=>loadJSON("km_last_seen", null), []);
+  React.useEffect(()=>{ if(allViewsDisplay>0) saveJSON("km_last_seen", { at:Date.now(), totalViews:allViewsDisplay }); },[allViewsDisplay]);
+  const sinceDelta = (prevSeen && prevSeen.totalViews>0 && allViewsDisplay>prevSeen.totalViews && (Date.now()-prevSeen.at)>6*3600*1000)
+    ? allViewsDisplay - prevSeen.totalViews : null;
   // Build chart data from videos
   const last7 = [...Array(7)].map((_,i) => {
     const d = new Date(); d.setDate(d.getDate()-6+i);
@@ -672,6 +678,12 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             <div style={{ fontSize:isMobile?52:88, fontWeight:400, lineHeight:0.85, fontFamily:C.fontHead, color:"#fff", letterSpacing:"-0.01em", textShadow:`0 0 100px ${C.pink}35` }}>
               {allViewsDisplay>=1e6?(allViewsDisplay/1e6).toFixed(1)+"M":allViewsDisplay>=1e3?(allViewsDisplay/1e3).toFixed(1)+"K":String(allViewsDisplay||0)}
             </div>
+            {sinceDelta && (
+              <div style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:12, padding:isMobile?"6px 12px":"6px 14px", borderRadius:20, background:`${C.green}14`, border:`1px solid ${C.green}35` }}>
+                <span style={{ fontSize:11, color:C.green }}>▲</span>
+                <span style={{ fontSize:isMobile?12:13, fontWeight:700, color:C.green }}>+{fmt(sinceDelta)} since your last visit</span>
+              </div>
+            )}
             <div style={{ marginTop:16, display:"flex", flexWrap:"wrap", alignItems:"center", gap:isMobile?12:24 }}>
               {!isMobile && <div style={{ height:40, width:1, background:"rgba(255,255,255,0.08)" }}/>}
               {[
