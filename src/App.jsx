@@ -459,6 +459,16 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
     .filter(([,h])=>h.state==="error" && h.at > healthDismissedAt)
     .map(([service,h])=>({ service, ...h }));
   const dismissHealth = () => { const now=Date.now(); saveJSON("km_health_dismissed", now); setHealthDismissedAt(now); };
+  // First-run activation path — shown instead of the ritual until there's real data
+  const _ideasAll = allIdeas.length ? allIdeas : (ideas||[]);
+  const gsSteps = [
+    { n:1, label:"Connect your channel", why:"Add your TikTok key in Settings and hit SYNC — your history calibrates the AI", done:(videos||[]).length>0, nav:"settings" },
+    { n:2, label:"Add your first idea", why:"Drop a rough concept — the AI expands it into a full video idea", done:_ideasAll.length>0, nav:"content" },
+    { n:3, label:"Score it", why:"Get a 0–100 virality score with hook fixes before you film anything", done:_ideasAll.some(i=>i.viral!=null), nav:"content" },
+    { n:4, label:"Post it & log the views", why:"Real results teach the AI your channel — scores get sharper every time", done:_ideasAll.some(i=>i.status==="posted"&&i.postedViews>0), nav:"content" },
+  ];
+  const gsNext = gsSteps.find(st=>!st.done);
+  const isFirstRun = !!gsNext && ((videos||[]).length===0 || _ideasAll.length===0 || !_ideasAll.some(i=>i.viral!=null));
   // Build chart data from videos
   const last7 = [...Array(7)].map((_,i) => {
     const d = new Date(); d.setDate(d.getDate()-6+i);
@@ -508,8 +518,36 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         </div>
       )}
 
+      {/* ══ GETTING STARTED — first-run activation path ══════════════ */}
+      {isFirstRun && (
+        <div data-card style={{ borderRadius:18, padding:isMobile?"24px 20px":"22px 26px", background:`linear-gradient(135deg,${C.cyan}0d,${C.purple}08)`, border:`1px solid ${C.cyan}30`, position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${C.cyan}70,transparent)` }}/>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
+            <span style={{ fontSize:20 }}>🚀</span>
+            <div style={{ fontSize:13, fontWeight:800, letterSpacing:"0.14em", color:"#fff" }}>GET SET UP</div>
+            <span style={{ marginLeft:"auto", fontSize:11, fontWeight:700, color:C.cyan, background:`${C.cyan}15`, border:`1px solid ${C.cyan}30`, borderRadius:20, padding:"3px 12px" }}>{gsSteps.filter(st=>st.done).length}/{gsSteps.length}</span>
+          </div>
+          <div style={{ fontSize:isMobile?12:13, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody, lineHeight:1.5, marginBottom:16 }}>Four steps to your first AI-scored video. Takes about 3 minutes.</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {gsSteps.map(st=>{
+              const isNext = gsNext && st.n===gsNext.n;
+              return (
+                <div key={st.n} onClick={()=>!st.done&&setNav&&setNav(st.nav)} style={{ display:"flex", alignItems:"center", gap:12, padding:isMobile?"14px 16px":"12px 14px", borderRadius:12, background:isNext?`${C.cyan}0d`:"rgba(255,255,255,0.02)", border:`1px solid ${isNext?C.cyan+"40":"rgba(255,255,255,0.06)"}`, cursor:st.done?"default":"pointer", opacity:st.done?0.55:1, transition:"all 0.15s" }}>
+                  <div style={{ width:26, height:26, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:st.done?13:12, fontWeight:800, background:st.done?`${C.green}18`:isNext?`${C.cyan}20`:"rgba(255,255,255,0.06)", border:`1px solid ${st.done?C.green+"50":isNext?C.cyan+"50":"rgba(255,255,255,0.1)"}`, color:st.done?C.green:isNext?C.cyan:"rgba(255,255,255,0.4)" }}>{st.done?"✓":st.n}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:14, color:"#fff", fontWeight:600, marginBottom:2, textDecoration:st.done?"line-through":"none", textDecorationColor:"rgba(255,255,255,0.3)" }}>{st.label}</div>
+                    {!st.done && <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody, lineHeight:1.45 }}>{st.why}</div>}
+                  </div>
+                  {!st.done && <div style={{ fontSize:18, color:isNext?C.cyan:"rgba(255,255,255,0.3)", flexShrink:0 }}>→</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* ══ WEEKLY RITUAL — the retention loop that feeds the AI ══════ */}
-      {ritual.pending > 0 ? (
+      {!isFirstRun && (ritual.pending > 0 ? (
         <div data-card style={{ borderRadius:18, padding:isMobile?"26px 20px":"20px 24px", background:`linear-gradient(135deg,${C.pink}10,${C.purple}08)`, border:`1px solid ${C.pink}30`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${C.pink}70,transparent)` }}/>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:isMobile?22:14 }}>
@@ -559,7 +597,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody, marginTop:2 }}>Every posted video is logged and every idea scored. The model has everything it needs.</div>
           </div>
         </div>
-      )}
+      ))}
 
       {/* ══ RETENTION BAR — streak, XP, intelligence ══════════════ */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(160px,100%),1fr))", gap:10 }}>
