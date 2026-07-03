@@ -1106,6 +1106,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
   const [sub, setSub]         = useState("IDEAS");
   const [expanded, setExpanded] = useState(null);
   const [calFilter, setCalFilter] = useState("ALL");
+  const [ideaFilter, setIdeaFilter] = useState("ALL");
   const [postingId, setPostingId] = useState(null);
   const [postViews, setPostViews] = useState("");
   const [quickExpand, setQuickExpand] = useState("");
@@ -1159,6 +1160,15 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
     return sb-sa;
   });
   const filteredCal = calFilter==="ALL" ? calItems : calItems.filter(c=>(c.platform||"").toUpperCase()===calFilter);
+  // Pipeline filters — the list is unmanageable past ~15 ideas without these
+  const IDEA_FILTERS = [
+    { id:"ALL",      label:"ALL",           test:()=>true },
+    { id:"READY",    label:"READY TO FILM", test:i=>(i.viral||0)>=70 && i.status!=="posted" },
+    { id:"UNSCORED", label:"UNSCORED",      test:i=>!(i.viral>0) && i.status!=="posted" },
+    { id:"POSTED",   label:"POSTED",        test:i=>i.status==="posted" },
+  ];
+  const _activeIdeaFilter = IDEA_FILTERS.find(fl=>fl.id===ideaFilter) || IDEA_FILTERS[0];
+  const displayIdeas = sorted.filter(_activeIdeaFilter.test);
   const ic = v => (v||0)>=80?C.green:(v||0)>=60?C.yellow:C.pink;
   const perfLabel = s => s>=80?"VIRAL":s>=65?"STRONG":s>=50?"DECENT":s>=35?"WEAK":"NEW";
 
@@ -1198,14 +1208,28 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
             </button>
           </div>
         </div>
+        {/* Pipeline filter chips */}
+        {ideas.length > 3 && (
+          <div style={{ display:"flex", gap:isMobile?6:8, overflowX:"auto", paddingBottom:2 }}>
+            {IDEA_FILTERS.map(fl=>{
+              const n = fl.id==="ALL" ? ideas.length : sorted.filter(fl.test).length;
+              const active = ideaFilter===fl.id;
+              return (
+                <button key={fl.id} onClick={()=>setIdeaFilter(fl.id)} style={{ padding:isMobile?"9px 13px":"7px 14px", borderRadius:20, border:`1px solid ${active?C.cyan:"rgba(255,255,255,0.1)"}`, background:active?`${C.cyan}15`:"transparent", color:active?C.cyan:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?11:12, cursor:"pointer", letterSpacing:"0.05em", whiteSpace:"nowrap", flexShrink:0 }}>
+                  {fl.label} <span style={{ opacity:0.6 }}>{n}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
         <div style={{ display:"grid", gridTemplateColumns:"1fr", gap:isMobile?24:18, alignItems:"start" }}>
-          {sorted.length===0
+          {displayIdeas.length===0
             ? <div style={{ gridColumn:"1/-1", padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?22:12 }}>
                 <div style={{ fontSize:32 }}>🎬</div>
-                <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>No ideas yet</div>
-                <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Start building your content pipeline — add your first idea above</div>
+                <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>{ideas.length===0?"No ideas yet":"Nothing in this filter"}</div>
+                <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>{ideas.length===0?"Start building your content pipeline — add your first idea above":"Try a different filter — or score more ideas to fill this one"}</div>
               </div>
-            : sorted.map(idea=>{
+            : displayIdeas.map(idea=>{
               const scoreC = ic(idea.viral||0);
               const isExpanded = expanded===idea.id;
               const daysOld = idea.createdAt ? Math.floor((Date.now()-new Date(idea.createdAt).getTime())/(1000*60*60*24)) : null;
