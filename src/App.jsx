@@ -22,15 +22,35 @@ if(typeof document !== "undefined") {
     if(appleTitle) appleTitle.setAttribute("content", appName);
     const mLink = document.querySelector('link[rel="manifest"]');
     if(mLink && appName !== "CreatorOS") {
+      // Draw the ring-mark icon in the client's accent colours so the install
+      // is fully branded (Chrome/Android accept data-URI manifest icons).
+      const drawIcon = (S) => {
+        const cv = document.createElement("canvas"); cv.width = cv.height = S;
+        const g = cv.getContext("2d");
+        const corner = S*0.22;
+        g.beginPath(); g.roundRect(0, 0, S, S, corner);
+        const bg = g.createLinearGradient(0, 0, 0, S);
+        bg.addColorStop(0, "#0D091A"); bg.addColorStop(1, "#07050F");
+        g.fillStyle = bg; g.fill();
+        g.save(); g.clip();
+        const ring = g.createLinearGradient(0, 0, S, S);
+        ring.addColorStop(0, _activeCfg.accentColor || "#FF2D78");
+        ring.addColorStop(1, _activeCfg.accentColor2 || "#C566FF");
+        g.strokeStyle = ring; g.lineWidth = S*0.125; g.lineCap = "round";
+        const gap = Math.PI/4.4;
+        g.beginPath(); g.arc(S/2, S/2, S*0.2375, gap, Math.PI*2 - gap); g.stroke();
+        g.restore();
+        return cv.toDataURL("image/png");
+      };
+      let icons;
+      try { icons = [ { src: drawIcon(192), sizes: "192x192", type: "image/png", purpose: "any maskable" }, { src: drawIcon(512), sizes: "512x512", type: "image/png", purpose: "any maskable" } ]; }
+      catch { icons = [ { src: location.origin+"/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" }, { src: location.origin+"/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" } ]; }
       const manifest = {
         name: appName, short_name: appName,
         description: `${appName} — AI content strategist`,
         start_url: "/", display: "standalone",
         background_color: "#07050F", theme_color: "#07050F",
-        icons: [
-          { src: location.origin+"/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
-          { src: location.origin+"/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
-        ],
+        icons,
       };
       mLink.setAttribute("href", "data:application/manifest+json,"+encodeURIComponent(JSON.stringify(manifest)));
     }
