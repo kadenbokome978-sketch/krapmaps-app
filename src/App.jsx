@@ -1816,6 +1816,7 @@ const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hook
   };
   const [sub, setSub] = useState("OVERVIEW");
   const [vidSort, setVidSort] = useState("recent"); // recent | score
+  const [vidSearch, setVidSearch] = useState("");
   const [vidAnalysis, setVidAnalysis] = useState({});
   const [vidLoading, setVidLoading]   = useState({});
   const [vidErr, setVidErr]           = useState(null);
@@ -2143,9 +2144,20 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
       {sub==="VIDEOS" && (() => {
         const _ts = v => { const d=v.created_at?new Date(v.created_at).getTime():NaN; return isNaN(d)?-Infinity:d; };
         const _score = v => { const sc=videoScores?.[v.id]; return sc?sc.score:(v.views||0)/1e9; }; // fall back to views so unscored still order sensibly
+        const _q = vidSearch.trim().toLowerCase();
+        const matchQ = v => !_q || (v.title||"").toLowerCase().includes(_q) || (v.hook||"").toLowerCase().includes(_q) || (v.type||"").toLowerCase().includes(_q) || (v.audio||"").toLowerCase().includes(_q);
+        const prep = arr => sortVids(arr.filter(matchQ));
         const sortVids = arr => [...arr].sort((a,b)=> vidSort==="score" ? (_score(b)-_score(a)) : (_ts(b)-_ts(a)));
         return (
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:10 }}>
+          {videos.length>3 && (
+            <div style={{ position:"relative" }}>
+              <div style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", display:"flex", pointerEvents:"none" }}>{I.search(15,"rgba(255,255,255,0.35)")}</div>
+              <input value={vidSearch} onChange={e=>setVidSearch(e.target.value)} placeholder="Search videos by title, hook, type or audio..." aria-label="Search videos"
+                style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, color:"#fff", padding:isMobile?"13px 40px 13px 40px":"11px 40px", fontSize:14, fontFamily:C.fontBody, outline:"none", boxSizing:"border-box" }} />
+              {vidSearch && <button onClick={()=>setVidSearch("")} aria-label="Clear search" style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", display:"flex", padding:4 }}>{I.x(14,"rgba(255,255,255,0.5)")}</button>}
+            </div>
+          )}
           {videos.length>0 && (
             <div style={{ display:"flex", alignItems:"center", gap:isMobile?8:10, flexWrap:"wrap" }}>
               <span style={{ fontSize:12, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase" }}>Sort</span>
@@ -2169,16 +2181,16 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 <div style={{ display:"flex", alignItems:"center", gap:8, padding:isMobile?"14px 18px":"12px 16px", borderRadius:16, background:`${C.pink}10`, border:`1px solid ${C.pink}25` }}>
                   <div style={{ width:28, height:28, borderRadius:9, background:`${C.pink}20`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.tt(14,C.pink)}</div>
                   <span style={{ fontSize:15, fontWeight:700, color:C.pink, letterSpacing:"0.05em" }}>TIKTOK</span>
-                  <span style={{ marginLeft:"auto", fontSize:12, color:`${C.pink}aa`, fontWeight:700 }}>{videos.filter(v=>v.platform!=="instagram").length} VIDEOS</span>
+                  <span style={{ marginLeft:"auto", fontSize:12, color:`${C.pink}aa`, fontWeight:700 }}>{prep(videos.filter(v=>v.platform!=="instagram")).length} VIDEOS</span>
                 </div>
-                {sortVids(videos.filter(v=>v.platform!=="instagram")).map((v,i)=>renderVidCard(v,i))}
+                {prep(videos.filter(v=>v.platform!=="instagram")).map((v,i)=>renderVidCard(v,i))}
               </div>
               {/* Instagram column */}
               <div style={{ display:"flex", flexDirection:"column", gap:isMobile?22:12 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, padding:isMobile?"14px 18px":"12px 16px", borderRadius:16, background:`${C.purple}10`, border:`1px solid ${C.purple}25` }}>
                   <div style={{ width:28, height:28, borderRadius:9, background:`${C.purple}20`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.ig(14,C.purple)}</div>
                   <span style={{ fontSize:15, fontWeight:700, color:C.purple, letterSpacing:"0.05em" }}>INSTAGRAM</span>
-                  <span style={{ marginLeft:"auto", fontSize:12, color:`${C.purple}aa`, fontWeight:700 }}>{videos.filter(v=>v.platform==="instagram").length} REELS</span>
+                  <span style={{ marginLeft:"auto", fontSize:12, color:`${C.purple}aa`, fontWeight:700 }}>{prep(videos.filter(v=>v.platform==="instagram")).length} REELS</span>
                 </div>
                 {videos.filter(v=>v.platform==="instagram").length===0 && (
                   <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?22:12 }}>
@@ -2187,7 +2199,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                     <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Hit SYNC NOW in Settings to pull your Instagram reels</div>
                   </div>
                 )}
-                {sortVids(videos.filter(v=>v.platform==="instagram")).map((v,i)=>renderVidCard(v,i))}
+                {prep(videos.filter(v=>v.platform==="instagram")).map((v,i)=>renderVidCard(v,i))}
               </div>
             </div>
           }
