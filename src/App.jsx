@@ -8511,7 +8511,7 @@ Return JSON:
 
   // ── SAVE TO SUPABASE ──────────────────────────────────────────
   const addVideo = async (video) => {
-    const v = { ...video, id:video.id||Date.now().toString(), created_at:new Date().toISOString() };
+    const v = { ...video, id:video.id||Date.now().toString(), created_at:video.created_at || new Date().toISOString() };
     setVideos(vs=>{
       if(vs.find(x=>x.id===v.id||x.url===v.url)) return vs;
       return [v,...vs];
@@ -8576,7 +8576,7 @@ Return JSON:
 
   const AddVideoModal = () => {
     const [tab, setTab] = useState("manual");
-    const [form, setForm] = useState({ title:"", type:"facecam", hook:"achievement", views:"", likes:"", url:"", collab: false, audio: "" });
+    const [form, setForm] = useState({ title:"", type:"facecam", hook:"achievement", views:"", likes:"", url:"", collab: false, audio: "", posted: today() });
     const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
     return (
       <ModalBase onClose={()=>closeModal("addVideo")}>
@@ -8603,10 +8603,12 @@ Return JSON:
               <div><MLabel>Views</MLabel><MInput value={form.views} onChange={set("views")} placeholder="0" type="number" /></div>
               <div><MLabel>Likes</MLabel><MInput value={form.likes} onChange={set("likes")} placeholder="0" type="number" /></div>
             </div>
+            <MLabel>Date posted</MLabel>
+            <input type="date" value={form.posted} max={today()} onChange={set("posted")} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,color:"#fff",padding:"14px 16px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:14,colorScheme:"dark" }} />
             <MLabel>TikTok URL (optional)</MLabel><MInput value={form.url} onChange={set("url")} placeholder="https://tiktok.com/..." />
             <MLabel>Audio/Sound used (optional)</MLabel>
             <MInput value={form.audio} onChange={set("audio")} placeholder='e.g. "Espresso - Sabrina Carpenter" or "original audio"' />
-            <MBtn onClick={()=>addVideo({ title:form.title,type:form.type,hook:form.hook,views:parseInt(form.views)||0,likes:parseInt(form.likes)||0,url:form.url,collab:form.collab,audio:form.audio,date:today() })}>Save Video</MBtn>
+            <MBtn onClick={()=>addVideo({ title:form.title,type:form.type,hook:form.hook,views:parseInt(form.views)||0,likes:parseInt(form.likes)||0,url:form.url,collab:form.collab,audio:form.audio,date:form.posted||today(),created_at:new Date(form.posted||today()).toISOString() })}>Save Video</MBtn>
           </>
         )}
         {tab==="scan" && (
@@ -8614,7 +8616,7 @@ Return JSON:
             <MLabel>TikTok URL</MLabel>
             <MInput value={form.url} onChange={set("url")} placeholder="https://tiktok.com/..." />
             <div style={{ color:C.dim,fontSize:isMobile?14:17,marginBottom:16,lineHeight:1.6 }}>Paste a TikTok URL and we'll log it. Stats auto-sync every 12hrs via TIKWM.</div>
-            <MBtn onClick={()=>addVideo({ title:form.url.split("/").pop()||"TikTok video",type:"facecam",hook:"achievement",views:0,likes:0,url:form.url,date:today() })}>Log URL</MBtn>
+            <MBtn onClick={()=>addVideo({ title:form.url.split("/").pop()||"TikTok video",type:"facecam",hook:"achievement",views:0,likes:0,url:form.url,date:form.posted||today(),created_at:new Date(form.posted||today()).toISOString() })}>Log URL</MBtn>
           </div>
         )}
       </ModalBase>
