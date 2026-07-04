@@ -8625,7 +8625,7 @@ Return JSON:
 
   const UpdateVideoModal = () => {
     const v = updateTarget;
-    const [form, setForm] = useState({ views:v?.views||"", likes:v?.likes||"", comments:v?.comments||"", shares:v?.shares||"", views24h:"", views48h:"" });
+    const [form, setForm] = useState({ views:v?.views||"", likes:v?.likes||"", comments:v?.comments||"", shares:v?.shares||"", views24h:"", views48h:"", posted:(v?.created_at&&!isNaN(new Date(v.created_at))?new Date(v.created_at).toISOString().slice(0,10):"") });
     const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
     if(!v) return null;
     return (
@@ -8639,7 +8639,9 @@ Return JSON:
           <div><MLabel>24hr Views</MLabel><MInput value={form.views24h} onChange={set("views24h")} placeholder="0" type="number" /></div>
           <div><MLabel>48hr Views</MLabel><MInput value={form.views48h} onChange={set("views48h")} placeholder="0" type="number" /></div>
         </div>
-        <MBtn onClick={()=>updateVideo({ id:v.id,views:parseInt(form.views)||v.views,likes:parseInt(form.likes)||v.likes,comments:parseInt(form.comments)||v.comments||0,shares:parseInt(form.shares)||v.shares||0,views24h:parseInt(form.views24h)||v.views24h||0,views48h:parseInt(form.views48h)||v.views48h||0,_updated:true })}>Save Stats</MBtn>
+        <MLabel>Date posted</MLabel>
+        <input type="date" value={form.posted} max={today()} onChange={set("posted")} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,color:"#fff",padding:"14px 16px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:14,colorScheme:"dark" }} />
+        <MBtn onClick={()=>updateVideo({ id:v.id,views:parseInt(form.views)||v.views,likes:parseInt(form.likes)||v.likes,comments:parseInt(form.comments)||v.comments||0,shares:parseInt(form.shares)||v.shares||0,views24h:parseInt(form.views24h)||v.views24h||0,views48h:parseInt(form.views48h)||v.views48h||0,...(form.posted?{created_at:new Date(form.posted).toISOString(),date:form.posted}:{}),_updated:true })}>Save Stats</MBtn>
       </ModalBase>
     );
   };
