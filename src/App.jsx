@@ -1796,6 +1796,7 @@ const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hook
     setSentIdeas(s=>({...s,[key]:true}));
   };
   const [sub, setSub] = useState("OVERVIEW");
+  const [vidSort, setVidSort] = useState("recent"); // recent | score
   const [vidAnalysis, setVidAnalysis] = useState({});
   const [vidLoading, setVidLoading]   = useState({});
   const [vidErr, setVidErr]           = useState(null);
@@ -1862,7 +1863,16 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                     <div style={{ padding:"16px 18px" }}>
                       {/* Title row */}
                       <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10, marginBottom:isMobile?16:12 }}>
-                        <div style={{ fontSize:15, fontWeight:600, color:"#fff", lineHeight:1.3, flex:1 }}>{v.title?.slice(0,60)||"Untitled"}</div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:15, fontWeight:600, color:"#fff", lineHeight:1.3 }}>{v.title?.slice(0,60)||"Untitled"}</div>
+                          {(() => {
+                            const d = v.created_at ? new Date(v.created_at) : null;
+                            if(!d || isNaN(d)) return <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:4, fontFamily:C.fontBody }}>Date unknown</div>;
+                            const days = Math.floor((Date.now()-d.getTime())/86400000);
+                            const rel = days<=0?"Today":days===1?"Yesterday":days<7?`${days}d ago`:days<30?`${Math.floor(days/7)}w ago`:days<365?`${Math.floor(days/30)}mo ago`:`${Math.floor(days/365)}y ago`;
+                            return <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginTop:4, fontFamily:C.fontBody, display:"flex", alignItems:"center", gap:6 }}><span style={{ color:"rgba(255,255,255,0.55)", fontWeight:600 }}>{d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span><span style={{ opacity:0.6 }}>· {rel}</span></div>;
+                          })()}
+                        </div>
                         {sc && (
                           <div style={{ textAlign:"center", flexShrink:0 }}>
                             <div style={{ fontSize:28, fontWeight:400, fontFamily:C.fontHead, color:sc.color, lineHeight:1, textShadow:`0 0 10px ${sc.color}50` }}>{sc.score}</div>
@@ -1870,6 +1880,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                           </div>
                         )}
                       </div>
+                      {/* /Title row */}
                       {/* Tags */}
                       <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:isMobile?16:12 }}>
                         {v.type && <Tag color={C.pink} sm>{v.type}</Tag>}
@@ -2110,8 +2121,23 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
       })()}
 
       {/* ── VIDEOS ──────────────────────────────────────────────── */}
-      {sub==="VIDEOS" && (
+      {sub==="VIDEOS" && (() => {
+        const _ts = v => { const d=v.created_at?new Date(v.created_at).getTime():NaN; return isNaN(d)?-Infinity:d; };
+        const _score = v => { const sc=videoScores?.[v.id]; return sc?sc.score:(v.views||0)/1e9; }; // fall back to views so unscored still order sensibly
+        const sortVids = arr => [...arr].sort((a,b)=> vidSort==="score" ? (_score(b)-_score(a)) : (_ts(b)-_ts(a)));
+        return (
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:10 }}>
+          {videos.length>0 && (
+            <div style={{ display:"flex", alignItems:"center", gap:isMobile?8:10, flexWrap:"wrap" }}>
+              <span style={{ fontSize:12, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase" }}>Sort</span>
+              {[{id:"recent",label:"Most recent"},{id:"score",label:"Best scored"}].map(o=>{
+                const active = vidSort===o.id;
+                return (
+                  <button key={o.id} onClick={()=>setVidSort(o.id)} style={{ padding:isMobile?"9px 15px":"7px 16px", borderRadius:20, border:`1px solid ${active?C.cyan:"rgba(255,255,255,0.1)"}`, background:active?`${C.cyan}15`:"transparent", color:active?C.cyan:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?12:13, cursor:"pointer", letterSpacing:"0.04em" }}>{o.label}</button>
+                );
+              })}
+            </div>
+          )}
           {videos.length===0
             ? <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?22:12 }}>
                 <div style={{ fontSize:32 }}>📊</div>
@@ -2126,7 +2152,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                   <span style={{ fontSize:15, fontWeight:700, color:C.pink, letterSpacing:"0.05em" }}>TIKTOK</span>
                   <span style={{ marginLeft:"auto", fontSize:12, color:`${C.pink}aa`, fontWeight:700 }}>{videos.filter(v=>v.platform!=="instagram").length} VIDEOS</span>
                 </div>
-                {videos.filter(v=>v.platform!=="instagram").map((v,i)=>renderVidCard(v,i))}
+                {sortVids(videos.filter(v=>v.platform!=="instagram")).map((v,i)=>renderVidCard(v,i))}
               </div>
               {/* Instagram column */}
               <div style={{ display:"flex", flexDirection:"column", gap:isMobile?22:12 }}>
@@ -2142,13 +2168,14 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                     <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Hit SYNC NOW in Settings to pull your Instagram reels</div>
                   </div>
                 )}
-                {videos.filter(v=>v.platform==="instagram").map((v,i)=>renderVidCard(v,i))}
+                {sortVids(videos.filter(v=>v.platform==="instagram")).map((v,i)=>renderVidCard(v,i))}
               </div>
             </div>
           }
 
         </div>
-      )}
+        );
+      })()}
 
 
 
