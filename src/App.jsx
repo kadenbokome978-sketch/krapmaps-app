@@ -3961,15 +3961,76 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
   // Best performing idea (highest actual views among posted)
   const bestIdea = [...postedWithViews].sort((a,b)=>(b.postedViews||0)-(a.postedViews||0))[0];
 
-  // Share handler
+  // Build the public snapshot rendered by /r/<handle>. Everything is derived from
+  // real logged data — no invented numbers.
+  const buildSnapshot = () => {
+    const wl = loadWL();
+    const bandDefs = [
+      { min:85, max:100, label:"Scored 85+", color:"#39FF14" },
+      { min:70, max:84, label:"Scored 70–84", color:"#00E5FF" },
+      { min:50, max:69, label:"Scored 50–69", color:"#FFD50A" },
+      { min:0,  max:49, label:"Under 50", color:"#FF2D78" },
+    ];
+    const pts = postedWithViews.filter(i=>i.viral!=null && i.postedViews>0);
+    const bands = bandDefs.map(b=>{
+      const inB = pts.filter(p=>p.viral>=b.min && p.viral<=b.max);
+      if(!inB.length) return null;
+      const avg = Math.round(inB.reduce((s,p)=>s+p.postedViews,0)/inB.length);
+      return { label:b.label, count:inB.length, avg:fmt(avg), mult: channelAvg>0?(avg/channelAvg).toFixed(1)+"×":"—", pct: channelAvg>0?Math.round((avg/channelAvg)/2.5*100):0, color:b.color };
+    }).filter(Boolean);
+    // rescale pct so the biggest band fills the bar
+    const maxPct = Math.max(1, ...bands.map(b=>b.pct));
+    bands.forEach(b=> b.pct = Math.round((b.pct/maxPct)*100));
+    // Spearman rank correlation
+    let rho = null;
+    if(pts.length>=5){
+      const rank = arr => { const idx=[...arr.keys()].sort((a,c)=>arr[a]-arr[c]); const r=Array(arr.length); idx.forEach((o,i)=>r[o]=i+1); return r; };
+      const rs=rank(pts.map(p=>p.viral)), rv=rank(pts.map(p=>p.postedViews)), mr=(pts.length+1)/2;
+      let nu=0,ds=0,dv=0; for(let i=0;i<pts.length;i++){ nu+=(rs[i]-mr)*(rv[i]-mr); ds+=(rs[i]-mr)**2; dv+=(rv[i]-mr)**2; }
+      rho = (ds&&dv)? nu/Math.sqrt(ds*dv) : 0;
+    }
+    const verdict = rho==null?null : rho>=0.6?{t:"STRONG SIGNAL",c:"#39FF14",x:"Higher-scored ideas reliably pull more views on this channel."}
+      : rho>=0.3?{t:"MODERATE SIGNAL",c:"#00E5FF",x:"Higher scores tend to do better on this channel."}
+      : {t:"EARLY DATA",c:"#FFD50A",x:"Still calibrating to this channel."};
+    const best = bestIdea && bestIdea.viral!=null ? bestIdea : [...pts].sort((a,b)=>b.postedViews-a.postedViews)[0];
+    const totalViews = allViews.reduce((s,v)=>s+v,0);
+    const topVideos = [...pts].sort((a,b)=>b.postedViews-a.postedViews).slice(0,3).map(i=>({
+      score:i.viral, title:(i.title||i.hook||"Untitled").slice(0,70), views:fmt(i.postedViews),
+      sub:[i.hook?`${i.hook} hook`:null, i.postedDate?fmtDate(i.postedDate):null].filter(Boolean).join(" · "),
+      color: i.viral>=70?"#39FF14":i.viral>=50?"#00E5FF":"#FF2D78",
+    }));
+    return {
+      handle: wl.handle||"@creator", appName: wl.appName||"CreatorOS", creator1: wl.creator1||"",
+      accent: wl.accentColor||"#FF2D78", accent2: wl.accentColor2||"#C566FF",
+      sub: [wl.niche?wl.niche:null, `${videos.length} videos tracked`].filter(Boolean).join(" · "),
+      stats: { viewsTracked: totalViews>0?fmt(totalViews):null, avgViews: (avgPostedViews||channelAvg)?fmt(avgPostedViews||channelAvg):null, accuracy },
+      hero: best ? { score:best.viral, viewsLabel:fmt(best.postedViews), title:(best.title||best.hook||"").slice(0,70), mult: channelAvg>0?`${(best.postedViews/channelAvg).toFixed(1)}× channel average`:"" } : null,
+      calibration: bands.length ? { verdict:verdict?.t, verdictColor:verdict?.c, verdictText:verdict?.x, rho: rho!=null?rho.toFixed(2):null, n:pts.length, channelAvg:fmt(channelAvg), bands } : null,
+      topVideos, updated: today(),
+    };
+  };
+
+  // Publish the snapshot and share/copy the public link.
   const handleShare = async () => {
-    const text = `${WL.handle} Results — ${videos.length} videos tracked, avg ${fmt(avgPostedViews)} views. Scored with ${WL.appName}.`;
-    if (navigator.share) {
-      try { await navigator.share({ title: `${WL.handle} Results`, text }); }
-      catch(e) { /* cancelled */ }
-    } else {
-      setShareMsg("Take a screenshot of this card to share your results!");
-      setTimeout(() => setShareMsg(null), 4000);
+    const wl = loadWL();
+    const handleId = (wl.handle||"").replace(/^@/,"").toLowerCase().replace(/[^a-z0-9_.]/g,"");
+    if(!handleId){ setShareMsg("Set your handle in Settings first, then share."); setTimeout(()=>setShareMsg(null),4000); return; }
+    if((postedWithViews.filter(i=>i.viral!=null&&i.postedViews>0)).length===0 && !bestIdea){
+      setShareMsg("Post & log a scored idea first — your results page needs real wins to show."); setTimeout(()=>setShareMsg(null),5000); return;
+    }
+    setShareMsg("Publishing your results…");
+    try {
+      const snap = buildSnapshot();
+      await sbUpsert("km_public_results", [{ id:handleId, data:snap, updated_at:new Date().toISOString() }]);
+      const link = `${window.location.origin}/r/${handleId}`;
+      const shared = navigator.share ? await navigator.share({ title:`${wl.handle} — proven with ${wl.appName}`, url:link }).then(()=>true).catch(()=>false) : false;
+      if(!shared){
+        try { await navigator.clipboard.writeText(link); setShareMsg("Link copied — "+link); }
+        catch { setShareMsg("Your results are live at "+link); }
+      } else { setShareMsg(null); }
+      setTimeout(()=>setShareMsg(null), 6000);
+    } catch(e) {
+      setShareMsg("Couldn't publish right now — check cloud sync in Settings."); setTimeout(()=>setShareMsg(null),5000);
     }
   };
 
@@ -4232,10 +4293,11 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
             <div style={{ display:"flex", flexDirection:"column", gap:10, alignItems:isMobile?"stretch":"flex-end", width:isMobile?"100%":"auto" }}>
               <button
                 onClick={handleShare}
-                style={{ padding:"14px 28px", borderRadius:14, background:`linear-gradient(135deg,${C.purple},${C.pink})`, border:"none", color:"#fff", fontSize:15, fontWeight:700, cursor:"pointer", letterSpacing:"0.04em", boxShadow:`0 4px 20px ${C.purple}40`, width:isMobile?"100%":"auto" }}
+                style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8, padding:"14px 28px", borderRadius:14, background:`linear-gradient(135deg,${C.purple},${C.pink})`, border:"none", color:"#fff", fontSize:15, fontWeight:700, cursor:"pointer", letterSpacing:"0.04em", boxShadow:`0 4px 20px ${C.purple}40`, width:isMobile?"100%":"auto" }}
               >
-                Share Results
+                {I.rocket(15,"#fff")} Publish &amp; Share
               </button>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", textAlign:isMobile?"center":"right", lineHeight:1.4 }}>Creates a public results page you can post anywhere</div>
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.25)", textAlign:isMobile?"center":"right" }}>
                 Powered by {WL.appName}
               </div>

@@ -79,6 +79,33 @@ your server keys.
 | TikTok sync, IG reels/followers, comments | `/api/rapid` | RapidAPI, host-allowlisted |
 | IG public view counts | `/api/ig-views` | no key (public scrape) |
 | Gemini video upload | `/api/gemini-upload` | user-key header (legacy path) |
+| Public shareable results page | `/api/r` (`/r/<handle>`) | no login — reads `km_public_results` |
+
+### Shareable results page (viral loop)
+
+The **Publish & Share** button on Growth builds a snapshot of a creator's real
+results (best call, calibration bands, top videos, whitelabel branding) and
+writes it to a `km_public_results` table. Anyone can then view it at
+`/r/<handle>` — no login — and every page ends in a "Try &lt;app&gt; free" CTA.
+
+Create the table once in Supabase (SQL editor):
+
+```sql
+create table if not exists km_public_results (
+  id text primary key,
+  data jsonb,
+  updated_at timestamptz default now()
+);
+alter table km_public_results enable row level security;
+-- public can READ shared results
+create policy "public read" on km_public_results for select using (true);
+-- anon can PUBLISH/update their own snapshot (the app writes with the anon key)
+create policy "anon upsert" on km_public_results for insert with check (true);
+create policy "anon update" on km_public_results for update using (true);
+```
+
+The render endpoint HTML-escapes all user text and only lets hex colours through,
+so a malicious handle/title can't inject into the public page.
 
 ### Phase 2 — complete
 
