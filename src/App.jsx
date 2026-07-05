@@ -6766,22 +6766,33 @@ const DealsView = () => {
         </div>
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:10 }}>
-          {deals.map(deal=>(
-            <div key={deal.id} data-card style={{ borderRadius:16, padding:isMobile?"22px 20px":"18px 22px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.08)", display:"flex", flexDirection:isMobile?"column":"row", alignItems:isMobile?"stretch":"center", gap:isMobile?20:16, flexWrap:"wrap" }}>
+          {deals.map(deal=>{
+            const sc = STATUS_C[deal.status]||C.dim;
+            const isMoney = ["Paid","Delivered","Live"].includes(deal.status);
+            return (
+            <div key={deal.id} data-card style={{ borderRadius:16, padding:isMobile?"20px 20px":"18px 22px 18px 20px", background:`linear-gradient(90deg,${sc}0c,rgba(255,255,255,0.02) 40%)`, border:"1px solid rgba(255,255,255,0.08)", borderLeft:`3px solid ${sc}`, display:"flex", flexDirection:isMobile?"column":"row", alignItems:isMobile?"stretch":"center", gap:isMobile?18:20, flexWrap:"wrap" }}>
               <div style={{ flex:1, minWidth:isMobile?0:160 }}>
-                <div style={{ fontSize:15, fontWeight:700, color:"#fff", fontFamily:C.fontHead, marginBottom:4 }}>{deal.brand}</div>
-                <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody }}>{deal.type} · {deal.platform}{deal.deadline?` · Due ${deal.deadline}`:""}</div>
-                {deal.deliverable && <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", fontFamily:C.fontBody, marginTop:4 }}>{deal.deliverable}</div>}
+                <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:5 }}>
+                  <span style={{ width:7, height:7, borderRadius:"50%", background:sc, boxShadow:`0 0 8px ${sc}`, flexShrink:0 }}/>
+                  <div style={{ fontSize:15, fontWeight:700, color:"#fff", fontFamily:C.fontHead }}>{deal.brand}</div>
+                </div>
+                <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody, paddingLeft:16 }}>{deal.type} · {deal.platform}{deal.deadline?` · Due ${deal.deadline}`:""}</div>
+                {deal.deliverable && <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", fontFamily:C.fontBody, marginTop:4, paddingLeft:16 }}>{deal.deliverable}</div>}
               </div>
-              <div style={{ display:"flex", alignItems:"center", gap:10, justifyContent:isMobile?"space-between":"flex-end" }}>
-                {deal.value && <div style={{ fontSize:20, fontWeight:400, fontFamily:C.fontHead, color:C.green }}>£{parseFloat(deal.value).toLocaleString()}</div>}
-                <select value={deal.status} onChange={e=>setDeals(ds=>ds.map(d=>d.id===deal.id?{...d,status:e.target.value}:d))} style={{ background:"#0C0A1A", border:`1px solid ${STATUS_C[deal.status]||C.dim}40`, borderRadius:8, color:STATUS_C[deal.status]||"#fff", padding:isMobile?"10px 12px":"6px 10px", fontSize:12, fontFamily:C.fontHead, fontWeight:700, cursor:"pointer", outline:"none", appearance:"none", colorScheme:"dark" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:isMobile?12:18, justifyContent:isMobile?"space-between":"flex-end" }}>
+                {deal.value && (
+                  <div style={{ textAlign:isMobile?"left":"right", minWidth:isMobile?0:80 }}>
+                    <div style={{ fontSize:22, fontWeight:400, fontFamily:C.fontHead, color:isMoney?C.green:"rgba(255,255,255,0.85)", lineHeight:1 }}>£{parseFloat(deal.value).toLocaleString()}</div>
+                    <div style={{ fontSize:9, color:"rgba(255,255,255,0.35)", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", marginTop:3 }}>{isMoney?"Earned":"Potential"}</div>
+                  </div>
+                )}
+                <select value={deal.status} onChange={e=>setDeals(ds=>ds.map(d=>d.id===deal.id?{...d,status:e.target.value}:d))} style={{ background:"#0C0A1A", border:`1px solid ${sc}55`, borderRadius:8, color:sc, padding:isMobile?"10px 12px":"8px 12px", fontSize:12, fontFamily:C.fontHead, fontWeight:700, cursor:"pointer", outline:"none", appearance:"none", colorScheme:"dark", letterSpacing:"0.03em" }}>
                   {["Enquiry","Negotiating","Signed","Live","Delivered","Paid","Declined"].map(s=><option key={s} value={s} style={{background:"#0C0A1A"}}>{s}</option>)}
                 </select>
-                <button onClick={()=>{ if(window.confirm("Delete this deal?")) setDeals(ds=>ds.filter(d=>d.id!==deal.id)); }} aria-label="Delete" style={{ padding:"6px 8px", borderRadius:8, border:`1px solid ${C.pink}20`, background:"transparent", color:`${C.pink}70`, cursor:"pointer" }}>{I.trash(12,C.pink)}</button>
+                <button onClick={()=>{ if(window.confirm("Delete this deal?")) setDeals(ds=>ds.filter(d=>d.id!==deal.id)); }} aria-label="Delete deal" style={{ padding:"7px 9px", borderRadius:8, border:`1px solid ${C.pink}20`, background:"transparent", color:`${C.pink}70`, cursor:"pointer", display:"inline-flex" }}>{I.trash(13,C.pink)}</button>
               </div>
             </div>
-          ))}
+          );})}
         </div>
       )}
     </div>
