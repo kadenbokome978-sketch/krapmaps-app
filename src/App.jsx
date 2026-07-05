@@ -1513,7 +1513,11 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                   {(idea.aiScore?.estimated_views || idea.hook) && (
                     <div style={{ padding:"7px 18px", borderTop:"1px solid rgba(255,255,255,0.04)", display:"flex", alignItems:"center", gap:10 }}>
                       {idea.aiScore?.estimated_views && (
-                        <span style={{ fontSize:11, fontWeight:600, color:"rgba(255,255,255,0.45)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{idea.aiScore.estimated_views}</span>
+                        <span style={{ display:"inline-flex", alignItems:"center", gap:6, minWidth:0 }}>
+                          <span style={{ display:"inline-flex", opacity:0.5 }}>{I.eye(12,"rgba(255,255,255,0.5)")}</span>
+                          <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.1em", color:"rgba(255,255,255,0.35)", textTransform:"uppercase" }}>Est</span>
+                          <span style={{ fontSize:12, fontWeight:700, color:C.cyan, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{idea.aiScore.estimated_views}</span>
+                        </span>
                       )}
                       {idea.hook && !idea.aiScore?.estimated_views && (
                         <span style={{ fontSize:11, color:"rgba(255,255,255,0.45)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>"{idea.hook}"</span>
