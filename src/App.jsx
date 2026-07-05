@@ -188,6 +188,48 @@ const CountUp = ({ value, duration=1100, style }) => {
   }, [target, duration]);
   return <span style={style}>{display}</span>;
 };
+// ── SCORE DIAL — the signature virality read ──────────────────────
+// A ring that sweeps to the score while the number counts up. Colour-banded,
+// elite scores (85+) breathe. This is the product's recognizable hero moment.
+const scoreBand = (s) => s>=85?{c:C.green,label:"VIRAL"} : s>=70?{c:C.cyan,label:"STRONG"} : s>=50?{c:C.yellow,label:"DECENT"} : s>=35?{c:C.orange,label:"WEAK"} : {c:C.pink,label:"RISKY"};
+const ScoreDial = ({ score=0, size=72, stroke, label, animate=true }) => {
+  const s = Math.max(0, Math.min(100, Math.round(Number(score)||0)));
+  const band = scoreBand(s);
+  const reduce = typeof window!=="undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const sw = stroke || Math.max(4, Math.round(size*0.075));
+  const r = (size - sw)/2;
+  const circ = 2*Math.PI*r;
+  const [prog, setProg] = useState((animate&&!reduce)?0:s);
+  const [num, setNum]   = useState((animate&&!reduce)?0:s);
+  const prev = useRef(null);
+  useEffect(()=>{
+    if(!animate || reduce){ setProg(s); setNum(s); return; }
+    if(prev.current===s){ setProg(s); setNum(s); return; }
+    prev.current = s;
+    setProg(0); setNum(0);
+    const raf1 = requestAnimationFrame(()=>requestAnimationFrame(()=>setProg(s)));
+    let start=null, raf2;
+    const dur=950;
+    const step=(ts)=>{ if(!start)start=ts; const p=Math.min((ts-start)/dur,1); const e=1-Math.pow(1-p,3); setNum(Math.round(s*e)); if(p<1) raf2=requestAnimationFrame(step); else setNum(s); };
+    raf2=requestAnimationFrame(step);
+    return ()=>{ cancelAnimationFrame(raf1); if(raf2) cancelAnimationFrame(raf2); };
+  },[s,animate,reduce]);
+  const off = circ*(1 - prog/100);
+  const elite = s>=85;
+  return (
+    <div style={{ position:"relative", width:size, height:size, display:"inline-flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+      {elite && <div style={{ position:"absolute", inset:-3, borderRadius:"50%", background:`radial-gradient(circle,${band.c}26,transparent 68%)`, animation:reduce?"none":"scorePulse 2.4s ease-in-out infinite", pointerEvents:"none" }}/>}
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ position:"absolute", inset:0, transform:"rotate(-90deg)" }}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={sw}/>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={band.c} strokeWidth={sw} strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off} style={{ transition:reduce?"none":"stroke-dashoffset 0.95s cubic-bezier(.2,.8,.2,1)", filter:`drop-shadow(0 0 5px ${band.c}80)` }}/>
+      </svg>
+      <div style={{ textAlign:"center", lineHeight:0.95 }}>
+        <div style={{ fontSize:Math.round(size*0.37), fontWeight:400, fontFamily:C.fontHead, color:band.c, letterSpacing:"-0.02em", textShadow:`0 0 16px ${band.c}55` }}>{num}</div>
+        {label!==false && <div style={{ fontSize:Math.max(8,Math.round(size*0.115)), color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.12em", marginTop:size*0.03 }}>{label||band.label}</div>}
+      </div>
+    </div>
+  );
+};
 // Factor bar — number counts up while the fill bar sweeps to the same value.
 const FactorBar = ({ val, color, label }) => {
   const target = Number(val) || 0;
@@ -1323,14 +1365,13 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                         </div>
                       </div>
 
-                      {/* Score badge — single clean number */}
-                      <div style={{ flexShrink:0, textAlign:"center", minWidth:52 }}>
+                      {/* Score badge — signature virality dial */}
+                      <div style={{ flexShrink:0, textAlign:"center", minWidth:isMobile?60:72 }}>
                         {hasScore ? (
                           <>
-                            <CountUp value={idea.viral} style={{ fontSize:isMobile?30:44, fontWeight:300, fontFamily:C.fontHead, color:scoreC, lineHeight:1, letterSpacing:"-0.02em", textShadow:`0 0 24px ${scoreC}60`, display:"inline-block" }} />
-                            <div style={{ fontSize:9, color:"rgba(255,255,255,0.45)", fontWeight:700, letterSpacing:"0.14em", marginTop:2 }}>{perfLabel(idea.viral)}</div>
+                            <ScoreDial score={idea.viral} size={isMobile?60:72} />
                             {idea.scoreDelta!=null && idea.scoreDelta!==0 && (
-                              <div style={{ fontSize:10, fontWeight:700, color:idea.scoreDelta>0?C.green:C.pink, marginTop:1 }}>{idea.scoreDelta>0?`+${idea.scoreDelta}`:idea.scoreDelta}</div>
+                              <div style={{ fontSize:10, fontWeight:700, color:idea.scoreDelta>0?C.green:C.pink, marginTop:4 }}>{idea.scoreDelta>0?`+${idea.scoreDelta}`:idea.scoreDelta}</div>
                             )}
                           </>
                         ) : (
@@ -1900,9 +1941,8 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                           })()}
                         </div>
                         {sc && (
-                          <div style={{ textAlign:"center", flexShrink:0 }}>
-                            <div style={{ fontSize:28, fontWeight:400, fontFamily:C.fontHead, color:sc.color, lineHeight:1, textShadow:`0 0 10px ${sc.color}50` }}>{sc.score}</div>
-                            <div style={{ fontSize:10, color:sc.color, fontWeight:700, letterSpacing:"0.06em" }}>VIRALITY</div>
+                          <div style={{ flexShrink:0 }}>
+                            <ScoreDial score={sc.score} size={isMobile?52:58} />
                           </div>
                         )}
                       </div>
@@ -3284,9 +3324,8 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
                   <div style={{ fontSize:15, color:C.green, lineHeight:1.4, marginBottom:6 }}>↑ {idea.why_viral}</div>
               {idea.why_beats_average && <div style={{ fontSize:15, color:C.cyan, lineHeight:1.4, display:"flex", alignItems:"flex-start", gap:6 }}>{I.trend(14,C.cyan)}<span>{idea.why_beats_average}</span></div>}
                 </div>
-                <div style={{ textAlign:"center", flexShrink:0 }}>
-                  <div style={{ fontSize:isMobile?24:36, fontWeight:400, fontFamily:C.fontHead, color:scoreColor(idea.score), lineHeight:1, textShadow:`0 0 20px ${scoreColor(idea.score)}50` }}>{idea.score}</div>
-                  <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", letterSpacing:"0.1em", marginTop:4 }}>VIRAL</div>
+                <div style={{ flexShrink:0 }}>
+                  <ScoreDial score={idea.score} size={isMobile?68:80} />
                 </div>
               </div>
               <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
@@ -3832,8 +3871,8 @@ Return ONLY JSON: {
                 </div>
               )}
               {res && !isLoading && (
-                <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                  <div style={{ fontSize:28, fontWeight:400, fontFamily:C.fontHead, color:scoreColor(res.overall_score||res.gemini?.gemini_score||0), lineHeight:1, textShadow:`0 0 16px ${scoreColor(res.overall_score||0)}50` }}>{res.overall_score||res.gemini?.gemini_score||"?"}</div>
+                <div style={{ display:"flex", gap:12, alignItems:"center" }}>
+                  <ScoreDial score={res.overall_score||res.gemini?.gemini_score||0} size={54} label={false} />
                   <div>
                     <Tag color={verdictColor(res.performance_verdict)} sm>{(res.performance_verdict||"analysed").replace("_"," ").toUpperCase()}</Tag>
                     <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginTop:3 }}>tap to see teardown</div>
@@ -10147,6 +10186,9 @@ function OnboardingPage({ onComplete }) {
         @keyframes blink{0%,100%{opacity:0.2}50%{opacity:1}}
         @keyframes expandBar{from{width:0}to{width:100%}}
         @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+        @keyframes scorePulse{0%,100%{opacity:.45;transform:scale(0.94)}50%{opacity:.9;transform:scale(1.06)}}
+        @keyframes scorePop{0%{transform:scale(0.6);opacity:0}55%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+        @keyframes burstUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-46px) scale(0.4);opacity:0}}
         [data-btn]:hover { transform:translateY(-1px); filter:brightness(1.15); }
         [data-card]:hover { border-color:rgba(255,255,255,0.18) !important; }
         [data-nav-btn]:hover { background:rgba(255,255,255,0.08) !important; }
