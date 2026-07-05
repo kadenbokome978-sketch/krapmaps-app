@@ -201,18 +201,19 @@ const ScoreDial = ({ score=0, size=72, stroke, label, animate=true }) => {
   const circ = 2*Math.PI*r;
   const [prog, setProg] = useState((animate&&!reduce)?0:s);
   const [num, setNum]   = useState((animate&&!reduce)?0:s);
+  const [settled, setSettled] = useState(false);
   const prev = useRef(null);
   useEffect(()=>{
     if(!animate || reduce){ setProg(s); setNum(s); return; }
     if(prev.current===s){ setProg(s); setNum(s); return; }
     prev.current = s;
-    setProg(0); setNum(0);
+    setProg(0); setNum(0); setSettled(false);
     const raf1 = requestAnimationFrame(()=>requestAnimationFrame(()=>setProg(s)));
-    let start=null, raf2;
+    let start=null, raf2, settleT;
     const dur=950;
-    const step=(ts)=>{ if(!start)start=ts; const p=Math.min((ts-start)/dur,1); const e=1-Math.pow(1-p,3); setNum(Math.round(s*e)); if(p<1) raf2=requestAnimationFrame(step); else setNum(s); };
+    const step=(ts)=>{ if(!start)start=ts; const p=Math.min((ts-start)/dur,1); const e=1-Math.pow(1-p,3); setNum(Math.round(s*e)); if(p<1) raf2=requestAnimationFrame(step); else { setNum(s); setSettled(true); settleT=setTimeout(()=>setSettled(false),480); } };
     raf2=requestAnimationFrame(step);
-    return ()=>{ cancelAnimationFrame(raf1); if(raf2) cancelAnimationFrame(raf2); };
+    return ()=>{ cancelAnimationFrame(raf1); if(raf2) cancelAnimationFrame(raf2); if(settleT) clearTimeout(settleT); };
   },[s,animate,reduce]);
   const off = circ*(1 - prog/100);
   const elite = s>=85;
@@ -224,7 +225,7 @@ const ScoreDial = ({ score=0, size=72, stroke, label, animate=true }) => {
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={band.c} strokeWidth={sw} strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off} style={{ transition:reduce?"none":"stroke-dashoffset 0.95s cubic-bezier(.2,.8,.2,1)", filter:`drop-shadow(0 0 5px ${band.c}80)` }}/>
       </svg>
       <div style={{ textAlign:"center", lineHeight:0.95 }}>
-        <div style={{ fontSize:Math.round(size*0.37), fontWeight:400, fontFamily:C.fontHead, color:band.c, letterSpacing:"-0.02em", textShadow:`0 0 16px ${band.c}55` }}>{num}</div>
+        <div style={{ fontSize:Math.round(size*0.37), fontWeight:400, fontFamily:C.fontHead, color:band.c, letterSpacing:"-0.02em", textShadow:`0 0 16px ${band.c}55`, animation:settled?"scoreSettle 0.46s cubic-bezier(.2,1.3,.4,1)":"none" }}>{num}</div>
         {label!==false && <div style={{ fontSize:Math.max(8,Math.round(size*0.115)), color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.12em", marginTop:size*0.03 }}>{label||band.label}</div>}
       </div>
     </div>
@@ -10187,6 +10188,7 @@ function OnboardingPage({ onComplete }) {
         @keyframes expandBar{from{width:0}to{width:100%}}
         @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
         @keyframes scorePulse{0%,100%{opacity:.45;transform:scale(0.94)}50%{opacity:.9;transform:scale(1.06)}}
+        @keyframes scoreSettle{0%{transform:scale(1)}45%{transform:scale(1.16)}100%{transform:scale(1)}}
         @keyframes scorePop{0%{transform:scale(0.6);opacity:0}55%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
         @keyframes burstUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-46px) scale(0.4);opacity:0}}
         [data-btn]:hover { transform:translateY(-1px); filter:brightness(1.15); }
