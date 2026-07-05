@@ -4169,7 +4169,8 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
         <>
           {sectionHead("AI Score vs Real Views", C.pink)}
           {postedIdeas.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"32px 0", color:"rgba(255,255,255,0.3)", fontSize:15 }}>
+            <div style={{ textAlign:"center", padding:"32px 24px", color:"rgba(255,255,255,0.4)", fontSize:14, display:"flex", flexDirection:"column", alignItems:"center", gap:10, lineHeight:1.6 }}>
+              <div style={{ display:"flex", opacity:0.7 }}>{I.check(26,"rgba(255,255,255,0.4)")}</div>
               No posted ideas yet — mark ideas as posted to track accuracy.
             </div>
           ) : (
@@ -4225,8 +4226,9 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
         <>
           {sectionHead("Top Performing Videos", C.green)}
           {top5Videos.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"32px 0", color:"rgba(255,255,255,0.3)", fontSize:15 }}>
-              No videos tracked yet.
+            <div style={{ textAlign:"center", padding:"32px 24px", color:"rgba(255,255,255,0.4)", fontSize:14, display:"flex", flexDirection:"column", alignItems:"center", gap:10, lineHeight:1.6 }}>
+              <div style={{ display:"flex", opacity:0.7 }}>{I.bar(26,"rgba(255,255,255,0.4)")}</div>
+              No videos tracked yet — sync your channel in Settings to see your top performers here.
             </div>
           ) : (
             <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:10 }}>
