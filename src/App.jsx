@@ -192,7 +192,7 @@ const CountUp = ({ value, duration=1100, style }) => {
 // A ring that sweeps to the score while the number counts up. Colour-banded,
 // elite scores (85+) breathe. This is the product's recognizable hero moment.
 const scoreBand = (s) => s>=85?{c:C.green,label:"VIRAL"} : s>=70?{c:C.cyan,label:"STRONG"} : s>=50?{c:C.yellow,label:"DECENT"} : s>=35?{c:C.orange,label:"WEAK"} : {c:C.pink,label:"RISKY"};
-const ScoreDial = ({ score=0, size=72, stroke, label, animate=true }) => {
+const ScoreDial = ({ score=0, size=72, stroke, label, animate=true, celebrate=false }) => {
   const s = Math.max(0, Math.min(100, Math.round(Number(score)||0)));
   const band = scoreBand(s);
   const reduce = typeof window!=="undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -217,9 +217,13 @@ const ScoreDial = ({ score=0, size=72, stroke, label, animate=true }) => {
   },[s,animate,reduce]);
   const off = circ*(1 - prog/100);
   const elite = s>=85;
+  const doBurst = celebrate && elite && !reduce;
   return (
     <div style={{ position:"relative", width:size, height:size, display:"inline-flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
       {elite && <div style={{ position:"absolute", inset:-3, borderRadius:"50%", background:`radial-gradient(circle,${band.c}26,transparent 68%)`, animation:reduce?"none":"scorePulse 2.4s ease-in-out infinite", pointerEvents:"none" }}/>}
+      {doBurst && [...Array(10)].map((_,i)=>{ const ang=(i/10)*Math.PI*2; const dist=size*0.62; return (
+        <span key={i} style={{ position:"absolute", left:"50%", top:"50%", width:i%2?5:3, height:i%2?5:3, borderRadius:"50%", background:i%3===0?band.c:i%3===1?C.yellow:"#fff", boxShadow:`0 0 6px ${band.c}`, "--tx":`${Math.cos(ang)*dist}px`, "--ty":`${Math.sin(ang)*dist}px`, transform:"translate(-50%,-50%)", animation:`sparkFly 0.72s ${0.35+i*0.012}s cubic-bezier(.15,.7,.3,1) both`, pointerEvents:"none" }}/>
+      );})}
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ position:"absolute", inset:0, transform:"rotate(-90deg)" }}>
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={sw}/>
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={band.c} strokeWidth={sw} strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off} style={{ transition:reduce?"none":"stroke-dashoffset 0.95s cubic-bezier(.2,.8,.2,1)", filter:`drop-shadow(0 0 5px ${band.c}80)` }}/>
@@ -1370,7 +1374,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                       <div style={{ flexShrink:0, textAlign:"center", minWidth:isMobile?60:72 }}>
                         {hasScore ? (
                           <>
-                            <ScoreDial score={idea.viral} size={isMobile?60:72} />
+                            <ScoreDial score={idea.viral} size={isMobile?60:72} celebrate={idea._scoredAt && (Date.now()-idea._scoredAt < 6000)} />
                             {idea.scoreDelta!=null && idea.scoreDelta!==0 && (
                               <div style={{ fontSize:10, fontWeight:700, color:idea.scoreDelta>0?C.green:C.pink, marginTop:4 }}>{idea.scoreDelta>0?`+${idea.scoreDelta}`:idea.scoreDelta}</div>
                             )}
@@ -8611,6 +8615,7 @@ Return ONLY valid JSON:
           neuralBlendWeight:r.neuralBlendWeight,
           neuralCvRho:r.neuralCvRho,
           lastScoredAt: new Date().toISOString().slice(0,10),
+          _scoredAt: Date.now(), // transient: powers the fresh-score celebration
         };
       }));
     } catch(e) { setAiErr("Score failed: "+e.message); console.error("scoreIdea error:", e); }
@@ -10189,6 +10194,7 @@ function OnboardingPage({ onComplete }) {
         @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
         @keyframes scorePulse{0%,100%{opacity:.45;transform:scale(0.94)}50%{opacity:.9;transform:scale(1.06)}}
         @keyframes scoreSettle{0%{transform:scale(1)}45%{transform:scale(1.16)}100%{transform:scale(1)}}
+        @keyframes sparkFly{0%{transform:translate(-50%,-50%);opacity:0}15%{opacity:1}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(0.3);opacity:0}}
         @keyframes scorePop{0%{transform:scale(0.6);opacity:0}55%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
         @keyframes burstUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-46px) scale(0.4);opacity:0}}
         [data-btn]:hover { transform:translateY(-1px); filter:brightness(1.15); }
