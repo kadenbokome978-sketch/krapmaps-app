@@ -1793,8 +1793,10 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
               </div>
             </div>
           ) : (
-            <div style={{ padding:"56px 48px", textAlign:"center", borderRadius:16, border:"1px dashed rgba(255,255,255,0.08)", fontSize:14, color:"rgba(255,255,255,0.25)" }}>
-              Select an idea above to generate captions
+            <div style={{ padding:"56px 24px", textAlign:"center", borderRadius:16, border:"1px dashed rgba(255,255,255,0.08)", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?18:12 }}>
+              <div style={{ display:"flex" }}>{I.write(30,"rgba(255,255,255,0.4)")}</div>
+              <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>Ready to write</div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:280, lineHeight:1.6 }}>Tap an idea above — the AI writes platform-ready TikTok &amp; Instagram captions with hashtags and hook variants.</div>
             </div>
           )}
         </div>
