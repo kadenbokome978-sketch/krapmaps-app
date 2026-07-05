@@ -2433,16 +2433,19 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
   const _c1 = WL.creator1||"Me";
   const _c2 = WL.creator2||"";
   const [assign, setAssign]       = useState(_c2?"BOTH":_c1.toUpperCase());
+  const [taskUrgent, setTaskUrgent] = useState(false);
   const ac = a => a===_c2.toUpperCase()?C.cyan:a==="BOTH"?C.yellow:C.pink;
   const acLabel = a => a===_c2.toUpperCase()?(_c2[0]||"2"):a==="BOTH"?"B":(_c1.slice(0,2)||"Me");
 
-  const pending = tasks.filter(t=>!t.done&&(taskFilter==="ALL"||t.assignee===taskFilter));
+  const _prio = t => { const p=(t.priority||"normal").toLowerCase(); return p==="urgent"?0:p==="high"?1:2; };
+  const pending = tasks.filter(t=>!t.done&&(taskFilter==="ALL"||t.assignee===taskFilter)).sort((a,b)=>_prio(a)-_prio(b));
   const done    = tasks.filter(t=> t.done&&(taskFilter==="ALL"||t.assignee===taskFilter));
+  const prioMeta = t => { const p=(t.priority||"normal").toLowerCase(); return p==="urgent"?{c:C.orange,label:"URGENT"}:p==="high"?{c:C.yellow,label:"HIGH"}:null; };
 
   const addTask = () => {
     if(!taskInput.trim()) return;
-    setTasks(ts=>[{id:Date.now(),text:taskInput.trim(),assignee:assign,done:false,priority:"normal",created:new Date().toISOString()},...ts]);
-    setTaskInput("");
+    setTasks(ts=>[{id:Date.now(),text:taskInput.trim(),assignee:assign,done:false,priority:taskUrgent?"urgent":"normal",created:new Date().toISOString()},...ts]);
+    setTaskInput(""); setTaskUrgent(false);
   };
   const addIdea = () => {
     if(!ideaInput.trim()) return;
@@ -2481,13 +2484,14 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                 style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, color:"#fff", padding:isMobile?"12px 14px":"14px 18px", fontSize:isMobile?15:17, fontFamily:C.fontHead, outline:"none", marginBottom:14, boxSizing:"border-box" }}
               />
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                {/* Assignee picker */}
-                <div style={{ display:"flex", gap:6 }}>
+                {/* Assignee picker + urgent toggle */}
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
                   {[_c1.toUpperCase(),...(_c2?[_c2.toUpperCase(),"BOTH"]:[])].filter((v,i,a)=>a.indexOf(v)===i).map(a=>(
                     <button key={a} onClick={()=>setAssign(a)} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${assign===a?ac(a):"rgba(255,255,255,0.1)"}`, background:assign===a?`${ac(a)}20`:"transparent", color:assign===a?ac(a):"rgba(255,255,255,0.45)", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>
                       {a}
                     </button>
                   ))}
+                  <button onClick={()=>setTaskUrgent(u=>!u)} aria-pressed={taskUrgent} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"8px 12px", borderRadius:10, border:`1px solid ${taskUrgent?C.orange:"rgba(255,255,255,0.1)"}`, background:taskUrgent?`${C.orange}20`:"transparent", color:taskUrgent?C.orange:"rgba(255,255,255,0.45)", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>{I.zap(12,taskUrgent?C.orange:"rgba(255,255,255,0.45)")} URGENT</button>
                 </div>
                 <button onClick={addTask} style={{ padding:isMobile?"10px 14px":"10px 22px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${C.yellow},${C.orange})`, color:"#07050F", fontFamily:C.fontHead, fontWeight:700, fontSize:15, cursor:"pointer" }}>ADD</button>
               </div>
@@ -2510,13 +2514,19 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                     <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>All clear</div>
                     <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Nothing pending — you're on top of your workflow</div>
                   </div>
-                : pending.map((t,i)=>(
-                  <div key={t.id} style={{ display:"flex", alignItems:"center", gap:12, padding:isMobile?"20px 22px":"20px 24px", borderBottom:i<pending.length-1?"1px solid rgba(255,255,255,0.05)":"none", transition:"background 0.15s" }}>
+                : pending.map((t,i)=>{
+                  const pm = prioMeta(t);
+                  return (
+                  <div key={t.id} style={{ display:"flex", alignItems:"center", gap:12, padding:isMobile?"18px 20px":"18px 22px", borderBottom:i<pending.length-1?"1px solid rgba(255,255,255,0.05)":"none", borderLeft:pm?`3px solid ${pm.c}`:"3px solid transparent", background:pm?`linear-gradient(90deg,${pm.c}0a,transparent 30%)`:"transparent", transition:"background 0.15s" }}>
                     <button
                       onClick={()=>setTasks(ts=>ts.map(x=>x.id===t.id?{...x,done:true}:x))}
+                      aria-label="Mark done"
                       style={{ width:24, height:24, borderRadius:7, border:`2px solid ${ac(t.assignee)}`, background:"transparent", cursor:"pointer", flexShrink:0, transition:"all 0.2s" }}
                     />
-                    <div style={{ flex:1, fontSize:14, color:"#fff", fontWeight:500, lineHeight:1.5 }}>{t.text}</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      {pm && <span style={{ fontSize:9, fontWeight:800, letterSpacing:"0.1em", color:pm.c, background:`${pm.c}18`, border:`1px solid ${pm.c}45`, borderRadius:5, padding:"2px 7px", marginRight:9, verticalAlign:"middle" }}>{pm.label}</span>}
+                      <span style={{ fontSize:14, color:"#fff", fontWeight:500, lineHeight:1.5 }}>{t.text}</span>
+                    </div>
                     <div style={{ width:32, height:32, borderRadius:9, background:`${ac(t.assignee)}20`, border:`1px solid ${ac(t.assignee)}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:ac(t.assignee), flexShrink:0 }}>
                       {acLabel(t.assignee)}
                     </div>
@@ -2524,7 +2534,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                       {I.trash(12,C.pink)}
                     </button>
                   </div>
-                ))
+                );})
               }
             </div>
           </div>
