@@ -192,13 +192,25 @@ const CountUp = ({ value, duration=1100, style }) => {
 // A ring that sweeps to the score while the number counts up. Colour-banded,
 // elite scores (85+) breathe. This is the product's recognizable hero moment.
 const scoreBand = (s) => s>=85?{c:C.green,label:"VIRAL"} : s>=70?{c:C.cyan,label:"STRONG"} : s>=50?{c:C.yellow,label:"DECENT"} : s>=35?{c:C.orange,label:"WEAK"} : {c:C.pink,label:"RISKY"};
-const ScoreDial = ({ score=0, size=72, stroke, label, animate=true, celebrate=false }) => {
+const ScoreDial = ({ score=0, size=72, stroke, label, animate=true, celebrate=false, loading=false }) => {
   const s = Math.max(0, Math.min(100, Math.round(Number(score)||0)));
   const band = scoreBand(s);
   const reduce = typeof window!=="undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const sw = stroke || Math.max(4, Math.round(size*0.075));
   const r = (size - sw)/2;
   const circ = 2*Math.PI*r;
+  // Loading: the ring itself becomes the spinner — one continuous motion into the reveal.
+  if(loading) {
+    return (
+      <div style={{ position:"relative", width:size, height:size, display:"inline-flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ position:"absolute", inset:0, animation:reduce?"none":"spin 0.9s linear infinite" }}>
+          <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={sw}/>
+          <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={C.purple} strokeWidth={sw} strokeLinecap="round" strokeDasharray={`${circ*0.28} ${circ}`} style={{ filter:`drop-shadow(0 0 5px ${C.purple}90)` }}/>
+        </svg>
+        <div style={{ fontSize:Math.max(8,Math.round(size*0.13)), color:C.purple, fontWeight:700, letterSpacing:"0.08em", fontFamily:C.fontHead }}>AI</div>
+      </div>
+    );
+  }
   const [prog, setProg] = useState((animate&&!reduce)?0:s);
   const [num, setNum]   = useState((animate&&!reduce)?0:s);
   const [settled, setSettled] = useState(false);
@@ -1370,9 +1382,11 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                         </div>
                       </div>
 
-                      {/* Score badge — signature virality dial */}
+                      {/* Score badge — signature virality dial (spins while scoring, resolves into the score) */}
                       <div style={{ flexShrink:0, textAlign:"center", minWidth:isMobile?60:72 }}>
-                        {hasScore ? (
+                        {isScoring ? (
+                          <ScoreDial size={isMobile?60:72} loading />
+                        ) : hasScore ? (
                           <>
                             <ScoreDial score={idea.viral} size={isMobile?60:72} celebrate={idea._scoredAt && (Date.now()-idea._scoredAt < 6000)} />
                             {idea.scoreDelta!=null && idea.scoreDelta!==0 && (
@@ -1380,7 +1394,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                             )}
                           </>
                         ) : (
-                          <div style={{ width:52, height:52, borderRadius:"50%", border:"2px dashed rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          <div style={{ width:isMobile?60:72, height:isMobile?60:72, borderRadius:"50%", border:"2px dashed rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                             <div style={{ fontSize:9, color:"rgba(255,255,255,0.25)", fontWeight:700, letterSpacing:"0.06em", textAlign:"center", lineHeight:1.3 }}>NOT<br/>SCORED</div>
                           </div>
                         )}
@@ -3871,8 +3885,11 @@ Return ONLY JSON: {
                 </div>
               </div>
               {isLoading && (
-                <div style={{ padding:"10px", textAlign:"center", fontSize:15, color:C.pink }}>
-                  {hasGemini?"Gemini watching... Claude analysing...":"Analysing..."}
+                <div style={{ padding:"6px 0", display:"flex", alignItems:"center", gap:12 }}>
+                  <ScoreDial size={44} loading />
+                  <div style={{ fontSize:13, color:C.purple, fontWeight:600 }}>
+                    {hasGemini?"Gemini watching · Claude analysing…":"Analysing…"}
+                  </div>
                 </div>
               )}
               {res && !isLoading && (
