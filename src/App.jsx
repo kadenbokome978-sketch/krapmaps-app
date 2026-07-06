@@ -524,16 +524,27 @@ const GlowDonut = ({ data=[], size=120, innerRadius=38, outerRadius=54 }) => {
     const large=sweep>Math.PI?1:0;
     return { path:`M${x1},${y1} A${outerRadius},${outerRadius},0,${large},1,${x2},${y2} L${x3},${y3} A${innerRadius},${innerRadius},0,${large},0,${x4},${y4} Z`, color:d.color, name:d.name||d.label };
   });
+  // Lead segment fills the center so the ring reads at a glance
+  const top = data.reduce((a,d)=>(d.value||0)>(a.value||0)?d:a, data[0]||{value:0});
+  const topPct = Math.round(((top.value||0)/total)*100);
   return (
-    <svg width={size} height={size} style={{overflow:"visible"}}>
-      {arcs.map((arc,i)=>(
-        <g key={i}>
-          <path d={arc.path} fill={arc.color} opacity="0.25" transform={`scale(1.08) translate(-${cx*0.08},-${cy*0.08})`}/>
-          <path d={arc.path} fill={arc.color}/>
-        </g>
-      ))}
-      <circle cx={cx} cy={cy} r={innerRadius-2} fill="rgba(7,5,15,0.9)"/>
-    </svg>
+    <div style={{ position:"relative", width:size, height:size, display:"inline-flex" }}>
+      <svg width={size} height={size} style={{overflow:"visible", animation:"donutIn 0.7s cubic-bezier(.2,.8,.2,1) both"}}>
+        {arcs.map((arc,i)=>(
+          <g key={i}>
+            <path d={arc.path} fill={arc.color} opacity="0.25" transform={`scale(1.08) translate(-${cx*0.08},-${cy*0.08})`}/>
+            <path d={arc.path} fill={arc.color}/>
+          </g>
+        ))}
+        <circle cx={cx} cy={cy} r={innerRadius-2} fill="rgba(7,5,15,0.9)"/>
+      </svg>
+      {topPct>0 && (
+        <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", pointerEvents:"none" }}>
+          <div style={{ fontSize:Math.round(size*0.2), fontWeight:400, fontFamily:C.fontHead, color:top.color||"#fff", lineHeight:1 }}>{topPct}%</div>
+          {(top.name||top.label) && <div style={{ fontSize:Math.max(7,Math.round(size*0.075)), color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", marginTop:2 }}>{(top.name||top.label).slice(0,9)}</div>}
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -10215,6 +10226,7 @@ function OnboardingPage({ onComplete }) {
         @keyframes scoreSettle{0%{transform:scale(1)}45%{transform:scale(1.16)}100%{transform:scale(1)}}
         @keyframes sparkFly{0%{transform:translate(-50%,-50%);opacity:0}15%{opacity:1}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(0.3);opacity:0}}
         @keyframes barGrow{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
+        @keyframes donutIn{from{transform:rotate(-24deg) scale(0.8);opacity:0}to{transform:rotate(0) scale(1);opacity:1}}
         @media (prefers-reduced-motion:reduce){svg g[style*="barGrow"]{animation:none!important}}
         @keyframes scorePop{0%{transform:scale(0.6);opacity:0}55%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
         @keyframes burstUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-46px) scale(0.4);opacity:0}}
