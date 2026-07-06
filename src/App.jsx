@@ -456,18 +456,21 @@ const GlowBarChart = ({ data=[], color=C.pink, height=140, dataKey="value", xKey
           </g>
         );
       })}
-      {/* Bars */}
+      {/* Bars — the peak announces itself with a value label + brighter cap */}
       {data.map((d,i)=>{
-        const barH = Math.max(0,((d[dataKey]||0)/max)*chartH);
+        const v = d[dataKey]||0;
+        const barH = Math.max(0,(v/max)*chartH);
         const x = LPAD + i*grp + grp/2 - bw/2;
         const y = TPAD+chartH-barH;
         const r = 5;
+        const isPeak = v===max && v>0;
         return (
-          <g key={i}>
-            {barH>2 && <rect x={x} y={y} width={bw} height={barH} rx={r} fill={color} opacity="0.18" filter={`url(#bf${id})`}/>}
+          <g key={i} style={{ animation:`barGrow 0.6s ${0.05+i*0.05}s cubic-bezier(.2,.8,.2,1) both`, transformOrigin:`${x+bw/2}px ${TPAD+chartH}px` }}>
+            {barH>2 && <rect x={x} y={y} width={bw} height={barH} rx={r} fill={color} opacity={isPeak?"0.3":"0.18"} filter={`url(#bf${id})`}/>}
             {barH>2 && <rect x={x} y={y} width={bw} height={barH} rx={r} fill={`url(#gb${id})`}/>}
-            {barH>3 && <rect x={x} y={y} width={bw} height={3} rx={r} fill={color} opacity="0.9"/>}
-            <text x={x+bw/2} y={H-8} textAnchor="middle" fill="rgba(255,255,255,0.35)" fontSize="11" fontFamily="inherit">{d[xKey]}</text>
+            {barH>3 && <rect x={x} y={y} width={bw} height={3} rx={r} fill={isPeak?"#fff":color} opacity={isPeak?"1":"0.9"}/>}
+            {isPeak && <text x={x+bw/2} y={y-7} textAnchor="middle" fill={color} fontSize="12" fontWeight="700" fontFamily="inherit" style={{textShadow:`0 0 8px ${color}`}}>{fmt(v)}</text>}
+            <text x={x+bw/2} y={H-8} textAnchor="middle" fill={isPeak?"rgba(255,255,255,0.6)":"rgba(255,255,255,0.35)"} fontSize="11" fontFamily="inherit" fontWeight={isPeak?"600":"400"}>{d[xKey]}</text>
           </g>
         );
       })}
@@ -10212,6 +10215,8 @@ function OnboardingPage({ onComplete }) {
         @keyframes scorePulse{0%,100%{opacity:.45;transform:scale(0.94)}50%{opacity:.9;transform:scale(1.06)}}
         @keyframes scoreSettle{0%{transform:scale(1)}45%{transform:scale(1.16)}100%{transform:scale(1)}}
         @keyframes sparkFly{0%{transform:translate(-50%,-50%);opacity:0}15%{opacity:1}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(0.3);opacity:0}}
+        @keyframes barGrow{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
+        @media (prefers-reduced-motion:reduce){svg g[style*="barGrow"]{animation:none!important}}
         @keyframes scorePop{0%{transform:scale(0.6);opacity:0}55%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
         @keyframes burstUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-46px) scale(0.4);opacity:0}}
         [data-btn]:hover { transform:translateY(-1px); filter:brightness(1.15); }
