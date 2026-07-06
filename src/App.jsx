@@ -93,7 +93,7 @@ const C = _isThiernoClient ? {
   cardSolid:"#0C0A1A", cardAlt:"rgba(255,255,255,0.025)",
   border:"rgba(255,255,255,0.08)", borderMed:"rgba(255,255,255,0.11)",
   dim:"rgba(255,255,255,0.45)", text:"#F8EEFF", textMed:"#C8A8E0",
-  fontHead:"'Lilita One', Georgia, serif",
+  fontHead:"'Lilita One', 'Arial Black', 'Helvetica Neue', system-ui, sans-serif",
   fontBody:"'Inter', system-ui, sans-serif",
   fontMono:"'SF Mono','Fira Code',monospace",
 };
@@ -10252,14 +10252,11 @@ function OnboardingPage({ onComplete }) {
         @media (prefers-reduced-motion:reduce){svg g[style*="barGrow"]{animation:none!important}}
         @keyframes scorePop{0%{transform:scale(0.6);opacity:0}55%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
         @keyframes burstUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-46px) scale(0.4);opacity:0}}
-        [data-btn]{ transition:transform .18s cubic-bezier(.2,.8,.2,1), filter .18s, box-shadow .18s; }
-        [data-btn]:hover { transform:translateY(-2px); filter:brightness(1.12); }
-        [data-btn]:active { transform:translateY(0) scale(0.98); }
-        [data-card]{ transition:transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s, border-color .22s; }
-        [data-card]:hover { border-color:rgba(255,255,255,0.2) !important; transform:translateY(-2px); box-shadow:0 12px 34px rgba(0,0,0,0.34); }
-        [data-nav-btn]{ transition:background .18s, transform .18s; }
-        [data-nav-btn]:hover { background:rgba(255,255,255,0.08) !important; transform:translateX(2px); }
-        @media (prefers-reduced-motion:reduce){ [data-btn],[data-card],[data-nav-btn]{ transition:none } [data-btn]:hover,[data-card]:hover,[data-nav-btn]:hover{ transform:none } }
+        /* index.html owns the transform lift + shine sweeps; here we only add the
+           soft shadow + border glow so the two rules compose (no transform conflict). */
+        [data-card]{ transition:box-shadow .22s, border-color .22s, transform .3s; }
+        [data-card]:hover { border-color:rgba(255,255,255,0.2) !important; box-shadow:0 14px 36px rgba(0,0,0,0.36); }
+        @media (prefers-reduced-motion:reduce){ [data-card]{ transition:none } }
         button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible,[role="button"]:focus-visible {
           outline:2px solid #00E5FF; outline-offset:2px; border-radius:4px;
         }
