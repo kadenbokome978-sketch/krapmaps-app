@@ -9020,6 +9020,7 @@ Return JSON:
       {_isThiernoClient && <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=DM+Mono:wght@300;400;500&display=swap');
         @keyframes orbDrift { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(18px,-22px) scale(1.06)} 66%{transform:translate(-14px,16px) scale(0.96)} }
+        @media (prefers-reduced-motion:reduce){ [style*="orbDrift"],[style*="grainShift"]{animation:none!important} }
         @keyframes grainShift { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-2%,-2%)} 50%{transform:translate(2%,2%)} 75%{transform:translate(-1%,1%)} }
         @keyframes dotPulse { 0%,100%{opacity:0.4;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.2)} }
         .thierno-card { transition: border-color 0.2s ease !important; }
@@ -9036,9 +9037,9 @@ Return JSON:
         <div style={{ position:"fixed", bottom:"5%", left:"15%", width:240, height:240, borderRadius:"50%", background:"radial-gradient(circle,#b58dff0d 0%,transparent 70%)", pointerEvents:"none", zIndex:0, animation:"orbDrift 22s ease-in-out infinite 4s" }} />
       </>}
       {!_isThiernoClient && <>
-        <div style={{ position:"fixed", top:"-8%", left:"-12%", width:380, height:380, borderRadius:"50%", background:`radial-gradient(circle,${WL.accentColor}12 0%,transparent 70%)`, pointerEvents:"none", zIndex:0 }} />
-        <div style={{ position:"fixed", top:"45%", right:"-12%", width:300, height:300, borderRadius:"50%", background:`radial-gradient(circle,${WL.accentColor2}09 0%,transparent 70%)`, pointerEvents:"none", zIndex:0 }} />
-        <div style={{ position:"fixed", bottom:"5%", left:"15%", width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}09 0%,transparent 70%)`, pointerEvents:"none", zIndex:0 }} />
+        <div style={{ position:"fixed", top:"-8%", left:"-12%", width:420, height:420, borderRadius:"50%", background:`radial-gradient(circle,${WL.accentColor}14 0%,transparent 70%)`, pointerEvents:"none", zIndex:0, animation:"orbDrift 16s ease-in-out infinite" }} />
+        <div style={{ position:"fixed", top:"45%", right:"-12%", width:320, height:320, borderRadius:"50%", background:`radial-gradient(circle,${WL.accentColor2}0d 0%,transparent 70%)`, pointerEvents:"none", zIndex:0, animation:"orbDrift 21s ease-in-out infinite reverse" }} />
+        <div style={{ position:"fixed", bottom:"3%", left:"14%", width:240, height:240, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}0c 0%,transparent 70%)`, pointerEvents:"none", zIndex:0, animation:"orbDrift 26s ease-in-out infinite 3s" }} />
       </>}
 
       {/* SIDEBAR — desktop only */}
