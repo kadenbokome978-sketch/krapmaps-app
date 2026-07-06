@@ -82,9 +82,13 @@ function page(d) {
 <meta property="og:title" content="${shareTitle}"/>
 <meta property="og:description" content="${shareDesc}"/>
 <meta property="og:type" content="website"/>
+<meta property="og:image" content="${esc(origin)}api/og?u=${encodeURIComponent(d.hid||"")}"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:title" content="${shareTitle}"/>
 <meta name="twitter:description" content="${shareDesc}"/>
+<meta name="twitter:image" content="${esc(origin)}api/og?u=${encodeURIComponent(d.hid||"")}"/>
 <style>
   :root{--ground:#07050F;--ink:#F8EEFF;--muted:rgba(248,238,255,.5);--faint:rgba(248,238,255,.32);
     --accent:${accent};--accent2:${accent2};--cyan:#00E5FF;--green:#39FF14;--yellow:#FFD50A;--orange:#FF6B1A;--pink:#FF2D78;
@@ -206,6 +210,7 @@ export default async function handler(req, res) {
     const proto = (req.headers["x-forwarded-proto"] || "https").split(",")[0];
     const host = req.headers["x-forwarded-host"] || req.headers.host || "";
     data.origin = host ? `${proto}://${host}/` : "/";
+    data.hid = handle; // sanitized id for the og:image URL
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=120, s-maxage=300");

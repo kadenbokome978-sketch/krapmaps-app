@@ -80,6 +80,7 @@ your server keys.
 | IG public view counts | `/api/ig-views` | no key (public scrape) |
 | Gemini video upload | `/api/gemini-upload` | user-key header (legacy path) |
 | Public shareable results page | `/api/r` (`/r/<handle>`) | no login — reads `km_public_results` |
+| Social preview image for shares | `/api/og` | 1200x630 PNG rendered from the snapshot (uses @vercel/og) |
 
 ### Shareable results page (viral loop)
 
