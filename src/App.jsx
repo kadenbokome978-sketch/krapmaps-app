@@ -188,6 +188,23 @@ const CountUp = ({ value, duration=1100, style }) => {
   }, [target, duration]);
   return <span style={style}>{display}</span>;
 };
+// Counts up on first mount and formats to K/M — for the hero total view count.
+const fmtKM = v => v>=1e6?(v/1e6).toFixed(1)+"M":v>=1e3?(v/1e3).toFixed(1)+"K":String(Math.round(v)||0);
+const HeroCount = ({ value=0, style }) => {
+  const target = Number(value)||0;
+  const reduce = typeof window!=="undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const [n, setN] = useState(reduce?target:0);
+  const done = useRef(false);
+  useEffect(()=>{
+    if(reduce || done.current || target<=0){ setN(target); return; }
+    done.current = true;
+    let start=null, raf; const dur=1200;
+    const step=(ts)=>{ if(!start)start=ts; const p=Math.min((ts-start)/dur,1); const e=1-Math.pow(1-p,3); setN(target*e); if(p<1) raf=requestAnimationFrame(step); else setN(target); };
+    raf=requestAnimationFrame(step);
+    return ()=>{ if(raf) cancelAnimationFrame(raf); };
+  },[target,reduce]);
+  return <span style={style}>{fmtKM(n)}</span>;
+};
 // ── SCORE DIAL — the signature virality read ──────────────────────
 // A ring that sweeps to the score while the number counts up. Colour-banded,
 // elite scores (85+) breathe. This is the product's recognizable hero moment.
@@ -811,9 +828,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
               <div style={{ width:32, height:32, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.eye(14,"#fff")}</div>
               <span style={{ fontSize:14, color:"rgba(255,255,255,0.85)", letterSpacing:"0.2em", textTransform:"uppercase", fontWeight:700 }}>Total Views All Time</span>
             </div>
-            <div style={{ fontSize:isMobile?52:88, fontWeight:400, lineHeight:0.85, fontFamily:C.fontHead, color:"#fff", letterSpacing:"-0.01em", textShadow:`0 0 100px ${C.pink}35` }}>
-              {allViewsDisplay>=1e6?(allViewsDisplay/1e6).toFixed(1)+"M":allViewsDisplay>=1e3?(allViewsDisplay/1e3).toFixed(1)+"K":String(allViewsDisplay||0)}
-            </div>
+            <HeroCount value={allViewsDisplay} style={{ fontSize:isMobile?52:88, fontWeight:400, lineHeight:0.85, fontFamily:C.fontHead, color:"#fff", letterSpacing:"-0.01em", textShadow:`0 0 100px ${C.pink}35`, display:"block" }} />
             {sinceDelta && (
               <div style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:12, padding:isMobile?"6px 12px":"6px 14px", borderRadius:20, background:`${C.green}14`, border:`1px solid ${C.green}35` }}>
                 <span style={{ fontSize:11, color:C.green }}>▲</span>
