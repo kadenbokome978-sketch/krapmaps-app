@@ -2487,7 +2487,6 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
           ))}
         </div>
       )}
-      )}
     </div>
   );
 };
