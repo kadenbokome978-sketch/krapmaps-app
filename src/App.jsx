@@ -9234,7 +9234,8 @@ Return JSON:
               <div style={{ height:1, flex:1, margin:"0 32px 4px", background:"linear-gradient(90deg,rgba(255,255,255,0.06),transparent)" }} />
             </div>}
 
-        {/* VIEWS */}
+        {/* VIEWS — keyed wrapper fades each view in on nav change (pure opacity+lift, no layout impact) */}
+        <div key={nav} className="viewEnter">
         {nav==="home"      && <HomeView ideas={topIdeas} allIdeas={ideas} outcomeMatches={autoMatchOutcomes(ideas, videos)} confirmOutcome={confirmOutcome} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} weeklyDebrief={weeklyDebrief} debriefLoading={debriefLoading} runDebrief={runDebrief} />}
         {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} markPosted={markPosted} />}
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} setIdeas={setIdeas} />}
@@ -9264,6 +9265,7 @@ Return JSON:
               });
             }}
             />}
+        </div>{/* end viewEnter */}
 
           </div>{/* end page content padding */}
 
@@ -10244,6 +10246,9 @@ function OnboardingPage({ onComplete }) {
         @keyframes sparkFly{0%{transform:translate(-50%,-50%);opacity:0}15%{opacity:1}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(0.3);opacity:0}}
         @keyframes barGrow{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
         @keyframes donutIn{from{transform:rotate(-24deg) scale(0.8);opacity:0}to{transform:rotate(0) scale(1);opacity:1}}
+        .viewEnter{ animation:viewFade 0.42s cubic-bezier(.2,.8,.2,1) both }
+        @keyframes viewFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        @media (prefers-reduced-motion:reduce){ .viewEnter{animation:none} }
         @media (prefers-reduced-motion:reduce){svg g[style*="barGrow"]{animation:none!important}}
         @keyframes scorePop{0%{transform:scale(0.6);opacity:0}55%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
         @keyframes burstUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-46px) scale(0.4);opacity:0}}
