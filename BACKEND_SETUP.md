@@ -129,6 +129,39 @@ requires a local key when backend mode is on.
 
 ---
 
+## Cross-device sync (activation code = account key)
+
+Every account's cloud data is **namespaced by its activation code**, so entering
+the same code on any device pulls down that account's API keys, videos, ideas,
+deals and calendar — and two different codes never collide or overwrite each
+other.
+
+**No schema change is required.** Each synced row's `id` is prefixed with
+`<CODE>:` in the database (e.g. `THIERNO:vid_123`, `THIERNO:workspace_config`)
+while the app keeps using the raw id. Loads filter with PostgREST
+`id=like.<CODE>:*`. A `:` separator (never `_`, which is a single-char wildcard
+in SQL `LIKE`) plus codes stripped to `[A-Z0-9]` guarantee one code can't be a
+`LIKE`-prefix of another.
+
+The tables this applies to only need the generic shape:
+
+```sql
+create table if not exists km_config       (id text primary key, data jsonb, updated_at timestamptz default now());
+create table if not exists km_videos       (id text primary key, /* video columns */ created_at timestamptz default now());
+create table if not exists km_ideas        (id text primary key, data jsonb, updated_at timestamptz default now());
+create table if not exists km_cal          (id text primary key, data jsonb, updated_at timestamptz default now());
+create table if not exists km_deals        (id text primary key, data jsonb, updated_at timestamptz default now());
+create table if not exists km_manual       (id text primary key, updated_at timestamptz default now());
+```
+
+`km_public_results` (public, keyed by handle), `km_meta_priors` (shared learning
+by niche bucket) and `km_scraped_stats` (written by the external scraper) are
+intentionally **not** namespaced.
+
+> Cross-device sync only works once the Supabase anon key + project URL are valid
+> (Settings → Cloud Sync). If the key is rotated or the project is paused, data
+> still saves locally and syncs up once the key is fixed.
+
 ## Security notes
 
 - Every `/api/*` call verifies the Supabase session via `/auth/v1/user` before doing

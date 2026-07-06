@@ -6425,6 +6425,30 @@ const perfScore = v => {
 
 // ── SUPABASE ──────────────────────────────────────────────────────
 const _sbHeaders = () => ({ apikey:getSbKey(),"Authorization":"Bearer "+getSbKey(),"Content-Type":"application/json" });
+
+// ── WORKSPACE SCOPING ─────────────────────────────────────────────
+// Every account's cloud data is namespaced by its activation code so that
+// entering the same code on ANY device pulls down that account's keys, videos,
+// ideas, deals and calendar — and two different codes never collide/overwrite
+// each other. We do this WITHOUT any schema change: row ids get a `<WS>:` prefix
+// in the database while the app keeps using the raw id. `:` is used as the
+// separator (not `_`, which is a single-char wildcard in SQL LIKE) and codes are
+// stripped to [A-Z0-9] so a code can never contain the separator — this also
+// stops one code from being a LIKE-prefix of another.
+const WS = () => {
+  try {
+    const s = localStorage.getItem(CLIENT_KEY);
+    const cfg = s ? JSON.parse(s) : CLIENT_CONFIG;
+    const code = String(cfg.activationCode || "default").toUpperCase().replace(/[^A-Z0-9]/g,"");
+    return code || "default";
+  } catch { return "default"; }
+};
+const wsId    = (id) => `${WS()}:${id}`;           // scope a single row id for writing
+const wsMatch = ()   => `${WS()}:`;                // LIKE prefix for a workspace's rows
+const wsStrip = (id) => {                          // recover the raw id on read
+  const p = wsMatch();
+  return (typeof id === "string" && id.startsWith(p)) ? id.slice(p.length) : id;
+};
 // ── INTEGRATION HEALTH ────────────────────────────────────────────
 // Every integration failure used to be a silent console.warn — users saw empty
 // data with no explanation. Each integration now reports its last result here;
@@ -6465,11 +6489,11 @@ const sbDelete = async (table,id) => {
 // Stores the full object as `data` JSON so we never need to alter schema per-field.
 const sbSyncArray = async (table, arr) => {
   if(!arr||!arr.length) return;
-  const rows = arr.map(item=>({ id:String(item.id), data:item, updated_at:new Date().toISOString() }));
+  const rows = arr.map(item=>({ id:wsId(item.id), data:item, updated_at:new Date().toISOString() }));
   await sbUpsert(table, rows);
 };
 const sbLoadArray = async (table) => {
-  const rows = await sbFetch(table, "select=*&order=updated_at.desc");
+  const rows = await sbFetch(table, `select=*&id=like.${wsMatch()}*&order=updated_at.desc`);
   if(!rows||!rows.length) return null;
   return rows.map(r=>r.data).filter(Boolean);
 };
@@ -6821,6 +6845,20 @@ const DealsView = () => {
   const [form, setForm] = useState({ brand:"", type:"Sponsored Post", value:"", status:"Enquiry", platform:"TikTok", deliverable:"", deadline:"", notes:"" });
   const [showForm, setShowForm] = useState(false);
   useEffect(()=>{ saveJSON(DEALS_KEY,deals); if(deals.length) sbSyncArray("km_deals",deals).catch(()=>{}); },[deals]);
+  // Pull this account's deals down on mount so they appear on every device that
+  // signs in with the same activation code (previously deals only synced UP).
+  useEffect(()=>{
+    let alive = true;
+    sbLoadArray("km_deals").then(remote=>{
+      if(!alive||!remote||!remote.length) return;
+      setDeals(prev=>{
+        const merged = [...remote];
+        prev.forEach(p=>{ if(!merged.find(d=>String(d.id)===String(p.id))) merged.push(p); });
+        return merged;
+      });
+    }).catch(()=>{});
+    return ()=>{ alive = false; };
+  },[]);
   const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
   const addDeal = () => {
     if(!form.brand.trim()) return;
@@ -7737,7 +7775,8 @@ function Dashboard({ keys, onEditKeys }) {
     const load = async () => {
       try {
         // Videos
-        const vids = await sbFetch("km_videos","select=*&order=created_at.desc");
+        const vidsRaw = await sbFetch("km_videos",`select=*&id=like.${wsMatch()}*&order=created_at.desc`);
+        const vids = vidsRaw ? vidsRaw.map(v=>({ ...v, id: wsStrip(v.id) })) : vidsRaw;
         if(vids===null) { setStatsError("Supabase offline — data saved locally"); }
         else if(vids?.length) {
           setVideos(prev => {
@@ -8710,16 +8749,25 @@ Return JSON:
       if(vs.find(x=>x.id===v.id||x.url===v.url)) return vs;
       return [v,...vs];
     });
-    await sbUpsert("km_videos",[v]).catch(()=>{});
+    await sbUpsert("km_videos",[{ ...v, id: wsId(v.id) }]).catch(()=>{});
     closeModal("addVideo");
   };
-  const deleteVideo = (id) => { if(!window.confirm("Delete this video? This can't be undone.")) return; setVideos(vs=>vs.filter(v=>v.id!==id)); sbDelete&&sbDelete("km_videos",id).catch(()=>{}); };
-  const updateVideo = (updated) => { setVideos(vs=>vs.map(v=>v.id===updated.id?{...v,...updated,_updated:true}:v)); closeModal("updateVideo"); };
+  const deleteVideo = (id) => { if(!window.confirm("Delete this video? This can't be undone.")) return; setVideos(vs=>vs.filter(v=>v.id!==id)); sbDelete&&sbDelete("km_videos",wsId(id)).catch(()=>{}); };
+  const updateVideo = (updated) => {
+    setVideos(vs=>vs.map(v=>{
+      if(v.id!==updated.id) return v;
+      const merged = {...v,...updated,_updated:true};
+      // Persist edits across devices too (scoped to this account's workspace).
+      sbUpsert("km_videos",[{ ...merged, id: wsId(merged.id) }]).catch(()=>{});
+      return merged;
+    }));
+    closeModal("updateVideo");
+  };
 
   // ── COMPUTED ──────────────────────────────────────────────────
   const saveManual = (data) => {
     setManualData(data);
-    sbUpsert("km_manual",[{id:1,...data,updated_at:new Date().toISOString()}]).catch(()=>{});
+    sbUpsert("km_manual",[{id:wsId(1),...data,updated_at:new Date().toISOString()}]).catch(()=>{});
   };
 
   const sortedVideos  = [...videos].sort((a,b)=>(b.views||0)-(a.views||0));
@@ -10407,7 +10455,7 @@ export default function App() {
 
   // On mount: pull config from Supabase so keys survive across devices/builds
   useEffect(()=>{
-    sbFetch("km_config","select=*&id=eq.workspace_config").then(rows=>{
+    sbFetch("km_config",`select=*&id=eq.${wsId("workspace_config")}`).then(rows=>{
       if(!rows||!rows.length) return;
       const remote = rows[0]?.data;
       if(!remote) return;
@@ -10429,7 +10477,7 @@ export default function App() {
     saveJSON(KEYS_KEY,u);
     // Sync to Supabase — persists keys across devices and new builds
     // Requires a km_config table: id text PK, data jsonb, updated_at timestamptz
-    sbUpsert("km_config",[{id:"workspace_config",data:u,updated_at:new Date().toISOString()}]).catch(()=>{});
+    sbUpsert("km_config",[{id:wsId("workspace_config"),data:u,updated_at:new Date().toISOString()}]).catch(()=>{});
   };
 
   // Auth gate — only enforced when VITE_REQUIRE_AUTH="true". Otherwise the app
