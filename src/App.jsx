@@ -411,14 +411,15 @@ const DualAreaChart = ({ ttData=[], igData=[], height=160 }) => {
       {ttArea && <path d={ttArea} fill="url(#datt)"/>}
       {igArea && <path d={igArea} fill="url(#daig)"/>}
       {ttPath && <>
+        <path d={ttArea} fill="none"/>
         <path d={ttPath} fill="none" stroke={C.pink} strokeWidth="5" strokeOpacity="0.2" filter="url(#gltt)"/>
         <path d={ttPath} fill="none" stroke={C.pink} strokeWidth="2.5" strokeLinecap="round"/>
-        {ttPts.map((p,i)=><g key={i}><circle cx={p[0]} cy={p[1]} r="4" fill={C.pink} opacity="0.2"/><circle cx={p[0]} cy={p[1]} r="2.5" fill={C.pink}/></g>)}
+        {ttPts.map((p,i)=>{ const last=i===ttPts.length-1; return <g key={i}>{last && <circle cx={p[0]} cy={p[1]} r="9" fill={C.pink} opacity="0.25"><animate attributeName="r" values="6;11;6" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.35;0.05;0.35" dur="2s" repeatCount="indefinite"/></circle>}<circle cx={p[0]} cy={p[1]} r={last?5:4} fill={C.pink} opacity="0.2"/><circle cx={p[0]} cy={p[1]} r={last?3.5:2.5} fill={last?"#fff":C.pink}/>{last && <circle cx={p[0]} cy={p[1]} r="3.5" fill="none" stroke={C.pink} strokeWidth="1.5"/>}</g>;})}
       </>}
       {igPath && <>
         <path d={igPath} fill="none" stroke={C.purple} strokeWidth="5" strokeOpacity="0.2" filter="url(#glig)"/>
         <path d={igPath} fill="none" stroke={C.purple} strokeWidth="2.5" strokeLinecap="round" strokeDasharray="6,3"/>
-        {igPts.map((p,i)=><g key={i}><circle cx={p[0]} cy={p[1]} r="4" fill={C.purple} opacity="0.2"/><circle cx={p[0]} cy={p[1]} r="2.5" fill={C.purple}/></g>)}
+        {igPts.map((p,i)=>{ const last=i===igPts.length-1; return <g key={i}>{last && <circle cx={p[0]} cy={p[1]} r="9" fill={C.purple} opacity="0.25"><animate attributeName="r" values="6;11;6" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.35;0.05;0.35" dur="2s" repeatCount="indefinite"/></circle>}<circle cx={p[0]} cy={p[1]} r={last?5:4} fill={C.purple} opacity="0.2"/><circle cx={p[0]} cy={p[1]} r={last?3.5:2.5} fill={last?"#fff":C.purple}/>{last && <circle cx={p[0]} cy={p[1]} r="3.5" fill="none" stroke={C.purple} strokeWidth="1.5"/>}</g>;})}
       </>}
       {ttData.map((d,i)=>(
         <text key={i} x={ttPts[i][0]} y={H-6} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="14" fontFamily="inherit">{d.label}</text>
