@@ -6586,6 +6586,44 @@ const formatSemanticContext = (ctx) => {
   return out;
 };
 
+// ── ANALOG GROUNDING (k-nearest-neighbour over real outcomes) ─────
+// The most evidence-based prediction there is: find the creator's OWN past posts
+// that are closest in MEANING to this idea, and anchor the forecast to what those
+// actually did. This is kNN regression in embedding space — no model guessing, the
+// creator's real history doing the work. Returns the neighbours, a similarity-
+// weighted expectation, and an honest low/high band from the analog spread.
+const buildAnalogs = (idea, ideas=[], videos=[], cache={}, k=5) => {
+  const iv = _getVec(cache, idea.title);
+  if(!iv) return null;
+  // Pool of everything with a REAL outcome (posted videos + posted ideas).
+  const pool = [
+    ...videos.filter(v=>v.views>0 && v.title).map(v=>({ title:v.title, views:v.views, hook:v.hook })),
+    ...ideas.filter(i=>i.status==="posted" && i.postedViews>0 && i.title && i.id!==idea.id).map(i=>({ title:i.title, views:i.postedViews, hook:i.hook })),
+  ];
+  const scored = pool
+    .map(p=>({ ...p, s:_cosine(iv, _getVec(cache, p.title)) }))
+    .filter(x=>x.s>=0.5)                       // only meaningfully-similar neighbours
+    .sort((a,b)=>b.s-a.s)
+    .slice(0, k);
+  if(scored.length < 2) return null;           // need at least 2 analogs to be honest
+  // Similarity-weighted geometric mean — views are multiplicative, so average in log space.
+  const tw = scored.reduce((s,x)=>s+x.s,0) || 1;
+  const logMean = scored.reduce((s,x)=>s + x.s*Math.log10(Math.max(x.views,1)), 0) / tw;
+  const wPred = Math.round(Math.pow(10, logMean));
+  const viewsArr = scored.map(x=>x.views).sort((a,b)=>a-b);
+  const lo = viewsArr[0], hi = viewsArr[viewsArr.length-1];
+  const topSim = scored[0].s;
+  return { analogs:scored, wPred, lo, hi, n:scored.length, topSim, avgSim: tw/scored.length };
+};
+const formatAnalogs = (a) => {
+  if(!a) return "";
+  const fmt = n => n>=1000?`${(n/1000).toFixed(1)}k`:String(n);
+  let out = `NEAREST ANALOGS [your OWN past posts closest in MEANING to this idea — real outcomes, kNN over embeddings, n=${a.n}]:\n`;
+  a.analogs.forEach(x=> out += `  • "${String(x.title).slice(0,50)}" — ${fmt(x.views)} views (${(x.s*100).toFixed(0)}% similar)\n`);
+  out += `  → Similarity-weighted expectation: ~${fmt(a.wPred)} views (analog range ${fmt(a.lo)}–${fmt(a.hi)}). This is the strongest evidence you have. Anchor estimated_views to these REAL results — deviate only if this idea has a materially better hook or share trigger than the analogs did.\n`;
+  return out;
+};
+
 // ── GEMINI 1.5 PRO — Video Analysis ─────────────────────────────
 async function callGeminiVideo(videoUrl, prompt) {
   const cfg = loadJSON("krapmaps_v1_config",{});
@@ -8856,11 +8894,14 @@ LEARNING: [one sentence]`}]}, key);
       const allocatorBlock = formatContentAllocator(allocator, idea.aiScore?.contentPillar);
 
       // Semantic layer — meaning-based saturation/momentum (embeddings, not keywords)
-      let semanticBlock = "";
+      // + ANALOG GROUNDING: the creator's k nearest past posts by meaning, with real outcomes.
+      let semanticBlock = "", analogBlock = "", _analogs = null;
       try {
         const _vidPool = organicVids.length?organicVids:videos;
         const _embCacheNow = await embedTexts([idea.title, ...ideas.map(i=>i.title), ..._vidPool.map(v=>v.title)].filter(Boolean));
         semanticBlock = formatSemanticContext(buildSemanticContext(idea, ideas, _vidPool, _embCacheNow));
+        _analogs = buildAnalogs(idea, ideas, _vidPool, _embCacheNow);
+        analogBlock = formatAnalogs(_analogs);
       } catch { /* embeddings optional — never block scoring */ }
 
       // Audience voice — distilled from real comments on top videos
@@ -8916,6 +8957,7 @@ ${neuralBlock}
 ${visualBlock}
 ${allocatorBlock}
 ${semanticBlock}
+${analogBlock}
 ${commentBlock}
 ${metaBlock}
 ${voiceBlk}
@@ -8948,7 +8990,8 @@ Score each factor with this rigour:
 5. NICHE FIT (${weights.niche}%) — Score against ${wl.appName}'s content pillars based on: ${wl.contentStyle||wl.niche}. Core formula: ${wl.bestFormula}. If this idea doesn't clearly fit the niche and formula, score low. If it sits at the intersection of the best-performing content types, score high.
 
 ESTIMATED VIEWS — MANDATORY CALIBRATION PROTOCOL:
-Step 1: Start with your raw estimate based on hook+share trigger strength.
+Step 0 (STRONGEST EVIDENCE): If NEAREST ANALOGS are shown above, start from their similarity-weighted expectation — those are the creator's OWN most-similar posts and what they really did. Only move off that anchor if this idea has a clearly stronger hook/share trigger than the analogs.
+Step 1: Otherwise start with your raw estimate based on hook+share trigger strength.
 Step 2: Apply the OUTCOME LEARNING multipliers above (if this idea's hook/type has a ratio of 1.5x, multiply by 1.5; if 0.7x, reduce by 30%).
 Step 3: Apply PREDICTION ACCURACY bias correction (if AI has historically over/underestimated by X%, correct your output accordingly).
 Step 4: Anchor to the CALIBRATION percentiles above — score 85+ ideas should target top 10%, score 70-84 top 25%.
@@ -9002,14 +9045,37 @@ Return ONLY valid JSON:
           }
         }
       } catch { /* blend optional — never blocks scoring */ }
-      // Deterministic outcome-learning correction — ENFORCED in code, not left to the
-      // model to obey. The prompt asks the LLM to apply the hook/type multipliers, but
-      // LLMs comply inconsistently, so when the trained net did NOT take over the
-      // estimate (blendWeight 0 — the common early-data regime) we apply the empirically
-      // shrunk ratios ourselves. Skipped when the net fired, to avoid double-counting.
+      // ANALOG ANCHOR — evidence cascade: neural net → analogs → outcome multiplier.
+      // If the net didn't take over, pull the estimate toward the similarity-weighted
+      // outcome of the creator's nearest past posts (kNN). This is real history, so it
+      // outranks the hook/type multiplier fallback below. Weight scales with how similar
+      // and how many the analogs are — capped so a loose match can't dominate.
       try {
         const netFired = !!(r.neuralBlendWeight > 0);
-        if(!netFired && outcomeLearning){
+        if(!netFired && _analogs && _analogs.wPred>0){
+          const llmViews = parseViewEstimate(r.estimated_views);
+          if(llmViews){
+            // Trust grows with similarity and count: ~0.2 for 2 loose analogs, ~0.55 for a tight cluster.
+            const w = Math.max(0.15, Math.min(0.6, (_analogs.avgSim-0.5)*1.4 + Math.min(_analogs.n,5)*0.05));
+            const blended = Math.round(Math.pow(10, (1-w)*Math.log10(llmViews+1) + w*Math.log10(_analogs.wPred+1)) - 1);
+            const disagree = Math.abs(Math.log10((_analogs.wPred+1)/(llmViews+1)));
+            const band = Math.max(0.25, Math.min(0.6, disagree));
+            r.estimated_views = `${fmt(Math.round(blended*(1-band)))}-${fmt(Math.round(blended*(1+band)))}`;
+            r.analogEstimate = _analogs.wPred;
+            r.analogWeight = parseFloat(w.toFixed(2));
+            r.analogN = _analogs.n;
+            r._analogAnchored = true;
+          }
+        }
+      } catch { /* analog anchor optional — never blocks scoring */ }
+      // Deterministic outcome-learning correction — ENFORCED in code, not left to the
+      // model to obey. The prompt asks the LLM to apply the hook/type multipliers, but
+      // LLMs comply inconsistently, so when neither the trained net NOR the analog anchor
+      // took over the estimate (the thinnest-data regime) we apply the empirically shrunk
+      // ratios ourselves. Skipped when a stronger signal already anchored the number.
+      try {
+        const netFired = !!(r.neuralBlendWeight > 0);
+        if(!netFired && !r._analogAnchored && outcomeLearning){
           const hookRatio = outcomeLearning.hookAdjust?.find(h=>h.hook===idea.hook)?.avgRatio;
           const typeRatio = outcomeLearning.typeAdjust?.find(t=>t.type===idea.type)?.avgRatio;
           const rr = [hookRatio, typeRatio].filter(x=>typeof x==="number" && x>0);
@@ -9066,6 +9132,9 @@ Return ONLY valid JSON:
           neuralBlendWeight:r.neuralBlendWeight,
           neuralCvRho:r.neuralCvRho,
           outcomeMultiplier:r.outcomeMultiplier,
+          analogEstimate:r.analogEstimate,
+          analogWeight:r.analogWeight,
+          analogN:r.analogN,
           lastScoredAt: new Date().toISOString().slice(0,10),
           _scoredAt: Date.now(), // transient: powers the fresh-score celebration
         };
