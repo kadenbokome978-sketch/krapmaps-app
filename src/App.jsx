@@ -6933,6 +6933,41 @@ async function rapidFetch(targetUrl, byoKey) {
   return fetch("/api/rapid?url="+encodeURIComponent(targetUrl), { headers });
 }
 
+// ── PROSPECT SCRAPE ───────────────────────────────────────────────
+// Pull ANY public TikTok account's recent videos by handle — the engine behind
+// the free-audit outreach play. Uses the same scraper as the owner's own sync,
+// but returns the data in-memory only: it never touches the operator's workspace,
+// so you can audit an unlimited number of prospects without setting anything up.
+async function scrapeProspectTikTok(handle){
+  const clean = String(handle||"").trim().replace(/^@/,"").replace(/\s+/g,"");
+  if(!clean) throw new Error("Enter a TikTok @handle first");
+  const key = loadJSON(KEYS_KEY,{})?.keys?.tikwm;
+  if(!key && !USE_BACKEND) throw new Error("Add your TikTok (RapidAPI) key in Settings first — that's what pulls their videos.");
+  const base = "https://tiktok-scraper7.p.rapidapi.com/user/posts?unique_id="+encodeURIComponent(clean)+"&count=35&sort_type=0&cursor=";
+  const [r, rUser] = await Promise.all([
+    rapidFetch(base+"0", key),
+    rapidFetch("https://tiktok-scraper7.p.rapidapi.com/user/info?unique_id="+encodeURIComponent(clean), key),
+  ]);
+  if(!r.ok) throw new Error(r.status===403?"RapidAPI key invalid or not subscribed to the TikTok scraper":r.status===429?"Rate limited — wait ~30s and retry":`Scraper error ${r.status}`);
+  const data = await r.json();
+  if(data.code!==0 || !data.data?.videos?.length) throw new Error(`No public videos found for @${clean} — check the handle is exact (no spaces).`);
+  let followers=0, nick="";
+  try { const u=await rUser.json(); const st=u?.data?.user?.stats||u?.data?.stats; followers=st?.followerCount||0; nick=u?.data?.user?.nickname||u?.data?.user?.uniqueId||""; } catch {}
+  let vids=data.data.videos, cursor=data.data.cursor, more=!!data.data.hasMore, pages=1;
+  while(more && cursor && pages<4){
+    await new Promise(res=>setTimeout(res,500));
+    const r2=await rapidFetch(base+cursor, key);
+    if(!r2.ok) break;
+    const d2=await r2.json();
+    if(d2.code!==0 || !d2.data?.videos?.length) break;
+    vids=vids.concat(d2.data.videos); cursor=d2.data.cursor; more=!!d2.data.hasMore; pages++;
+  }
+  const seen=new Set();
+  const videos = vids.filter(tv=>{ if(seen.has(tv.video_id)) return false; seen.add(tv.video_id); return true; })
+    .map(tv=>({ id:"p_"+tv.video_id, title:tv.title||"", views:tv.play_count||0, likes:tv.digg_count||0, comments:tv.comment_count||0, shares:tv.share_count||0, created_at:new Date((tv.create_time||0)*1000).toISOString(), platform:"tiktok" }));
+  return { handle:clean, nick, followers, videos };
+}
+
 // ── CROSS-CLIENT ANONYMISED PRIORS ────────────────────────────────
 // Pools ONLY standard hook/type outcome ratios across channels in the same coarse niche
 // bucket. No titles, no handles, no content — a hashed client id + generic labels + stats.
@@ -7310,8 +7345,153 @@ const NAV = [
   { id:"deals",     label:"DEALS",     ic:I.star      },
   { id:"ai",        label:"ASSIST",    ic:I.brain     },
   { id:"growth",    label:"GROWTH",    ic:I.rocket    },
+  // Operator-only: the free-audit outreach tool. Hidden on client whitelabel builds.
+  ...(_activeCfg.clientId==="krapmaps" ? [{ id:"audit", label:"AUDIT", ic:I.search }] : []),
   { id:"settings",  label:"SETTINGS",  ic:I.settings  },
 ];
+
+// ── PROSPECT AUDIT VIEW ───────────────────────────────────────────
+// The outreach engine: type any creator's TikTok handle, pull their public
+// videos, and generate a shareable one-page audit (their real numbers, their
+// Voice DNA, what's working, what to fix, and 5 scored ideas in THEIR voice).
+// This is what you send a prospect for free to open a conversation.
+function ProspectAuditView({ WL }){
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const [handle, setHandle] = useState("");
+  const [phase, setPhase] = useState("idle"); // idle | scraping | analysing | done | error
+  const [err, setErr] = useState("");
+  const [report, setReport] = useState(null);
+  const fmtN = n => n>=1000000?`${(n/1000000).toFixed(1)}M`:n>=1000?`${(n/1000).toFixed(1)}k`:String(Math.round(n||0));
+
+  const run = async () => {
+    setErr(""); setReport(null); setPhase("scraping");
+    try {
+      const { handle:h, nick, followers, videos } = await scrapeProspectTikTok(handle);
+      if(videos.length < 3) throw new Error(`Only ${videos.length} videos found — need a few more to audit properly.`);
+      setPhase("analysing");
+      const withV = videos.filter(v=>v.views>0);
+      const avg = withV.length ? Math.round(withV.reduce((s,v)=>s+v.views,0)/withV.length) : 0;
+      const sorted = [...withV].sort((a,b)=>b.views-a.views);
+      const top = sorted.slice(0,5), bottom = sorted.slice(-3).reverse();
+      const engRate = withV.length ? (withV.reduce((s,v)=>s+((v.likes+v.comments*2+v.shares*3)/Math.max(v.views,1)),0)/withV.length*100) : 0;
+      const voice = buildVoiceDNA(videos, []);
+      const wl = WL || loadWL();
+      const prompt = `You are the sharpest short-form strategist alive. Audit this TikTok creator honestly and specifically — this is a real free audit that must feel worth paying for.
+
+CREATOR: @${h}${nick?` (${nick})`:""} — ${fmtN(followers)} followers, ${withV.length} recent videos analysed, avg ${fmtN(avg)} views, engagement ~${engRate.toFixed(1)}%.
+TOP VIDEOS: ${top.map(v=>`"${(v.title||"untitled").slice(0,60)}" — ${fmtN(v.views)} views`).join(" | ")}
+WEAKEST: ${bottom.map(v=>`"${(v.title||"untitled").slice(0,60)}" — ${fmtN(v.views)} views`).join(" | ")}
+${voice?`\n${formatVoiceDNA(voice,"")}`:""}
+Be concrete and reference THEIR actual videos. No generic advice. The 5 ideas must be written in their voice (per Voice DNA above) and fit what already works for them.
+
+Return ONLY JSON:
+{"verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views","potential":"one line: what they could realistically hit if they fix the main issue","working":["3 specific things working, each referencing their real content"],"fixing":["3 specific things holding them back, each with the concrete fix"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them"}]}`;
+      const r = await callAI(prompt, 1600);
+      setReport({ h, nick, followers, count:withV.length, avg, engRate, top:top.slice(0,3), voice, ai:r, app:wl.appName||"CreatorOS" });
+      setPhase("done");
+    } catch(e){ setErr(e.message||"Audit failed"); setPhase("error"); }
+  };
+
+  const card = { background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16 };
+  const busy = phase==="scraping"||phase==="analysing";
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:20, maxWidth:760, margin:"0 auto" }}>
+      <div style={{ ...card, padding:isMobile?"20px":"24px" }}>
+        <div style={{ fontSize:12, letterSpacing:"0.14em", color:C.cyan, fontWeight:700, marginBottom:8 }}>FREE PROSPECT AUDIT</div>
+        <div style={{ fontSize:isMobile?15:16, color:"rgba(255,255,255,0.6)", lineHeight:1.5, marginBottom:16 }}>Type any creator's TikTok handle. Pulls their public videos and builds a shareable audit — their numbers, their voice, what's working, what to fix, and 5 ideas in their voice. Send it to open the conversation.</div>
+        <div style={{ display:"flex", gap:10, flexWrap:isMobile?"wrap":"nowrap" }}>
+          <div style={{ flex:1, minWidth:isMobile?"100%":200, display:"flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.05)", border:`1px solid ${C.cyan}30`, borderRadius:12, padding:"0 14px" }}>
+            <span style={{ color:"rgba(255,255,255,0.4)", fontSize:16 }}>@</span>
+            <input value={handle} onChange={e=>setHandle(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!busy&&run()} placeholder="theirhandle" style={{ flex:1, background:"none", border:"none", outline:"none", color:"#fff", fontSize:16, padding:"13px 0", fontFamily:C.fontHead }}/>
+          </div>
+          <button onClick={run} disabled={busy||!handle.trim()} style={{ padding:"13px 24px", borderRadius:12, border:"none", background:busy?"rgba(255,255,255,0.1)":`linear-gradient(135deg,${C.cyan},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:busy?"wait":"pointer", opacity:(!handle.trim())?0.5:1, whiteSpace:"nowrap" }}>
+            {phase==="scraping"?"PULLING VIDEOS…":phase==="analysing"?"ANALYSING…":<span style={{display:"inline-flex",alignItems:"center",gap:6}}>{I.search(14,"currentColor")} RUN AUDIT</span>}
+          </button>
+        </div>
+        {err && <div style={{ marginTop:12, fontSize:13.5, color:C.pink, background:`${C.pink}10`, border:`1px solid ${C.pink}25`, borderRadius:10, padding:"10px 13px", lineHeight:1.5 }}>{err}</div>}
+        {busy && <div style={{ marginTop:12, fontSize:13, color:"rgba(255,255,255,0.45)" }}>{phase==="scraping"?"Fetching their recent videos…":"Reading their voice and scoring — a few seconds…"}</div>}
+      </div>
+
+      {report && (
+        <div id="prospect-report" style={{ ...card, padding:isMobile?"22px 18px":"32px 30px", background:"linear-gradient(160deg,rgba(0,229,255,0.05),rgba(10,6,20,0.6))" }}>
+          {/* Header */}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:14, flexWrap:"wrap", marginBottom:20 }}>
+            <div>
+              <div style={{ fontSize:isMobile?24:30, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1 }}>@{report.h}</div>
+              {report.nick && <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:4 }}>{report.nick}</div>}
+            </div>
+            <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.cyan, fontWeight:700, textAlign:"right" }}>CONTENT AUDIT<br/><span style={{ color:"rgba(255,255,255,0.4)", letterSpacing:"0.04em" }}>by {report.app}</span></div>
+          </div>
+          {/* Stats */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))", gap:10, marginBottom:22 }}>
+            {[{l:"FOLLOWERS",v:fmtN(report.followers),c:C.pink},{l:"AVG VIEWS",v:fmtN(report.avg),c:C.cyan},{l:"VIDEOS READ",v:report.count,c:C.purple},{l:"ENGAGEMENT",v:report.engRate.toFixed(1)+"%",c:C.green}].map((s,i)=>(
+              <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:`1px solid ${s.c}22`, borderRadius:12, padding:"14px 16px" }}>
+                <div style={{ fontSize:10, letterSpacing:"0.1em", color:"rgba(255,255,255,0.4)", fontWeight:700, marginBottom:6 }}>{s.l}</div>
+                <div style={{ fontSize:isMobile?20:24, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+              </div>
+            ))}
+          </div>
+          {/* Verdict */}
+          {report.ai?.verdict && (
+            <div style={{ background:`${C.cyan}0d`, border:`1px solid ${C.cyan}22`, borderRadius:12, padding:"16px 18px", marginBottom:18 }}>
+              <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.cyan, fontWeight:700, marginBottom:7 }}>THE VERDICT</div>
+              <div style={{ fontSize:15.5, color:"#fff", lineHeight:1.55 }}>{report.ai.verdict}</div>
+              {report.ai.potential && <div style={{ fontSize:13.5, color:C.green, marginTop:8, fontWeight:600 }}>↗ {report.ai.potential}</div>}
+            </div>
+          )}
+          {/* Voice */}
+          {report.voice && (
+            <div style={{ marginBottom:18 }}>
+              <div style={{ fontSize:11, letterSpacing:"0.1em", color:"rgba(255,255,255,0.45)", fontWeight:700, marginBottom:9 }}>THEIR VOICE (WHAT WE'D KEEP)</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
+                {[report.voice.casing, `~${report.voice.medianLen} words/hook`, report.voice.pov.split("—")[0].trim(), ...(report.voice.signatureWords.slice(0,5).map(w=>`"${w}"`))].map((t,i)=>(
+                  <span key={i} style={{ fontSize:11, fontWeight:700, color:C.cyan, background:`${C.cyan}12`, border:`1px solid ${C.cyan}25`, borderRadius:20, padding:"4px 11px" }}>{t}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Working / Fixing */}
+          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:14, marginBottom:18 }}>
+            <div>
+              <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.green, fontWeight:700, marginBottom:9 }}>WHAT'S WORKING</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {(report.ai?.working||[]).map((t,i)=>(<div key={i} style={{ fontSize:13.5, color:"rgba(255,255,255,0.8)", lineHeight:1.5, paddingLeft:16, position:"relative" }}><span style={{ position:"absolute", left:0, top:7, width:7, height:7, borderRadius:2, background:C.green }}/>{t}</div>))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.orange, fontWeight:700, marginBottom:9 }}>WHAT'S COSTING VIEWS</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {(report.ai?.fixing||[]).map((t,i)=>(<div key={i} style={{ fontSize:13.5, color:"rgba(255,255,255,0.8)", lineHeight:1.5, paddingLeft:16, position:"relative" }}><span style={{ position:"absolute", left:0, top:7, width:7, height:7, borderRadius:2, background:C.orange }}/>{t}</div>))}
+              </div>
+            </div>
+          </div>
+          {/* Ideas */}
+          {report.ai?.ideas?.length>0 && (
+            <div>
+              <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.pink, fontWeight:700, marginBottom:10 }}>5 VIDEOS TO POST NEXT — IN THEIR VOICE</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+                {report.ai.ideas.slice(0,5).map((idea,i)=>(
+                  <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:11, padding:"13px 15px" }}>
+                    <div style={{ fontSize:14.5, fontWeight:700, color:"#fff", marginBottom:idea.hook?4:0 }}>{i+1}. {idea.title}</div>
+                    {idea.hook && <div style={{ fontSize:13.5, color:C.cyan, fontStyle:"italic" }}>"{idea.hook}"</div>}
+                    {idea.why && <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", marginTop:3 }}>{idea.why}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* CTA footer */}
+          <div style={{ marginTop:22, paddingTop:18, borderTop:"1px solid rgba(255,255,255,0.08)", textAlign:"center" }}>
+            <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.55)", lineHeight:1.5 }}>This is a taste. The full system scores every idea before you film, tracks what actually hits, and learns your voice as you post.</div>
+            <div style={{ fontSize:15, color:"#fff", fontWeight:700, fontFamily:C.fontHead, marginTop:8 }}>Want your channel run through {report.app}?</div>
+          </div>
+        </div>
+      )}
+      {report && <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.35)", textAlign:"center" }}>Screenshot this and send it to @{report.h} — or read it out on a call.</div>}
+    </div>
+  );
+}
 
 // ── AI CHAT VIEW ──────────────────────────────────────────────────
 function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, preloadMsg }) {
@@ -9698,7 +9878,7 @@ Return JSON:
             {!isMobile && <div style={{ marginBottom:40, display:"flex", alignItems:"flex-end", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:600, marginBottom:6 }}>
-                  {nav==="home"?"Dashboard":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":"Settings"}
+                  {nav==="home"?"Dashboard":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":nav==="audit"?"Prospecting":"Settings"}
                 </div>
                 <div style={{ fontSize:34, fontWeight:400, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:6 }}>
                   {nav==="home" && <span><span style={{color:WL.accentColor}}>{WL.appName.slice(0,-2)||"Content"}</span>{WL.appName.slice(-2)||" OS"}</span>}
@@ -9709,6 +9889,7 @@ Return JSON:
                   {nav==="deals" && <span>Brand <span style={{color:WL.accentColor}}>Deals</span></span>}
                   {nav==="settings" && <span>Configure <span style={{color:C.purple}}>Workspace</span></span>}
                   {nav==="ai" && <span><span style={{color:WL.accentColor}}>AI</span> Assistant</span>}
+                  {nav==="audit" && <span>Free <span style={{color:C.cyan}}>Audit</span></span>}
                 </div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.38)", lineHeight:1.5 }}>
                   {nav==="home"&&`${WL.handle} · ${WL.platforms.split(",").map(p=>p[0].toUpperCase()+p.slice(1)).join(" & ")}`}
@@ -9731,6 +9912,7 @@ Return JSON:
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} setIdeas={setIdeas} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
+        {nav==="audit"     && <ProspectAuditView WL={activeWL} />}
         {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic || BAKED_ANTHROPIC_KEY} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} preloadMsg={assistPreload} />}
         {nav==="growth"    && <GrowthView m={m} ttViewsDisplay={ttViewsDisplay} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} scrapedStats={scrapedStats} saveManual={saveManual} setManualData={setManualData} videos={videos} ideas={ideas} />}
         {nav==="settings"  && <SettingsView keys={keys} onEditKeys={onEditKeys} scrapedStats={scrapedStats} hasIG={hasIG} WL={activeWL} onEditWL={onEditWL} onSyncTikTok={async()=>{
