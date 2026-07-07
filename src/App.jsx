@@ -1498,6 +1498,9 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                               {idea.neuralBlendWeight>0 && (
                                 <span title={`Neural net trained on this channel's outcomes (cross-validated ρ=${idea.neuralCvRho}) predicted ${fmt(idea.neuralEstimate)} views and was blended in at weight ${idea.neuralBlendWeight}.`} style={{ fontSize:10, fontWeight:700, letterSpacing:"0.06em", padding:isMobile?"5px 10px":"3px 8px", borderRadius:6, color:C.purple||C.cyan, background:`${C.purple||C.cyan}15`, display:"inline-flex", alignItems:"center", gap:5 }}>{I.brain(10,C.purple)} NEURAL ×{idea.neuralBlendWeight}</span>
                               )}
+                              {idea.analogN>0 && (
+                                <span title={`Grounded in your ${idea.analogN} most similar past posts (by meaning). Their similarity-weighted result was ${fmt(idea.analogEstimate)} views, pulled into this forecast at weight ${idea.analogWeight}.`} style={{ fontSize:10, fontWeight:700, letterSpacing:"0.06em", padding:isMobile?"5px 10px":"3px 8px", borderRadius:6, color:C.cyan, background:`${C.cyan}15`, display:"inline-flex", alignItems:"center", gap:5 }}>{I.target(10,C.cyan)} {idea.analogN} ANALOGS</span>
+                              )}
                             </div>
                             {idea.scoreRationale && (
                               <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)", lineHeight:1.55, fontFamily:C.fontBody }}>{idea.scoreRationale}</div>
