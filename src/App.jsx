@@ -3145,11 +3145,14 @@ ${trends ? "Previously fetched trends: "+JSON.stringify(trends.trends?.slice(0,3
 
 ${memCtx}
 
+${formatVoiceDNA(buildVoiceDNA(videos, ideas), loadJSON(VOICE_KEY,""))}
+
 Rules:
 - Prioritise hook styles that historically perform on THIS channel (see hook DB above)
 - Incorporate live trending hooks where they genuinely fit — don't force it
 - Fill gaps the audience is asking about that competitors aren't covering
 - Each hook must be under 10 words, cause immediate scroll-stop
+- Every title and hook MUST be written in the creator's Voice DNA above — sound like them, not like AI
 - Be honest with scores — not everything is 90+
 - Explain specifically WHY this beats their ${ctx.stats.avgViews} view average
 
@@ -5740,6 +5743,133 @@ const formatOutcomeLearning = (learning) => {
   return out;
 };
 
+// ── VOICE DNA (creator personality preservation) ──────────────────
+// The single most important guard against "soulless AI content": learn HOW this
+// creator actually writes — their brevity, casing, punctuation, emoji habits,
+// signature vocabulary, how they open a hook, whether they talk to "you" or from
+// "I" — straight from their real titles/hooks/captions. This runs 100% locally
+// (no API, no cold-start) and is injected into EVERY generative surface so ideas,
+// hooks, captions and scripts come out sounding like THEM, not like a marketing bot.
+const VOICE_KEY = "krapmaps_v1_voice_dna";
+const _VOICE_STOP = new Set("the a an and or but of to in on for with at by from is are was were be been being this that these those it its as it's i'm you your my our we they he she his her him them so if then than too very just really only also into out up down over under about your you".split(/\s+/));
+// Generic AI/marketing phrasing that instantly reads as a bot — banned in output.
+const _AI_TELLS = ["in this video","let's dive in","let's dive into","buckle up","game-changer","game changer","in today's fast-paced world","look no further","unlock the secret","unlock your","elevate your","take your ... to the next level","dive deep","without further ado","the ultimate guide","you won't believe","are you tired of","supercharge","level up your","transform your","embark on a journey","in conclusion","stay tuned","hit that follow"];
+
+const _emojiRegex = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{1F1E6}-\u{1F1FF}]/gu;
+
+// Collect this creator's real written voice corpus (their own words only).
+const _voiceCorpus = (videos=[], ideas=[]) => {
+  const out = [];
+  videos.forEach(v => { if(v.title) out.push(String(v.title)); if(v.hook) out.push(String(v.hook)); });
+  ideas.forEach(i => {
+    // Prefer the creator's own text; skip AI-generated improvedHook so we learn THEM, not us.
+    if(i.title) out.push(String(i.title));
+    if(i.hook) out.push(String(i.hook));
+    if(i.postedCaption) out.push(String(i.postedCaption));
+  });
+  return out.map(s=>s.trim()).filter(s=>s.length>1);
+};
+
+const buildVoiceDNA = (videos=[], ideas=[]) => {
+  const corpus = _voiceCorpus(videos, ideas);
+  if(corpus.length < 4) return null; // not enough of their own words to be honest yet
+
+  const wordsOf = s => (s.toLowerCase().match(/[a-z0-9']+/g) || []);
+  const allWords = corpus.flatMap(wordsOf);
+  const nLines = corpus.length;
+
+  // Brevity — median words per line (robust to one long caption).
+  const lens = corpus.map(s=>wordsOf(s).length).sort((a,b)=>a-b);
+  const medianLen = lens[Math.floor(lens.length/2)] || 0;
+
+  // Casing habits.
+  const capsLines  = corpus.filter(s=>{ const L=s.replace(/[^A-Za-z]/g,""); return L.length>=3 && L===L.toUpperCase(); }).length;
+  const lowerLines = corpus.filter(s=>{ const L=s.replace(/[^A-Za-z]/g,""); return L.length>=3 && L===L.toLowerCase(); }).length;
+  const casing = capsLines/nLines>0.35 ? "ALL-CAPS for emphasis" : lowerLines/nLines>0.5 ? "deliberately all-lowercase (aesthetic)" : "normal sentence case";
+
+  // Punctuation & emoji habits.
+  const qLines = corpus.filter(s=>s.includes("?")).length;
+  const exLines = corpus.filter(s=>s.includes("!")).length;
+  const ellipsisLines = corpus.filter(s=>/\.\.\.|…/.test(s)).length;
+  const emojiHits = corpus.reduce((s,l)=>s+((l.match(_emojiRegex)||[]).length),0);
+  const emojiPerLine = emojiHits/nLines;
+  const emojiVocab = Array.from(new Set(corpus.join(" ").match(_emojiRegex)||[])).slice(0,8);
+
+  // Point of view — do they address "you" or speak from "I/we"?
+  const youHits = allWords.filter(w=>["you","your","you're","u","ur"].includes(w)).length;
+  const iHits   = allWords.filter(w=>["i","i'm","my","me","we","our","us"].includes(w)).length;
+  const pov = youHits>iHits*1.4 ? "second-person — talks directly to the viewer (\"you\")"
+            : iHits>youHits*1.4 ? "first-person — narrates from their own experience (\"I / we\")"
+            : "mixed first/second person";
+
+  // How their hooks open (first 1-2 words) — their signature entry pattern.
+  const openers = {};
+  corpus.forEach(s=>{ const w=wordsOf(s); if(!w.length) return; const key=w.slice(0,2).join(" "); openers[key]=(openers[key]||0)+1; });
+  const topOpeners = Object.entries(openers).filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([k])=>k);
+
+  // Signature vocabulary — their recurring content words (their slang / pet words).
+  const freq = {};
+  allWords.forEach(w=>{ if(w.length<3 || _VOICE_STOP.has(w) || /^\d+$/.test(w)) return; freq[w]=(freq[w]||0)+1; });
+  const signatureWords = Object.entries(freq).filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([w])=>w);
+
+  // Number/listicle tendency.
+  const numLines = corpus.filter(s=>/\b\d+\b/.test(s)).length;
+
+  // A few real lines as verbatim style anchors (longest-signal, deduped).
+  const examples = Array.from(new Set(corpus)).sort((a,b)=>wordsOf(b).length-wordsOf(a).length).slice(0,5);
+
+  return {
+    sampleSize: nLines,
+    medianLen,
+    casing,
+    questionLed: qLines/nLines>0.3,
+    exclaims: exLines/nLines>0.3,
+    ellipsis: ellipsisLines/nLines>0.25,
+    emojiPerLine: parseFloat(emojiPerLine.toFixed(2)),
+    emojiVocab,
+    pov,
+    topOpeners,
+    signatureWords,
+    listy: numLines/nLines>0.3,
+    examples,
+  };
+};
+
+// Turn the measured voice + an optional LLM-distilled profile into a prompt block.
+const formatVoiceDNA = (voice, distilled="") => {
+  if(!voice && !distilled) return "";
+  let out = `━━ CREATOR VOICE DNA (write EVERYTHING in this exact voice — this is non-negotiable) ━━\n`;
+  if(distilled) out += `${distilled}\n`;
+  if(voice){
+    out += `Measured from ${voice.sampleSize} of the creator's own lines:\n`;
+    out += `• Length: they write in ~${voice.medianLen}-word lines — match that brevity, do not pad.\n`;
+    out += `• Casing: ${voice.casing} — mirror it exactly.\n`;
+    const punct = [];
+    if(voice.questionLed) punct.push("often opens with a question");
+    if(voice.exclaims) punct.push("uses exclamation for energy");
+    if(voice.ellipsis) punct.push("uses trailing \"...\" for suspense");
+    if(punct.length) out += `• Punctuation: ${punct.join(", ")}.\n`;
+    out += `• Emoji: ${voice.emojiPerLine<0.15 ? "they barely use emoji — DO NOT add emoji" : `they use ~${voice.emojiPerLine}/line${voice.emojiVocab.length?` (their set: ${voice.emojiVocab.join(" ")})`:""} — only use emoji from their own set`}.\n`;
+    out += `• Point of view: ${voice.pov} — keep it.\n`;
+    if(voice.topOpeners.length) out += `• They typically open with: ${voice.topOpeners.map(o=>`"${o}…"`).join(", ")}.\n`;
+    if(voice.signatureWords.length) out += `• Signature vocabulary (reuse these, they're part of their identity): ${voice.signatureWords.join(", ")}.\n`;
+    if(voice.listy) out += `• They lean on numbers/specifics — keep concrete figures.\n`;
+    if(voice.examples.length) out += `• Real lines in their voice (match this cadence and personality, do NOT copy verbatim):\n${voice.examples.map(e=>`   – "${e}"`).join("\n")}\n`;
+  }
+  out += `HARD RULES:\n`;
+  out += `• A viewer scrolling their feed must NOT be able to tell this was AI-written. Preserve their personality, humour and rhythm above all.\n`;
+  out += `• NEVER output generic marketing/AI phrasing. Banned examples: ${_AI_TELLS.slice(0,10).map(p=>`"${p}"`).join(", ")}.\n`;
+  out += `• Do not sanitise their edge or flatten their tone into "brand-safe" mush. If they're blunt, be blunt. If they're playful, be playful.\n`;
+  return out;
+};
+
+// Cheap, deterministic detector that flags AI-tell phrasing that slipped through
+// (used to self-check generated hooks/captions and strip/warn).
+const _hasAITell = (text="") => {
+  const t = String(text).toLowerCase();
+  return _AI_TELLS.some(p => p.includes("...") ? new RegExp(p.replace(/\s*\.\.\.\s*/,".*")).test(t) : t.includes(p));
+};
+
 // ── SCORE VALIDITY (meta-learning) ────────────────────────────────
 // Measures whether the AI's own virality scores actually rank-correlate with real outcomes.
 // Spearman ρ between predicted score and actual views = does the scoring engine even work?
@@ -7289,6 +7419,8 @@ ${chatAuditBlock}
 ${chatPredAcc}
 ${chatCompHooks ? `Competitor hooks proven in niche: ${chatCompHooks}` : ""}
 
+${formatVoiceDNA(buildVoiceDNA(organicVids.length?organicVids:videos, ideas), loadJSON(VOICE_KEY,""))}
+
 ━━ 2025 ALGORITHM INTELLIGENCE ━━
 TIKTOK: Prioritises "satisfaction loops" — videos where the viewer feels something resolved. Shares 3× more valuable than likes. Comment bait drives reach. Watch loops (rewatchable endings) add 20-40% to effective watch time score.
 REELS: Favours saves (bookmark-worthy info) and shares to Stories. Collab posts with local accounts get 2-3× organic reach. Audio trending within 48hrs of a sound peaking = algorithm boost window.
@@ -7684,7 +7816,7 @@ function Dashboard({ keys, onEditKeys }) {
   },[]);
 
   const handleBuildScript = (idea) => {
-    const msg = `Build me a full script for this idea:\n\nTitle: "${idea.title}"\nType: ${idea.type||"facecam"}\nHook: ${idea.hook||""}\n${idea.improvedHook?`Improved hook: "${idea.improvedHook}"\n`:""}\nInclude: opening hook (exact words to say), main body (what to show + say at each moment), and a closing CTA. Give timestamps and CapCut text overlay suggestions. Make it optimised for maximum virality.`;
+    const msg = `Build me a full script for this idea:\n\nTitle: "${idea.title}"\nType: ${idea.type||"facecam"}\nHook: ${idea.hook||""}\n${idea.improvedHook?`Improved hook: "${idea.improvedHook}"\n`:""}\nInclude: opening hook (exact words to say), main body (what to show + say at each moment), and a closing CTA. Give timestamps and CapCut text overlay suggestions. Make it optimised for maximum virality. Write every line of spoken dialogue in MY voice (per the Creator Voice DNA) — it should sound like me talking, not a script an AI wrote.`;
     setAssistPreload({ text: msg, id: Date.now() });
     setNav("ai");
     setSub(null);
@@ -8576,6 +8708,7 @@ LEARNING: [one sentence]`}]}, key);
       } catch { /* neural layer optional — never blocks scoring */ }
 
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
+      const voiceBlock = formatVoiceDNA(buildVoiceDNA(organicVids.length?organicVids:videos, ideas), loadJSON(VOICE_KEY,""));
       const _scorePrompt = `You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
 
 ${channelTheory ? `━━ CHANNEL VIRAL THEORY (why this channel specifically goes viral — anchor ALL scoring to this) ━━\n${channelTheory}\n` : ""}
@@ -8596,6 +8729,7 @@ ${allocatorBlock}
 ${semanticBlock}
 ${commentBlock}
 ${metaBlock}
+${voiceBlock}
 ${calibration ? `CALIBRATION: ${calibration}` : ""}
 ${ideaOutcomes.length ? `RECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
 ${seriesMomentum ? `\n${seriesMomentum}` : ""}
@@ -8634,6 +8768,8 @@ Your estimated_views must reflect all 5 steps. Do not output a raw uncorrected e
 
 REASONING DISCIPLINE: Before scoring, identify the 2-3 strongest data signals above that apply to THIS idea, and the single biggest risk. Let those drive the numbers. Do not regress every idea to a safe 70 — if the data says 45, score 45; if it says 90, score 90. Spread your scores honestly.
 
+VOICE DISCIPLINE: Every improvedHook and every hookVariant MUST be written in the CREATOR VOICE DNA above — their casing, brevity, punctuation, emoji habits and signature vocabulary. A rewritten hook that sounds like generic AI marketing is WRONG even if it's punchy. The goal is a more viral version of THEIR voice, never a replacement of it.
+
 Return ONLY valid JSON:
 {"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","hookVariants":[{"hook":"A/B variant 1 under 10 words — a DISTINCT angle (different trigger type than the others)","trigger":"open-loop|contrast|identity|social-proof|visual-disruption","predictedLift":"+X% vs the original hook, grounded in this channel's OUTCOME LEARNING + VISUAL DNA above","why":"one line: which channel data signal makes this variant win"},{"hook":"A/B variant 2 — different trigger","trigger":"...","predictedLift":"+X%","why":"..."},{"hook":"A/B variant 3 — different trigger","trigger":"...","predictedLift":"+X%","why":"..."}],"bestVariantIndex":"0|1|2 — which variant you predict wins and would test first","retentionFix":"the single biggest retention improvement","openLoopStrength":"rate 1-10 how well this video creates and sustains curiosity gaps — what is the open loop and when does it close?","reHookMoments":["specific moment at ~3s to re-engage","specific moment at ~15s","specific moment at ~30s if video is longer"],"emotionalArc":"setup→tension→payoff analysis — what emotion does viewer feel at start, middle, end? Where does it escalate?","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic RANGE corrected by outcome learning + bias σ e.g. 24K-56K","contentPillar":"niche-specific pillar name","competitorAngle":"how to differentiate from what competitors are already doing in this niche","optimalPostSlot":"best day+time to post this based on the channel's day/time performance data above, e.g. 'Saturday 6-9pm'","confidenceLevel":"HIGH|MEDIUM|LOW — based on how much real data backs this score","scoreRationale":"1 sentence: which 2-3 data signals drove this specific score up or down vs a generic idea"}`;
       const _consensus = await callConsensus(_scorePrompt, _scorePrompt, wl);
@@ -8664,6 +8800,34 @@ Return ONLY valid JSON:
           }
         }
       } catch { /* blend optional — never blocks scoring */ }
+      // Deterministic outcome-learning correction — ENFORCED in code, not left to the
+      // model to obey. The prompt asks the LLM to apply the hook/type multipliers, but
+      // LLMs comply inconsistently, so when the trained net did NOT take over the
+      // estimate (blendWeight 0 — the common early-data regime) we apply the empirically
+      // shrunk ratios ourselves. Skipped when the net fired, to avoid double-counting.
+      try {
+        const netFired = !!(r.neuralBlendWeight > 0);
+        if(!netFired && outcomeLearning){
+          const hookRatio = outcomeLearning.hookAdjust?.find(h=>h.hook===idea.hook)?.avgRatio;
+          const typeRatio = outcomeLearning.typeAdjust?.find(t=>t.type===idea.type)?.avgRatio;
+          const rr = [hookRatio, typeRatio].filter(x=>typeof x==="number" && x>0);
+          if(rr.length){
+            // Geometric mean of the applicable ratios, capped so one noisy signal can't
+            // swing the estimate more than ±50% on top of the LLM's own number.
+            const gm = Math.pow(rr.reduce((s,x)=>s*x,1), 1/rr.length);
+            const mult = Math.max(0.5, Math.min(1.5, gm));
+            const base = parseViewEstimate(r.estimated_views);
+            if(base && Math.abs(mult-1) > 0.05){
+              const centre = Math.round(base*mult);
+              // Keep an honest band — reuse the prediction-error σ if we have one, else ±30%.
+              const sigma = (predAcc && predAcc.errorStdDev) ? Math.max(0.2, Math.min(0.6, predAcc.errorStdDev/100)) : 0.3;
+              const lo = Math.round(centre*(1-sigma)), hi = Math.round(centre*(1+sigma));
+              r.estimated_views = `${fmt(lo)}-${fmt(hi)}`;
+              r.outcomeMultiplier = parseFloat(mult.toFixed(2));
+            }
+          }
+        }
+      } catch { /* correction optional — never blocks scoring */ }
       setIdeas(is=>is.map(i=>{
         if(i.id!==idea.id) return i;
         const prevScore = i.viral||null;
@@ -8699,6 +8863,7 @@ Return ONLY valid JSON:
           neuralEstimate:r.neuralEstimate,
           neuralBlendWeight:r.neuralBlendWeight,
           neuralCvRho:r.neuralCvRho,
+          outcomeMultiplier:r.outcomeMultiplier,
           lastScoredAt: new Date().toISOString().slice(0,10),
           _scoredAt: Date.now(), // transient: powers the fresh-score celebration
         };
@@ -8716,7 +8881,10 @@ Return ONLY valid JSON:
     try {
       const r = await callAI(`Write captions for ${wl.handle} TikTok and Instagram for this idea: "${idea.title||idea.text}".
 
+${formatVoiceDNA(buildVoiceDNA(videos, ideas), loadJSON(VOICE_KEY,""))}
+
 For TikTok, provide 3 HOOK VARIANTS — each uses a different psychology trigger. For Instagram, one caption.
+Write every caption and hook in the creator's Voice DNA above — it must read like they wrote it themselves, not like AI.
 
 Return JSON:
 {
