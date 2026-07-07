@@ -1264,6 +1264,19 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
   const [hookA, setHookA] = useState("");
   const [hookB, setHookB] = useState("");
   const [hookABResult, setHookABResult] = useState(null);
+  const [voiceVote, setVoiceVote] = useState({}); // text -> "good" | "bad"
+  const voteVoice = (text, good) => { if(!text) return; setVoiceVote(v=>({...v,[text]:good?"good":"bad"})); recordVoiceFeedback(text, good); };
+  // Small "does this sound like me?" control — one tap trains the voice engine.
+  const VoiceVote = ({ text }) => {
+    const v = voiceVote[text];
+    return (
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:8 }}>
+        <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)", fontWeight:600, letterSpacing:"0.04em" }}>SOUND LIKE YOU?</span>
+        <button onClick={()=>voteVoice(text,true)} title="Sounds like me — do more of this" style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:20, cursor:"pointer", border:`1px solid ${v==="good"?C.green:"rgba(255,255,255,0.12)"}`, background:v==="good"?`${C.green}20`:"transparent", color:v==="good"?C.green:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700 }}>{I.tick(10,"currentColor")} YES</button>
+        <button onClick={()=>voteVoice(text,false)} title="Not my voice — never write like this" style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:20, cursor:"pointer", border:`1px solid ${v==="bad"?C.pink:"rgba(255,255,255,0.12)"}`, background:v==="bad"?`${C.pink}20`:"transparent", color:v==="bad"?C.pink:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700 }}>{I.x(10,"currentColor")} NO</button>
+      </div>
+    );
+  };
   const [hookABLoading, setHookABLoading] = useState(false);
   const [expanding, setExpanding] = useState(false);
   const setIdeaStage = (idea, stage) => {
@@ -1443,6 +1456,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                       <div style={{ padding:isMobile?"13px 16px":"10px 14px", background:`${C.green}08`, border:`1px solid ${C.green}18`, borderRadius:11, marginBottom:isMobile?14:10 }}>
                         <div style={{ fontSize:10, color:C.green, fontWeight:700, letterSpacing:"0.12em", marginBottom:4 }}>IMPROVED HOOK</div>
                         <div style={{ fontSize:13, color:"#fff", fontStyle:"italic", lineHeight:1.5 }}>"{idea.improvedHook}"</div>
+                        <VoiceVote text={idea.improvedHook} />
                       </div>
                     )}
 
@@ -1458,6 +1472,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                               <div style={{ flex:1 }}>
                                 <div style={{ fontSize:14, color:"#fff", fontStyle:"italic", lineHeight:1.5 }}>"{hv.hook}"</div>
                                 {(hv.predictedLift||hv.why) && <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", marginTop:2, lineHeight:1.4 }}>{hv.predictedLift?`${hv.predictedLift} · `:""}{hv.why||""}</div>}
+                                <VoiceVote text={hv.hook} />
                               </div>
                             </div>
                           );
@@ -1482,6 +1497,9 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                               )}
                               {idea.neuralBlendWeight>0 && (
                                 <span title={`Neural net trained on this channel's outcomes (cross-validated ρ=${idea.neuralCvRho}) predicted ${fmt(idea.neuralEstimate)} views and was blended in at weight ${idea.neuralBlendWeight}.`} style={{ fontSize:10, fontWeight:700, letterSpacing:"0.06em", padding:isMobile?"5px 10px":"3px 8px", borderRadius:6, color:C.purple||C.cyan, background:`${C.purple||C.cyan}15`, display:"inline-flex", alignItems:"center", gap:5 }}>{I.brain(10,C.purple)} NEURAL ×{idea.neuralBlendWeight}</span>
+                              )}
+                              {idea.analogN>0 && (
+                                <span title={`Grounded in your ${idea.analogN} most similar past posts (by meaning). Their similarity-weighted result was ${fmt(idea.analogEstimate)} views, pulled into this forecast at weight ${idea.analogWeight}.`} style={{ fontSize:10, fontWeight:700, letterSpacing:"0.06em", padding:isMobile?"5px 10px":"3px 8px", borderRadius:6, color:C.cyan, background:`${C.cyan}15`, display:"inline-flex", alignItems:"center", gap:5 }}>{I.target(10,C.cyan)} {idea.analogN} ANALOGS</span>
                               )}
                             </div>
                             {idea.scoreRationale && (
@@ -1706,7 +1724,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
             if(!hookA.trim()||!hookB.trim()) return;
             setHookABLoading(true); setHookABResult(null);
             try {
-              const r = await callAI(`Compare these two TikTok hooks for ${WL.handle} (${WL.appName} — ${WL.niche}). Score each on: pattern interrupt, open loop strength, identity trigger, curiosity gap. Return ONLY JSON: {"winner":"A","hookAScore":0,"hookBScore":0,"hookAAnalysis":"","hookBAnalysis":"","whyWinner":"","improvedWinner":""}\n\nHook A: "${hookA}"\nHook B: "${hookB}"`, 600);
+              const r = await callAI(`Compare these two TikTok hooks for ${WL.handle} (${WL.appName} — ${WL.niche}). Score each on: pattern interrupt, open loop strength, identity trigger, curiosity gap.\n\n${voiceBlock([], ideas||[])}\nThe "improvedWinner" hook MUST be written in the creator's Voice DNA above — sound like them, not like AI.\n\nReturn ONLY JSON: {"winner":"A","hookAScore":0,"hookBScore":0,"hookAAnalysis":"","hookBAnalysis":"","whyWinner":"","improvedWinner":""}\n\nHook A: "${hookA}"\nHook B: "${hookB}"`, 600);
               setHookABResult(r); addXP(10);
             } catch(e){}
             setHookABLoading(false);
@@ -3116,12 +3134,15 @@ Return JSON: {
 
   // STEP 3: Claude generates ideas grounded in real performance data
   const runContentPlan = async () => {
+    // Idea generation is a heavy AI call — meter it against the plan too (margin safety).
+    if(!(await gateAI("scores","scores"))) return;
     setLoad("plan",true);
     try {
       const ctx = buildChannelContext();
       const { wl } = ctx;
       const memCtx = buildMemoryContext();
       const hDB = buildHookDB(videos);
+      ensureVoiceProfile(videos, ideas, wl); // keep the distilled voice profile warm (fire-and-forget)
 
       // Step 1 — Perplexity silently fetches: trending hooks + what audience is searching for
       const [liveHooks, liveAudience] = await Promise.all([
@@ -3145,11 +3166,14 @@ ${trends ? "Previously fetched trends: "+JSON.stringify(trends.trends?.slice(0,3
 
 ${memCtx}
 
+${voiceBlock(videos, ideas)}
+
 Rules:
 - Prioritise hook styles that historically perform on THIS channel (see hook DB above)
 - Incorporate live trending hooks where they genuinely fit — don't force it
 - Fill gaps the audience is asking about that competitors aren't covering
 - Each hook must be under 10 words, cause immediate scroll-stop
+- Every title and hook MUST be written in the creator's Voice DNA above — sound like them, not like AI
 - Be honest with scores — not everything is 90+
 - Explain specifically WHY this beats their ${ctx.stats.avgViews} view average
 
@@ -4423,7 +4447,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
   );
 };
 
-const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[], onBulkImport }) => {
+const SettingsView = ({ plan, onManagePlan, keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[], onBulkImport }) => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [editing, setEditing] = useState(null);
   const [draftKey, setDraftKey] = useState("");
@@ -4433,6 +4457,26 @@ const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onS
   const [theoryDraft, setTheoryDraft] = useState(()=>loadJSON(CHANNEL_THEORY_KEY,""));
   const [theorySaved, setTheorySaved] = useState(false);
   const [theoryLoading, setTheoryLoading] = useState(false);
+  const [voiceDraft, setVoiceDraft] = useState(()=>loadJSON(VOICE_KEY,""));
+  const [voiceSaved, setVoiceSaved] = useState(false);
+  const [voiceLoading, setVoiceLoading] = useState(false);
+  const measuredVoice = React.useMemo(()=>buildVoiceDNA(videos, ideas),[videos, ideas]);
+  const generateVoice = async () => {
+    setVoiceLoading(true);
+    try {
+      saveJSON(VOICE_KEY+"_meta", null);            // force a fresh re-distill
+      await ensureVoiceProfile(videos, ideas, loadWL());
+      setVoiceDraft(loadJSON(VOICE_KEY,""));
+    } catch {}
+    setVoiceLoading(false);
+  };
+  const saveVoice = () => {
+    const sig = _voiceSig(videos, ideas);
+    saveJSON(VOICE_KEY, voiceDraft);
+    saveJSON(VOICE_KEY+"_meta", { sig, at:Date.now(), edited:true });
+    try { sbUpsert("km_config",[{ id:wsId("voice_dna"), data:{ profile:voiceDraft, sig, at:Date.now() }, updated_at:new Date().toISOString() }]); } catch {}
+    setVoiceSaved(true); setTimeout(()=>setVoiceSaved(false),2000);
+  };
   const [csvDraft, setCsvDraft] = useState("");
   const [csvMsg, setCsvMsg] = useState("");
   const [sbDraft, setSbDraft] = useState(null); // { url, key } while editing
@@ -4580,8 +4624,30 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
     { label:"Gemini Video", value:keys?.gemini?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.gemini||USE_BACKEND)?C.green:C.yellow, id:"gemini" },
   ];
 
+  const _tierLabel = TIER_LABELS[plan?.tier] || plan?.tier || "Free";
+  const _scoreLimit = plan?.limits?.[plan?.tier]?.scores;
+  const _scoreUsed = plan?.usage?.scores || 0;
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:24 }}>
+
+      {/* Plan card. Shows live in backend mode; on the operator's own build it also
+          shows in direct mode as a PREVIEW so you can see the pricing screen before
+          billing is switched on. */}
+      {(USE_BACKEND || _activeCfg.clientId==="krapmaps") && (
+        <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"22px 26px", background:"linear-gradient(145deg,rgba(255,45,120,0.1),rgba(10,6,20,0.95))", border:`1px solid ${C.pink}30`, display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexWrap:"wrap", position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:11, letterSpacing:"0.12em", color:"rgba(255,255,255,0.45)", fontWeight:700, textTransform:"uppercase", marginBottom:5 }}>{USE_BACKEND ? "Your Plan" : "Plans — Preview"}</div>
+            <div style={{ fontSize:22, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1 }}>{USE_BACKEND ? _tierLabel : "Free · Pro · Studio"}</div>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginTop:6 }}>
+              {!USE_BACKEND ? "Tap to see the exact pricing page buyers get. Goes live when you turn billing on." : plan?.tier==="studio" ? "Unlimited scoring." : (_scoreLimit!=null ? `${_scoreUsed} / ${_scoreLimit} scores used this month` : `${_scoreUsed} scores used this month`)}
+            </div>
+          </div>
+          <button onClick={onManagePlan} style={{ padding:isMobile?"11px 20px":"13px 26px", borderRadius:12, border:"none", background:(!USE_BACKEND||plan?.tier==="free")?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.08)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", flexShrink:0 }}>
+            {!USE_BACKEND ? "SEE PLANS" : plan?.tier==="free" ? "UPGRADE" : "CHANGE PLAN"}
+          </button>
+        </div>
+      )}
 
       {/* Sync button — prominent at top */}
       <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"24px 28px", background:"linear-gradient(145deg,rgba(0,207,255,0.1),rgba(10,6,20,0.95))", border:`1px solid ${C.cyan}30`, display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, position:"relative", overflow:"hidden" }}>
@@ -4775,6 +4841,47 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
           placeholder={`Click GENERATE to synthesise your channel's viral theory from your video data, or write it yourself.\n\nExample:\n1. Core emotion: guilt relief — viewers feel helpless about ocean plastic; this channel gives them a proxy hero to believe in.\n2. Share trigger: backpackers send to their group chat because it validates the "responsible traveller" identity they want others to see.\n3. Viral condition: BK must interact authentically with a local — scripted or solo content rarely breaks 2x average.\n4. Biggest mistake: over-explaining the app instead of showing the human story.\n5. Unfair advantage: the mission is real, which makes the emotion genuine and uncopyable.`}
           rows={8}
           style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.purple}25`, borderRadius:12, color:"#fff", padding:isMobile?"18px 18px":"14px 16px", fontSize:13, fontFamily:C.fontHead, outline:"none", boxSizing:"border-box", resize:"vertical", lineHeight:1.6 }}
+        />
+      </div>
+
+      {/* Voice DNA — the creator's own voice, learned and editable */}
+      <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"22px 24px", background:`linear-gradient(145deg,rgba(0,229,255,0.07),rgba(10,6,20,0.95))`, border:`1px solid ${C.cyan}25`, position:"relative", overflow:"hidden" }}>
+        <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }}/>
+        <div style={{ display:"flex", alignItems:isMobile?"flex-start":"center", justifyContent:"space-between", gap:12, marginBottom:isMobile?14:10, flexWrap:isMobile?"wrap":"nowrap" }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>Voice DNA</div>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:3 }}>How you actually write — learned from your own posts and injected into every idea, hook, caption and script so nothing sounds like a bot. Edit it to correct anything.</div>
+          </div>
+          <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+            <button onClick={generateVoice} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.cyan}50`, background:`${C.cyan}18`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading)?0.5:1 }}>{voiceLoading?"LEARNING...":<span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.zap(12,"currentColor")} RELEARN</span>}</button>
+            <button onClick={saveVoice} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${voiceSaved?C.green:C.cyan}50`, background:voiceSaved?`${C.green}20`:`${C.cyan}18`, color:voiceSaved?C.green:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{voiceSaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>
+          </div>
+        </div>
+        {/* Measured traits — the deterministic read of their style (always on, no API) */}
+        {measuredVoice ? (
+          <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginBottom:12 }}>
+            {[
+              measuredVoice.casing,
+              `~${measuredVoice.medianLen} words/line`,
+              measuredVoice.pov.split("—")[0].trim(),
+              measuredVoice.emojiPerLine<0.15?"no emoji":`emoji ${measuredVoice.emojiVocab.slice(0,4).join("")||"used"}`,
+              ...(measuredVoice.questionLed?["question-led"]:[]),
+              ...(measuredVoice.signatureWords.slice(0,5).map(w=>`"${w}"`)),
+            ].map((t,i)=>(
+              <span key={i} style={{ fontSize:11, fontWeight:700, color:C.cyan, background:`${C.cyan}12`, border:`1px solid ${C.cyan}25`, borderRadius:20, padding:"4px 11px", letterSpacing:"0.02em" }}>{t}</span>
+            ))}
+          </div>
+        ) : (
+          <div style={{ fontSize:12.5, color:C.yellow, background:`${C.yellow}0d`, border:`1px solid ${C.yellow}25`, borderRadius:10, padding:"10px 13px", marginBottom:12, lineHeight:1.5 }}>
+            Still learning your voice — add a few more of your own video titles/hooks (about {Math.max(0, 4 - _voiceCorpus(videos, ideas).length)} more) and it locks in automatically. Until then the AI uses your niche defaults.
+          </div>
+        )}
+        <textarea
+          value={voiceDraft}
+          onChange={e=>setVoiceDraft(e.target.value)}
+          placeholder={"Hit RELEARN to capture your voice from your posts — or describe it yourself.\n\nExample:\nDry, deadpan, slightly self-deprecating. Talks to the viewer like a mate, never salesy. Short punchy lines, lowercase, the odd \"ngl\" and \"lowkey\". Never uses hype words or exclamation-mark energy — the humour is in the understatement."}
+          rows={7}
+          style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.cyan}25`, borderRadius:12, color:"#fff", padding:isMobile?"18px 18px":"14px 16px", fontSize:13, fontFamily:C.fontHead, outline:"none", boxSizing:"border-box", resize:"vertical", lineHeight:1.6 }}
         />
       </div>
 
@@ -5740,6 +5847,241 @@ const formatOutcomeLearning = (learning) => {
   return out;
 };
 
+// ── VOICE DNA (creator personality preservation) ──────────────────
+// The single most important guard against "soulless AI content": learn HOW this
+// creator actually writes — their brevity, casing, punctuation, emoji habits,
+// signature vocabulary, how they open a hook, whether they talk to "you" or from
+// "I" — straight from their real titles/hooks/captions. This runs 100% locally
+// (no API, no cold-start) and is injected into EVERY generative surface so ideas,
+// hooks, captions and scripts come out sounding like THEM, not like a marketing bot.
+const VOICE_KEY = "krapmaps_v1_voice_dna";
+const _VOICE_STOP = new Set("the a an and or but of to in on for with at by from is are was were be been being this that these those it its as it's i'm you your my our we they he she his her him them so if then than too very just really only also into out up down over under about your you".split(/\s+/));
+// Generic AI/marketing phrasing that instantly reads as a bot — banned in output.
+const _AI_TELLS = ["in this video","let's dive in","let's dive into","buckle up","game-changer","game changer","in today's fast-paced world","look no further","unlock the secret","unlock your","elevate your","take your ... to the next level","dive deep","without further ado","the ultimate guide","you won't believe","are you tired of","supercharge","level up your","transform your","embark on a journey","in conclusion","stay tuned","hit that follow"];
+
+const _emojiRegex = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{1F1E6}-\u{1F1FF}]/gu;
+
+// Collect this creator's real written voice corpus (their own words only).
+const _voiceCorpus = (videos=[], ideas=[]) => {
+  const out = [];
+  videos.forEach(v => { if(v.title) out.push(String(v.title)); if(v.hook) out.push(String(v.hook)); });
+  ideas.forEach(i => {
+    // Prefer the creator's own text; skip AI-generated improvedHook so we learn THEM, not us.
+    if(i.title) out.push(String(i.title));
+    if(i.hook) out.push(String(i.hook));
+    if(i.postedCaption) out.push(String(i.postedCaption));
+  });
+  return out.map(s=>s.trim()).filter(s=>s.length>1);
+};
+
+const buildVoiceDNA = (videos=[], ideas=[]) => {
+  const corpus = _voiceCorpus(videos, ideas);
+  if(corpus.length < 4) return null; // not enough of their own words to be honest yet
+
+  const wordsOf = s => (s.toLowerCase().match(/[a-z0-9']+/g) || []);
+  const allWords = corpus.flatMap(wordsOf);
+  const nLines = corpus.length;
+
+  // Brevity — median words per line (robust to one long caption).
+  const lens = corpus.map(s=>wordsOf(s).length).sort((a,b)=>a-b);
+  const medianLen = lens[Math.floor(lens.length/2)] || 0;
+
+  // Casing habits.
+  const capsLines  = corpus.filter(s=>{ const L=s.replace(/[^A-Za-z]/g,""); return L.length>=3 && L===L.toUpperCase(); }).length;
+  const lowerLines = corpus.filter(s=>{ const L=s.replace(/[^A-Za-z]/g,""); return L.length>=3 && L===L.toLowerCase(); }).length;
+  const casing = capsLines/nLines>0.35 ? "ALL-CAPS for emphasis" : lowerLines/nLines>0.5 ? "deliberately all-lowercase (aesthetic)" : "normal sentence case";
+
+  // Punctuation & emoji habits.
+  const qLines = corpus.filter(s=>s.includes("?")).length;
+  const exLines = corpus.filter(s=>s.includes("!")).length;
+  const ellipsisLines = corpus.filter(s=>/\.\.\.|…/.test(s)).length;
+  const emojiHits = corpus.reduce((s,l)=>s+((l.match(_emojiRegex)||[]).length),0);
+  const emojiPerLine = emojiHits/nLines;
+  const emojiVocab = Array.from(new Set(corpus.join(" ").match(_emojiRegex)||[])).slice(0,8);
+
+  // Point of view — do they address "you" or speak from "I/we"?
+  const youHits = allWords.filter(w=>["you","your","you're","u","ur"].includes(w)).length;
+  const iHits   = allWords.filter(w=>["i","i'm","my","me","we","our","us"].includes(w)).length;
+  const pov = youHits>iHits*1.4 ? "second-person — talks directly to the viewer (\"you\")"
+            : iHits>youHits*1.4 ? "first-person — narrates from their own experience (\"I / we\")"
+            : "mixed first/second person";
+
+  // How their hooks open (first 1-2 words) — their signature entry pattern.
+  const openers = {};
+  corpus.forEach(s=>{ const w=wordsOf(s); if(!w.length) return; const key=w.slice(0,2).join(" "); openers[key]=(openers[key]||0)+1; });
+  const topOpeners = Object.entries(openers).filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([k])=>k);
+
+  // Signature vocabulary — their recurring content words (their slang / pet words).
+  const freq = {};
+  allWords.forEach(w=>{ if(w.length<3 || _VOICE_STOP.has(w) || /^\d+$/.test(w)) return; freq[w]=(freq[w]||0)+1; });
+  const signatureWords = Object.entries(freq).filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([w])=>w);
+
+  // Number/listicle tendency.
+  const numLines = corpus.filter(s=>/\b\d+\b/.test(s)).length;
+
+  // A few real lines as verbatim style anchors (longest-signal, deduped).
+  const examples = Array.from(new Set(corpus)).sort((a,b)=>wordsOf(b).length-wordsOf(a).length).slice(0,5);
+
+  return {
+    sampleSize: nLines,
+    medianLen,
+    casing,
+    questionLed: qLines/nLines>0.3,
+    exclaims: exLines/nLines>0.3,
+    ellipsis: ellipsisLines/nLines>0.25,
+    emojiPerLine: parseFloat(emojiPerLine.toFixed(2)),
+    emojiVocab,
+    pov,
+    topOpeners,
+    signatureWords,
+    listy: numLines/nLines>0.3,
+    examples,
+  };
+};
+
+// Turn the measured voice + an optional LLM-distilled profile into a prompt block.
+const formatVoiceDNA = (voice, distilled="") => {
+  if(!voice && !distilled) return "";
+  let out = `━━ CREATOR VOICE DNA (write EVERYTHING in this exact voice — this is non-negotiable) ━━\n`;
+  if(distilled) out += `${distilled}\n`;
+  if(voice){
+    out += `Measured from ${voice.sampleSize} of the creator's own lines:\n`;
+    out += `• Length: they write in ~${voice.medianLen}-word lines — match that brevity, do not pad.\n`;
+    out += `• Casing: ${voice.casing} — mirror it exactly.\n`;
+    const punct = [];
+    if(voice.questionLed) punct.push("often opens with a question");
+    if(voice.exclaims) punct.push("uses exclamation for energy");
+    if(voice.ellipsis) punct.push("uses trailing \"...\" for suspense");
+    if(punct.length) out += `• Punctuation: ${punct.join(", ")}.\n`;
+    out += `• Emoji: ${voice.emojiPerLine<0.15 ? "they barely use emoji — DO NOT add emoji" : `they use ~${voice.emojiPerLine}/line${voice.emojiVocab.length?` (their set: ${voice.emojiVocab.join(" ")})`:""} — only use emoji from their own set`}.\n`;
+    out += `• Point of view: ${voice.pov} — keep it.\n`;
+    if(voice.topOpeners.length) out += `• They typically open with: ${voice.topOpeners.map(o=>`"${o}…"`).join(", ")}.\n`;
+    if(voice.signatureWords.length) out += `• Signature vocabulary (reuse these, they're part of their identity): ${voice.signatureWords.join(", ")}.\n`;
+    if(voice.listy) out += `• They lean on numbers/specifics — keep concrete figures.\n`;
+    if(voice.examples.length) out += `• Real lines in their voice (match this cadence and personality, do NOT copy verbatim):\n${voice.examples.map(e=>`   – "${e}"`).join("\n")}\n`;
+  }
+  out += `HARD RULES:\n`;
+  out += `• A viewer scrolling their feed must NOT be able to tell this was AI-written. Preserve their personality, humour and rhythm above all.\n`;
+  out += `• NEVER output generic marketing/AI phrasing. Banned examples: ${_AI_TELLS.slice(0,10).map(p=>`"${p}"`).join(", ")}.\n`;
+  out += `• Do not sanitise their edge or flatten their tone into "brand-safe" mush. If they're blunt, be blunt. If they're playful, be playful.\n`;
+  return out;
+};
+
+// ── VOICE FEEDBACK ────────────────────────────────────────────────
+// The creator's own verdict on whether generated lines sound like them. This is
+// the fastest possible signal — one tap, no waiting on view counts — and it feeds
+// straight back into every generation. Confirmed lines become style anchors;
+// rejected lines become explicit "never write like this" examples.
+const VOICE_FB_KEY = "krapmaps_v1_voice_fb";
+const loadVoiceFB = () => loadJSON(VOICE_FB_KEY, { good:[], bad:[] });
+const recordVoiceFeedback = (text, isGood) => {
+  const t = String(text||"").trim();
+  if(!t) return;
+  const fb = loadVoiceFB();
+  const key = isGood ? "good" : "bad", other = isGood ? "bad" : "good";
+  fb[other] = (fb[other]||[]).filter(x=>x!==t);          // a line can't be both
+  fb[key] = [t, ...(fb[key]||[]).filter(x=>x!==t)].slice(0, 15);
+  saveJSON(VOICE_FB_KEY, fb);
+  try { sbUpsert("km_config",[{ id:wsId("voice_fb"), data:fb, updated_at:new Date().toISOString() }]); } catch {}
+  window.dispatchEvent(new CustomEvent("km-voice-fb"));
+};
+const formatVoiceFeedback = () => {
+  const fb = loadVoiceFB();
+  if(!fb.good?.length && !fb.bad?.length) return "";
+  let out = "";
+  if(fb.good?.length) out += `Lines the creator CONFIRMED sound like them (match this energy exactly): ${fb.good.slice(0,8).map(t=>`"${t}"`).join(", ")}.\n`;
+  if(fb.bad?.length)  out += `Lines the creator REJECTED as NOT sounding like them (never write like this): ${fb.bad.slice(0,8).map(t=>`"${t}"`).join(", ")}.\n`;
+  return out;
+};
+
+// Single wrapper every generative surface uses. Prefers the learned Voice DNA;
+// on cold start (no posts yet) it falls back to what the creator told us about
+// their brand voice at setup, so even a brand-new account never writes fully
+// generic AI copy. `pool`/`ideaList` let callers pass an organic-only video set.
+const voiceBlock = (pool=[], ideaList=[]) => {
+  const measured = buildVoiceDNA(pool, ideaList);
+  const distilled = loadJSON(VOICE_KEY, "");
+  const fb = formatVoiceFeedback();
+  const block = formatVoiceDNA(measured, distilled);
+  if(block) return block + (fb ? `\n${fb}` : "");
+  const wl = loadWL();
+  const hint = [wl.brandValues, wl.contentStyle, wl.nicheLogic].map(s=>String(s||"").trim()).filter(Boolean).join(" — ");
+  if(!hint && !fb) return "";
+  return `━━ CREATOR VOICE (from their brand setup — refine in Settings › Voice DNA once they post) ━━\n${hint?`Write in this creator's established voice: ${hint}\n`:""}${fb}NEVER use generic AI/marketing phrasing (e.g. ${_AI_TELLS.slice(0,5).map(p=>`"${p}"`).join(", ")}). It must sound like the creator, not a bot.\n`;
+};
+
+// Cheap, deterministic detector that flags AI-tell phrasing that slipped through
+// (used to self-check generated hooks/captions and strip/warn).
+const _hasAITell = (text="") => {
+  const t = String(text).toLowerCase();
+  return _AI_TELLS.some(p => p.includes("...") ? new RegExp(p.replace(/\s*\.\.\.\s*/,".*")).test(t) : t.includes(p));
+};
+
+// Corpus signature — re-distill only when the body of their work grows meaningfully.
+const _voiceSig = (videos, ideas) => { const c=_voiceCorpus(videos, ideas); return `${c.length}:${c.join(" ").length}`; };
+let _voiceInFlight = false;
+// Optional richer profile: ONE LLM pass that captures humour, personality and quirks
+// the statistical extractor can't see (irony, warmth, bluntness, running bits).
+// Cached by corpus signature, fire-and-forget — never blocks generation; it upgrades
+// the NEXT generation. The deterministic DNA already covers the current one.
+async function ensureVoiceProfile(videos, ideas, wl){
+  try {
+    const corpus = _voiceCorpus(videos, ideas);
+    if(corpus.length < 8) return;                       // need a real body of their words
+    const sig = _voiceSig(videos, ideas);
+    const meta = loadJSON(VOICE_KEY+"_meta", null);
+    if(meta && meta.sig === sig) return;                // already distilled this corpus
+    if(_voiceInFlight) return;
+    _voiceInFlight = true;
+    const sample = corpus.slice(0, 60).map(s=>`- ${s}`).join("\n");
+    const prompt = `Below are real titles, hooks and captions written by ${wl.handle||"a creator"} (${wl.niche||"content creator"}). Study them and describe THIS specific person's writing voice precisely enough that another writer could ghost-write as them undetectably. Focus on personality, not surface stats.
+
+Their real lines:
+${sample}
+
+Return ONLY JSON:
+{"voiceProfile":"3-5 sentences on their tone, humour, energy, personality and quirks — specific to THEM, never generic","doThis":["4-6 concrete stylistic moves they make (phrasing, rhythm, attitude)"],"neverThis":["3-5 things that would instantly sound fake coming from them"],"signaturePhrases":["short phrases or sentence constructions they actually use"]}`;
+    const r = await callAI(prompt, 900);
+    if(r && r.voiceProfile){
+      let out = String(r.voiceProfile).trim()+"\n";
+      if(r.doThis?.length)          out += `They DO: ${r.doThis.join("; ")}.\n`;
+      if(r.neverThis?.length)       out += `They would NEVER: ${r.neverThis.join("; ")}.\n`;
+      if(r.signaturePhrases?.length) out += `Signature phrasing: ${r.signaturePhrases.map(p=>`"${p}"`).join(", ")}.`;
+      saveJSON(VOICE_KEY, out);
+      saveJSON(VOICE_KEY+"_meta", { sig, at:Date.now() });
+      // Sync the learned voice across this account's devices (workspace-scoped).
+      try { sbUpsert("km_config",[{ id:wsId("voice_dna"), data:{ profile:out, sig, at:Date.now() }, updated_at:new Date().toISOString() }]); } catch {}
+    }
+  } catch { /* distillation optional — never blocks */ }
+  finally { _voiceInFlight = false; }
+}
+
+// Output-side voice guard: if any generated hook slipped into robotic/marketing
+// phrasing, rewrite ONLY the offenders back into the creator's voice in a single
+// cheap pass. Returns the (possibly) cleaned list + whether anything was fixed.
+// Never throws — on any failure it returns the originals untouched.
+async function revoiceHooks(hooks, voiceBlock, wl){
+  try {
+    const flagged = hooks.map((h,i)=>({h,i})).filter(x=>x.h && _hasAITell(x.h));
+    if(!flagged.length) return { hooks, fixed:false };
+    const prompt = `These hooks for ${wl.handle||"a creator"} sound like generic AI, not like them. Rewrite EACH one in their real voice per the Voice DNA below — same meaning, under 10 words, but it must sound like the creator wrote it. Do not add marketing clichés.
+
+${voiceBlock}
+
+Hooks to fix (keep the same order):
+${flagged.map((x,n)=>`${n+1}. "${x.h}"`).join("\n")}
+
+Return ONLY JSON: {"rewritten":["...","..."]}`;
+    const r = await callAI(prompt, 400);
+    const out = [...hooks];
+    if(Array.isArray(r?.rewritten)){
+      flagged.forEach((x,n)=>{ const nu=r.rewritten[n]; if(nu && !_hasAITell(nu)) out[x.i]=String(nu).trim(); });
+      return { hooks:out, fixed:true };
+    }
+  } catch { /* guard optional — never blocks scoring */ }
+  return { hooks, fixed:false };
+}
+
 // ── SCORE VALIDITY (meta-learning) ────────────────────────────────
 // Measures whether the AI's own virality scores actually rank-correlate with real outcomes.
 // Spearman ρ between predicted score and actual views = does the scoring engine even work?
@@ -6271,6 +6613,44 @@ const formatSemanticContext = (ctx) => {
   return out;
 };
 
+// ── ANALOG GROUNDING (k-nearest-neighbour over real outcomes) ─────
+// The most evidence-based prediction there is: find the creator's OWN past posts
+// that are closest in MEANING to this idea, and anchor the forecast to what those
+// actually did. This is kNN regression in embedding space — no model guessing, the
+// creator's real history doing the work. Returns the neighbours, a similarity-
+// weighted expectation, and an honest low/high band from the analog spread.
+const buildAnalogs = (idea, ideas=[], videos=[], cache={}, k=5) => {
+  const iv = _getVec(cache, idea.title);
+  if(!iv) return null;
+  // Pool of everything with a REAL outcome (posted videos + posted ideas).
+  const pool = [
+    ...videos.filter(v=>v.views>0 && v.title).map(v=>({ title:v.title, views:v.views, hook:v.hook })),
+    ...ideas.filter(i=>i.status==="posted" && i.postedViews>0 && i.title && i.id!==idea.id).map(i=>({ title:i.title, views:i.postedViews, hook:i.hook })),
+  ];
+  const scored = pool
+    .map(p=>({ ...p, s:_cosine(iv, _getVec(cache, p.title)) }))
+    .filter(x=>x.s>=0.5)                       // only meaningfully-similar neighbours
+    .sort((a,b)=>b.s-a.s)
+    .slice(0, k);
+  if(scored.length < 2) return null;           // need at least 2 analogs to be honest
+  // Similarity-weighted geometric mean — views are multiplicative, so average in log space.
+  const tw = scored.reduce((s,x)=>s+x.s,0) || 1;
+  const logMean = scored.reduce((s,x)=>s + x.s*Math.log10(Math.max(x.views,1)), 0) / tw;
+  const wPred = Math.round(Math.pow(10, logMean));
+  const viewsArr = scored.map(x=>x.views).sort((a,b)=>a-b);
+  const lo = viewsArr[0], hi = viewsArr[viewsArr.length-1];
+  const topSim = scored[0].s;
+  return { analogs:scored, wPred, lo, hi, n:scored.length, topSim, avgSim: tw/scored.length };
+};
+const formatAnalogs = (a) => {
+  if(!a) return "";
+  const fmt = n => n>=1000?`${(n/1000).toFixed(1)}k`:String(n);
+  let out = `NEAREST ANALOGS [your OWN past posts closest in MEANING to this idea — real outcomes, kNN over embeddings, n=${a.n}]:\n`;
+  a.analogs.forEach(x=> out += `  • "${String(x.title).slice(0,50)}" — ${fmt(x.views)} views (${(x.s*100).toFixed(0)}% similar)\n`);
+  out += `  → Similarity-weighted expectation: ~${fmt(a.wPred)} views (analog range ${fmt(a.lo)}–${fmt(a.hi)}). This is the strongest evidence you have. Anchor estimated_views to these REAL results — deviate only if this idea has a materially better hook or share trigger than the analogs did.\n`;
+  return out;
+};
+
 // ── GEMINI 1.5 PRO — Video Analysis ─────────────────────────────
 async function callGeminiVideo(videoUrl, prompt) {
   const cfg = loadJSON("krapmaps_v1_config",{});
@@ -6425,6 +6805,30 @@ const perfScore = v => {
 
 // ── SUPABASE ──────────────────────────────────────────────────────
 const _sbHeaders = () => ({ apikey:getSbKey(),"Authorization":"Bearer "+getSbKey(),"Content-Type":"application/json" });
+
+// ── WORKSPACE SCOPING ─────────────────────────────────────────────
+// Every account's cloud data is namespaced by its activation code so that
+// entering the same code on ANY device pulls down that account's keys, videos,
+// ideas, deals and calendar — and two different codes never collide/overwrite
+// each other. We do this WITHOUT any schema change: row ids get a `<WS>:` prefix
+// in the database while the app keeps using the raw id. `:` is used as the
+// separator (not `_`, which is a single-char wildcard in SQL LIKE) and codes are
+// stripped to [A-Z0-9] so a code can never contain the separator — this also
+// stops one code from being a LIKE-prefix of another.
+const WS = () => {
+  try {
+    const s = localStorage.getItem(CLIENT_KEY);
+    const cfg = s ? JSON.parse(s) : CLIENT_CONFIG;
+    const code = String(cfg.activationCode || "default").toUpperCase().replace(/[^A-Z0-9]/g,"");
+    return code || "default";
+  } catch { return "default"; }
+};
+const wsId    = (id) => `${WS()}:${id}`;           // scope a single row id for writing
+const wsMatch = ()   => `${WS()}:`;                // LIKE prefix for a workspace's rows
+const wsStrip = (id) => {                          // recover the raw id on read
+  const p = wsMatch();
+  return (typeof id === "string" && id.startsWith(p)) ? id.slice(p.length) : id;
+};
 // ── INTEGRATION HEALTH ────────────────────────────────────────────
 // Every integration failure used to be a silent console.warn — users saw empty
 // data with no explanation. Each integration now reports its last result here;
@@ -6465,11 +6869,11 @@ const sbDelete = async (table,id) => {
 // Stores the full object as `data` JSON so we never need to alter schema per-field.
 const sbSyncArray = async (table, arr) => {
   if(!arr||!arr.length) return;
-  const rows = arr.map(item=>({ id:String(item.id), data:item, updated_at:new Date().toISOString() }));
+  const rows = arr.map(item=>({ id:wsId(item.id), data:item, updated_at:new Date().toISOString() }));
   await sbUpsert(table, rows);
 };
 const sbLoadArray = async (table) => {
-  const rows = await sbFetch(table, "select=*&order=updated_at.desc");
+  const rows = await sbFetch(table, `select=*&id=like.${wsMatch()}*&order=updated_at.desc`);
   if(!rows||!rows.length) return null;
   return rows.map(r=>r.data).filter(Boolean);
 };
@@ -6533,6 +6937,54 @@ async function authCompleteReset(tokens, newPassword) {
 // key (BYO), we forward it as X-BYO-Key so the server uses theirs instead.
 const USE_BACKEND = REQUIRE_AUTH;
 const _signalSignedOut = () => { try { clearSession(); window.dispatchEvent(new Event("km-signed-out")); } catch {} };
+
+// ── BILLING (client) ──────────────────────────────────────────────
+// Entitlements live server-side (forgery-proof). These helpers read the plan and
+// meter actions. All are no-ops outside backend mode, so direct/self-host builds
+// are unaffected — nothing is gated unless you've turned billing on.
+const TIER_LABELS = { free:"Free", pro:"Pro", studio:"Studio", byo:"Your keys", unmetered:"Unlimited" };
+async function fetchPlan() {
+  if(!USE_BACKEND) return { tier:"unmetered", billingConfigured:false };
+  try {
+    const token = await getAccessToken();
+    if(!token) return { tier:"free", billingConfigured:false };
+    const r = await fetch("/api/me", { headers:{ Authorization:"Bearer "+token } });
+    if(!r.ok) return { tier:"free", billingConfigured:false };
+    return await r.json();
+  } catch { return { tier:"free", billingConfigured:false }; }
+}
+// Returns { allowed, tier, used, limit }. Fails OPEN (allowed) if anything breaks
+// or billing isn't configured — never block a paying flow on a billing hiccup.
+async function meterAction(metric="scores") {
+  if(!USE_BACKEND) return { allowed:true };
+  try {
+    const token = await getAccessToken();
+    if(!token) return { allowed:true };
+    const r = await fetch("/api/meter", { method:"POST", headers:{ Authorization:"Bearer "+token, "Content-Type":"application/json" }, body:JSON.stringify({ metric }) });
+    const d = await r.json().catch(()=>({ allowed:true }));
+    if(r.status===402) return { allowed:false, ...d };
+    return { allowed:true, ...d };
+  } catch { return { allowed:true }; }
+}
+// Meter an action from anywhere; if the user is over their limit, broadcast an
+// event so the app can open the pricing modal, and return false. Fails open.
+async function gateAI(metric="scores", label){
+  const g = await meterAction(metric);
+  if(!g.allowed){
+    try { window.dispatchEvent(new CustomEvent("km-limit", { detail:{ ...g, label } })); } catch {}
+    return false;
+  }
+  return true;
+}
+// Starts Stripe Checkout for a plan and redirects. Throws with a readable message.
+async function startCheckout(plan) {
+  const token = await getAccessToken();
+  if(!token) throw new Error("Sign in first to upgrade.");
+  const r = await fetch("/api/stripe-checkout", { method:"POST", headers:{ Authorization:"Bearer "+token, "Content-Type":"application/json" }, body:JSON.stringify({ plan, origin: window.location.origin }) });
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok || !d.url) throw new Error(d.error || "Could not start checkout");
+  window.location.href = d.url;
+}
 async function _postProxy(endpoint, body, byoKey) {
   const token = await getAccessToken();
   if(!token) { _signalSignedOut(); throw new Error("Your session expired — please sign in again."); }
@@ -6551,6 +7003,41 @@ async function rapidFetch(targetUrl, byoKey) {
   const headers = { "Authorization":"Bearer "+token };
   if(byoKey) headers["X-BYO-Key"] = byoKey;
   return fetch("/api/rapid?url="+encodeURIComponent(targetUrl), { headers });
+}
+
+// ── PROSPECT SCRAPE ───────────────────────────────────────────────
+// Pull ANY public TikTok account's recent videos by handle — the engine behind
+// the free-audit outreach play. Uses the same scraper as the owner's own sync,
+// but returns the data in-memory only: it never touches the operator's workspace,
+// so you can audit an unlimited number of prospects without setting anything up.
+async function scrapeProspectTikTok(handle){
+  const clean = String(handle||"").trim().replace(/^@/,"").replace(/\s+/g,"");
+  if(!clean) throw new Error("Enter a TikTok @handle first");
+  const key = loadJSON(KEYS_KEY,{})?.keys?.tikwm;
+  if(!key && !USE_BACKEND) throw new Error("Add your TikTok (RapidAPI) key in Settings first — that's what pulls their videos.");
+  const base = "https://tiktok-scraper7.p.rapidapi.com/user/posts?unique_id="+encodeURIComponent(clean)+"&count=35&sort_type=0&cursor=";
+  const [r, rUser] = await Promise.all([
+    rapidFetch(base+"0", key),
+    rapidFetch("https://tiktok-scraper7.p.rapidapi.com/user/info?unique_id="+encodeURIComponent(clean), key),
+  ]);
+  if(!r.ok) throw new Error(r.status===403?"RapidAPI key invalid or not subscribed to the TikTok scraper":r.status===429?"Rate limited — wait ~30s and retry":`Scraper error ${r.status}`);
+  const data = await r.json();
+  if(data.code!==0 || !data.data?.videos?.length) throw new Error(`No public videos found for @${clean} — check the handle is exact (no spaces).`);
+  let followers=0, nick="";
+  try { const u=await rUser.json(); const st=u?.data?.user?.stats||u?.data?.stats; followers=st?.followerCount||0; nick=u?.data?.user?.nickname||u?.data?.user?.uniqueId||""; } catch {}
+  let vids=data.data.videos, cursor=data.data.cursor, more=!!data.data.hasMore, pages=1;
+  while(more && cursor && pages<4){
+    await new Promise(res=>setTimeout(res,500));
+    const r2=await rapidFetch(base+cursor, key);
+    if(!r2.ok) break;
+    const d2=await r2.json();
+    if(d2.code!==0 || !d2.data?.videos?.length) break;
+    vids=vids.concat(d2.data.videos); cursor=d2.data.cursor; more=!!d2.data.hasMore; pages++;
+  }
+  const seen=new Set();
+  const videos = vids.filter(tv=>{ if(seen.has(tv.video_id)) return false; seen.add(tv.video_id); return true; })
+    .map(tv=>({ id:"p_"+tv.video_id, title:tv.title||"", views:tv.play_count||0, likes:tv.digg_count||0, comments:tv.comment_count||0, shares:tv.share_count||0, created_at:new Date((tv.create_time||0)*1000).toISOString(), platform:"tiktok" }));
+  return { handle:clean, nick, followers, videos };
 }
 
 // ── CROSS-CLIENT ANONYMISED PRIORS ────────────────────────────────
@@ -6821,6 +7308,20 @@ const DealsView = () => {
   const [form, setForm] = useState({ brand:"", type:"Sponsored Post", value:"", status:"Enquiry", platform:"TikTok", deliverable:"", deadline:"", notes:"" });
   const [showForm, setShowForm] = useState(false);
   useEffect(()=>{ saveJSON(DEALS_KEY,deals); if(deals.length) sbSyncArray("km_deals",deals).catch(()=>{}); },[deals]);
+  // Pull this account's deals down on mount so they appear on every device that
+  // signs in with the same activation code (previously deals only synced UP).
+  useEffect(()=>{
+    let alive = true;
+    sbLoadArray("km_deals").then(remote=>{
+      if(!alive||!remote||!remote.length) return;
+      setDeals(prev=>{
+        const merged = [...remote];
+        prev.forEach(p=>{ if(!merged.find(d=>String(d.id)===String(p.id))) merged.push(p); });
+        return merged;
+      });
+    }).catch(()=>{});
+    return ()=>{ alive = false; };
+  },[]);
   const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
   const addDeal = () => {
     if(!form.brand.trim()) return;
@@ -6916,8 +7417,239 @@ const NAV = [
   { id:"deals",     label:"DEALS",     ic:I.star      },
   { id:"ai",        label:"ASSIST",    ic:I.brain     },
   { id:"growth",    label:"GROWTH",    ic:I.rocket    },
+  // Operator-only: the free-audit outreach tool. Hidden on client whitelabel builds.
+  ...(_activeCfg.clientId==="krapmaps" ? [{ id:"audit", label:"AUDIT", ic:I.search }] : []),
   { id:"settings",  label:"SETTINGS",  ic:I.settings  },
 ];
+
+// ── PROSPECT AUDIT VIEW ───────────────────────────────────────────
+// The outreach engine: type any creator's TikTok handle, pull their public
+// videos, and generate a shareable one-page audit (their real numbers, their
+// Voice DNA, what's working, what to fix, and 5 scored ideas in THEIR voice).
+// This is what you send a prospect for free to open a conversation.
+function ProspectAuditView({ WL }){
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const [handle, setHandle] = useState("");
+  const [phase, setPhase] = useState("idle"); // idle | scraping | analysing | done | error
+  const [err, setErr] = useState("");
+  const [report, setReport] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const copyReport = () => {
+    if(!report) return;
+    const a = report.ai||{};
+    const lines = [
+      `CONTENT AUDIT — @${report.h}${report.nick?` (${report.nick})`:""}`,
+      `${fmtN(report.followers)} followers · ${fmtN(report.avg)} avg views · ${report.engRate.toFixed(1)}% engagement`,
+      ``,
+      a.verdict?`VERDICT: ${a.verdict}`:``,
+      a.potential?`POTENTIAL: ${a.potential}`:``,
+      ``,
+      a.working?.length?`WHAT'S WORKING:\n${a.working.map(t=>`• ${t}`).join("\n")}`:``,
+      ``,
+      a.fixing?.length?`WHAT'S COSTING VIEWS:\n${a.fixing.map(t=>`• ${t}`).join("\n")}`:``,
+      ``,
+      a.ideas?.length?`5 VIDEOS TO POST NEXT (in your voice):\n${a.ideas.slice(0,5).map((i,n)=>`${n+1}. ${i.title}${i.hook?` — "${i.hook}"`:""}`).join("\n")}`:``,
+      ``,
+      `Full breakdown + idea scoring: ${report.app}`,
+    ].filter(l=>l!=="").join("\n");
+    try { navigator.clipboard?.writeText(lines); setCopied(true); setTimeout(()=>setCopied(false),2200); } catch {}
+  };
+  const fmtN = n => n>=1000000?`${(n/1000000).toFixed(1)}M`:n>=1000?`${(n/1000).toFixed(1)}k`:String(Math.round(n||0));
+
+  const run = async () => {
+    setErr(""); setReport(null); setPhase("scraping");
+    try {
+      const { handle:h, nick, followers, videos } = await scrapeProspectTikTok(handle);
+      if(videos.length < 3) throw new Error(`Only ${videos.length} videos found — need a few more to audit properly.`);
+      setPhase("analysing");
+      const withV = videos.filter(v=>v.views>0);
+      const avg = withV.length ? Math.round(withV.reduce((s,v)=>s+v.views,0)/withV.length) : 0;
+      const sorted = [...withV].sort((a,b)=>b.views-a.views);
+      const top = sorted.slice(0,5), bottom = sorted.slice(-3).reverse();
+      const engRate = withV.length ? (withV.reduce((s,v)=>s+((v.likes+v.comments*2+v.shares*3)/Math.max(v.views,1)),0)/withV.length*100) : 0;
+      const voice = buildVoiceDNA(videos, []);
+      const wl = WL || loadWL();
+      const prompt = `You are the sharpest short-form strategist alive. Audit this TikTok creator honestly and specifically — this is a real free audit that must feel worth paying for.
+
+CREATOR: @${h}${nick?` (${nick})`:""} — ${fmtN(followers)} followers, ${withV.length} recent videos analysed, avg ${fmtN(avg)} views, engagement ~${engRate.toFixed(1)}%.
+TOP VIDEOS: ${top.map(v=>`"${(v.title||"untitled").slice(0,60)}" — ${fmtN(v.views)} views`).join(" | ")}
+WEAKEST: ${bottom.map(v=>`"${(v.title||"untitled").slice(0,60)}" — ${fmtN(v.views)} views`).join(" | ")}
+${voice?`\n${formatVoiceDNA(voice,"")}`:""}
+Be concrete and reference THEIR actual videos. No generic advice. The 5 ideas must be written in their voice (per Voice DNA above) and fit what already works for them.
+
+Return ONLY JSON:
+{"verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views","potential":"one line: what they could realistically hit if they fix the main issue","working":["3 specific things working, each referencing their real content"],"fixing":["3 specific things holding them back, each with the concrete fix"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them"}]}`;
+      const r = await callAI(prompt, 1600);
+      setReport({ h, nick, followers, count:withV.length, avg, engRate, top:top.slice(0,3), voice, ai:r, app:wl.appName||"CreatorOS" });
+      setPhase("done");
+    } catch(e){ setErr(e.message||"Audit failed"); setPhase("error"); }
+  };
+
+  const card = { background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16 };
+  const busy = phase==="scraping"||phase==="analysing";
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:20, maxWidth:760, margin:"0 auto" }}>
+      <div style={{ ...card, padding:isMobile?"20px":"24px" }}>
+        <div style={{ fontSize:12, letterSpacing:"0.14em", color:C.cyan, fontWeight:700, marginBottom:8 }}>FREE PROSPECT AUDIT</div>
+        <div style={{ fontSize:isMobile?15:16, color:"rgba(255,255,255,0.6)", lineHeight:1.5, marginBottom:16 }}>Type any creator's TikTok handle. Pulls their public videos and builds a shareable audit — their numbers, their voice, what's working, what to fix, and 5 ideas in their voice. Send it to open the conversation.</div>
+        <div style={{ display:"flex", gap:10, flexWrap:isMobile?"wrap":"nowrap" }}>
+          <div style={{ flex:1, minWidth:isMobile?"100%":200, display:"flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.05)", border:`1px solid ${C.cyan}30`, borderRadius:12, padding:"0 14px" }}>
+            <span style={{ color:"rgba(255,255,255,0.4)", fontSize:16 }}>@</span>
+            <input value={handle} onChange={e=>setHandle(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!busy&&run()} placeholder="theirhandle" style={{ flex:1, background:"none", border:"none", outline:"none", color:"#fff", fontSize:16, padding:"13px 0", fontFamily:C.fontHead }}/>
+          </div>
+          <button onClick={run} disabled={busy||!handle.trim()} style={{ padding:"13px 24px", borderRadius:12, border:"none", background:busy?"rgba(255,255,255,0.1)":`linear-gradient(135deg,${C.cyan},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:busy?"wait":"pointer", opacity:(!handle.trim())?0.5:1, whiteSpace:"nowrap" }}>
+            {phase==="scraping"?"PULLING VIDEOS…":phase==="analysing"?"ANALYSING…":<span style={{display:"inline-flex",alignItems:"center",gap:6}}>{I.search(14,"currentColor")} RUN AUDIT</span>}
+          </button>
+        </div>
+        {err && <div style={{ marginTop:12, fontSize:13.5, color:C.pink, background:`${C.pink}10`, border:`1px solid ${C.pink}25`, borderRadius:10, padding:"10px 13px", lineHeight:1.5 }}>{err}</div>}
+        {busy && <div style={{ marginTop:12, fontSize:13, color:"rgba(255,255,255,0.45)" }}>{phase==="scraping"?"Fetching their recent videos…":"Reading their voice and scoring — a few seconds…"}</div>}
+      </div>
+
+      {report && (
+        <div id="prospect-report" style={{ ...card, padding:isMobile?"22px 18px":"32px 30px", background:"linear-gradient(160deg,rgba(0,229,255,0.05),rgba(10,6,20,0.6))" }}>
+          {/* Header */}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:14, flexWrap:"wrap", marginBottom:20 }}>
+            <div>
+              <div style={{ fontSize:isMobile?24:30, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1 }}>@{report.h}</div>
+              {report.nick && <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:4 }}>{report.nick}</div>}
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8 }}>
+              <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.cyan, fontWeight:700, textAlign:"right" }}>CONTENT AUDIT<br/><span style={{ color:"rgba(255,255,255,0.4)", letterSpacing:"0.04em" }}>by {report.app}</span></div>
+              <button onClick={copyReport} style={{ padding:"6px 12px", borderRadius:9, border:`1px solid ${copied?C.green:"rgba(255,255,255,0.15)"}`, background:copied?`${C.green}18`:"rgba(255,255,255,0.05)", color:copied?C.green:"rgba(255,255,255,0.75)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", whiteSpace:"nowrap" }}>{copied?"COPIED":"COPY AS TEXT"}</button>
+            </div>
+          </div>
+          {/* Stats */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))", gap:10, marginBottom:22 }}>
+            {[{l:"FOLLOWERS",v:fmtN(report.followers),c:C.pink},{l:"AVG VIEWS",v:fmtN(report.avg),c:C.cyan},{l:"VIDEOS READ",v:report.count,c:C.purple},{l:"ENGAGEMENT",v:report.engRate.toFixed(1)+"%",c:C.green}].map((s,i)=>(
+              <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:`1px solid ${s.c}22`, borderRadius:12, padding:"14px 16px" }}>
+                <div style={{ fontSize:10, letterSpacing:"0.1em", color:"rgba(255,255,255,0.4)", fontWeight:700, marginBottom:6 }}>{s.l}</div>
+                <div style={{ fontSize:isMobile?20:24, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+              </div>
+            ))}
+          </div>
+          {/* Verdict */}
+          {report.ai?.verdict && (
+            <div style={{ background:`${C.cyan}0d`, border:`1px solid ${C.cyan}22`, borderRadius:12, padding:"16px 18px", marginBottom:18 }}>
+              <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.cyan, fontWeight:700, marginBottom:7 }}>THE VERDICT</div>
+              <div style={{ fontSize:15.5, color:"#fff", lineHeight:1.55 }}>{report.ai.verdict}</div>
+              {report.ai.potential && <div style={{ fontSize:13.5, color:C.green, marginTop:8, fontWeight:600 }}>↗ {report.ai.potential}</div>}
+            </div>
+          )}
+          {/* Voice */}
+          {report.voice && (
+            <div style={{ marginBottom:18 }}>
+              <div style={{ fontSize:11, letterSpacing:"0.1em", color:"rgba(255,255,255,0.45)", fontWeight:700, marginBottom:9 }}>THEIR VOICE (WHAT WE'D KEEP)</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
+                {[report.voice.casing, `~${report.voice.medianLen} words/hook`, report.voice.pov.split("—")[0].trim(), ...(report.voice.signatureWords.slice(0,5).map(w=>`"${w}"`))].map((t,i)=>(
+                  <span key={i} style={{ fontSize:11, fontWeight:700, color:C.cyan, background:`${C.cyan}12`, border:`1px solid ${C.cyan}25`, borderRadius:20, padding:"4px 11px" }}>{t}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Working / Fixing */}
+          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:14, marginBottom:18 }}>
+            <div>
+              <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.green, fontWeight:700, marginBottom:9 }}>WHAT'S WORKING</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {(report.ai?.working||[]).map((t,i)=>(<div key={i} style={{ fontSize:13.5, color:"rgba(255,255,255,0.8)", lineHeight:1.5, paddingLeft:16, position:"relative" }}><span style={{ position:"absolute", left:0, top:7, width:7, height:7, borderRadius:2, background:C.green }}/>{t}</div>))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.orange, fontWeight:700, marginBottom:9 }}>WHAT'S COSTING VIEWS</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {(report.ai?.fixing||[]).map((t,i)=>(<div key={i} style={{ fontSize:13.5, color:"rgba(255,255,255,0.8)", lineHeight:1.5, paddingLeft:16, position:"relative" }}><span style={{ position:"absolute", left:0, top:7, width:7, height:7, borderRadius:2, background:C.orange }}/>{t}</div>))}
+              </div>
+            </div>
+          </div>
+          {/* Ideas */}
+          {report.ai?.ideas?.length>0 && (
+            <div>
+              <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.pink, fontWeight:700, marginBottom:10 }}>5 VIDEOS TO POST NEXT — IN THEIR VOICE</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+                {report.ai.ideas.slice(0,5).map((idea,i)=>(
+                  <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:11, padding:"13px 15px" }}>
+                    <div style={{ fontSize:14.5, fontWeight:700, color:"#fff", marginBottom:idea.hook?4:0 }}>{i+1}. {idea.title}</div>
+                    {idea.hook && <div style={{ fontSize:13.5, color:C.cyan, fontStyle:"italic" }}>"{idea.hook}"</div>}
+                    {idea.why && <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", marginTop:3 }}>{idea.why}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* CTA footer */}
+          <div style={{ marginTop:22, paddingTop:18, borderTop:"1px solid rgba(255,255,255,0.08)", textAlign:"center" }}>
+            <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.55)", lineHeight:1.5 }}>This is a taste. The full system scores every idea before you film, tracks what actually hits, and learns your voice as you post.</div>
+            <div style={{ fontSize:15, color:"#fff", fontWeight:700, fontFamily:C.fontHead, marginTop:8 }}>Want your channel run through {report.app}?</div>
+          </div>
+        </div>
+      )}
+      {report && <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.35)", textAlign:"center" }}>Screenshot this and send it to @{report.h} — or read it out on a call.</div>}
+    </div>
+  );
+}
+
+// ── PRICING MODAL ─────────────────────────────────────────────────
+// Shown when a user hits their plan limit, or opened from Settings. Upgrading
+// sends them to Stripe Checkout; the webhook flips their tier on return.
+const PRICING_PLANS = [
+  { id:"free",   name:"Free",   price:"£0",  per:"forever", tagline:"Test the waters", feats:["10 idea scores / month","Voice DNA + your analytics","Growth tracking","Shareable results page"] },
+  { id:"pro",    name:"Pro",    price:"£29", per:"/month",  tagline:"For serious creators", hot:true, feats:["400 idea scores / month","Live trends + competitor spy","Multi-model consensus scoring","Priority AI, no queue"] },
+  { id:"studio", name:"Studio", price:"£99", per:"/month",  tagline:"Full-time & teams", feats:["Unlimited scoring","Neural predictor + analog grounding","Everything in Pro","Early access to new features"] },
+];
+function PricingModal({ tier="free", reason, onClose }){
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const [busy, setBusy] = useState("");
+  const [err, setErr] = useState("");
+  const go = async (plan) => { setErr(""); setBusy(plan); try { await startCheckout(plan); } catch(e){ setErr(e.message); setBusy(""); } };
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:2000, background:"rgba(5,3,10,0.82)", backdropFilter:"blur(6px)", display:"flex", alignItems:isMobile?"flex-start":"center", justifyContent:"center", padding:isMobile?"20px 14px":"32px", overflowY:"auto" }}>
+      <div onClick={e=>e.stopPropagation()} style={{ width:"100%", maxWidth:940, background:"linear-gradient(160deg,#140C1E,#0A0612)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:20, padding:isMobile?"24px 18px":"34px 38px", boxShadow:"0 30px 90px rgba(0,0,0,0.6)" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12, marginBottom:reason?10:22 }}>
+          <div>
+            <div style={{ fontSize:isMobile?23:28, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1.1 }}>Choose your plan</div>
+            <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:5 }}>Cancel anytime. No key setup — scoring just works.</div>
+          </div>
+          <button onClick={onClose} aria-label="Close" style={{ background:"rgba(255,255,255,0.06)", border:"none", borderRadius:9, width:34, height:34, color:"#fff", fontSize:18, cursor:"pointer", flexShrink:0 }}>{I.x?I.x(14,"currentColor"):"✕"}</button>
+        </div>
+        {reason && <div style={{ fontSize:13.5, color:C.yellow, background:`${C.yellow}0e`, border:`1px solid ${C.yellow}28`, borderRadius:10, padding:"10px 13px", marginBottom:18, lineHeight:1.5 }}>{reason}</div>}
+        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(3,1fr)", gap:14 }}>
+          {PRICING_PLANS.map(p=>{
+            const current = tier===p.id;
+            return (
+              <div key={p.id} style={{ position:"relative", background:p.hot?"linear-gradient(165deg,rgba(255,45,120,0.12),rgba(197,102,255,0.06))":"rgba(255,255,255,0.03)", border:`1px solid ${p.hot?C.pink+"55":"rgba(255,255,255,0.09)"}`, borderRadius:16, padding:"22px 20px", display:"flex", flexDirection:"column", gap:14 }}>
+                {p.hot && <div style={{ position:"absolute", top:-10, right:16, fontSize:10, fontWeight:800, letterSpacing:"0.1em", color:"#fff", background:`linear-gradient(135deg,${C.pink},${C.purple})`, borderRadius:20, padding:"3px 10px" }}>MOST POPULAR</div>}
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:p.hot?C.pink:"rgba(255,255,255,0.55)" }}>{p.name}</div>
+                  <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.4)", marginTop:2 }}>{p.tagline}</div>
+                </div>
+                <div style={{ display:"flex", alignItems:"baseline", gap:4 }}>
+                  <span style={{ fontSize:34, fontWeight:800, fontFamily:C.fontHead, color:"#fff" }}>{p.price}</span>
+                  <span style={{ fontSize:13, color:"rgba(255,255,255,0.4)" }}>{p.per}</span>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:8, flex:1 }}>
+                  {p.feats.map((f,i)=>(
+                    <div key={i} style={{ display:"flex", gap:8, alignItems:"flex-start", fontSize:13, color:"rgba(255,255,255,0.78)", lineHeight:1.4 }}>
+                      <span style={{ color:C.green, marginTop:1, flexShrink:0 }}>{I.tick(13,"currentColor")}</span>{f}
+                    </div>
+                  ))}
+                </div>
+                {current
+                  ? <div style={{ textAlign:"center", padding:"11px", borderRadius:11, border:"1px solid rgba(255,255,255,0.12)", color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, fontFamily:C.fontHead }}>CURRENT PLAN</div>
+                  : p.id==="free"
+                    ? <div style={{ height:1 }}/>
+                    : <button onClick={()=>go(p.id)} disabled={!!busy} style={{ padding:"11px", borderRadius:11, border:"none", background:p.hot?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.08)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:busy?"wait":"pointer", opacity:busy&&busy!==p.id?0.5:1 }}>{busy===p.id?"OPENING…":"Upgrade"}</button>
+                }
+              </div>
+            );
+          })}
+        </div>
+        {err && <div style={{ marginTop:16, fontSize:13, color:C.pink, textAlign:"center" }}>{err}</div>}
+        <div style={{ marginTop:18, fontSize:11.5, color:"rgba(255,255,255,0.3)", textAlign:"center" }}>Secure checkout by Stripe · cancel anytime from your account</div>
+      </div>
+    </div>
+  );
+}
 
 // ── AI CHAT VIEW ──────────────────────────────────────────────────
 function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, preloadMsg }) {
@@ -7144,6 +7876,9 @@ ${trendsForAnalysis ? `\nCURRENT TRENDS (use these in editing + sound recommenda
 ${videoContext ? `\nCREATOR CONTEXT FOR THIS CLIP:\n${videoContext}` : ""}
 ${_anlWL.nicheLogic ? `\nNICHE INTELLIGENCE:\n${_anlWL.nicheLogic}` : ""}
 
+${voiceBlock(videos, ideas)}
+Any hook you write in the refilm_brief MUST be in the creator's Voice DNA above.
+
 Analyse this clip with full virality science:
 
 ━━ 1. SCROLL-STOP AUDIT (0-0.5s) ━━
@@ -7250,6 +7985,8 @@ ${chatComboBlock}
 ${chatAuditBlock}
 ${chatPredAcc}
 ${chatCompHooks ? `Competitor hooks proven in niche: ${chatCompHooks}` : ""}
+
+${voiceBlock(organicVids.length?organicVids:videos, ideas)}
 
 ━━ 2025 ALGORITHM INTELLIGENCE ━━
 TIKTOK: Prioritises "satisfaction loops" — videos where the viewer feels something resolved. Shares 3× more valuable than likes. Comment bait drives reach. Watch loops (rewatchable endings) add 20-40% to effective watch time score.
@@ -7616,6 +8353,30 @@ function Dashboard({ keys, onEditKeys }) {
   useEffect(()=>{ if(!aiErr) return; const t=setTimeout(()=>setAiErr(null), 15000); return ()=>clearTimeout(t); },[aiErr]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [assistPreload, setAssistPreload] = useState(null);
+  // ── BILLING ─────────────────────────────────────────────────────
+  const [plan, setPlan] = useState({ tier: USE_BACKEND?"free":"unmetered", usage:{}, billingConfigured:false });
+  const [pricing, setPricing] = useState(null); // null | { reason }
+  const refreshPlan = useCallback(()=>{ fetchPlan().then(setPlan).catch(()=>{}); },[]);
+  useEffect(()=>{ refreshPlan(); },[refreshPlan]);
+  // Any over-limit action anywhere in the app opens the pricing modal.
+  useEffect(()=>{
+    const onLimit = (e)=>{
+      const g = e.detail||{};
+      const what = g.label || "this";
+      setPricing({ reason: `You've used all ${g.limit} ${what==="this"?"actions":what} on the ${TIER_LABELS[g.tier]||g.tier} plan this month. Upgrade to keep going — it resets monthly.` });
+      refreshPlan();
+    };
+    window.addEventListener("km-limit", onLimit);
+    return ()=>window.removeEventListener("km-limit", onLimit);
+  },[refreshPlan]);
+  // Returning from Stripe Checkout — confirm the upgrade and clean the URL.
+  useEffect(()=>{
+    try {
+      const q = new URLSearchParams(window.location.search);
+      if(q.get("upgraded")){ setTimeout(refreshPlan, 1500); setTimeout(refreshPlan, 5000); window.history.replaceState({}, "", window.location.pathname); }
+      else if(q.get("upgrade")==="cancel"){ window.history.replaceState({}, "", window.location.pathname); }
+    } catch {}
+  },[refreshPlan]);
 
   // ── PULL-TO-REFRESH (installed PWA only) ───────────────────────
   // Standalone mode has no browser chrome — without this, a stale or stuck
@@ -7646,7 +8407,7 @@ function Dashboard({ keys, onEditKeys }) {
   },[]);
 
   const handleBuildScript = (idea) => {
-    const msg = `Build me a full script for this idea:\n\nTitle: "${idea.title}"\nType: ${idea.type||"facecam"}\nHook: ${idea.hook||""}\n${idea.improvedHook?`Improved hook: "${idea.improvedHook}"\n`:""}\nInclude: opening hook (exact words to say), main body (what to show + say at each moment), and a closing CTA. Give timestamps and CapCut text overlay suggestions. Make it optimised for maximum virality.`;
+    const msg = `Build me a full script for this idea:\n\nTitle: "${idea.title}"\nType: ${idea.type||"facecam"}\nHook: ${idea.hook||""}\n${idea.improvedHook?`Improved hook: "${idea.improvedHook}"\n`:""}\nInclude: opening hook (exact words to say), main body (what to show + say at each moment), and a closing CTA. Give timestamps and CapCut text overlay suggestions. Make it optimised for maximum virality. Write every line of spoken dialogue in MY voice (per the Creator Voice DNA) — it should sound like me talking, not a script an AI wrote.`;
     setAssistPreload({ text: msg, id: Date.now() });
     setNav("ai");
     setSub(null);
@@ -7665,7 +8426,7 @@ function Dashboard({ keys, onEditKeys }) {
       const topVids = [...vids].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
       const postedThisWeek = idList.filter(i=>i.status==="posted"&&i.postedDate&&(Date.now()-new Date(i.postedDate).getTime())<604800000);
       const recentIdeas = idList.slice(0,5).map(i=>`"${(i.title||"").slice(0,40)}" (scored ${i.viral||"unscored"})`).join(", ");
-      const r = await callAI(`You are the strategist for ${WL.handle} (${WL.appName} — ${WL.niche}). Generate a weekly debrief.\n\nChannel data:\n- Total videos: ${vids.length}, avg views: ${Math.round(vids.reduce((s,v)=>s+(v.views||0),0)/(vids.length||1))}\n- Posted this week: ${postedThisWeek.length} videos\n- Top 5 videos: ${topVids.map(v=>`${(v.title||"").slice(0,30)} (${(v.views||0).toLocaleString()} views)`).join(", ")}\n- Recent ideas: ${recentIdeas}\n- Unscored ideas: ${idList.filter(i=>!(i.viral>0)).length}\n\nReturn ONLY JSON: {"headline":"","whatWorked":["",""],"whatDidnt":[""],"focusThisWeek":["","",""],"ideaToFilmNow":"title and why","watchOut":"one risk to avoid"}`, 800);
+      const r = await callAI(`You are the strategist for ${WL.handle} (${WL.appName} — ${WL.niche}). Generate a weekly debrief.\n\nChannel data:\n- Total videos: ${vids.length}, avg views: ${Math.round(vids.reduce((s,v)=>s+(v.views||0),0)/(vids.length||1))}\n- Posted this week: ${postedThisWeek.length} videos\n- Top 5 videos: ${topVids.map(v=>`${(v.title||"").slice(0,30)} (${(v.views||0).toLocaleString()} views)`).join(", ")}\n- Recent ideas: ${recentIdeas}\n- Unscored ideas: ${idList.filter(i=>!(i.viral>0)).length}\n\n${voiceBlock(vids, idList)}\nWrite the "ideaToFilmNow" title/hook in the creator's Voice DNA above.\n\nReturn ONLY JSON: {"headline":"","whatWorked":["",""],"whatDidnt":[""],"focusThisWeek":["","",""],"ideaToFilmNow":"title and why","watchOut":"one risk to avoid"}`, 800);
       const result = {...r, generatedAt: new Date().toISOString()};
       saveJSON("krapmaps_v1_debrief", result);
       setWeeklyDebrief(result);
@@ -7737,7 +8498,8 @@ function Dashboard({ keys, onEditKeys }) {
     const load = async () => {
       try {
         // Videos
-        const vids = await sbFetch("km_videos","select=*&order=created_at.desc");
+        const vidsRaw = await sbFetch("km_videos",`select=*&id=like.${wsMatch()}*&order=created_at.desc`);
+        const vids = vidsRaw ? vidsRaw.map(v=>({ ...v, id: wsStrip(v.id) })) : vidsRaw;
         if(vids===null) { setStatsError("Supabase offline — data saved locally"); }
         else if(vids?.length) {
           setVideos(prev => {
@@ -8392,6 +9154,15 @@ LEARNING: [one sentence]`}]}, key);
 
   const scoreIdea = async (idea) => {
     const key = "s"+idea.id;
+    // Plan gate — one meter per score (the consensus fan-out counts as a single unit).
+    // No-op outside backend mode. Fails open on any billing hiccup, so scoring is
+    // never blocked by an infra blip — only by a real, confirmed limit.
+    const gate = await meterAction("scores");
+    if(!gate.allowed){
+      setPricing({ reason: `You've used all ${gate.limit} scores on the ${TIER_LABELS[gate.tier]||gate.tier} plan this month. Upgrade to keep scoring — it resets monthly.` });
+      refreshPlan();
+      return;
+    }
     setAiLoad(l=>({...l,[key]:true}));
     try {
       const wl = loadWL();
@@ -8497,11 +9268,14 @@ LEARNING: [one sentence]`}]}, key);
       const allocatorBlock = formatContentAllocator(allocator, idea.aiScore?.contentPillar);
 
       // Semantic layer — meaning-based saturation/momentum (embeddings, not keywords)
-      let semanticBlock = "";
+      // + ANALOG GROUNDING: the creator's k nearest past posts by meaning, with real outcomes.
+      let semanticBlock = "", analogBlock = "", _analogs = null;
       try {
         const _vidPool = organicVids.length?organicVids:videos;
         const _embCacheNow = await embedTexts([idea.title, ...ideas.map(i=>i.title), ..._vidPool.map(v=>v.title)].filter(Boolean));
         semanticBlock = formatSemanticContext(buildSemanticContext(idea, ideas, _vidPool, _embCacheNow));
+        _analogs = buildAnalogs(idea, ideas, _vidPool, _embCacheNow);
+        analogBlock = formatAnalogs(_analogs);
       } catch { /* embeddings optional — never block scoring */ }
 
       // Audience voice — distilled from real comments on top videos
@@ -8537,6 +9311,8 @@ LEARNING: [one sentence]`}]}, key);
       } catch { /* neural layer optional — never blocks scoring */ }
 
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
+      ensureVoiceProfile(organicVids.length?organicVids:videos, ideas, wl); // keep distilled voice profile warm
+      const voiceBlk = voiceBlock(organicVids.length?organicVids:videos, ideas);
       const _scorePrompt = `You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
 
 ${channelTheory ? `━━ CHANNEL VIRAL THEORY (why this channel specifically goes viral — anchor ALL scoring to this) ━━\n${channelTheory}\n` : ""}
@@ -8555,8 +9331,10 @@ ${neuralBlock}
 ${visualBlock}
 ${allocatorBlock}
 ${semanticBlock}
+${analogBlock}
 ${commentBlock}
 ${metaBlock}
+${voiceBlk}
 ${calibration ? `CALIBRATION: ${calibration}` : ""}
 ${ideaOutcomes.length ? `RECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
 ${seriesMomentum ? `\n${seriesMomentum}` : ""}
@@ -8586,7 +9364,8 @@ Score each factor with this rigour:
 5. NICHE FIT (${weights.niche}%) — Score against ${wl.appName}'s content pillars based on: ${wl.contentStyle||wl.niche}. Core formula: ${wl.bestFormula}. If this idea doesn't clearly fit the niche and formula, score low. If it sits at the intersection of the best-performing content types, score high.
 
 ESTIMATED VIEWS — MANDATORY CALIBRATION PROTOCOL:
-Step 1: Start with your raw estimate based on hook+share trigger strength.
+Step 0 (STRONGEST EVIDENCE): If NEAREST ANALOGS are shown above, start from their similarity-weighted expectation — those are the creator's OWN most-similar posts and what they really did. Only move off that anchor if this idea has a clearly stronger hook/share trigger than the analogs.
+Step 1: Otherwise start with your raw estimate based on hook+share trigger strength.
 Step 2: Apply the OUTCOME LEARNING multipliers above (if this idea's hook/type has a ratio of 1.5x, multiply by 1.5; if 0.7x, reduce by 30%).
 Step 3: Apply PREDICTION ACCURACY bias correction (if AI has historically over/underestimated by X%, correct your output accordingly).
 Step 4: Anchor to the CALIBRATION percentiles above — score 85+ ideas should target top 10%, score 70-84 top 25%.
@@ -8594,6 +9373,8 @@ Step 5: Express as a RANGE as wide as the prediction error σ stated above (e.g.
 Your estimated_views must reflect all 5 steps. Do not output a raw uncorrected estimate.
 
 REASONING DISCIPLINE: Before scoring, identify the 2-3 strongest data signals above that apply to THIS idea, and the single biggest risk. Let those drive the numbers. Do not regress every idea to a safe 70 — if the data says 45, score 45; if it says 90, score 90. Spread your scores honestly.
+
+VOICE DISCIPLINE: Every improvedHook and every hookVariant MUST be written in the CREATOR VOICE DNA above — their casing, brevity, punctuation, emoji habits and signature vocabulary. A rewritten hook that sounds like generic AI marketing is WRONG even if it's punchy. The goal is a more viral version of THEIR voice, never a replacement of it.
 
 Return ONLY valid JSON:
 {"viralityScore":0-100,"hookScore":0-100,"retentionScore":0-100,"shareScore":0-100,"algoScore":0-100,"nicheScore":0-100,"verdict":"2 sentences — name the strongest and weakest factor with specific reasoning","viralityReason":"which share trigger fires and why it makes people actually press share","hookFeedback":"exactly what works or fails in the first 3 seconds","improvedHook":"rewritten hook under 10 words","hookVariants":[{"hook":"A/B variant 1 under 10 words — a DISTINCT angle (different trigger type than the others)","trigger":"open-loop|contrast|identity|social-proof|visual-disruption","predictedLift":"+X% vs the original hook, grounded in this channel's OUTCOME LEARNING + VISUAL DNA above","why":"one line: which channel data signal makes this variant win"},{"hook":"A/B variant 2 — different trigger","trigger":"...","predictedLift":"+X%","why":"..."},{"hook":"A/B variant 3 — different trigger","trigger":"...","predictedLift":"+X%","why":"..."}],"bestVariantIndex":"0|1|2 — which variant you predict wins and would test first","retentionFix":"the single biggest retention improvement","openLoopStrength":"rate 1-10 how well this video creates and sustains curiosity gaps — what is the open loop and when does it close?","reHookMoments":["specific moment at ~3s to re-engage","specific moment at ~15s","specific moment at ~30s if video is longer"],"emotionalArc":"setup→tension→payoff analysis — what emotion does viewer feel at start, middle, end? Where does it escalate?","recommendations":[{"action":"specific actionable next step","impact":"HIGH|MEDIUM"}],"estimated_views":"realistic RANGE corrected by outcome learning + bias σ e.g. 24K-56K","contentPillar":"niche-specific pillar name","competitorAngle":"how to differentiate from what competitors are already doing in this niche","optimalPostSlot":"best day+time to post this based on the channel's day/time performance data above, e.g. 'Saturday 6-9pm'","confidenceLevel":"HIGH|MEDIUM|LOW — based on how much real data backs this score","scoreRationale":"1 sentence: which 2-3 data signals drove this specific score up or down vs a generic idea"}`;
@@ -8604,6 +9385,19 @@ Return ONLY valid JSON:
         throw new Error("Scoring failed: "+errDetail);
       }
       const r = reconcileScores(_consensus.claude, _consensus.gpt, _consensus.gemini);
+      // Voice guard: catch any hook that slipped into robotic AI phrasing and rewrite
+      // it back into the creator's voice (only fires when a tell is actually detected).
+      try {
+        const hooksToCheck = [r.improvedHook, ...((r.hookVariants||[]).map(v=>v?.hook))];
+        if(hooksToCheck.some(h=>h && _hasAITell(h))){
+          const { hooks:cleaned, fixed } = await revoiceHooks(hooksToCheck, voiceBlk, wl);
+          if(fixed){
+            r.improvedHook = cleaned[0];
+            if(r.hookVariants) r.hookVariants = r.hookVariants.map((v,i)=> v ? {...v, hook:cleaned[i+1]||v.hook} : v);
+            r.voiceGuarded = true;
+          }
+        }
+      } catch { /* voice guard optional — never blocks scoring */ }
       // Neural blend: fuse the trained net's data-driven view prediction with the LLM's estimate.
       // Weight is the net's earned, cross-validated trust — 0 when it can't beat baseline.
       try {
@@ -8625,6 +9419,57 @@ Return ONLY valid JSON:
           }
         }
       } catch { /* blend optional — never blocks scoring */ }
+      // ANALOG ANCHOR — evidence cascade: neural net → analogs → outcome multiplier.
+      // If the net didn't take over, pull the estimate toward the similarity-weighted
+      // outcome of the creator's nearest past posts (kNN). This is real history, so it
+      // outranks the hook/type multiplier fallback below. Weight scales with how similar
+      // and how many the analogs are — capped so a loose match can't dominate.
+      try {
+        const netFired = !!(r.neuralBlendWeight > 0);
+        if(!netFired && _analogs && _analogs.wPred>0){
+          const llmViews = parseViewEstimate(r.estimated_views);
+          if(llmViews){
+            // Trust grows with similarity and count: ~0.2 for 2 loose analogs, ~0.55 for a tight cluster.
+            const w = Math.max(0.15, Math.min(0.6, (_analogs.avgSim-0.5)*1.4 + Math.min(_analogs.n,5)*0.05));
+            const blended = Math.round(Math.pow(10, (1-w)*Math.log10(llmViews+1) + w*Math.log10(_analogs.wPred+1)) - 1);
+            const disagree = Math.abs(Math.log10((_analogs.wPred+1)/(llmViews+1)));
+            const band = Math.max(0.25, Math.min(0.6, disagree));
+            r.estimated_views = `${fmt(Math.round(blended*(1-band)))}-${fmt(Math.round(blended*(1+band)))}`;
+            r.analogEstimate = _analogs.wPred;
+            r.analogWeight = parseFloat(w.toFixed(2));
+            r.analogN = _analogs.n;
+            r._analogAnchored = true;
+          }
+        }
+      } catch { /* analog anchor optional — never blocks scoring */ }
+      // Deterministic outcome-learning correction — ENFORCED in code, not left to the
+      // model to obey. The prompt asks the LLM to apply the hook/type multipliers, but
+      // LLMs comply inconsistently, so when neither the trained net NOR the analog anchor
+      // took over the estimate (the thinnest-data regime) we apply the empirically shrunk
+      // ratios ourselves. Skipped when a stronger signal already anchored the number.
+      try {
+        const netFired = !!(r.neuralBlendWeight > 0);
+        if(!netFired && !r._analogAnchored && outcomeLearning){
+          const hookRatio = outcomeLearning.hookAdjust?.find(h=>h.hook===idea.hook)?.avgRatio;
+          const typeRatio = outcomeLearning.typeAdjust?.find(t=>t.type===idea.type)?.avgRatio;
+          const rr = [hookRatio, typeRatio].filter(x=>typeof x==="number" && x>0);
+          if(rr.length){
+            // Geometric mean of the applicable ratios, capped so one noisy signal can't
+            // swing the estimate more than ±50% on top of the LLM's own number.
+            const gm = Math.pow(rr.reduce((s,x)=>s*x,1), 1/rr.length);
+            const mult = Math.max(0.5, Math.min(1.5, gm));
+            const base = parseViewEstimate(r.estimated_views);
+            if(base && Math.abs(mult-1) > 0.05){
+              const centre = Math.round(base*mult);
+              // Keep an honest band — reuse the prediction-error σ if we have one, else ±30%.
+              const sigma = (predAcc && predAcc.errorStdDev) ? Math.max(0.2, Math.min(0.6, predAcc.errorStdDev/100)) : 0.3;
+              const lo = Math.round(centre*(1-sigma)), hi = Math.round(centre*(1+sigma));
+              r.estimated_views = `${fmt(lo)}-${fmt(hi)}`;
+              r.outcomeMultiplier = parseFloat(mult.toFixed(2));
+            }
+          }
+        }
+      } catch { /* correction optional — never blocks scoring */ }
       setIdeas(is=>is.map(i=>{
         if(i.id!==idea.id) return i;
         const prevScore = i.viral||null;
@@ -8660,6 +9505,10 @@ Return ONLY valid JSON:
           neuralEstimate:r.neuralEstimate,
           neuralBlendWeight:r.neuralBlendWeight,
           neuralCvRho:r.neuralCvRho,
+          outcomeMultiplier:r.outcomeMultiplier,
+          analogEstimate:r.analogEstimate,
+          analogWeight:r.analogWeight,
+          analogN:r.analogN,
           lastScoredAt: new Date().toISOString().slice(0,10),
           _scoredAt: Date.now(), // transient: powers the fresh-score celebration
         };
@@ -8677,7 +9526,10 @@ Return ONLY valid JSON:
     try {
       const r = await callAI(`Write captions for ${wl.handle} TikTok and Instagram for this idea: "${idea.title||idea.text}".
 
+${voiceBlock(videos, ideas)}
+
 For TikTok, provide 3 HOOK VARIANTS — each uses a different psychology trigger. For Instagram, one caption.
+Write every caption and hook in the creator's Voice DNA above — it must read like they wrote it themselves, not like AI.
 
 Return JSON:
 {
@@ -8710,16 +9562,25 @@ Return JSON:
       if(vs.find(x=>x.id===v.id||x.url===v.url)) return vs;
       return [v,...vs];
     });
-    await sbUpsert("km_videos",[v]).catch(()=>{});
+    await sbUpsert("km_videos",[{ ...v, id: wsId(v.id) }]).catch(()=>{});
     closeModal("addVideo");
   };
-  const deleteVideo = (id) => { if(!window.confirm("Delete this video? This can't be undone.")) return; setVideos(vs=>vs.filter(v=>v.id!==id)); sbDelete&&sbDelete("km_videos",id).catch(()=>{}); };
-  const updateVideo = (updated) => { setVideos(vs=>vs.map(v=>v.id===updated.id?{...v,...updated,_updated:true}:v)); closeModal("updateVideo"); };
+  const deleteVideo = (id) => { if(!window.confirm("Delete this video? This can't be undone.")) return; setVideos(vs=>vs.filter(v=>v.id!==id)); sbDelete&&sbDelete("km_videos",wsId(id)).catch(()=>{}); };
+  const updateVideo = (updated) => {
+    setVideos(vs=>vs.map(v=>{
+      if(v.id!==updated.id) return v;
+      const merged = {...v,...updated,_updated:true};
+      // Persist edits across devices too (scoped to this account's workspace).
+      sbUpsert("km_videos",[{ ...merged, id: wsId(merged.id) }]).catch(()=>{});
+      return merged;
+    }));
+    closeModal("updateVideo");
+  };
 
   // ── COMPUTED ──────────────────────────────────────────────────
   const saveManual = (data) => {
     setManualData(data);
-    sbUpsert("km_manual",[{id:1,...data,updated_at:new Date().toISOString()}]).catch(()=>{});
+    sbUpsert("km_manual",[{id:wsId(1),...data,updated_at:new Date().toISOString()}]).catch(()=>{});
   };
 
   const sortedVideos  = [...videos].sort((a,b)=>(b.views||0)-(a.views||0));
@@ -9208,7 +10069,7 @@ Return JSON:
             {!isMobile && <div style={{ marginBottom:40, display:"flex", alignItems:"flex-end", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:600, marginBottom:6 }}>
-                  {nav==="home"?"Dashboard":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":"Settings"}
+                  {nav==="home"?"Dashboard":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":nav==="audit"?"Prospecting":"Settings"}
                 </div>
                 <div style={{ fontSize:34, fontWeight:400, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:6 }}>
                   {nav==="home" && <span><span style={{color:WL.accentColor}}>{WL.appName.slice(0,-2)||"Content"}</span>{WL.appName.slice(-2)||" OS"}</span>}
@@ -9219,6 +10080,7 @@ Return JSON:
                   {nav==="deals" && <span>Brand <span style={{color:WL.accentColor}}>Deals</span></span>}
                   {nav==="settings" && <span>Configure <span style={{color:C.purple}}>Workspace</span></span>}
                   {nav==="ai" && <span><span style={{color:WL.accentColor}}>AI</span> Assistant</span>}
+                  {nav==="audit" && <span>Free <span style={{color:C.cyan}}>Audit</span></span>}
                 </div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.38)", lineHeight:1.5 }}>
                   {nav==="home"&&`${WL.handle} · ${WL.platforms.split(",").map(p=>p[0].toUpperCase()+p.slice(1)).join(" & ")}`}
@@ -9241,9 +10103,11 @@ Return JSON:
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} setIdeas={setIdeas} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
+        {nav==="audit"     && <ProspectAuditView WL={activeWL} />}
+        {pricing && <PricingModal tier={plan.tier} reason={pricing.reason} onClose={()=>setPricing(null)} />}
         {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic || BAKED_ANTHROPIC_KEY} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} preloadMsg={assistPreload} />}
         {nav==="growth"    && <GrowthView m={m} ttViewsDisplay={ttViewsDisplay} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} scrapedStats={scrapedStats} saveManual={saveManual} setManualData={setManualData} videos={videos} ideas={ideas} />}
-        {nav==="settings"  && <SettingsView keys={keys} onEditKeys={onEditKeys} scrapedStats={scrapedStats} hasIG={hasIG} WL={activeWL} onEditWL={onEditWL} onSyncTikTok={async()=>{
+        {nav==="settings"  && <SettingsView plan={plan} onManagePlan={()=>setPricing({})} keys={keys} onEditKeys={onEditKeys} scrapedStats={scrapedStats} hasIG={hasIG} WL={activeWL} onEditWL={onEditWL} onSyncTikTok={async()=>{
               setSyncMsg("Syncing...");
               try {
                 await Promise.all([fetchTikToks(true), fetchIGReels(true), fetchIGFollowers()]);
@@ -9515,6 +10379,7 @@ function OnboardingPage({ onComplete }) {
            NEXTVIDS_KEY,WEEKLY_KEY,TRENDS_KEY,SCRAPE_KEY,SCORES_KEY,MEMORY_KEY,
            COMPETE_KEY,PREDICT_KEY,CUR_TRENDS_KEY,CHANNEL_THEORY_KEY,HOOK_DB_KEY,
            PATTERN_KEY,GAP_KEY,MANUAL_KEY,STREAK_KEY,XP_KEY,
+           VOICE_KEY,VOICE_KEY+"_meta",VOICE_FB_KEY,VISION_KEY,COMMENTS_KEY,NN_KEY,EMB_KEY,
            "krapmaps_v1_tikwm_last","krapmaps_v1_debrief"
           ].forEach(k=>{ try{localStorage.removeItem(k);}catch{} });
         }
@@ -10407,7 +11272,7 @@ export default function App() {
 
   // On mount: pull config from Supabase so keys survive across devices/builds
   useEffect(()=>{
-    sbFetch("km_config","select=*&id=eq.workspace_config").then(rows=>{
+    sbFetch("km_config",`select=*&id=eq.${wsId("workspace_config")}`).then(rows=>{
       if(!rows||!rows.length) return;
       const remote = rows[0]?.data;
       if(!remote) return;
@@ -10421,6 +11286,26 @@ export default function App() {
       setConfig(merged);
       saveJSON(KEYS_KEY, merged);
     }).catch(()=>{});
+    // Pull the learned Voice DNA down so it follows the creator across devices.
+    sbFetch("km_config",`select=*&id=eq.${wsId("voice_dna")}`).then(rows=>{
+      const remote = rows?.[0]?.data;
+      if(!remote?.profile) return;
+      const localMeta = loadJSON(VOICE_KEY+"_meta", null);
+      // Adopt remote only if we have nothing locally or the remote was distilled from a larger corpus.
+      const remoteN = parseInt(String(remote.sig||"0").split(":")[0],10) || 0;
+      const localN  = parseInt(String(localMeta?.sig||"0").split(":")[0],10) || 0;
+      if(!localMeta || remoteN > localN){
+        saveJSON(VOICE_KEY, remote.profile);
+        saveJSON(VOICE_KEY+"_meta", { sig:remote.sig, at:remote.at||Date.now() });
+      }
+    }).catch(()=>{});
+    // Pull the creator's voice feedback (sounds-like-me votes) across devices.
+    sbFetch("km_config",`select=*&id=eq.${wsId("voice_fb")}`).then(rows=>{
+      const remote = rows?.[0]?.data;
+      if(!remote || (!remote.good?.length && !remote.bad?.length)) return;
+      const local = loadVoiceFB();
+      if(!local.good.length && !local.bad.length) saveJSON(VOICE_FB_KEY, remote);
+    }).catch(()=>{});
   },[]);
 
   const handleEditKeys = (keys) => {
@@ -10429,7 +11314,7 @@ export default function App() {
     saveJSON(KEYS_KEY,u);
     // Sync to Supabase — persists keys across devices and new builds
     // Requires a km_config table: id text PK, data jsonb, updated_at timestamptz
-    sbUpsert("km_config",[{id:"workspace_config",data:u,updated_at:new Date().toISOString()}]).catch(()=>{});
+    sbUpsert("km_config",[{id:wsId("workspace_config"),data:u,updated_at:new Date().toISOString()}]).catch(()=>{});
   };
 
   // Auth gate — only enforced when VITE_REQUIRE_AUTH="true". Otherwise the app
