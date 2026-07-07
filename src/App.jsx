@@ -5903,9 +5903,37 @@ Return ONLY JSON:
       if(r.signaturePhrases?.length) out += `Signature phrasing: ${r.signaturePhrases.map(p=>`"${p}"`).join(", ")}.`;
       saveJSON(VOICE_KEY, out);
       saveJSON(VOICE_KEY+"_meta", { sig, at:Date.now() });
+      // Sync the learned voice across this account's devices (workspace-scoped).
+      try { sbUpsert("km_config",[{ id:wsId("voice_dna"), data:{ profile:out, sig, at:Date.now() }, updated_at:new Date().toISOString() }]); } catch {}
     }
   } catch { /* distillation optional — never blocks */ }
   finally { _voiceInFlight = false; }
+}
+
+// Output-side voice guard: if any generated hook slipped into robotic/marketing
+// phrasing, rewrite ONLY the offenders back into the creator's voice in a single
+// cheap pass. Returns the (possibly) cleaned list + whether anything was fixed.
+// Never throws — on any failure it returns the originals untouched.
+async function revoiceHooks(hooks, voiceBlock, wl){
+  try {
+    const flagged = hooks.map((h,i)=>({h,i})).filter(x=>x.h && _hasAITell(x.h));
+    if(!flagged.length) return { hooks, fixed:false };
+    const prompt = `These hooks for ${wl.handle||"a creator"} sound like generic AI, not like them. Rewrite EACH one in their real voice per the Voice DNA below — same meaning, under 10 words, but it must sound like the creator wrote it. Do not add marketing clichés.
+
+${voiceBlock}
+
+Hooks to fix (keep the same order):
+${flagged.map((x,n)=>`${n+1}. "${x.h}"`).join("\n")}
+
+Return ONLY JSON: {"rewritten":["...","..."]}`;
+    const r = await callAI(prompt, 400);
+    const out = [...hooks];
+    if(Array.isArray(r?.rewritten)){
+      flagged.forEach((x,n)=>{ const nu=r.rewritten[n]; if(nu && !_hasAITell(nu)) out[x.i]=String(nu).trim(); });
+      return { hooks:out, fixed:true };
+    }
+  } catch { /* guard optional — never blocks scoring */ }
+  return { hooks, fixed:false };
 }
 
 // ── SCORE VALIDITY (meta-learning) ────────────────────────────────
@@ -7350,6 +7378,9 @@ ${trendsForAnalysis ? `\nCURRENT TRENDS (use these in editing + sound recommenda
 ${videoContext ? `\nCREATOR CONTEXT FOR THIS CLIP:\n${videoContext}` : ""}
 ${_anlWL.nicheLogic ? `\nNICHE INTELLIGENCE:\n${_anlWL.nicheLogic}` : ""}
 
+${formatVoiceDNA(buildVoiceDNA(videos, ideas), loadJSON(VOICE_KEY,""))}
+Any hook you write in the refilm_brief MUST be in the creator's Voice DNA above.
+
 Analyse this clip with full virality science:
 
 ━━ 1. SCROLL-STOP AUDIT (0-0.5s) ━━
@@ -7873,7 +7904,7 @@ function Dashboard({ keys, onEditKeys }) {
       const topVids = [...vids].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
       const postedThisWeek = idList.filter(i=>i.status==="posted"&&i.postedDate&&(Date.now()-new Date(i.postedDate).getTime())<604800000);
       const recentIdeas = idList.slice(0,5).map(i=>`"${(i.title||"").slice(0,40)}" (scored ${i.viral||"unscored"})`).join(", ");
-      const r = await callAI(`You are the strategist for ${WL.handle} (${WL.appName} — ${WL.niche}). Generate a weekly debrief.\n\nChannel data:\n- Total videos: ${vids.length}, avg views: ${Math.round(vids.reduce((s,v)=>s+(v.views||0),0)/(vids.length||1))}\n- Posted this week: ${postedThisWeek.length} videos\n- Top 5 videos: ${topVids.map(v=>`${(v.title||"").slice(0,30)} (${(v.views||0).toLocaleString()} views)`).join(", ")}\n- Recent ideas: ${recentIdeas}\n- Unscored ideas: ${idList.filter(i=>!(i.viral>0)).length}\n\nReturn ONLY JSON: {"headline":"","whatWorked":["",""],"whatDidnt":[""],"focusThisWeek":["","",""],"ideaToFilmNow":"title and why","watchOut":"one risk to avoid"}`, 800);
+      const r = await callAI(`You are the strategist for ${WL.handle} (${WL.appName} — ${WL.niche}). Generate a weekly debrief.\n\nChannel data:\n- Total videos: ${vids.length}, avg views: ${Math.round(vids.reduce((s,v)=>s+(v.views||0),0)/(vids.length||1))}\n- Posted this week: ${postedThisWeek.length} videos\n- Top 5 videos: ${topVids.map(v=>`${(v.title||"").slice(0,30)} (${(v.views||0).toLocaleString()} views)`).join(", ")}\n- Recent ideas: ${recentIdeas}\n- Unscored ideas: ${idList.filter(i=>!(i.viral>0)).length}\n\n${formatVoiceDNA(buildVoiceDNA(vids, idList), loadJSON(VOICE_KEY,""))}\nWrite the "ideaToFilmNow" title/hook in the creator's Voice DNA above.\n\nReturn ONLY JSON: {"headline":"","whatWorked":["",""],"whatDidnt":[""],"focusThisWeek":["","",""],"ideaToFilmNow":"title and why","watchOut":"one risk to avoid"}`, 800);
       const result = {...r, generatedAt: new Date().toISOString()};
       saveJSON("krapmaps_v1_debrief", result);
       setWeeklyDebrief(result);
@@ -8818,6 +8849,19 @@ Return ONLY valid JSON:
         throw new Error("Scoring failed: "+errDetail);
       }
       const r = reconcileScores(_consensus.claude, _consensus.gpt, _consensus.gemini);
+      // Voice guard: catch any hook that slipped into robotic AI phrasing and rewrite
+      // it back into the creator's voice (only fires when a tell is actually detected).
+      try {
+        const hooksToCheck = [r.improvedHook, ...((r.hookVariants||[]).map(v=>v?.hook))];
+        if(hooksToCheck.some(h=>h && _hasAITell(h))){
+          const { hooks:cleaned, fixed } = await revoiceHooks(hooksToCheck, voiceBlock, wl);
+          if(fixed){
+            r.improvedHook = cleaned[0];
+            if(r.hookVariants) r.hookVariants = r.hookVariants.map((v,i)=> v ? {...v, hook:cleaned[i+1]||v.hook} : v);
+            r.voiceGuarded = true;
+          }
+        }
+      } catch { /* voice guard optional — never blocks scoring */ }
       // Neural blend: fuse the trained net's data-driven view prediction with the LLM's estimate.
       // Weight is the net's earned, cross-validated trust — 0 when it can't beat baseline.
       try {
@@ -10676,6 +10720,19 @@ export default function App() {
       };
       setConfig(merged);
       saveJSON(KEYS_KEY, merged);
+    }).catch(()=>{});
+    // Pull the learned Voice DNA down so it follows the creator across devices.
+    sbFetch("km_config",`select=*&id=eq.${wsId("voice_dna")}`).then(rows=>{
+      const remote = rows?.[0]?.data;
+      if(!remote?.profile) return;
+      const localMeta = loadJSON(VOICE_KEY+"_meta", null);
+      // Adopt remote only if we have nothing locally or the remote was distilled from a larger corpus.
+      const remoteN = parseInt(String(remote.sig||"0").split(":")[0],10) || 0;
+      const localN  = parseInt(String(localMeta?.sig||"0").split(":")[0],10) || 0;
+      if(!localMeta || remoteN > localN){
+        saveJSON(VOICE_KEY, remote.profile);
+        saveJSON(VOICE_KEY+"_meta", { sig:remote.sig, at:remote.at||Date.now() });
+      }
     }).catch(()=>{});
   },[]);
 
