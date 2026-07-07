@@ -4630,19 +4630,21 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:24 }}>
 
-      {/* Plan — only meaningful when billing is on */}
-      {USE_BACKEND && (
+      {/* Plan card. Shows live in backend mode; on the operator's own build it also
+          shows in direct mode as a PREVIEW so you can see the pricing screen before
+          billing is switched on. */}
+      {(USE_BACKEND || _activeCfg.clientId==="krapmaps") && (
         <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"22px 26px", background:"linear-gradient(145deg,rgba(255,45,120,0.1),rgba(10,6,20,0.95))", border:`1px solid ${C.pink}30`, display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexWrap:"wrap", position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:11, letterSpacing:"0.12em", color:"rgba(255,255,255,0.45)", fontWeight:700, textTransform:"uppercase", marginBottom:5 }}>Your Plan</div>
-            <div style={{ fontSize:22, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1 }}>{_tierLabel}</div>
+            <div style={{ fontSize:11, letterSpacing:"0.12em", color:"rgba(255,255,255,0.45)", fontWeight:700, textTransform:"uppercase", marginBottom:5 }}>{USE_BACKEND ? "Your Plan" : "Plans — Preview"}</div>
+            <div style={{ fontSize:22, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1 }}>{USE_BACKEND ? _tierLabel : "Free · Pro · Studio"}</div>
             <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginTop:6 }}>
-              {plan?.tier==="studio" ? "Unlimited scoring." : (_scoreLimit!=null ? `${_scoreUsed} / ${_scoreLimit} scores used this month` : `${_scoreUsed} scores used this month`)}
+              {!USE_BACKEND ? "Tap to see the exact pricing page buyers get. Goes live when you turn billing on." : plan?.tier==="studio" ? "Unlimited scoring." : (_scoreLimit!=null ? `${_scoreUsed} / ${_scoreLimit} scores used this month` : `${_scoreUsed} scores used this month`)}
             </div>
           </div>
-          <button onClick={onManagePlan} style={{ padding:isMobile?"11px 20px":"13px 26px", borderRadius:12, border:"none", background:plan?.tier==="free"?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.08)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", flexShrink:0 }}>
-            {plan?.tier==="free" ? "UPGRADE" : "CHANGE PLAN"}
+          <button onClick={onManagePlan} style={{ padding:isMobile?"11px 20px":"13px 26px", borderRadius:12, border:"none", background:(!USE_BACKEND||plan?.tier==="free")?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.08)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", flexShrink:0 }}>
+            {!USE_BACKEND ? "SEE PLANS" : plan?.tier==="free" ? "UPGRADE" : "CHANGE PLAN"}
           </button>
         </div>
       )}
