@@ -7479,8 +7479,11 @@ Be concrete and reference THEIR actual videos. No generic advice. The 5 ideas mu
 
 Return ONLY JSON:
 {"verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views","potential":"one line: what they could realistically hit if they fix the main issue","working":["3 specific things working, each referencing their real content"],"fixing":["3 specific things holding them back, each with the concrete fix"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them"}]}`;
-      const r = await callAI(prompt, 1600);
-      setReport({ h, nick, followers, count:withV.length, avg, engRate, top:top.slice(0,3), voice, ai:r, app:wl.appName||"CreatorOS" });
+      // If the AI narrative fails, still show the scraped numbers + voice — the
+      // deterministic half of the audit is valuable on its own and shouldn't be lost.
+      const r = await callAI(prompt, 1600).catch(()=>null);
+      if(!r) setErr("The AI couldn't generate the write-up (check your AI key) — showing the data we pulled.");
+      setReport({ h, nick, followers, count:withV.length, avg, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"CreatorOS" });
       setPhase("done");
     } catch(e){ setErr(e.message||"Audit failed"); setPhase("error"); }
   };
