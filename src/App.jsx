@@ -1706,7 +1706,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
             if(!hookA.trim()||!hookB.trim()) return;
             setHookABLoading(true); setHookABResult(null);
             try {
-              const r = await callAI(`Compare these two TikTok hooks for ${WL.handle} (${WL.appName} — ${WL.niche}). Score each on: pattern interrupt, open loop strength, identity trigger, curiosity gap. Return ONLY JSON: {"winner":"A","hookAScore":0,"hookBScore":0,"hookAAnalysis":"","hookBAnalysis":"","whyWinner":"","improvedWinner":""}\n\nHook A: "${hookA}"\nHook B: "${hookB}"`, 600);
+              const r = await callAI(`Compare these two TikTok hooks for ${WL.handle} (${WL.appName} — ${WL.niche}). Score each on: pattern interrupt, open loop strength, identity trigger, curiosity gap.\n\n${formatVoiceDNA(buildVoiceDNA([], ideas||[]), loadJSON(VOICE_KEY,""))}\nThe "improvedWinner" hook MUST be written in the creator's Voice DNA above — sound like them, not like AI.\n\nReturn ONLY JSON: {"winner":"A","hookAScore":0,"hookBScore":0,"hookAAnalysis":"","hookBAnalysis":"","whyWinner":"","improvedWinner":""}\n\nHook A: "${hookA}"\nHook B: "${hookB}"`, 600);
               setHookABResult(r); addXP(10);
             } catch(e){}
             setHookABLoading(false);
