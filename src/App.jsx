@@ -1706,7 +1706,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
             if(!hookA.trim()||!hookB.trim()) return;
             setHookABLoading(true); setHookABResult(null);
             try {
-              const r = await callAI(`Compare these two TikTok hooks for ${WL.handle} (${WL.appName} — ${WL.niche}). Score each on: pattern interrupt, open loop strength, identity trigger, curiosity gap.\n\n${formatVoiceDNA(buildVoiceDNA([], ideas||[]), loadJSON(VOICE_KEY,""))}\nThe "improvedWinner" hook MUST be written in the creator's Voice DNA above — sound like them, not like AI.\n\nReturn ONLY JSON: {"winner":"A","hookAScore":0,"hookBScore":0,"hookAAnalysis":"","hookBAnalysis":"","whyWinner":"","improvedWinner":""}\n\nHook A: "${hookA}"\nHook B: "${hookB}"`, 600);
+              const r = await callAI(`Compare these two TikTok hooks for ${WL.handle} (${WL.appName} — ${WL.niche}). Score each on: pattern interrupt, open loop strength, identity trigger, curiosity gap.\n\n${voiceBlock([], ideas||[])}\nThe "improvedWinner" hook MUST be written in the creator's Voice DNA above — sound like them, not like AI.\n\nReturn ONLY JSON: {"winner":"A","hookAScore":0,"hookBScore":0,"hookAAnalysis":"","hookBAnalysis":"","whyWinner":"","improvedWinner":""}\n\nHook A: "${hookA}"\nHook B: "${hookB}"`, 600);
               setHookABResult(r); addXP(10);
             } catch(e){}
             setHookABLoading(false);
@@ -3146,7 +3146,7 @@ ${trends ? "Previously fetched trends: "+JSON.stringify(trends.trends?.slice(0,3
 
 ${memCtx}
 
-${formatVoiceDNA(buildVoiceDNA(videos, ideas), loadJSON(VOICE_KEY,""))}
+${voiceBlock(videos, ideas)}
 
 Rules:
 - Prioritise hook styles that historically perform on THIS channel (see hook DB above)
@@ -5925,6 +5925,21 @@ const formatVoiceDNA = (voice, distilled="") => {
   return out;
 };
 
+// Single wrapper every generative surface uses. Prefers the learned Voice DNA;
+// on cold start (no posts yet) it falls back to what the creator told us about
+// their brand voice at setup, so even a brand-new account never writes fully
+// generic AI copy. `pool`/`ideaList` let callers pass an organic-only video set.
+const voiceBlock = (pool=[], ideaList=[]) => {
+  const measured = buildVoiceDNA(pool, ideaList);
+  const distilled = loadJSON(VOICE_KEY, "");
+  const block = formatVoiceDNA(measured, distilled);
+  if(block) return block;
+  const wl = loadWL();
+  const hint = [wl.brandValues, wl.contentStyle, wl.nicheLogic].map(s=>String(s||"").trim()).filter(Boolean).join(" — ");
+  if(!hint) return "";
+  return `━━ CREATOR VOICE (from their brand setup — refine in Settings › Voice DNA once they post) ━━\nWrite in this creator's established voice: ${hint}\nNEVER use generic AI/marketing phrasing (e.g. ${_AI_TELLS.slice(0,5).map(p=>`"${p}"`).join(", ")}). It must sound like the creator, not a bot.\n`;
+};
+
 // Cheap, deterministic detector that flags AI-tell phrasing that slipped through
 // (used to self-check generated hooks/captions and strip/warn).
 const _hasAITell = (text="") => {
@@ -7439,7 +7454,7 @@ ${trendsForAnalysis ? `\nCURRENT TRENDS (use these in editing + sound recommenda
 ${videoContext ? `\nCREATOR CONTEXT FOR THIS CLIP:\n${videoContext}` : ""}
 ${_anlWL.nicheLogic ? `\nNICHE INTELLIGENCE:\n${_anlWL.nicheLogic}` : ""}
 
-${formatVoiceDNA(buildVoiceDNA(videos, ideas), loadJSON(VOICE_KEY,""))}
+${voiceBlock(videos, ideas)}
 Any hook you write in the refilm_brief MUST be in the creator's Voice DNA above.
 
 Analyse this clip with full virality science:
@@ -7549,7 +7564,7 @@ ${chatAuditBlock}
 ${chatPredAcc}
 ${chatCompHooks ? `Competitor hooks proven in niche: ${chatCompHooks}` : ""}
 
-${formatVoiceDNA(buildVoiceDNA(organicVids.length?organicVids:videos, ideas), loadJSON(VOICE_KEY,""))}
+${voiceBlock(organicVids.length?organicVids:videos, ideas)}
 
 ━━ 2025 ALGORITHM INTELLIGENCE ━━
 TIKTOK: Prioritises "satisfaction loops" — videos where the viewer feels something resolved. Shares 3× more valuable than likes. Comment bait drives reach. Watch loops (rewatchable endings) add 20-40% to effective watch time score.
@@ -7965,7 +7980,7 @@ function Dashboard({ keys, onEditKeys }) {
       const topVids = [...vids].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
       const postedThisWeek = idList.filter(i=>i.status==="posted"&&i.postedDate&&(Date.now()-new Date(i.postedDate).getTime())<604800000);
       const recentIdeas = idList.slice(0,5).map(i=>`"${(i.title||"").slice(0,40)}" (scored ${i.viral||"unscored"})`).join(", ");
-      const r = await callAI(`You are the strategist for ${WL.handle} (${WL.appName} — ${WL.niche}). Generate a weekly debrief.\n\nChannel data:\n- Total videos: ${vids.length}, avg views: ${Math.round(vids.reduce((s,v)=>s+(v.views||0),0)/(vids.length||1))}\n- Posted this week: ${postedThisWeek.length} videos\n- Top 5 videos: ${topVids.map(v=>`${(v.title||"").slice(0,30)} (${(v.views||0).toLocaleString()} views)`).join(", ")}\n- Recent ideas: ${recentIdeas}\n- Unscored ideas: ${idList.filter(i=>!(i.viral>0)).length}\n\n${formatVoiceDNA(buildVoiceDNA(vids, idList), loadJSON(VOICE_KEY,""))}\nWrite the "ideaToFilmNow" title/hook in the creator's Voice DNA above.\n\nReturn ONLY JSON: {"headline":"","whatWorked":["",""],"whatDidnt":[""],"focusThisWeek":["","",""],"ideaToFilmNow":"title and why","watchOut":"one risk to avoid"}`, 800);
+      const r = await callAI(`You are the strategist for ${WL.handle} (${WL.appName} — ${WL.niche}). Generate a weekly debrief.\n\nChannel data:\n- Total videos: ${vids.length}, avg views: ${Math.round(vids.reduce((s,v)=>s+(v.views||0),0)/(vids.length||1))}\n- Posted this week: ${postedThisWeek.length} videos\n- Top 5 videos: ${topVids.map(v=>`${(v.title||"").slice(0,30)} (${(v.views||0).toLocaleString()} views)`).join(", ")}\n- Recent ideas: ${recentIdeas}\n- Unscored ideas: ${idList.filter(i=>!(i.viral>0)).length}\n\n${voiceBlock(vids, idList)}\nWrite the "ideaToFilmNow" title/hook in the creator's Voice DNA above.\n\nReturn ONLY JSON: {"headline":"","whatWorked":["",""],"whatDidnt":[""],"focusThisWeek":["","",""],"ideaToFilmNow":"title and why","watchOut":"one risk to avoid"}`, 800);
       const result = {...r, generatedAt: new Date().toISOString()};
       saveJSON("krapmaps_v1_debrief", result);
       setWeeklyDebrief(result);
@@ -8839,7 +8854,7 @@ LEARNING: [one sentence]`}]}, key);
 
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
       ensureVoiceProfile(organicVids.length?organicVids:videos, ideas, wl); // keep distilled voice profile warm
-      const voiceBlock = formatVoiceDNA(buildVoiceDNA(organicVids.length?organicVids:videos, ideas), loadJSON(VOICE_KEY,""));
+      const voiceBlk = voiceBlock(organicVids.length?organicVids:videos, ideas);
       const _scorePrompt = `You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
 
 ${channelTheory ? `━━ CHANNEL VIRAL THEORY (why this channel specifically goes viral — anchor ALL scoring to this) ━━\n${channelTheory}\n` : ""}
@@ -8860,7 +8875,7 @@ ${allocatorBlock}
 ${semanticBlock}
 ${commentBlock}
 ${metaBlock}
-${voiceBlock}
+${voiceBlk}
 ${calibration ? `CALIBRATION: ${calibration}` : ""}
 ${ideaOutcomes.length ? `RECENT POSTED OUTCOMES: ${ideaOutcomes.join(" | ")}` : ""}
 ${seriesMomentum ? `\n${seriesMomentum}` : ""}
@@ -8915,7 +8930,7 @@ Return ONLY valid JSON:
       try {
         const hooksToCheck = [r.improvedHook, ...((r.hookVariants||[]).map(v=>v?.hook))];
         if(hooksToCheck.some(h=>h && _hasAITell(h))){
-          const { hooks:cleaned, fixed } = await revoiceHooks(hooksToCheck, voiceBlock, wl);
+          const { hooks:cleaned, fixed } = await revoiceHooks(hooksToCheck, voiceBlk, wl);
           if(fixed){
             r.improvedHook = cleaned[0];
             if(r.hookVariants) r.hookVariants = r.hookVariants.map((v,i)=> v ? {...v, hook:cleaned[i+1]||v.hook} : v);
@@ -9025,7 +9040,7 @@ Return ONLY valid JSON:
     try {
       const r = await callAI(`Write captions for ${wl.handle} TikTok and Instagram for this idea: "${idea.title||idea.text}".
 
-${formatVoiceDNA(buildVoiceDNA(videos, ideas), loadJSON(VOICE_KEY,""))}
+${voiceBlock(videos, ideas)}
 
 For TikTok, provide 3 HOOK VARIANTS — each uses a different psychology trigger. For Instagram, one caption.
 Write every caption and hook in the creator's Voice DNA above — it must read like they wrote it themselves, not like AI.
