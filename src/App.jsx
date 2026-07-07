@@ -3134,6 +3134,8 @@ Return JSON: {
 
   // STEP 3: Claude generates ideas grounded in real performance data
   const runContentPlan = async () => {
+    // Idea generation is a heavy AI call — meter it against the plan too (margin safety).
+    if(!(await gateAI("scores","scores"))) return;
     setLoad("plan",true);
     try {
       const ctx = buildChannelContext();
@@ -6962,6 +6964,16 @@ async function meterAction(metric="scores") {
     return { allowed:true, ...d };
   } catch { return { allowed:true }; }
 }
+// Meter an action from anywhere; if the user is over their limit, broadcast an
+// event so the app can open the pricing modal, and return false. Fails open.
+async function gateAI(metric="scores", label){
+  const g = await meterAction(metric);
+  if(!g.allowed){
+    try { window.dispatchEvent(new CustomEvent("km-limit", { detail:{ ...g, label } })); } catch {}
+    return false;
+  }
+  return true;
+}
 // Starts Stripe Checkout for a plan and redirects. Throws with a readable message.
 async function startCheckout(plan) {
   const token = await getAccessToken();
@@ -7419,6 +7431,27 @@ function ProspectAuditView({ WL }){
   const [phase, setPhase] = useState("idle"); // idle | scraping | analysing | done | error
   const [err, setErr] = useState("");
   const [report, setReport] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const copyReport = () => {
+    if(!report) return;
+    const a = report.ai||{};
+    const lines = [
+      `CONTENT AUDIT — @${report.h}${report.nick?` (${report.nick})`:""}`,
+      `${fmtN(report.followers)} followers · ${fmtN(report.avg)} avg views · ${report.engRate.toFixed(1)}% engagement`,
+      ``,
+      a.verdict?`VERDICT: ${a.verdict}`:``,
+      a.potential?`POTENTIAL: ${a.potential}`:``,
+      ``,
+      a.working?.length?`WHAT'S WORKING:\n${a.working.map(t=>`• ${t}`).join("\n")}`:``,
+      ``,
+      a.fixing?.length?`WHAT'S COSTING VIEWS:\n${a.fixing.map(t=>`• ${t}`).join("\n")}`:``,
+      ``,
+      a.ideas?.length?`5 VIDEOS TO POST NEXT (in your voice):\n${a.ideas.slice(0,5).map((i,n)=>`${n+1}. ${i.title}${i.hook?` — "${i.hook}"`:""}`).join("\n")}`:``,
+      ``,
+      `Full breakdown + idea scoring: ${report.app}`,
+    ].filter(l=>l!=="").join("\n");
+    try { navigator.clipboard?.writeText(lines); setCopied(true); setTimeout(()=>setCopied(false),2200); } catch {}
+  };
   const fmtN = n => n>=1000000?`${(n/1000000).toFixed(1)}M`:n>=1000?`${(n/1000).toFixed(1)}k`:String(Math.round(n||0));
 
   const run = async () => {
@@ -7479,7 +7512,10 @@ Return ONLY JSON:
               <div style={{ fontSize:isMobile?24:30, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1 }}>@{report.h}</div>
               {report.nick && <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:4 }}>{report.nick}</div>}
             </div>
-            <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.cyan, fontWeight:700, textAlign:"right" }}>CONTENT AUDIT<br/><span style={{ color:"rgba(255,255,255,0.4)", letterSpacing:"0.04em" }}>by {report.app}</span></div>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8 }}>
+              <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.cyan, fontWeight:700, textAlign:"right" }}>CONTENT AUDIT<br/><span style={{ color:"rgba(255,255,255,0.4)", letterSpacing:"0.04em" }}>by {report.app}</span></div>
+              <button onClick={copyReport} style={{ padding:"6px 12px", borderRadius:9, border:`1px solid ${copied?C.green:"rgba(255,255,255,0.15)"}`, background:copied?`${C.green}18`:"rgba(255,255,255,0.05)", color:copied?C.green:"rgba(255,255,255,0.75)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", whiteSpace:"nowrap" }}>{copied?"COPIED":"COPY AS TEXT"}</button>
+            </div>
           </div>
           {/* Stats */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))", gap:10, marginBottom:22 }}>
@@ -8320,6 +8356,17 @@ function Dashboard({ keys, onEditKeys }) {
   const [pricing, setPricing] = useState(null); // null | { reason }
   const refreshPlan = useCallback(()=>{ fetchPlan().then(setPlan).catch(()=>{}); },[]);
   useEffect(()=>{ refreshPlan(); },[refreshPlan]);
+  // Any over-limit action anywhere in the app opens the pricing modal.
+  useEffect(()=>{
+    const onLimit = (e)=>{
+      const g = e.detail||{};
+      const what = g.label || "this";
+      setPricing({ reason: `You've used all ${g.limit} ${what==="this"?"actions":what} on the ${TIER_LABELS[g.tier]||g.tier} plan this month. Upgrade to keep going — it resets monthly.` });
+      refreshPlan();
+    };
+    window.addEventListener("km-limit", onLimit);
+    return ()=>window.removeEventListener("km-limit", onLimit);
+  },[refreshPlan]);
   // Returning from Stripe Checkout — confirm the upgrade and clean the URL.
   useEffect(()=>{
     try {
