@@ -3122,6 +3122,7 @@ Return JSON: {
       const { wl } = ctx;
       const memCtx = buildMemoryContext();
       const hDB = buildHookDB(videos);
+      ensureVoiceProfile(videos, ideas, wl); // keep the distilled voice profile warm (fire-and-forget)
 
       // Step 1 — Perplexity silently fetches: trending hooks + what audience is searching for
       const [liveHooks, liveAudience] = await Promise.all([
@@ -5869,6 +5870,43 @@ const _hasAITell = (text="") => {
   const t = String(text).toLowerCase();
   return _AI_TELLS.some(p => p.includes("...") ? new RegExp(p.replace(/\s*\.\.\.\s*/,".*")).test(t) : t.includes(p));
 };
+
+// Corpus signature — re-distill only when the body of their work grows meaningfully.
+const _voiceSig = (videos, ideas) => { const c=_voiceCorpus(videos, ideas); return `${c.length}:${c.join(" ").length}`; };
+let _voiceInFlight = false;
+// Optional richer profile: ONE LLM pass that captures humour, personality and quirks
+// the statistical extractor can't see (irony, warmth, bluntness, running bits).
+// Cached by corpus signature, fire-and-forget — never blocks generation; it upgrades
+// the NEXT generation. The deterministic DNA already covers the current one.
+async function ensureVoiceProfile(videos, ideas, wl){
+  try {
+    const corpus = _voiceCorpus(videos, ideas);
+    if(corpus.length < 8) return;                       // need a real body of their words
+    const sig = _voiceSig(videos, ideas);
+    const meta = loadJSON(VOICE_KEY+"_meta", null);
+    if(meta && meta.sig === sig) return;                // already distilled this corpus
+    if(_voiceInFlight) return;
+    _voiceInFlight = true;
+    const sample = corpus.slice(0, 60).map(s=>`- ${s}`).join("\n");
+    const prompt = `Below are real titles, hooks and captions written by ${wl.handle||"a creator"} (${wl.niche||"content creator"}). Study them and describe THIS specific person's writing voice precisely enough that another writer could ghost-write as them undetectably. Focus on personality, not surface stats.
+
+Their real lines:
+${sample}
+
+Return ONLY JSON:
+{"voiceProfile":"3-5 sentences on their tone, humour, energy, personality and quirks — specific to THEM, never generic","doThis":["4-6 concrete stylistic moves they make (phrasing, rhythm, attitude)"],"neverThis":["3-5 things that would instantly sound fake coming from them"],"signaturePhrases":["short phrases or sentence constructions they actually use"]}`;
+    const r = await callAI(prompt, 900);
+    if(r && r.voiceProfile){
+      let out = String(r.voiceProfile).trim()+"\n";
+      if(r.doThis?.length)          out += `They DO: ${r.doThis.join("; ")}.\n`;
+      if(r.neverThis?.length)       out += `They would NEVER: ${r.neverThis.join("; ")}.\n`;
+      if(r.signaturePhrases?.length) out += `Signature phrasing: ${r.signaturePhrases.map(p=>`"${p}"`).join(", ")}.`;
+      saveJSON(VOICE_KEY, out);
+      saveJSON(VOICE_KEY+"_meta", { sig, at:Date.now() });
+    }
+  } catch { /* distillation optional — never blocks */ }
+  finally { _voiceInFlight = false; }
+}
 
 // ── SCORE VALIDITY (meta-learning) ────────────────────────────────
 // Measures whether the AI's own virality scores actually rank-correlate with real outcomes.
@@ -8708,6 +8746,7 @@ LEARNING: [one sentence]`}]}, key);
       } catch { /* neural layer optional — never blocks scoring */ }
 
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
+      ensureVoiceProfile(organicVids.length?organicVids:videos, ideas, wl); // keep distilled voice profile warm
       const voiceBlock = formatVoiceDNA(buildVoiceDNA(organicVids.length?organicVids:videos, ideas), loadJSON(VOICE_KEY,""));
       const _scorePrompt = `You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
 
@@ -9731,6 +9770,7 @@ function OnboardingPage({ onComplete }) {
            NEXTVIDS_KEY,WEEKLY_KEY,TRENDS_KEY,SCRAPE_KEY,SCORES_KEY,MEMORY_KEY,
            COMPETE_KEY,PREDICT_KEY,CUR_TRENDS_KEY,CHANNEL_THEORY_KEY,HOOK_DB_KEY,
            PATTERN_KEY,GAP_KEY,MANUAL_KEY,STREAK_KEY,XP_KEY,
+           VOICE_KEY,VOICE_KEY+"_meta",VISION_KEY,COMMENTS_KEY,NN_KEY,EMB_KEY,
            "krapmaps_v1_tikwm_last","krapmaps_v1_debrief"
           ].forEach(k=>{ try{localStorage.removeItem(k);}catch{} });
         }
