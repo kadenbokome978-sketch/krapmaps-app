@@ -1264,6 +1264,19 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
   const [hookA, setHookA] = useState("");
   const [hookB, setHookB] = useState("");
   const [hookABResult, setHookABResult] = useState(null);
+  const [voiceVote, setVoiceVote] = useState({}); // text -> "good" | "bad"
+  const voteVoice = (text, good) => { if(!text) return; setVoiceVote(v=>({...v,[text]:good?"good":"bad"})); recordVoiceFeedback(text, good); };
+  // Small "does this sound like me?" control — one tap trains the voice engine.
+  const VoiceVote = ({ text }) => {
+    const v = voiceVote[text];
+    return (
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:8 }}>
+        <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)", fontWeight:600, letterSpacing:"0.04em" }}>SOUND LIKE YOU?</span>
+        <button onClick={()=>voteVoice(text,true)} title="Sounds like me — do more of this" style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:20, cursor:"pointer", border:`1px solid ${v==="good"?C.green:"rgba(255,255,255,0.12)"}`, background:v==="good"?`${C.green}20`:"transparent", color:v==="good"?C.green:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700 }}>{I.tick(10,"currentColor")} YES</button>
+        <button onClick={()=>voteVoice(text,false)} title="Not my voice — never write like this" style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:20, cursor:"pointer", border:`1px solid ${v==="bad"?C.pink:"rgba(255,255,255,0.12)"}`, background:v==="bad"?`${C.pink}20`:"transparent", color:v==="bad"?C.pink:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700 }}>{I.x(10,"currentColor")} NO</button>
+      </div>
+    );
+  };
   const [hookABLoading, setHookABLoading] = useState(false);
   const [expanding, setExpanding] = useState(false);
   const setIdeaStage = (idea, stage) => {
@@ -1443,6 +1456,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                       <div style={{ padding:isMobile?"13px 16px":"10px 14px", background:`${C.green}08`, border:`1px solid ${C.green}18`, borderRadius:11, marginBottom:isMobile?14:10 }}>
                         <div style={{ fontSize:10, color:C.green, fontWeight:700, letterSpacing:"0.12em", marginBottom:4 }}>IMPROVED HOOK</div>
                         <div style={{ fontSize:13, color:"#fff", fontStyle:"italic", lineHeight:1.5 }}>"{idea.improvedHook}"</div>
+                        <VoiceVote text={idea.improvedHook} />
                       </div>
                     )}
 
@@ -1458,6 +1472,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                               <div style={{ flex:1 }}>
                                 <div style={{ fontSize:14, color:"#fff", fontStyle:"italic", lineHeight:1.5 }}>"{hv.hook}"</div>
                                 {(hv.predictedLift||hv.why) && <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", marginTop:2, lineHeight:1.4 }}>{hv.predictedLift?`${hv.predictedLift} · `:""}{hv.why||""}</div>}
+                                <VoiceVote text={hv.hook} />
                               </div>
                             </div>
                           );
@@ -5925,6 +5940,33 @@ const formatVoiceDNA = (voice, distilled="") => {
   return out;
 };
 
+// ── VOICE FEEDBACK ────────────────────────────────────────────────
+// The creator's own verdict on whether generated lines sound like them. This is
+// the fastest possible signal — one tap, no waiting on view counts — and it feeds
+// straight back into every generation. Confirmed lines become style anchors;
+// rejected lines become explicit "never write like this" examples.
+const VOICE_FB_KEY = "krapmaps_v1_voice_fb";
+const loadVoiceFB = () => loadJSON(VOICE_FB_KEY, { good:[], bad:[] });
+const recordVoiceFeedback = (text, isGood) => {
+  const t = String(text||"").trim();
+  if(!t) return;
+  const fb = loadVoiceFB();
+  const key = isGood ? "good" : "bad", other = isGood ? "bad" : "good";
+  fb[other] = (fb[other]||[]).filter(x=>x!==t);          // a line can't be both
+  fb[key] = [t, ...(fb[key]||[]).filter(x=>x!==t)].slice(0, 15);
+  saveJSON(VOICE_FB_KEY, fb);
+  try { sbUpsert("km_config",[{ id:wsId("voice_fb"), data:fb, updated_at:new Date().toISOString() }]); } catch {}
+  window.dispatchEvent(new CustomEvent("km-voice-fb"));
+};
+const formatVoiceFeedback = () => {
+  const fb = loadVoiceFB();
+  if(!fb.good?.length && !fb.bad?.length) return "";
+  let out = "";
+  if(fb.good?.length) out += `Lines the creator CONFIRMED sound like them (match this energy exactly): ${fb.good.slice(0,8).map(t=>`"${t}"`).join(", ")}.\n`;
+  if(fb.bad?.length)  out += `Lines the creator REJECTED as NOT sounding like them (never write like this): ${fb.bad.slice(0,8).map(t=>`"${t}"`).join(", ")}.\n`;
+  return out;
+};
+
 // Single wrapper every generative surface uses. Prefers the learned Voice DNA;
 // on cold start (no posts yet) it falls back to what the creator told us about
 // their brand voice at setup, so even a brand-new account never writes fully
@@ -5932,12 +5974,13 @@ const formatVoiceDNA = (voice, distilled="") => {
 const voiceBlock = (pool=[], ideaList=[]) => {
   const measured = buildVoiceDNA(pool, ideaList);
   const distilled = loadJSON(VOICE_KEY, "");
+  const fb = formatVoiceFeedback();
   const block = formatVoiceDNA(measured, distilled);
-  if(block) return block;
+  if(block) return block + (fb ? `\n${fb}` : "");
   const wl = loadWL();
   const hint = [wl.brandValues, wl.contentStyle, wl.nicheLogic].map(s=>String(s||"").trim()).filter(Boolean).join(" — ");
-  if(!hint) return "";
-  return `━━ CREATOR VOICE (from their brand setup — refine in Settings › Voice DNA once they post) ━━\nWrite in this creator's established voice: ${hint}\nNEVER use generic AI/marketing phrasing (e.g. ${_AI_TELLS.slice(0,5).map(p=>`"${p}"`).join(", ")}). It must sound like the creator, not a bot.\n`;
+  if(!hint && !fb) return "";
+  return `━━ CREATOR VOICE (from their brand setup — refine in Settings › Voice DNA once they post) ━━\n${hint?`Write in this creator's established voice: ${hint}\n`:""}${fb}NEVER use generic AI/marketing phrasing (e.g. ${_AI_TELLS.slice(0,5).map(p=>`"${p}"`).join(", ")}). It must sound like the creator, not a bot.\n`;
 };
 
 // Cheap, deterministic detector that flags AI-tell phrasing that slipped through
@@ -9890,7 +9933,7 @@ function OnboardingPage({ onComplete }) {
            NEXTVIDS_KEY,WEEKLY_KEY,TRENDS_KEY,SCRAPE_KEY,SCORES_KEY,MEMORY_KEY,
            COMPETE_KEY,PREDICT_KEY,CUR_TRENDS_KEY,CHANNEL_THEORY_KEY,HOOK_DB_KEY,
            PATTERN_KEY,GAP_KEY,MANUAL_KEY,STREAK_KEY,XP_KEY,
-           VOICE_KEY,VOICE_KEY+"_meta",VISION_KEY,COMMENTS_KEY,NN_KEY,EMB_KEY,
+           VOICE_KEY,VOICE_KEY+"_meta",VOICE_FB_KEY,VISION_KEY,COMMENTS_KEY,NN_KEY,EMB_KEY,
            "krapmaps_v1_tikwm_last","krapmaps_v1_debrief"
           ].forEach(k=>{ try{localStorage.removeItem(k);}catch{} });
         }
@@ -10809,6 +10852,13 @@ export default function App() {
         saveJSON(VOICE_KEY, remote.profile);
         saveJSON(VOICE_KEY+"_meta", { sig:remote.sig, at:remote.at||Date.now() });
       }
+    }).catch(()=>{});
+    // Pull the creator's voice feedback (sounds-like-me votes) across devices.
+    sbFetch("km_config",`select=*&id=eq.${wsId("voice_fb")}`).then(rows=>{
+      const remote = rows?.[0]?.data;
+      if(!remote || (!remote.good?.length && !remote.bad?.length)) return;
+      const local = loadVoiceFB();
+      if(!local.good.length && !local.bad.length) saveJSON(VOICE_FB_KEY, remote);
     }).catch(()=>{});
   },[]);
 
