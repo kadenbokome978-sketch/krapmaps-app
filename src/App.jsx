@@ -4437,6 +4437,26 @@ const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onS
   const [theoryDraft, setTheoryDraft] = useState(()=>loadJSON(CHANNEL_THEORY_KEY,""));
   const [theorySaved, setTheorySaved] = useState(false);
   const [theoryLoading, setTheoryLoading] = useState(false);
+  const [voiceDraft, setVoiceDraft] = useState(()=>loadJSON(VOICE_KEY,""));
+  const [voiceSaved, setVoiceSaved] = useState(false);
+  const [voiceLoading, setVoiceLoading] = useState(false);
+  const measuredVoice = React.useMemo(()=>buildVoiceDNA(videos, ideas),[videos, ideas]);
+  const generateVoice = async () => {
+    setVoiceLoading(true);
+    try {
+      saveJSON(VOICE_KEY+"_meta", null);            // force a fresh re-distill
+      await ensureVoiceProfile(videos, ideas, loadWL());
+      setVoiceDraft(loadJSON(VOICE_KEY,""));
+    } catch {}
+    setVoiceLoading(false);
+  };
+  const saveVoice = () => {
+    const sig = _voiceSig(videos, ideas);
+    saveJSON(VOICE_KEY, voiceDraft);
+    saveJSON(VOICE_KEY+"_meta", { sig, at:Date.now(), edited:true });
+    try { sbUpsert("km_config",[{ id:wsId("voice_dna"), data:{ profile:voiceDraft, sig, at:Date.now() }, updated_at:new Date().toISOString() }]); } catch {}
+    setVoiceSaved(true); setTimeout(()=>setVoiceSaved(false),2000);
+  };
   const [csvDraft, setCsvDraft] = useState("");
   const [csvMsg, setCsvMsg] = useState("");
   const [sbDraft, setSbDraft] = useState(null); // { url, key } while editing
@@ -4779,6 +4799,47 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
           placeholder={`Click GENERATE to synthesise your channel's viral theory from your video data, or write it yourself.\n\nExample:\n1. Core emotion: guilt relief — viewers feel helpless about ocean plastic; this channel gives them a proxy hero to believe in.\n2. Share trigger: backpackers send to their group chat because it validates the "responsible traveller" identity they want others to see.\n3. Viral condition: BK must interact authentically with a local — scripted or solo content rarely breaks 2x average.\n4. Biggest mistake: over-explaining the app instead of showing the human story.\n5. Unfair advantage: the mission is real, which makes the emotion genuine and uncopyable.`}
           rows={8}
           style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.purple}25`, borderRadius:12, color:"#fff", padding:isMobile?"18px 18px":"14px 16px", fontSize:13, fontFamily:C.fontHead, outline:"none", boxSizing:"border-box", resize:"vertical", lineHeight:1.6 }}
+        />
+      </div>
+
+      {/* Voice DNA — the creator's own voice, learned and editable */}
+      <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"22px 24px", background:`linear-gradient(145deg,rgba(0,229,255,0.07),rgba(10,6,20,0.95))`, border:`1px solid ${C.cyan}25`, position:"relative", overflow:"hidden" }}>
+        <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }}/>
+        <div style={{ display:"flex", alignItems:isMobile?"flex-start":"center", justifyContent:"space-between", gap:12, marginBottom:isMobile?14:10, flexWrap:isMobile?"wrap":"nowrap" }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>Voice DNA</div>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:3 }}>How you actually write — learned from your own posts and injected into every idea, hook, caption and script so nothing sounds like a bot. Edit it to correct anything.</div>
+          </div>
+          <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+            <button onClick={generateVoice} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.cyan}50`, background:`${C.cyan}18`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading)?0.5:1 }}>{voiceLoading?"LEARNING...":<span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.zap(12,"currentColor")} RELEARN</span>}</button>
+            <button onClick={saveVoice} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${voiceSaved?C.green:C.cyan}50`, background:voiceSaved?`${C.green}20`:`${C.cyan}18`, color:voiceSaved?C.green:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{voiceSaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>
+          </div>
+        </div>
+        {/* Measured traits — the deterministic read of their style (always on, no API) */}
+        {measuredVoice ? (
+          <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginBottom:12 }}>
+            {[
+              measuredVoice.casing,
+              `~${measuredVoice.medianLen} words/line`,
+              measuredVoice.pov.split("—")[0].trim(),
+              measuredVoice.emojiPerLine<0.15?"no emoji":`emoji ${measuredVoice.emojiVocab.slice(0,4).join("")||"used"}`,
+              ...(measuredVoice.questionLed?["question-led"]:[]),
+              ...(measuredVoice.signatureWords.slice(0,5).map(w=>`"${w}"`)),
+            ].map((t,i)=>(
+              <span key={i} style={{ fontSize:11, fontWeight:700, color:C.cyan, background:`${C.cyan}12`, border:`1px solid ${C.cyan}25`, borderRadius:20, padding:"4px 11px", letterSpacing:"0.02em" }}>{t}</span>
+            ))}
+          </div>
+        ) : (
+          <div style={{ fontSize:12.5, color:C.yellow, background:`${C.yellow}0d`, border:`1px solid ${C.yellow}25`, borderRadius:10, padding:"10px 13px", marginBottom:12, lineHeight:1.5 }}>
+            Still learning your voice — add a few more of your own video titles/hooks (about {Math.max(0, 4 - _voiceCorpus(videos, ideas).length)} more) and it locks in automatically. Until then the AI uses your niche defaults.
+          </div>
+        )}
+        <textarea
+          value={voiceDraft}
+          onChange={e=>setVoiceDraft(e.target.value)}
+          placeholder={"Hit RELEARN to capture your voice from your posts — or describe it yourself.\n\nExample:\nDry, deadpan, slightly self-deprecating. Talks to the viewer like a mate, never salesy. Short punchy lines, lowercase, the odd \"ngl\" and \"lowkey\". Never uses hype words or exclamation-mark energy — the humour is in the understatement."}
+          rows={7}
+          style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.cyan}25`, borderRadius:12, color:"#fff", padding:isMobile?"18px 18px":"14px 16px", fontSize:13, fontFamily:C.fontHead, outline:"none", boxSizing:"border-box", resize:"vertical", lineHeight:1.6 }}
         />
       </div>
 
