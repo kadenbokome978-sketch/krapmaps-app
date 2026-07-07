@@ -4445,7 +4445,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
   );
 };
 
-const SettingsView = ({ keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[], onBulkImport }) => {
+const SettingsView = ({ plan, onManagePlan, keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[], onBulkImport }) => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [editing, setEditing] = useState(null);
   const [draftKey, setDraftKey] = useState("");
@@ -4622,8 +4622,28 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
     { label:"Gemini Video", value:keys?.gemini?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.gemini||USE_BACKEND)?C.green:C.yellow, id:"gemini" },
   ];
 
+  const _tierLabel = TIER_LABELS[plan?.tier] || plan?.tier || "Free";
+  const _scoreLimit = plan?.limits?.[plan?.tier]?.scores;
+  const _scoreUsed = plan?.usage?.scores || 0;
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:24 }}>
+
+      {/* Plan — only meaningful when billing is on */}
+      {USE_BACKEND && (
+        <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"22px 26px", background:"linear-gradient(145deg,rgba(255,45,120,0.1),rgba(10,6,20,0.95))", border:`1px solid ${C.pink}30`, display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexWrap:"wrap", position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:11, letterSpacing:"0.12em", color:"rgba(255,255,255,0.45)", fontWeight:700, textTransform:"uppercase", marginBottom:5 }}>Your Plan</div>
+            <div style={{ fontSize:22, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1 }}>{_tierLabel}</div>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginTop:6 }}>
+              {plan?.tier==="studio" ? "Unlimited scoring." : (_scoreLimit!=null ? `${_scoreUsed} / ${_scoreLimit} scores used this month` : `${_scoreUsed} scores used this month`)}
+            </div>
+          </div>
+          <button onClick={onManagePlan} style={{ padding:isMobile?"11px 20px":"13px 26px", borderRadius:12, border:"none", background:plan?.tier==="free"?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.08)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", flexShrink:0 }}>
+            {plan?.tier==="free" ? "UPGRADE" : "CHANGE PLAN"}
+          </button>
+        </div>
+      )}
 
       {/* Sync button — prominent at top */}
       <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"24px 28px", background:"linear-gradient(145deg,rgba(0,207,255,0.1),rgba(10,6,20,0.95))", border:`1px solid ${C.cyan}30`, display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, position:"relative", overflow:"hidden" }}>
@@ -6913,6 +6933,44 @@ async function authCompleteReset(tokens, newPassword) {
 // key (BYO), we forward it as X-BYO-Key so the server uses theirs instead.
 const USE_BACKEND = REQUIRE_AUTH;
 const _signalSignedOut = () => { try { clearSession(); window.dispatchEvent(new Event("km-signed-out")); } catch {} };
+
+// ── BILLING (client) ──────────────────────────────────────────────
+// Entitlements live server-side (forgery-proof). These helpers read the plan and
+// meter actions. All are no-ops outside backend mode, so direct/self-host builds
+// are unaffected — nothing is gated unless you've turned billing on.
+const TIER_LABELS = { free:"Free", pro:"Pro", studio:"Studio", byo:"Your keys", unmetered:"Unlimited" };
+async function fetchPlan() {
+  if(!USE_BACKEND) return { tier:"unmetered", billingConfigured:false };
+  try {
+    const token = await getAccessToken();
+    if(!token) return { tier:"free", billingConfigured:false };
+    const r = await fetch("/api/me", { headers:{ Authorization:"Bearer "+token } });
+    if(!r.ok) return { tier:"free", billingConfigured:false };
+    return await r.json();
+  } catch { return { tier:"free", billingConfigured:false }; }
+}
+// Returns { allowed, tier, used, limit }. Fails OPEN (allowed) if anything breaks
+// or billing isn't configured — never block a paying flow on a billing hiccup.
+async function meterAction(metric="scores") {
+  if(!USE_BACKEND) return { allowed:true };
+  try {
+    const token = await getAccessToken();
+    if(!token) return { allowed:true };
+    const r = await fetch("/api/meter", { method:"POST", headers:{ Authorization:"Bearer "+token, "Content-Type":"application/json" }, body:JSON.stringify({ metric }) });
+    const d = await r.json().catch(()=>({ allowed:true }));
+    if(r.status===402) return { allowed:false, ...d };
+    return { allowed:true, ...d };
+  } catch { return { allowed:true }; }
+}
+// Starts Stripe Checkout for a plan and redirects. Throws with a readable message.
+async function startCheckout(plan) {
+  const token = await getAccessToken();
+  if(!token) throw new Error("Sign in first to upgrade.");
+  const r = await fetch("/api/stripe-checkout", { method:"POST", headers:{ Authorization:"Bearer "+token, "Content-Type":"application/json" }, body:JSON.stringify({ plan, origin: window.location.origin }) });
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok || !d.url) throw new Error(d.error || "Could not start checkout");
+  window.location.href = d.url;
+}
 async function _postProxy(endpoint, body, byoKey) {
   const token = await getAccessToken();
   if(!token) { _signalSignedOut(); throw new Error("Your session expired — please sign in again."); }
@@ -7489,6 +7547,68 @@ Return ONLY JSON:
         </div>
       )}
       {report && <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.35)", textAlign:"center" }}>Screenshot this and send it to @{report.h} — or read it out on a call.</div>}
+    </div>
+  );
+}
+
+// ── PRICING MODAL ─────────────────────────────────────────────────
+// Shown when a user hits their plan limit, or opened from Settings. Upgrading
+// sends them to Stripe Checkout; the webhook flips their tier on return.
+const PRICING_PLANS = [
+  { id:"free",   name:"Free",   price:"£0",  per:"forever", tagline:"Test the waters", feats:["10 idea scores / month","Voice DNA + your analytics","Growth tracking","Shareable results page"] },
+  { id:"pro",    name:"Pro",    price:"£29", per:"/month",  tagline:"For serious creators", hot:true, feats:["400 idea scores / month","Live trends + competitor spy","Multi-model consensus scoring","Priority AI, no queue"] },
+  { id:"studio", name:"Studio", price:"£99", per:"/month",  tagline:"Full-time & teams", feats:["Unlimited scoring","Neural predictor + analog grounding","Everything in Pro","Early access to new features"] },
+];
+function PricingModal({ tier="free", reason, onClose }){
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const [busy, setBusy] = useState("");
+  const [err, setErr] = useState("");
+  const go = async (plan) => { setErr(""); setBusy(plan); try { await startCheckout(plan); } catch(e){ setErr(e.message); setBusy(""); } };
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:2000, background:"rgba(5,3,10,0.82)", backdropFilter:"blur(6px)", display:"flex", alignItems:isMobile?"flex-start":"center", justifyContent:"center", padding:isMobile?"20px 14px":"32px", overflowY:"auto" }}>
+      <div onClick={e=>e.stopPropagation()} style={{ width:"100%", maxWidth:940, background:"linear-gradient(160deg,#140C1E,#0A0612)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:20, padding:isMobile?"24px 18px":"34px 38px", boxShadow:"0 30px 90px rgba(0,0,0,0.6)" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12, marginBottom:reason?10:22 }}>
+          <div>
+            <div style={{ fontSize:isMobile?23:28, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1.1 }}>Choose your plan</div>
+            <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:5 }}>Cancel anytime. No key setup — scoring just works.</div>
+          </div>
+          <button onClick={onClose} aria-label="Close" style={{ background:"rgba(255,255,255,0.06)", border:"none", borderRadius:9, width:34, height:34, color:"#fff", fontSize:18, cursor:"pointer", flexShrink:0 }}>{I.x?I.x(14,"currentColor"):"✕"}</button>
+        </div>
+        {reason && <div style={{ fontSize:13.5, color:C.yellow, background:`${C.yellow}0e`, border:`1px solid ${C.yellow}28`, borderRadius:10, padding:"10px 13px", marginBottom:18, lineHeight:1.5 }}>{reason}</div>}
+        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(3,1fr)", gap:14 }}>
+          {PRICING_PLANS.map(p=>{
+            const current = tier===p.id;
+            return (
+              <div key={p.id} style={{ position:"relative", background:p.hot?"linear-gradient(165deg,rgba(255,45,120,0.12),rgba(197,102,255,0.06))":"rgba(255,255,255,0.03)", border:`1px solid ${p.hot?C.pink+"55":"rgba(255,255,255,0.09)"}`, borderRadius:16, padding:"22px 20px", display:"flex", flexDirection:"column", gap:14 }}>
+                {p.hot && <div style={{ position:"absolute", top:-10, right:16, fontSize:10, fontWeight:800, letterSpacing:"0.1em", color:"#fff", background:`linear-gradient(135deg,${C.pink},${C.purple})`, borderRadius:20, padding:"3px 10px" }}>MOST POPULAR</div>}
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:p.hot?C.pink:"rgba(255,255,255,0.55)" }}>{p.name}</div>
+                  <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.4)", marginTop:2 }}>{p.tagline}</div>
+                </div>
+                <div style={{ display:"flex", alignItems:"baseline", gap:4 }}>
+                  <span style={{ fontSize:34, fontWeight:800, fontFamily:C.fontHead, color:"#fff" }}>{p.price}</span>
+                  <span style={{ fontSize:13, color:"rgba(255,255,255,0.4)" }}>{p.per}</span>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:8, flex:1 }}>
+                  {p.feats.map((f,i)=>(
+                    <div key={i} style={{ display:"flex", gap:8, alignItems:"flex-start", fontSize:13, color:"rgba(255,255,255,0.78)", lineHeight:1.4 }}>
+                      <span style={{ color:C.green, marginTop:1, flexShrink:0 }}>{I.tick(13,"currentColor")}</span>{f}
+                    </div>
+                  ))}
+                </div>
+                {current
+                  ? <div style={{ textAlign:"center", padding:"11px", borderRadius:11, border:"1px solid rgba(255,255,255,0.12)", color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, fontFamily:C.fontHead }}>CURRENT PLAN</div>
+                  : p.id==="free"
+                    ? <div style={{ height:1 }}/>
+                    : <button onClick={()=>go(p.id)} disabled={!!busy} style={{ padding:"11px", borderRadius:11, border:"none", background:p.hot?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.08)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:busy?"wait":"pointer", opacity:busy&&busy!==p.id?0.5:1 }}>{busy===p.id?"OPENING…":"Upgrade"}</button>
+                }
+              </div>
+            );
+          })}
+        </div>
+        {err && <div style={{ marginTop:16, fontSize:13, color:C.pink, textAlign:"center" }}>{err}</div>}
+        <div style={{ marginTop:18, fontSize:11.5, color:"rgba(255,255,255,0.3)", textAlign:"center" }}>Secure checkout by Stripe · cancel anytime from your account</div>
+      </div>
     </div>
   );
 }
@@ -8195,6 +8315,19 @@ function Dashboard({ keys, onEditKeys }) {
   useEffect(()=>{ if(!aiErr) return; const t=setTimeout(()=>setAiErr(null), 15000); return ()=>clearTimeout(t); },[aiErr]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [assistPreload, setAssistPreload] = useState(null);
+  // ── BILLING ─────────────────────────────────────────────────────
+  const [plan, setPlan] = useState({ tier: USE_BACKEND?"free":"unmetered", usage:{}, billingConfigured:false });
+  const [pricing, setPricing] = useState(null); // null | { reason }
+  const refreshPlan = useCallback(()=>{ fetchPlan().then(setPlan).catch(()=>{}); },[]);
+  useEffect(()=>{ refreshPlan(); },[refreshPlan]);
+  // Returning from Stripe Checkout — confirm the upgrade and clean the URL.
+  useEffect(()=>{
+    try {
+      const q = new URLSearchParams(window.location.search);
+      if(q.get("upgraded")){ setTimeout(refreshPlan, 1500); setTimeout(refreshPlan, 5000); window.history.replaceState({}, "", window.location.pathname); }
+      else if(q.get("upgrade")==="cancel"){ window.history.replaceState({}, "", window.location.pathname); }
+    } catch {}
+  },[refreshPlan]);
 
   // ── PULL-TO-REFRESH (installed PWA only) ───────────────────────
   // Standalone mode has no browser chrome — without this, a stale or stuck
@@ -8972,6 +9105,15 @@ LEARNING: [one sentence]`}]}, key);
 
   const scoreIdea = async (idea) => {
     const key = "s"+idea.id;
+    // Plan gate — one meter per score (the consensus fan-out counts as a single unit).
+    // No-op outside backend mode. Fails open on any billing hiccup, so scoring is
+    // never blocked by an infra blip — only by a real, confirmed limit.
+    const gate = await meterAction("scores");
+    if(!gate.allowed){
+      setPricing({ reason: `You've used all ${gate.limit} scores on the ${TIER_LABELS[gate.tier]||gate.tier} plan this month. Upgrade to keep scoring — it resets monthly.` });
+      refreshPlan();
+      return;
+    }
     setAiLoad(l=>({...l,[key]:true}));
     try {
       const wl = loadWL();
@@ -9913,9 +10055,10 @@ Return JSON:
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
         {nav==="audit"     && <ProspectAuditView WL={activeWL} />}
+        {pricing && <PricingModal tier={plan.tier} reason={pricing.reason} onClose={()=>setPricing(null)} />}
         {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic || BAKED_ANTHROPIC_KEY} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} preloadMsg={assistPreload} />}
         {nav==="growth"    && <GrowthView m={m} ttViewsDisplay={ttViewsDisplay} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} scrapedStats={scrapedStats} saveManual={saveManual} setManualData={setManualData} videos={videos} ideas={ideas} />}
-        {nav==="settings"  && <SettingsView keys={keys} onEditKeys={onEditKeys} scrapedStats={scrapedStats} hasIG={hasIG} WL={activeWL} onEditWL={onEditWL} onSyncTikTok={async()=>{
+        {nav==="settings"  && <SettingsView plan={plan} onManagePlan={()=>setPricing({})} keys={keys} onEditKeys={onEditKeys} scrapedStats={scrapedStats} hasIG={hasIG} WL={activeWL} onEditWL={onEditWL} onSyncTikTok={async()=>{
               setSyncMsg("Syncing...");
               try {
                 await Promise.all([fetchTikToks(true), fetchIGReels(true), fetchIGFollowers()]);

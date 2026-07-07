@@ -162,6 +162,60 @@ intentionally **not** namespaced.
 > (Settings → Cloud Sync). If the key is rotated or the project is paused, data
 > still saves locally and syncs up once the key is fixed.
 
+## Billing (Stripe subscriptions) — turning it into a paid product
+
+Payments, plans, usage limits and the upgrade UI are all built. Turning them on
+is env vars + a Stripe account + one Supabase table. Billing only activates in
+**backend mode** (`VITE_REQUIRE_AUTH=true`); direct/self-host builds ignore it.
+
+### 1. Create the billing table (Supabase SQL editor)
+
+```sql
+create table if not exists km_billing (
+  id text primary key, data jsonb, updated_at timestamptz default now());
+alter table km_billing enable row level security;
+-- NO anon policies: only the server (service-role key) may read/write tiers,
+-- so a client can never forge its own paid plan.
+```
+
+### 2. Stripe dashboard
+
+1. Create two **recurring** Products/Prices: **Pro** and **Studio** — note each `price_…` id.
+2. **Developers → Webhooks → Add endpoint:** `https://<your-app>/api/stripe-webhook`.
+   Subscribe to: `checkout.session.completed`, `customer.subscription.updated`,
+   `customer.subscription.deleted`. Copy the signing secret (`whsec_…`).
+
+### 3. Vercel env vars (server-side, no `VITE_` prefix)
+
+| Variable | Value |
+|---|---|
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → **service_role** key (secret) |
+| `STRIPE_SECRET_KEY` | `sk_live_…` (or `sk_test_…` while testing) |
+| `STRIPE_PRICE_PRO` | the Pro `price_…` id |
+| `STRIPE_PRICE_STUDIO` | the Studio `price_…` id |
+| `STRIPE_WEBHOOK_SECRET` | the `whsec_…` from step 2 |
+
+Redeploy. Done — users now see a plan in Settings, hit a limit when they exceed
+their tier, and upgrade through Stripe Checkout.
+
+### What each piece does
+
+| Endpoint | Role |
+|---|---|
+| `/api/me` | Returns the signed-in user's tier + usage (client reads its plan here) |
+| `/api/meter` | Counts one score against the monthly allowance; returns 402 when over |
+| `/api/stripe-checkout` | Creates a Checkout session for a plan, returns the URL |
+| `/api/stripe-webhook` | The only thing that grants/revokes a paid tier (signature-verified) |
+
+Allowances live in `api/_billing.js` (`TIERS`): Free = 10 scores/mo, Pro = 400,
+Studio = unlimited. Change the numbers there. Scoring meters **once per idea**,
+so the multi-model consensus fan-out is billed as a single unit. BYO-key users
+are never metered (they spend their own quota).
+
+> Until these env vars are set, billing "fails open" — nothing is gated and the
+> app works exactly as before. So you can ship the code now and flip billing on
+> whenever the Stripe account is ready.
+
 ## Security notes
 
 - Every `/api/*` call verifies the Supabase session via `/auth/v1/user` before doing
