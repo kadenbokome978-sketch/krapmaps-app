@@ -3168,6 +3168,8 @@ ${memCtx}
 
 ${voiceBlock(videos, ideas)}
 
+${COACH_PRINCIPLES}
+
 Rules:
 - Prioritise hook styles that historically perform on THIS channel (see hook DB above)
 - Incorporate live trending hooks where they genuinely fit — don't force it
@@ -6004,6 +6006,18 @@ const formatVoiceFeedback = () => {
   return out;
 };
 
+// ── COACHING PRINCIPLES ───────────────────────────────────────────
+// Injected into every surface where the AI gives ADVICE, so it coaches like a
+// sharp strategist who's in the creator's corner — not a cold growth-hacking bot
+// that optimises for reach and forgets there's a person who has to enjoy the work.
+const COACH_PRINCIPLES = `━━ HOW TO ADVISE (non-negotiable tone rules) ━━
+- You are a sharp strategist who genuinely gets this creator's world and is in their corner — NOT an algorithm optimising for reach at any cost.
+- NEVER tell them to stop doing something core to who they are or why their audience follows them (a couple WILL post milestones, a musician WILL post their music, a founder WILL post their journey). That content is the point of the channel, not a mistake to eliminate.
+- When something underperforms, respect WHY they made it, then show how to make that SAME thing hit harder — reframe and upgrade, never forbid.
+- No absolutist "never do X" / "always do Y" commandments. Real advice has nuance and trade-offs; acknowledge them.
+- Talk like a smart friend who's rooting for them — warm, specific, honest. Never preachy, condescending, clinical, or generic.
+- Their identity and enjoyment matter as much as the metrics. Growth that makes them hate their own content is a failure, not a win. Optimise for reach WITHIN who they are, never at the expense of it.`;
+
 // Single wrapper every generative surface uses. Prefers the learned Voice DNA;
 // on cold start (no posts yet) it falls back to what the creator told us about
 // their brand voice at setup, so even a brand-new account never writes fully
@@ -7509,10 +7523,7 @@ WEAKEST: ${bottom.map(v=>`"${(v.title||"untitled").slice(0,60)}" — ${fmtN(v.vi
 ${voice?`\n${formatVoiceDNA(voice,"")}`:""}
 Be concrete and reference THEIR actual videos. No generic advice. The 5 ideas must be written in their voice (per Voice DNA above) and fit what already works for them.
 
-REALISM — this is what makes the audit feel expert, not robotic:
-- Give advice they'd ACTUALLY take. Never tell them to STOP or NEVER do something that's core to who they are or why their audience follows them — a couple WILL post milestones and announcements, a chef WILL post recipes, a parent WILL post their kids. That content is the point of the channel, not a mistake.
-- When something like that underperforms, don't say "stop posting it." Respect WHY they post it, then show how to make that SAME content pull in strangers too (a better hook, a conflict up front, a reason a non-follower cares). Reframe, don't forbid.
-- Sound like someone who genuinely gets their world and roots for them — not an algorithm optimising for reach at the expense of who they are.
+${COACH_PRINCIPLES}
 
 Return ONLY JSON:
 {"verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views","potential":"one line: what they could realistically hit if they fix the main issue","working":["3 specific things working, each referencing their real content"],"fixing":["3 honest things holding them back — each a fix they'd actually accept (reframe or upgrade their existing content, never 'stop doing X that's core to them')"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them"}]}`;
@@ -7910,6 +7921,8 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
       const _anlWL = loadWL();
       const prompt = `You are the world's best viral video analyst — combining expertise in social psychology, the 2026 TikTok/Reels algorithm, and ${_anlWL.niche}. You are analysing a clip for ${_anlWL.handle} (${_anlWL.appName} — ${_anlWL.appDescription||_anlWL.niche}).
 
+${COACH_PRINCIPLES}
+
 ${channelTheoryForAnalysis ? `━━ CHANNEL VIRAL THEORY ━━\n${channelTheoryForAnalysis}\n` : ""}
 ${channelStatsForAnalysis || `CHANNEL: organic avg views ${avgViewsForAnalysis} | limited data — use niche benchmarks`}
 ${engBlockForAnalysis}
@@ -8009,6 +8022,8 @@ Be specific with timestamps. Harsh but constructive. No generic advice.`;
       const chatCompHooks = compDataChat?.data?.steal_these_hooks?.slice(0,3).map(h=>`"${h.hook}" (${h.from_creator})`).join(", ")||"";
       const _chatWL = loadWL();
       const systemPrompt = `You are the world's best viral content strategist for ${_chatWL.platforms?.toUpperCase()?.split(",").join(" & ")||"social media"}. You manage ${_chatWL.handle} through ${_chatWL.appName}.
+
+${COACH_PRINCIPLES}
 
 ━━ BRAND & MISSION ━━
 ${_chatWL.creator1}${_chatWL.creator2?` + ${_chatWL.creator2}`:""} — ${_chatWL.niche}.
@@ -8469,7 +8484,7 @@ function Dashboard({ keys, onEditKeys }) {
       const topVids = [...vids].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
       const postedThisWeek = idList.filter(i=>i.status==="posted"&&i.postedDate&&(Date.now()-new Date(i.postedDate).getTime())<604800000);
       const recentIdeas = idList.slice(0,5).map(i=>`"${(i.title||"").slice(0,40)}" (scored ${i.viral||"unscored"})`).join(", ");
-      const r = await callAI(`You are the strategist for ${WL.handle} (${WL.appName} — ${WL.niche}). Generate a weekly debrief.\n\nChannel data:\n- Total videos: ${vids.length}, avg views: ${Math.round(vids.reduce((s,v)=>s+(v.views||0),0)/(vids.length||1))}\n- Posted this week: ${postedThisWeek.length} videos\n- Top 5 videos: ${topVids.map(v=>`${(v.title||"").slice(0,30)} (${(v.views||0).toLocaleString()} views)`).join(", ")}\n- Recent ideas: ${recentIdeas}\n- Unscored ideas: ${idList.filter(i=>!(i.viral>0)).length}\n\n${voiceBlock(vids, idList)}\nWrite the "ideaToFilmNow" title/hook in the creator's Voice DNA above.\n\nReturn ONLY JSON: {"headline":"","whatWorked":["",""],"whatDidnt":[""],"focusThisWeek":["","",""],"ideaToFilmNow":"title and why","watchOut":"one risk to avoid"}`, 800);
+      const r = await callAI(`You are the strategist for ${WL.handle} (${WL.appName} — ${WL.niche}). Generate a weekly debrief.\n\n${COACH_PRINCIPLES}\n\nChannel data:\n- Total videos: ${vids.length}, avg views: ${Math.round(vids.reduce((s,v)=>s+(v.views||0),0)/(vids.length||1))}\n- Posted this week: ${postedThisWeek.length} videos\n- Top 5 videos: ${topVids.map(v=>`${(v.title||"").slice(0,30)} (${(v.views||0).toLocaleString()} views)`).join(", ")}\n- Recent ideas: ${recentIdeas}\n- Unscored ideas: ${idList.filter(i=>!(i.viral>0)).length}\n\n${voiceBlock(vids, idList)}\nWrite the "ideaToFilmNow" title/hook in the creator's Voice DNA above.\n\nReturn ONLY JSON: {"headline":"","whatWorked":["",""],"whatDidnt":[""],"focusThisWeek":["","",""],"ideaToFilmNow":"title and why","watchOut":"one risk to avoid"}`, 800);
       const result = {...r, generatedAt: new Date().toISOString()};
       saveJSON("krapmaps_v1_debrief", result);
       setWeeklyDebrief(result);
@@ -9414,6 +9429,8 @@ Step 3: Apply PREDICTION ACCURACY bias correction (if AI has historically over/u
 Step 4: Anchor to the CALIBRATION percentiles above — score 85+ ideas should target top 10%, score 70-84 top 25%.
 Step 5: Express as a RANGE as wide as the prediction error σ stated above (e.g. if σ is ±40%, a 40K estimate becomes 24K-56K). A single number is statistically dishonest.
 Your estimated_views must reflect all 5 steps. Do not output a raw uncorrected estimate.
+
+${COACH_PRINCIPLES}
 
 REASONING DISCIPLINE: Before scoring, identify the 2-3 strongest data signals above that apply to THIS idea, and the single biggest risk. Let those drive the numbers. Do not regress every idea to a safe 70 — if the data says 45, score 45; if it says 90, score 90. Spread your scores honestly.
 
