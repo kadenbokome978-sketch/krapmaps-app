@@ -7509,8 +7509,13 @@ WEAKEST: ${bottom.map(v=>`"${(v.title||"untitled").slice(0,60)}" — ${fmtN(v.vi
 ${voice?`\n${formatVoiceDNA(voice,"")}`:""}
 Be concrete and reference THEIR actual videos. No generic advice. The 5 ideas must be written in their voice (per Voice DNA above) and fit what already works for them.
 
+REALISM — this is what makes the audit feel expert, not robotic:
+- Give advice they'd ACTUALLY take. Never tell them to STOP or NEVER do something that's core to who they are or why their audience follows them — a couple WILL post milestones and announcements, a chef WILL post recipes, a parent WILL post their kids. That content is the point of the channel, not a mistake.
+- When something like that underperforms, don't say "stop posting it." Respect WHY they post it, then show how to make that SAME content pull in strangers too (a better hook, a conflict up front, a reason a non-follower cares). Reframe, don't forbid.
+- Sound like someone who genuinely gets their world and roots for them — not an algorithm optimising for reach at the expense of who they are.
+
 Return ONLY JSON:
-{"verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views","potential":"one line: what they could realistically hit if they fix the main issue","working":["3 specific things working, each referencing their real content"],"fixing":["3 specific things holding them back, each with the concrete fix"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them"}]}`;
+{"verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views","potential":"one line: what they could realistically hit if they fix the main issue","working":["3 specific things working, each referencing their real content"],"fixing":["3 honest things holding them back — each a fix they'd actually accept (reframe or upgrade their existing content, never 'stop doing X that's core to them')"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them"}]}`;
       // If the AI narrative fails, still show the scraped numbers + voice — the
       // deterministic half of the audit is valuable on its own and shouldn't be lost.
       const r = await callAI(prompt, 1600).catch(()=>null);
