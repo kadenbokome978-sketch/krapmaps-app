@@ -7444,6 +7444,28 @@ function ProspectAuditView({ WL }){
   const [err, setErr] = useState("");
   const [report, setReport] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  // Render the whole report to one shareable PNG — sends via the native share sheet
+  // (iPad/phone) or downloads. Keeps the full length; just makes it one image.
+  const saveImage = async () => {
+    const el = document.getElementById("prospect-report");
+    if(!el || saving) return;
+    setSaving(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(el, { backgroundColor:"#0A0612", scale:2, useCORS:true, logging:false });
+      const blob = await new Promise(res=>canvas.toBlob(res, "image/png"));
+      const file = new File([blob], `audit-${report.h}.png`, { type:"image/png" });
+      if(navigator.canShare && navigator.canShare({ files:[file] })){
+        await navigator.share({ files:[file], title:`Content Audit — @${report.h}` });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a"); a.href=url; a.download=file.name; a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch(e){ setErr("Couldn't make the image — screenshot it instead. ("+(e.message||"")+")"); }
+    setSaving(false);
+  };
   const copyReport = () => {
     if(!report) return;
     const a = report.ai||{};
@@ -7529,7 +7551,10 @@ Return ONLY JSON:
             </div>
             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8 }}>
               <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.cyan, fontWeight:700, textAlign:"right" }}>CONTENT AUDIT<br/><span style={{ color:"rgba(255,255,255,0.4)", letterSpacing:"0.04em" }}>by {report.app}</span></div>
-              <button onClick={copyReport} style={{ padding:"6px 12px", borderRadius:9, border:`1px solid ${copied?C.green:"rgba(255,255,255,0.15)"}`, background:copied?`${C.green}18`:"rgba(255,255,255,0.05)", color:copied?C.green:"rgba(255,255,255,0.75)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", whiteSpace:"nowrap" }}>{copied?"COPIED":"COPY AS TEXT"}</button>
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={saveImage} disabled={saving} style={{ padding:"6px 12px", borderRadius:9, border:`1px solid ${C.cyan}40`, background:`${C.cyan}12`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:saving?"wait":"pointer", whiteSpace:"nowrap", opacity:saving?0.6:1 }}>{saving?"MAKING…":"SHARE IMAGE"}</button>
+                <button onClick={copyReport} style={{ padding:"6px 12px", borderRadius:9, border:`1px solid ${copied?C.green:"rgba(255,255,255,0.15)"}`, background:copied?`${C.green}18`:"rgba(255,255,255,0.05)", color:copied?C.green:"rgba(255,255,255,0.75)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", whiteSpace:"nowrap" }}>{copied?"COPIED":"COPY AS TEXT"}</button>
+              </div>
             </div>
           </div>
           {/* Stats */}
