@@ -7485,7 +7485,7 @@ function ProspectAuditView({ WL }){
     const a = report.ai||{};
     const lines = [
       `CONTENT AUDIT — @${report.h}${report.nick?` (${report.nick})`:""}`,
-      `${fmtN(report.followers)} followers · ${fmtN(report.avg)} avg views · ${report.engRate.toFixed(1)}% engagement`,
+      `${fmtN(report.followers)} followers · ${fmtN(report.median)} typical views (best: ${fmtN(report.ceiling)}) · ${report.engRate.toFixed(1)}% engagement`,
       ``,
       a.verdict?`VERDICT: ${a.verdict}`:``,
       a.potential?`POTENTIAL: ${a.potential}`:``,
@@ -7512,12 +7512,22 @@ function ProspectAuditView({ WL }){
       const avg = withV.length ? Math.round(withV.reduce((s,v)=>s+v.views,0)/withV.length) : 0;
       const sorted = [...withV].sort((a,b)=>b.views-a.views);
       const top = sorted.slice(0,5), bottom = sorted.slice(-3).reverse();
+      // TikTok view counts are heavily right-skewed — one viral hit drags the MEAN up
+      // and misrepresents typical performance. Use the MEDIAN as the honest "normal
+      // video" number, and surface the best video separately as the ceiling.
+      const ascViews = [...withV].map(v=>v.views).sort((a,b)=>a-b);
+      const median = ascViews.length ? ascViews[Math.floor(ascViews.length/2)] : 0;
+      const ceiling = ascViews[ascViews.length-1] || 0;
       const engRate = withV.length ? (withV.reduce((s,v)=>s+((v.likes+v.comments*2+v.shares*3)/Math.max(v.views,1)),0)/withV.length*100) : 0;
       const voice = buildVoiceDNA(videos, []);
       const wl = WL || loadWL();
       const prompt = `You are the sharpest short-form strategist alive. Audit this TikTok creator honestly and specifically — this is a real free audit that must feel worth paying for.
 
-CREATOR: @${h}${nick?` (${nick})`:""} — ${fmtN(followers)} followers, ${withV.length} recent videos analysed, avg ${fmtN(avg)} views, engagement ~${engRate.toFixed(1)}%.
+CREATOR: @${h}${nick?` (${nick})`:""} — ${fmtN(followers)} followers, ${withV.length} recent videos analysed, engagement ~${engRate.toFixed(1)}%.
+PERFORMANCE (TikTok is heavy-tailed — ANCHOR everything to the MEDIAN, not the average):
+- Typical video (median): ${fmtN(median)} views — this is their real "normal". Judge ideas against THIS.
+- Best video (ceiling): ${fmtN(ceiling)} views — proof of potential, but do NOT treat it as the norm.
+- The mean is ${fmtN(avg)} views but it's inflated by the spike — never quote it as "typical".
 TOP VIDEOS: ${top.map(v=>`"${(v.title||"untitled").slice(0,60)}" — ${fmtN(v.views)} views`).join(" | ")}
 WEAKEST: ${bottom.map(v=>`"${(v.title||"untitled").slice(0,60)}" — ${fmtN(v.views)} views`).join(" | ")}
 ${voice?`\n${formatVoiceDNA(voice,"")}`:""}
@@ -7531,7 +7541,7 @@ Return ONLY JSON:
       // deterministic half of the audit is valuable on its own and shouldn't be lost.
       const r = await callAI(prompt, 1600).catch(()=>null);
       if(!r) setErr("The AI couldn't generate the write-up (check your AI key) — showing the data we pulled.");
-      setReport({ h, nick, followers, count:withV.length, avg, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"CreatorOS" });
+      setReport({ h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"CreatorOS" });
       setPhase("done");
     } catch(e){ setErr(e.message||"Audit failed"); setPhase("error"); }
   };
@@ -7575,7 +7585,7 @@ Return ONLY JSON:
           </div>
           {/* Stats */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))", gap:10, marginBottom:22 }}>
-            {[{l:"FOLLOWERS",v:fmtN(report.followers),c:C.pink},{l:"AVG VIEWS",v:fmtN(report.avg),c:C.cyan},{l:"VIDEOS READ",v:report.count,c:C.purple},{l:"ENGAGEMENT",v:report.engRate.toFixed(1)+"%",c:C.green}].map((s,i)=>(
+            {[{l:"FOLLOWERS",v:fmtN(report.followers),c:C.pink},{l:"TYPICAL VIEWS",v:fmtN(report.median),c:C.cyan},{l:"BEST VIDEO",v:fmtN(report.ceiling),c:C.purple},{l:"ENGAGEMENT",v:report.engRate.toFixed(1)+"%",c:C.green}].map((s,i)=>(
               <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:`1px solid ${s.c}22`, borderRadius:12, padding:"14px 16px" }}>
                 <div style={{ fontSize:10, letterSpacing:"0.1em", color:"rgba(255,255,255,0.4)", fontWeight:700, marginBottom:6 }}>{s.l}</div>
                 <div style={{ fontSize:isMobile?20:24, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
