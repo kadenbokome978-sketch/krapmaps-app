@@ -46,11 +46,12 @@
 
   nav{position:sticky;top:0;z-index:60;backdrop-filter:blur(18px) saturate(1.4);background:rgba(8,7,12,.62);border-bottom:1px solid var(--line)}
   nav .row{display:flex;align-items:center;justify-content:space-between;height:74px}
-  .logo{display:flex;align-items:center;gap:11px;font-family:var(--body);font-weight:600;font-size:19px;letter-spacing:-.01em}
+  .logo{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:700;font-size:20px;letter-spacing:-.02em}
   .logo .mark{width:29px;height:29px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 0 22px rgba(255,61,129,.38),0 1px 0 rgba(255,255,255,.28) inset;flex-shrink:0}
-  .logo b{color:#fff;font-weight:600} .logo i{color:var(--ink-2);font-style:normal;font-weight:600}
-  .navlinks{display:flex;align-items:center;gap:32px;font-size:15px;color:var(--ink-2)}
-  .navlinks a:hover{color:var(--ink)}
+  .logo b{color:#fff;font-weight:700} .logo i{color:var(--accent);font-style:normal;font-weight:700}
+  .navlinks{display:flex;align-items:center;gap:30px;font-size:15px;color:var(--ink-2)}
+  .navlinks a:not(.btn):hover{color:var(--ink)}
+  .navlinks .login{font-weight:500}
   @media(max-width:780px){.navlinks .hidem{display:none}}
 
   /* hero */
@@ -148,6 +149,24 @@
   .sparkbox{display:flex;align-items:flex-end;gap:5px;height:46px}
   .sparkbox i{flex:1;border-radius:4px 4px 0 0;background:linear-gradient(180deg,rgba(255,61,129,.7),rgba(255,61,129,.1))}
   .sparkbox i.hi{background:linear-gradient(180deg,var(--accent),rgba(255,61,129,.25))}
+  /* AI chat mini-visual */
+  .chat{display:flex;flex-direction:column;gap:9px;margin-top:6px}
+  .bub{max-width:88%;padding:11px 14px;font-size:13.5px;line-height:1.45;border-radius:15px}
+  .bub.u{align-self:flex-end;background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#fff;border-bottom-right-radius:5px;box-shadow:0 6px 16px rgba(255,61,129,.22)}
+  .bub.a{align-self:flex-start;background:rgba(255,255,255,.05);border:1px solid var(--line-2);color:var(--ink);border-bottom-left-radius:5px}
+  .bub.a b{color:#fff}
+  /* mini evidence chart */
+  .evbars{display:flex;align-items:flex-end;gap:8px;height:60px;margin-top:6px}
+  .evbars .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .evbars .bar{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--accent),rgba(255,61,129,.2))}
+  .evbars .bar.mut{background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.04))}
+  .evbars .cl{font-size:9.5px;color:var(--ink-3)}
+  /* compact cards */
+  .b.sm{padding:26px}
+  .b.sm .ic{width:42px;height:42px;border-radius:12px;margin-bottom:16px}
+  .b.sm .ic svg{width:21px;height:21px}
+  .b.sm h3{font-size:18.5px;margin-bottom:8px}
+  .b.sm p{font-size:14px}
 
   /* product showcase */
   .showcase{position:relative;z-index:1}
@@ -243,11 +262,12 @@
 <div class="content">
 <nav>
   <div class="wrap row">
-    <div class="logo"><span class="mark"></span><span><b>Creator</b><i>OS</i></span></div>
+    <a href="#" class="logo"><span class="mark"></span><span><b>Creator</b><i>OS</i></span></a>
     <div class="navlinks">
       <a href="#features" class="hidem">Features</a>
-      <a href="#smarter" class="hidem">Why it's different</a>
+      <a href="#smarter" class="hidem">Why us</a>
       <a href="#plans" class="hidem">Pricing</a>
+      <a href="/" class="hidem login">Log in</a>
       <a href="#plans" class="btn btn-primary btn-sm">Get started</a>
     </div>
   </div>
@@ -319,7 +339,7 @@
       <div class="b span3 reveal">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg></div>
         <h3>Score any idea before you film</h3>
-        <p>Get a real read across <b>hook, retention, share-trigger, algorithm fit and niche fit</b> — plus a realistic view range. Spend your time only on the ones that'll land.</p>
+        <p>A real read across <b>hook, retention, share-trigger, algorithm fit and niche fit</b> — plus a realistic view range. Spend your time only on the ones that'll land.</p>
         <div class="vis"><div class="factorbars">
           <div class="fb"><span class="l">Hook</span><span class="tk"><span class="fl" style="width:90%"></span></span><span class="n">90</span></div>
           <div class="fb"><span class="l">Retention</span><span class="tk"><span class="fl" style="width:74%"></span></span><span class="n">74</span></div>
@@ -327,7 +347,7 @@
         </div></div>
       </div>
       <div class="b span3 reveal">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 12h2M7 12v0M7 8v8M11 5v14M15 8v8M19 10v4M21 12h0"/></svg></div>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 10v4M21 12h0"/></svg></div>
         <h3>Voice DNA — it sounds like you</h3>
         <p>It learns exactly how <b>you</b> write and talk — your rhythm, your slang, your humour — and writes every hook and caption in it. A viewer scrolling can't tell it was AI.</p>
         <div class="vis"><div class="wave">
@@ -335,32 +355,53 @@
         </div>
         <div class="chips"><span class="chip">your slang</span><span class="chip">your rhythm</span><span class="chip">zero cringe</span></div></div>
       </div>
-      <div class="b span2 reveal">
+      <div class="b span3 reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.9-.9L3 21l1.9-5.6A8.5 8.5 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg></div>
+        <h3>Your AI strategist, on tap</h3>
+        <p>Chat with an assistant that <b>actually knows your channel</b> — ask what to post, get full scripts written in your voice, plan your week, or gut-check any idea. Like having a strategist who's studied you for years.</p>
+        <div class="vis"><div class="chat">
+          <div class="bub u">what should I film this week?</div>
+          <div class="bub a">Your <b>contrast hooks</b> are hitting 3× lately. Do the "£1 vs £1000" idea — it scored 91. Want the full script in your voice?</div>
+        </div></div>
+      </div>
+      <div class="b span3 reveal">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg></div>
         <h3>Evidence, not vibes</h3>
-        <p>Predictions anchored to your <b>most similar past videos</b> and what they really did.</p>
+        <p>Every prediction is anchored to your <b>own most similar past videos</b> and what they really did — plus a model trained on your results. Numbers you can trust, not a confident guess.</p>
+        <div class="vis"><div class="evbars">
+          <div class="col"><span class="bar mut" style="height:40%"></span><span class="cl">similar</span></div>
+          <div class="col"><span class="bar mut" style="height:62%"></span><span class="cl">similar</span></div>
+          <div class="col"><span class="bar" style="height:88%"></span><span class="cl">this idea</span></div>
+          <div class="col"><span class="bar mut" style="height:55%"></span><span class="cl">similar</span></div>
+          <div class="col"><span class="bar mut" style="height:70%"></span><span class="cl">similar</span></div>
+        </div></div>
       </div>
-      <div class="b span2 reveal">
+      <div class="b sm span2 reveal">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3h4v4M21 3l-6 6M7 21H3v-4M3 21l6-6M3 7V3h4M3 3l6 6M17 21h4v-4M21 21l-6-6"/></svg></div>
         <h3>Hook A/B tester</h3>
-        <p>Pit two hooks against each other, get the winner — and a stronger one in your voice.</p>
+        <p>Pit two hooks head to head, get the winner — and a stronger one in your voice.</p>
       </div>
-      <div class="b span2 reveal">
+      <div class="b sm span2 reveal">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg></div>
         <h3>Live trends &amp; spy</h3>
-        <p>What's blowing up in your niche <b>right now</b>, and the gaps competitors leave open.</p>
+        <p>What's blowing up in your niche now, and the gaps competitors leave open.</p>
       </div>
-      <div class="b span2 reveal">
+      <div class="b sm span2 reveal">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
         <h3>Free channel audit</h3>
-        <p>Run any TikTok through the engine for a full breakdown — the tool that opens the door.</p>
+        <p>Run any TikTok through the engine for a full breakdown in seconds.</p>
       </div>
-      <div class="b span2 reveal">
+      <div class="b sm span2 reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2.5"/><path d="M8 21l4-3.5M8 8.5h9M8 12h6"/></svg></div>
+        <h3>Audience insights</h3>
+        <p>Reads your real comments to surface what your audience actually wants next.</p>
+      </div>
+      <div class="b sm span2 reveal">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/><circle cx="12" cy="12" r="3"/></svg></div>
         <h3>Growth &amp; brand deals</h3>
-        <p>Track your real numbers and manage sponsorships — the business of being a creator.</p>
+        <p>Track your numbers and manage sponsorships — the business side, handled.</p>
       </div>
-      <div class="b span2 reveal">
+      <div class="b sm span2 reveal">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/><path d="M8 14l2.5 2.5L16 12"/></svg></div>
         <h3>Weekly debrief &amp; planner</h3>
         <p>A Monday readout of what worked, what to film next, and a calendar to plan it.</p>
