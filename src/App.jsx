@@ -4493,8 +4493,18 @@ const SettingsView = ({ plan, onManagePlan, keys, onEditKeys, scrapedStats, hasI
       localStorage.setItem(SB_URL_KEY, url);
       localStorage.setItem(SB_KEY_KEY, key);
       reportHealth("supabase","ok","Connected");
-      setSbMsg({ ok:true, text:"Connected — cloud sync will use these from now on." });
       setSbDraft(null);
+      // Seed the cloud with everything already on THIS device, so anything you added
+      // before connecting (keys, videos, ideas) uploads automatically — you never have
+      // to go back and re-save things by hand.
+      setSbMsg({ ok:true, text:"Connected — pushing your data to the cloud…" });
+      try {
+        const localKeys = loadJSON(KEYS_KEY, {});
+        if(localKeys && Object.keys(localKeys).length) await sbUpsert("km_config", [{ id: wsId("workspace_config"), data: localKeys, updated_at: new Date().toISOString() }]);
+        if(videos?.length) await sbUpsert("km_videos", videos.map(v=>({ ...v, id: wsId(v.id) })));
+        if(ideas?.length) await sbSyncArray("km_ideas", ideas);
+      } catch { /* seeding is best-effort — connection is already saved */ }
+      setSbMsg({ ok:true, text:"Connected — your keys and data are now synced across devices." });
     } catch(e) { setSbMsg({ ok:false, text:"Could not reach that URL — check it and try again." }); }
   };
   const saveTrends = () => { saveJSON(CUR_TRENDS_KEY, trendsDraft); setTrendsSaved(true); setTimeout(()=>setTrendsSaved(false),2000); };
