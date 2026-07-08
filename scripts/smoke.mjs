@@ -8,22 +8,42 @@
 
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
+import { existsSync, readdirSync } from "node:fs";
 
 const require = createRequire(import.meta.url);
+// Resolve playwright from the local node_modules OR a global install (e.g. the
+// preinstalled one at /opt/node22/lib/node_modules on managed CI images).
 let chromium;
-try {
-  ({ chromium } = require("playwright"));
-} catch {
-  try { ({ chromium } = require("playwright-core")); } catch {}
+const tryReq = (name) => { try { return require(name).chromium; } catch { return null; } };
+chromium = tryReq("playwright") || tryReq("playwright-core");
+if (!chromium) {
+  for (const base of ["/opt/node22/lib/node_modules", process.env.NODE_PATH].filter(Boolean)) {
+    chromium = tryReq(`${base}/playwright`) || tryReq(`${base}/playwright-core`);
+    if (chromium) break;
+  }
 }
 if (!chromium) {
-  console.log("• smoke: playwright not installed — skipping browser smoke test.");
+  console.log("• smoke: playwright not available — skipping browser smoke test.");
   process.exit(0);
+}
+
+// Find the actual chromium binary (the versioned dir varies; a bare dir path won't launch).
+function findChromium() {
+  if (process.env.PLAYWRIGHT_CHROMIUM && existsSync(process.env.PLAYWRIGHT_CHROMIUM)) return process.env.PLAYWRIGHT_CHROMIUM;
+  const root = process.env.PLAYWRIGHT_BROWSERS_PATH || "/opt/pw-browsers";
+  try {
+    const dir = readdirSync(root).find((d) => /^chromium-\d/.test(d));
+    if (dir) {
+      const exe = `${root}/${dir}/chrome-linux/chrome`;
+      if (existsSync(exe)) return exe;
+    }
+  } catch {}
+  return null; // let playwright fall back to its own resolution
 }
 
 const PORT = 4173;
 const URL = `http://localhost:${PORT}/`;
-const EXEC = process.env.PLAYWRIGHT_CHROMIUM || "/opt/pw-browsers/chromium";
+const EXEC = findChromium();
 
 const preview = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], {
   stdio: "ignore",
@@ -65,7 +85,7 @@ async function checkViewport(browser, label, opts) {
 
   let browser;
   try {
-    browser = await chromium.launch({ executablePath: EXEC });
+    browser = EXEC ? await chromium.launch({ executablePath: EXEC }) : await chromium.launch();
   } catch {
     try { browser = await chromium.launch(); }
     catch (e) { console.log("• smoke: could not launch chromium — skipping.", e.message); cleanup(); process.exit(0); }

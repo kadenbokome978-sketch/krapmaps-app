@@ -5126,7 +5126,7 @@ const getIntelligenceLevel = (videos=[], ideas=[], memory={}, theory="") => {
 };
 
 const DEFAULT_SB_URL = "https://xiudsyiinkqtmowkiqxh.supabase.co";
-const DEFAULT_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpdWRzeWlpbmtxdG1vd2tpcXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NTcwNTMsImV4cCI6MjA1ODMzMzA1M30.xh1I8a8TUrPZ3YtElqCHv9LjI27BnCDp_YY-J_FDBDU";
+const DEFAULT_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpdWRzeWlpbmtxdG1vd2tpcXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzU5OTcsImV4cCI6MjA4OTQ1MTk5N30.8aHpQIcEcrDXo9DJN52SWAOee-rrkp-ti00h72-_sZE";
 
 const WL_KEY = "krapmaps_v1_wl";
 const CLIENT_KEY = "krapmaps_v1_client";
@@ -7479,8 +7479,11 @@ Be concrete and reference THEIR actual videos. No generic advice. The 5 ideas mu
 
 Return ONLY JSON:
 {"verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views","potential":"one line: what they could realistically hit if they fix the main issue","working":["3 specific things working, each referencing their real content"],"fixing":["3 specific things holding them back, each with the concrete fix"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them"}]}`;
-      const r = await callAI(prompt, 1600);
-      setReport({ h, nick, followers, count:withV.length, avg, engRate, top:top.slice(0,3), voice, ai:r, app:wl.appName||"CreatorOS" });
+      // If the AI narrative fails, still show the scraped numbers + voice — the
+      // deterministic half of the audit is valuable on its own and shouldn't be lost.
+      const r = await callAI(prompt, 1600).catch(()=>null);
+      if(!r) setErr("The AI couldn't generate the write-up (check your AI key) — showing the data we pulled.");
+      setReport({ h, nick, followers, count:withV.length, avg, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"CreatorOS" });
       setPhase("done");
     } catch(e){ setErr(e.message||"Audit failed"); setPhase("error"); }
   };
