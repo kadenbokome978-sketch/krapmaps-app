@@ -7512,31 +7512,53 @@ function ProspectAuditView({ WL }){
       const avg = withV.length ? Math.round(withV.reduce((s,v)=>s+v.views,0)/withV.length) : 0;
       const sorted = [...withV].sort((a,b)=>b.views-a.views);
       const top = sorted.slice(0,5), bottom = sorted.slice(-3).reverse();
-      // TikTok view counts are heavily right-skewed — one viral hit drags the MEAN up
-      // and misrepresents typical performance. Use the MEDIAN as the honest "normal
-      // video" number, and surface the best video separately as the ceiling.
-      const ascViews = [...withV].map(v=>v.views).sort((a,b)=>a-b);
-      const median = ascViews.length ? ascViews[Math.floor(ascViews.length/2)] : 0;
-      const ceiling = ascViews[ascViews.length-1] || 0;
-      const engRate = withV.length ? (withV.reduce((s,v)=>s+((v.likes+v.comments*2+v.shares*3)/Math.max(v.views,1)),0)/withV.length*100) : 0;
+      const median = medianViews(videos);
+      const ceiling = withV.length ? Math.max(...withV.map(v=>v.views)) : 0;
+      // STANDARD engagement rate — what a creator actually recognises: (likes+comments+shares)/views.
+      const engRate = withV.length ? (withV.reduce((s,v)=>s+((v.likes+v.comments+v.shares)/Math.max(v.views,1)),0)/withV.length*100) : 0;
+      // Run the SAME engine the paid app uses internally, on their scraped videos —
+      // the audit is now first-class, not a lighter separate path.
+      const insights = buildChannelInsights(videos);
+      const insightsBlock = insights ? formatChannelInsights(insights) : "";
+      const engSignals = buildEngagementSignals(videos);
+      const engBlock = engSignals ? formatEngagementSignals(engSignals) : "";
+      // Score every video with the engine (median-benchmarked) to find genuine hits vs typical.
+      const scored = withV.map(v=>({ v, s:calcVideoScore(v, withV) })).filter(x=>x.s);
+      const engineTop = [...scored].sort((a,b)=>(b.s.score||0)-(a.s.score||0)).slice(0,5);
+      const engineFlop = [...scored].sort((a,b)=>(a.s.score||0)-(b.s.score||0)).slice(0,3);
+      const cap = v => (v.title||"(no caption)").replace(/\s+/g," ").slice(0,70);
       const voice = buildVoiceDNA(videos, []);
       const wl = WL || loadWL();
-      const prompt = `You are the sharpest short-form strategist alive. Audit this TikTok creator honestly and specifically — this is a real free audit that must feel worth paying for.
+      const prompt = `You are the sharpest short-form strategist alive. Audit this TikTok creator using ONLY the data below — this is a real free audit that must feel worth paying for.
 
-CREATOR: @${h}${nick?` (${nick})`:""} — ${fmtN(followers)} followers, ${withV.length} recent videos analysed, engagement ~${engRate.toFixed(1)}%.
+━━ WHAT YOU CAN AND CANNOT SEE (critical — read first) ━━
+You have their video CAPTIONS and the real numbers (views, likes, comments, shares, dates). You have NOT watched the videos.
+- Reference their captions and numbers EXACTLY — quote real caption text and real view counts, never approximate.
+- NEVER invent anything visual or editorial you can't actually see: no "your jump cut", "the reaction shot at 3s", "your lighting", "the b-roll". You have no idea what's on screen. If you infer something, frame it as an inference from the CAPTION ("your caption suggests…"), never state it as fact about the footage.
+- A creator will distrust the ENTIRE audit the moment you describe one of their videos wrong. Accuracy beats cleverness every time.
+
+CREATOR: @${h}${nick?` (${nick})`:""} — ${fmtN(followers)} followers, ${withV.length} recent videos analysed, engagement ~${engRate.toFixed(1)}% (likes+comments+shares ÷ views).
 PERFORMANCE (TikTok is heavy-tailed — ANCHOR everything to the MEDIAN, not the average):
-- Typical video (median): ${fmtN(median)} views — this is their real "normal". Judge ideas against THIS.
-- Best video (ceiling): ${fmtN(ceiling)} views — proof of potential, but do NOT treat it as the norm.
-- The mean is ${fmtN(avg)} views but it's inflated by the spike — never quote it as "typical".
-TOP VIDEOS: ${top.map(v=>`"${(v.title||"untitled").slice(0,60)}" — ${fmtN(v.views)} views`).join(" | ")}
-WEAKEST: ${bottom.map(v=>`"${(v.title||"untitled").slice(0,60)}" — ${fmtN(v.views)} views`).join(" | ")}
-${voice?`\n${formatVoiceDNA(voice,"")}`:""}
-Be concrete and reference THEIR actual videos. No generic advice. The 5 ideas must be written in their voice (per Voice DNA above) and fit what already works for them.
+- Typical video (median): ${fmtN(median)} views — their real "normal". Judge ideas against THIS.
+- Best video (ceiling): ${fmtN(ceiling)} views — proof of what they can hit; scale "potential" from THIS, not a fantasy number.
+
+━━ ENGINE ANALYSIS (computed from their real numbers — the same engine the paid app runs) ━━
+${insightsBlock}
+${engBlock}
+BIGGEST HITS (by our median-benchmarked scoring):
+${engineTop.map(x=>`• "${cap(x.v)}" — ${fmtN(x.v.views)} views (score ${x.s.score}/100 · ${x.s.label})`).join("\n")}
+WEAKEST:
+${engineFlop.map(x=>`• "${cap(x.v)}" — ${fmtN(x.v.views)} views (score ${x.s.score}/100 · ${x.s.label})`).join("\n")}
+
+RECENT CAPTIONS (quote these exactly, don't invent beyond them):
+${withV.slice(0,15).map(v=>`• "${cap(v)}" — ${fmtN(v.views)} views`).join("\n")}
+${voice?`\n${formatVoiceDNA(voice,"")}NOTE: this voice is read from their CAPTIONS — so the 5 ideas' titles/hooks should match how they WRITE. Don't claim to know their on-camera personality.\n`:""}
+Be concrete and reference THEIR actual captions + numbers. No generic advice, no invented footage.
 
 ${COACH_PRINCIPLES}
 
 Return ONLY JSON:
-{"verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views","potential":"one line: what they could realistically hit if they fix the main issue","working":["3 specific things working, each referencing their real content"],"fixing":["3 honest things holding them back — each a fix they'd actually accept (reframe or upgrade their existing content, never 'stop doing X that's core to them')"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them"}]}`;
+{"verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views, grounded in the real numbers/captions above","potential":"one line: what they could realistically hit, scaled from their proven ceiling of ${fmtN(ceiling)} — no fantasy numbers","working":["3 specific things working, each citing a REAL caption or number above (never invented footage)"],"fixing":["3 honest things holding them back — each a fix they'd actually accept (reframe or upgrade their existing content, never 'stop doing X that's core to them'), grounded in what you can actually see"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them, tied to what already works"}]}`;
       // If the AI narrative fails, still show the scraped numbers + voice — the
       // deterministic half of the audit is valuable on its own and shouldn't be lost.
       const r = await callAI(prompt, 1600).catch(()=>null);
