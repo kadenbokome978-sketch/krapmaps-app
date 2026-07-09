@@ -101,11 +101,15 @@
 
   /* stats band */
   .statsband{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(255,61,129,.05),rgba(155,107,255,.03))}
-  .statsband .wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;padding:44px 26px}
-  @media(max-width:760px){.statsband .wrap{grid-template-columns:1fr 1fr;gap:32px 20px}}
-  .stat{text-align:center}
-  .stat b{font-family:var(--disp);font-weight:800;font-size:clamp(30px,3.6vw,42px);letter-spacing:-.03em;background:linear-gradient(120deg,#fff,var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent;display:block}
-  .stat span{font-size:13.5px;color:var(--ink-2);margin-top:6px;display:block}
+  .statsband .wrap{display:grid;grid-template-columns:repeat(4,1fr);padding:0}
+  .stat{text-align:center;padding:40px 22px;border-left:1px solid var(--line)}
+  .stat:first-child{border-left:none}
+  .stat .si{width:38px;height:38px;margin:0 auto 15px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,rgba(255,61,129,.16),rgba(155,107,255,.08));border:1px solid rgba(255,61,129,.22);color:var(--accent)}
+  .stat .si svg{width:19px;height:19px}
+  .stat b{font-family:var(--disp);font-weight:800;font-size:clamp(28px,3.3vw,40px);letter-spacing:-.03em;color:#fff;display:block}
+  .stat b .ac{color:var(--accent)}
+  .stat span{font-size:13px;color:var(--ink-2);margin-top:8px;display:block;line-height:1.4}
+  @media(max-width:760px){.statsband .wrap{grid-template-columns:1fr 1fr}.stat:nth-child(3){border-left:none}.stat:nth-child(-n+2){border-bottom:1px solid var(--line)}}
 
   .proofline{border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:64px;padding:28px 0;background:rgba(255,255,255,.012)}
   .proofline .wrap{display:flex;align-items:baseline;justify-content:center;gap:14px;flex-wrap:wrap;text-align:center}
@@ -195,24 +199,30 @@
   @media(max-width:900px){.flyv{grid-template-columns:1fr;gap:34px}}
   .flyv h2{font-family:var(--disp);font-weight:800;font-size:clamp(30px,4.2vw,46px);letter-spacing:-.03em;line-height:1.04;margin-bottom:22px}
   .flyv p{color:var(--ink-2);font-size:17.5px;line-height:1.65;margin-bottom:18px}
-  .loop{display:flex;flex-direction:column;gap:12px}
-  .loopstep{display:flex;gap:16px;align-items:center;background:linear-gradient(160deg,rgba(255,255,255,.04),transparent);border:1px solid var(--line);border-radius:16px;padding:16px 20px;transition:border-color .3s,transform .3s}
-  .loopstep:hover{border-color:var(--line-2);transform:translateX(4px)}
-  .loopstep .num{font-family:var(--disp);font-weight:800;font-size:17px;color:#fff;width:40px;height:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:11px;background:linear-gradient(140deg,var(--accent),var(--accent-2));box-shadow:0 6px 16px rgba(255,61,129,.24)}
-  .loopstep .txt b{display:block;color:#fff;font-size:15.5px;margin-bottom:2px;font-weight:600;font-family:var(--disp);letter-spacing:-.01em}
-  .loopstep .txt span{font-size:13.5px;color:var(--ink-3)}
+  .loop{position:relative;padding-left:2px}
+  .loop::before{content:"";position:absolute;left:21px;top:14px;bottom:52px;width:2px;background:linear-gradient(180deg,var(--accent),var(--accent-2) 70%,transparent);z-index:0}
+  .loopstep{display:flex;gap:18px;align-items:flex-start;padding:0 0 26px;position:relative;z-index:1}
+  .loopstep .num{font-family:var(--disp);font-weight:800;font-size:17px;color:#fff;width:42px;height:42px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:12px;background:linear-gradient(140deg,var(--accent),var(--accent-2));box-shadow:0 6px 18px rgba(255,61,129,.3),0 0 0 4px var(--bg);margin-top:2px}
+  .loopstep .txt{padding-top:5px}
+  .loopstep .txt b{display:block;color:#fff;font-size:16.5px;margin-bottom:3px;font-weight:700;font-family:var(--disp);letter-spacing:-.01em}
+  .loopstep .txt span{font-size:14px;color:var(--ink-2)}
+  .loopstep.cap{padding-bottom:0}
+  .loopstep.cap .num{background:transparent;border:2px dashed rgba(255,61,129,.5);box-shadow:0 0 0 4px var(--bg);color:var(--accent);font-size:22px}
+  .loopstep.cap .txt b{color:var(--accent)}
 
   /* comparison */
   .vs{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:880px;margin:0 auto}
   @media(max-width:700px){.vs{grid-template-columns:1fr}}
-  .vscol{border-radius:22px;padding:32px;border:1px solid var(--line)}
-  .vscol.them{background:rgba(255,255,255,.015)} .vscol.us{background:linear-gradient(165deg,rgba(255,61,129,.08),rgba(155,107,255,.03));border-color:rgba(255,61,129,.3)}
-  .vscol h4{font-family:var(--disp);font-weight:700;font-size:16px;margin-bottom:20px;letter-spacing:.02em}
+  .vscol{border-radius:24px;padding:36px 34px;border:1px solid var(--line)}
+  .vscol.them{background:rgba(255,255,255,.014)} .vscol.us{background:linear-gradient(165deg,rgba(255,61,129,.1),rgba(155,107,255,.035));border-color:rgba(255,61,129,.36);box-shadow:0 28px 70px rgba(255,61,129,.09)}
+  .vscol h4{font-family:var(--disp);font-weight:700;font-size:14px;margin-bottom:26px;letter-spacing:.08em;text-transform:uppercase}
   .vscol.them h4{color:var(--ink-3)} .vscol.us h4{color:var(--accent)}
-  .vscol ul{list-style:none;display:flex;flex-direction:column;gap:14px}
-  .vscol li{display:flex;gap:12px;font-size:14.5px;color:var(--ink-2);line-height:1.45;align-items:center}
-  .vscol li svg{width:18px;height:18px;flex-shrink:0}
-  .them li svg{color:var(--ink-3)} .us li svg{color:var(--accent)}
+  .vscol ul{list-style:none;display:flex;flex-direction:column;gap:17px}
+  .vscol li{display:flex;gap:13px;font-size:15px;line-height:1.4;align-items:center}
+  .them li{color:var(--ink-3)} .us li{color:var(--ink)} .us li b{color:#fff}
+  .vscol li svg{width:24px;height:24px;padding:5px;border-radius:50%;flex-shrink:0}
+  .them li svg{color:var(--ink-3);background:rgba(255,255,255,.05)}
+  .us li svg{color:#fff;background:linear-gradient(140deg,var(--accent),var(--accent-2));box-shadow:0 4px 12px rgba(255,61,129,.32)}
 
   /* plans */
   .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch}
@@ -412,10 +422,10 @@
 
 <div class="statsband">
   <div class="wrap">
-    <div class="stat reveal"><b>5</b><span>signals scored on every idea</span></div>
-    <div class="stat reveal"><b>100%</b><span>written in your own voice</span></div>
-    <div class="stat reveal"><b>Every&nbsp;post</b><span>makes the engine smarter</span></div>
-    <div class="stat reveal"><b>Seconds</b><span>from idea to a real score</span></div>
+    <div class="stat reveal"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg></div><b><span class="ac">5</span></b><span>signals scored on every idea</span></div>
+    <div class="stat reveal"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 10v4M21 12h0"/></svg></div><b><span class="ac">100%</span></b><span>written in your own voice</span></div>
+    <div class="stat reveal"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5A8.5 8.5 0 1 1 12 3.5"/><path d="M20 4v4h-4"/></svg></div><b>Every&nbsp;post</b><span>makes the engine smarter</span></div>
+    <div class="stat reveal"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4.5 13H12l-1 9 8.5-11H12l1-9z"/></svg></div><b>Seconds</b><span>from idea to a real score</span></div>
   </div>
 </div>
 
@@ -432,7 +442,8 @@
         <div class="loopstep"><span class="num">1</span><span class="txt"><b>You score an idea</b><span>Grounded in your history + voice</span></span></div>
         <div class="loopstep"><span class="num">2</span><span class="txt"><b>You post &amp; log the result</b><span>Real views go back into the engine</span></span></div>
         <div class="loopstep"><span class="num">3</span><span class="txt"><b>It recalibrates to you</b><span>Predictions and voice sharpen</span></span></div>
-        <div class="loopstep"><span class="num">4</span><span class="txt"><b>Your next score is truer</b><span>…and the loop compounds</span></span></div>
+        <div class="loopstep"><span class="num">4</span><span class="txt"><b>Your next score is truer</b><span>Sharper than the last one</span></span></div>
+        <div class="loopstep cap"><span class="num">∞</span><span class="txt"><b>And it compounds — forever</b><span>Every post widens the gap on anyone catching up</span></span></div>
       </div>
     </div>
   </div>
