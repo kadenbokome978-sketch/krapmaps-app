@@ -128,9 +128,10 @@
   .sec-head p{margin-top:18px;color:var(--ink-2);font-size:18px;line-height:1.55}
 
   /* bento with real icons + mini visuals */
-  .bento{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
-  .b{background:linear-gradient(168deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid var(--line);border-radius:22px;padding:30px;transition:border-color .3s,transform .3s,background .3s,box-shadow .3s;position:relative;overflow:hidden}
-  .b:hover{transform:translateY(-4px);border-color:var(--line-2);background:linear-gradient(168deg,rgba(255,255,255,.055),rgba(255,255,255,.014));box-shadow:0 24px 60px rgba(0,0,0,.35)}
+  .bento{display:grid;grid-template-columns:repeat(6,1fr);gap:24px 22px}
+  /* big cards = soft floating panels of light, not hard boxes */
+  .b{background:radial-gradient(135% 120% at 22% -12%,rgba(255,255,255,.055),rgba(255,255,255,.012) 50%,transparent);border-radius:30px;padding:34px;transition:transform .4s cubic-bezier(.2,.8,.2,1),box-shadow .4s,background .4s;position:relative;overflow:hidden}
+  .b:hover{transform:translateY(-6px);box-shadow:0 34px 80px rgba(0,0,0,.42),0 0 90px rgba(255,61,129,.08);background:radial-gradient(135% 120% at 22% -12%,rgba(255,255,255,.075),rgba(255,255,255,.016) 50%,transparent)}
   .b .ic{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;background:linear-gradient(150deg,rgba(255,61,129,.16),rgba(155,107,255,.08));border:1px solid rgba(255,61,129,.22);color:var(--accent);box-shadow:0 6px 18px rgba(255,61,129,.14)}
   .b .ic svg{width:24px;height:24px}
   .b h3{font-family:var(--disp);font-weight:700;font-size:21px;margin-bottom:10px;letter-spacing:-.02em}
@@ -194,9 +195,11 @@
   @keyframes blink2{50%{opacity:0}}
 
   /* compact cards */
-  .b.sm{padding:26px}
-  .b.sm .ic{width:42px;height:42px;border-radius:12px;margin-bottom:16px}
-  .b.sm .ic svg{width:21px;height:21px}
+  /* small features = borderless, floating in space (no boxes) */
+  .b.sm{padding:8px 6px;background:none}
+  .b.sm:hover{transform:translateY(-4px);box-shadow:none;background:none}
+  .b.sm .ic{width:44px;height:44px;border-radius:13px;margin-bottom:16px}
+  .b.sm .ic svg{width:22px;height:22px}
   .b.sm h3{font-size:18.5px;margin-bottom:8px}
   .b.sm p{font-size:14px}
 
