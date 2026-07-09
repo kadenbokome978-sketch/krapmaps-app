@@ -301,18 +301,25 @@
   details[open] summary .plus{transform:rotate(45deg)}
   details p{margin-top:15px;color:var(--ink-2);font-size:15px;line-height:1.65}
 
-  .final{text-align:center;background:linear-gradient(168deg,rgba(255,61,129,.1),rgba(155,107,255,.04));border:1px solid var(--line-2);border-radius:30px;padding:78px 32px;max-width:940px;margin:0 auto;position:relative;overflow:hidden}
-  .final::after{content:"";position:absolute;inset:0;background:radial-gradient(500px 200px at 50% 0,rgba(255,61,129,.2),transparent 70%);pointer-events:none}
-  .final h2{position:relative;font-family:var(--disp);font-weight:800;font-size:clamp(32px,5vw,54px);letter-spacing:-.03em;line-height:1;margin-bottom:20px;text-wrap:balance}
-  .final p{position:relative;color:var(--ink-2);font-size:18px;max-width:42ch;margin:0 auto 32px}
-  .final a{position:relative}
+  .final{text-align:center;background:linear-gradient(168deg,rgba(255,61,129,.09),rgba(155,107,255,.035));border:1px solid var(--line-2);border-radius:32px;padding:88px 32px;max-width:960px;margin:0 auto;position:relative;overflow:hidden}
+  .final-glow{position:absolute;top:50%;left:50%;width:150%;height:340%;transform:translate(-50%,-50%);background:conic-gradient(from 0deg,rgba(255,61,129,.2),rgba(155,107,255,.14),transparent 38%,rgba(255,61,129,.18) 68%,transparent);filter:blur(70px);opacity:.6;animation:spin 24s linear infinite;pointer-events:none}
+  @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+  .final-inner{position:relative;z-index:1}
+  .final-eyebrow{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);background:rgba(255,61,129,.08);border:1px solid rgba(255,61,129,.24);padding:8px 15px;border-radius:100px;margin-bottom:24px}
+  .final h2{font-family:var(--disp);font-weight:800;font-size:clamp(36px,5.6vw,64px);letter-spacing:-.03em;line-height:.98;margin-bottom:20px;text-wrap:balance}
+  .final h2 em{font-style:normal;background:linear-gradient(100deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .final p{color:var(--ink-2);font-size:18.5px;max-width:44ch;margin:0 auto 34px;line-height:1.5}
+  .final-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .btn-glow{animation:btnpulse 2.8s ease-in-out infinite}
+  @keyframes btnpulse{0%,100%{box-shadow:0 1px 0 rgba(255,255,255,.16) inset,0 12px 34px rgba(255,61,129,.3)}50%{box-shadow:0 1px 0 rgba(255,255,255,.16) inset,0 14px 48px rgba(255,61,129,.6),0 0 0 6px rgba(255,61,129,.08)}}
+  .final-trust{margin-top:24px;font-size:13px;color:var(--ink-3)}
 
   footer{border-top:1px solid var(--line);padding:46px 0;margin-top:36px}
   footer .row{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;color:var(--ink-3);font-size:14px}
 
   .reveal{opacity:0;transform:translateY(22px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
   .reveal.in{opacity:1;transform:none}
-  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.btn:hover,.b:hover,.loopstep:hover{transform:none}.pulse,.aurora span,.mock-card,.mock-tag,.wave i,.dots i{animation:none}.fb .fl{width:var(--w,0);transition:none}.evbars .bar{height:var(--h,0);transition:none}.chat .bub{opacity:1;transform:none}html{scroll-behavior:auto}}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.btn:hover,.b:hover,.loopstep:hover{transform:none}.pulse,.aurora span,.mock-card,.mock-tag,.wave i,.dots i,.final-glow,.btn-glow{animation:none}.fb .fl{width:var(--w,0);transition:none}.evbars .bar{height:var(--h,0);transition:none}.chat .bub{opacity:1;transform:none}html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
@@ -616,9 +623,17 @@
 <section>
   <div class="wrap">
     <div class="final reveal">
-      <h2>Stop guessing what to post.</h2>
-      <p>Get a real read on your next video — and post like you already know it'll land.</p>
-      <a href="#plans" class="btn btn-primary">Score your next video</a>
+      <div class="final-glow"></div>
+      <div class="final-inner">
+        <span class="final-eyebrow">Your next video is waiting</span>
+        <h2>Stop guessing.<br>Start <em>knowing.</em></h2>
+        <p>Score your next idea before you film it — and post like you already know it'll land.</p>
+        <div class="final-cta">
+          <a href="#plans" class="btn btn-primary btn-glow">Score your next video</a>
+          <a href="https://buy.stripe.com/fZucN8gmu5fhaJG8Y073G00" class="btn btn-ghost">Try a £19.99 audit</a>
+        </div>
+        <div class="final-trust">No lock-in · cancel anytime · grounded in your real results</div>
+      </div>
     </div>
   </div>
 </section>
