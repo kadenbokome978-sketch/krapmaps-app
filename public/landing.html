@@ -165,6 +165,34 @@
   .evbars .bar{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--accent),rgba(255,61,129,.2))}
   .evbars .bar.mut{background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.04))}
   .evbars .cl{font-size:9.5px;color:var(--ink-3)}
+  /* ── LIVE MOTION in the feature cards ── */
+  /* factor bars fill on scroll-in */
+  .fb .fl{width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1) .2s}
+  .b.in .fb .fl{width:var(--w,0)}
+  /* evidence bars grow on scroll-in (staggered) */
+  .evbars .bar{height:0;transition:height .9s cubic-bezier(.2,.8,.2,1)}
+  .b.in .evbars .col:nth-child(1) .bar{transition-delay:.15s}
+  .b.in .evbars .col:nth-child(2) .bar{transition-delay:.28s}
+  .b.in .evbars .col:nth-child(3) .bar{transition-delay:.41s}
+  .b.in .evbars .col:nth-child(4) .bar{transition-delay:.54s}
+  .b.in .evbars .col:nth-child(5) .bar{transition-delay:.67s}
+  .b.in .evbars .bar{height:var(--h,0)}
+  .evbars .col:nth-child(3) .bar{box-shadow:0 0 18px rgba(255,61,129,.5)}
+  /* voice waveform — always alive, like real audio */
+  .wave i{transform-origin:bottom;animation:wv 1.7s ease-in-out infinite}
+  .wave i:nth-child(odd){animation-delay:.25s}.wave i:nth-child(3n){animation-delay:.5s}.wave i:nth-child(4n){animation-delay:.12s}.wave i:nth-child(5n){animation-delay:.7s}
+  @keyframes wv{0%,100%{transform:scaleY(.55)}50%{transform:scaleY(1)}}
+  /* AI chat entrance + typing */
+  .chat .bub{opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .5s ease}
+  .b.in .chat .bub.u{opacity:1;transform:none;transition-delay:.2s}
+  .b.in .chat .bub.a{opacity:1;transform:none;transition-delay:.55s}
+  .dots{display:inline-flex;gap:4px;align-items:center;height:14px}
+  .dots i{width:6px;height:6px;border-radius:50%;background:var(--ink-3);animation:blink 1.2s infinite}
+  .dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
+  .bub.a .cur{display:inline-block;width:2px;height:1em;background:var(--accent);margin-left:1px;vertical-align:text-bottom;animation:blink2 .9s step-end infinite}
+  @keyframes blink2{50%{opacity:0}}
+
   /* compact cards */
   .b.sm{padding:26px}
   .b.sm .ic{width:42px;height:42px;border-radius:12px;margin-bottom:16px}
@@ -262,7 +290,7 @@
 
   .reveal{opacity:0;transform:translateY(22px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
   .reveal.in{opacity:1;transform:none}
-  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.btn:hover,.b:hover,.loopstep:hover{transform:none}.pulse,.aurora span,.mock-card,.mock-tag{animation:none}html{scroll-behavior:auto}}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.btn:hover,.b:hover,.loopstep:hover{transform:none}.pulse,.aurora span,.mock-card,.mock-tag,.wave i,.dots i{animation:none}.fb .fl{width:var(--w,0);transition:none}.evbars .bar{height:var(--h,0);transition:none}.chat .bub{opacity:1;transform:none}html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
@@ -351,9 +379,9 @@
         <h3>Score any idea before you film</h3>
         <p>A real read across <b>hook, retention, share-trigger, algorithm fit and niche fit</b> — plus a realistic view range. Spend your time only on the ones that'll land.</p>
         <div class="vis"><div class="factorbars">
-          <div class="fb"><span class="l">Hook</span><span class="tk"><span class="fl" style="width:90%"></span></span><span class="n">90</span></div>
-          <div class="fb"><span class="l">Retention</span><span class="tk"><span class="fl" style="width:74%"></span></span><span class="n">74</span></div>
-          <div class="fb"><span class="l">Share</span><span class="tk"><span class="fl" style="width:82%"></span></span><span class="n">82</span></div>
+          <div class="fb"><span class="l">Hook</span><span class="tk"><span class="fl" style="--w:90%"></span></span><span class="n">90</span></div>
+          <div class="fb"><span class="l">Retention</span><span class="tk"><span class="fl" style="--w:74%"></span></span><span class="n">74</span></div>
+          <div class="fb"><span class="l">Share</span><span class="tk"><span class="fl" style="--w:82%"></span></span><span class="n">82</span></div>
         </div></div>
       </div>
       <div class="b span3 reveal">
@@ -369,9 +397,9 @@
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.9-.9L3 21l1.9-5.6A8.5 8.5 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg></div>
         <h3>Your AI strategist, on tap</h3>
         <p>Chat with an assistant that <b>actually knows your channel</b> — ask what to post, get full scripts written in your voice, plan your week, or gut-check any idea. Like having a strategist who's studied you for years.</p>
-        <div class="vis"><div class="chat">
+        <div class="vis"><div class="chat" id="aichat">
           <div class="bub u">what should I film this week?</div>
-          <div class="bub a">Your <b>contrast hooks</b> are hitting 3× lately. Do the "£1 vs £1000" idea — it scored 91. Want the full script in your voice?</div>
+          <div class="bub a" data-typer='Your contrast hooks are hitting 3× lately. Do the "£1 vs £1000" idea — it scored 91. Want the full script in your voice?'><span class="dots"><i></i><i></i><i></i></span></div>
         </div></div>
       </div>
       <div class="b span3 reveal">
@@ -379,11 +407,11 @@
         <h3>Evidence, not vibes</h3>
         <p>Every prediction is anchored to your <b>own most similar past videos</b> and what they really did — plus a model trained on your results. Numbers you can trust, not a confident guess.</p>
         <div class="vis"><div class="evbars">
-          <div class="col"><span class="bar mut" style="height:40%"></span><span class="cl">similar</span></div>
-          <div class="col"><span class="bar mut" style="height:62%"></span><span class="cl">similar</span></div>
-          <div class="col"><span class="bar" style="height:88%"></span><span class="cl">this idea</span></div>
-          <div class="col"><span class="bar mut" style="height:55%"></span><span class="cl">similar</span></div>
-          <div class="col"><span class="bar mut" style="height:70%"></span><span class="cl">similar</span></div>
+          <div class="col"><span class="bar mut" style="--h:40%"></span><span class="cl">similar</span></div>
+          <div class="col"><span class="bar mut" style="--h:62%"></span><span class="cl">similar</span></div>
+          <div class="col"><span class="bar" style="--h:88%"></span><span class="cl">this idea</span></div>
+          <div class="col"><span class="bar mut" style="--h:55%"></span><span class="cl">similar</span></div>
+          <div class="col"><span class="bar mut" style="--h:70%"></span><span class="cl">similar</span></div>
         </div></div>
       </div>
       <div class="b sm span2 reveal">
@@ -557,6 +585,35 @@
   document.getElementById('yr').textContent = new Date().getFullYear();
   var io = new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.1});
   document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+
+  // AI chat types its reply out live when scrolled into view
+  var reduce = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var chat = document.getElementById('aichat');
+  if(chat){
+    var aBub = chat.querySelector('.bub.a');
+    var full = aBub.getAttribute('data-typer') || '';
+    if(reduce){ aBub.textContent = full; }
+    else {
+      var started = false;
+      var cio = new IntersectionObserver(function(es){
+        es.forEach(function(e){
+          if(e.isIntersecting && !started){
+            started = true; cio.unobserve(e.target);
+            setTimeout(function(){
+              aBub.innerHTML = ''; var i = 0;
+              (function type(){
+                if(i <= full.length){
+                  aBub.innerHTML = full.slice(0,i).replace(/</g,'&lt;') + '<span class="cur"></span>';
+                  i++; setTimeout(type, 16 + Math.random()*22);
+                } else { aBub.textContent = full; }
+              })();
+            }, 1100);
+          }
+        });
+      }, {threshold:.5});
+      cio.observe(chat);
+    }
+  }
 </script>
 </body>
 </html>
