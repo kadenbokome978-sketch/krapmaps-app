@@ -7,6 +7,8 @@
 <meta name="description" content="The AI that scores your video before you film it, writes in your exact voice, and gets smarter with every post — grounded in your own real results.">
 <meta property="og:title" content="CreatorOS — Know if it'll pop before you post">
 <meta property="og:description" content="AI that predicts your video's views before you film — in your own voice, grounded in your real results.">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
 <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=switzer@400,500,600&display=swap" rel="stylesheet">
 <style>
@@ -47,7 +49,7 @@
   nav{position:sticky;top:0;z-index:60;backdrop-filter:blur(18px) saturate(1.4);background:rgba(8,7,12,.62);border-bottom:1px solid var(--line)}
   nav .row{display:flex;align-items:center;justify-content:space-between;height:74px}
   .logo{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:700;font-size:20px;letter-spacing:-.02em}
-  .logo .mark{width:29px;height:29px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 0 22px rgba(255,61,129,.38),0 1px 0 rgba(255,255,255,.28) inset;flex-shrink:0}
+  .logo .mark{width:32px;height:32px;border-radius:9px;object-fit:cover;display:block;flex-shrink:0;box-shadow:0 0 22px rgba(255,61,129,.34)}
   .logo b{color:#fff;font-weight:700} .logo i{color:var(--accent);font-style:normal;font-weight:700}
   .navlinks{display:flex;align-items:center;gap:30px;font-size:15px;color:var(--ink-2)}
   .navlinks a:not(.btn):hover{color:var(--ink)}
@@ -320,7 +322,7 @@
 <div class="content">
 <nav>
   <div class="wrap row">
-    <a href="#" class="logo"><span class="mark"></span><span><b>Creator</b><i>OS</i></span></a>
+    <a href="#" class="logo"><img class="mark" src="/icon-512.png" alt="CreatorOS logo" width="32" height="32"><span><b>Creator</b><i>OS</i></span></a>
     <div class="navlinks">
       <a href="#features" class="hidem">Features</a>
       <a href="#smarter" class="hidem">Why us</a>
@@ -623,7 +625,7 @@
 
 <footer>
   <div class="wrap row">
-    <div class="logo" style="font-size:18px"><span class="mark" style="width:26px;height:26px"></span><span><b>Creator</b><i>OS</i></span></div>
+    <div class="logo" style="font-size:18px"><img class="mark" src="/icon-512.png" alt="CreatorOS logo" style="width:26px;height:26px"><span><b>Creator</b><i>OS</i></span></div>
     <div>© <span id="yr"></span> CreatorOS · the AI virality engine for creators</div>
   </div>
 </footer>
