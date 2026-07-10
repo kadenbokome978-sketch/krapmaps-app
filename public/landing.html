@@ -327,6 +327,33 @@
   .btn-clear:hover{background:rgba(255,255,255,.22)}
   .ftrust{margin-top:26px;font-size:13.5px;color:var(--ink-3)}
 
+  /* auth modal */
+  .authover{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(4,3,8,.82);backdrop-filter:blur(14px);opacity:0;pointer-events:none;transition:opacity .3s}
+  .authover.open{opacity:1;pointer-events:auto}
+  .authbox{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line-2);border-radius:22px;padding:40px 32px 34px;position:relative;transform:translateY(16px);transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+  .authover.open .authbox{transform:none}
+  .authbox .ax{position:absolute;top:16px;right:18px;width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,.06);color:var(--ink-3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+  .authbox .ax:hover{background:rgba(255,255,255,.12);color:var(--ink)}
+  .authbox .alogo{text-align:center;margin-bottom:24px}
+  .authbox .alogo img{width:48px;height:48px;border-radius:13px;box-shadow:0 0 22px rgba(255,61,129,.3)}
+  .authbox .atitle{font-family:var(--disp);font-weight:800;font-size:24px;color:var(--ink);text-align:center;letter-spacing:-.02em;margin-bottom:6px}
+  .authbox .asub{text-align:center;font-size:14.5px;color:var(--ink-3);margin-bottom:28px}
+  .authbox input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--line-2);border-radius:12px;color:var(--ink);padding:14px 16px;font-size:15px;font-family:var(--body);outline:none;transition:border-color .2s}
+  .authbox input:focus{border-color:var(--accent)}
+  .authbox input::placeholder{color:var(--ink-3)}
+  .authbox .afields{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+  .authbox .abtn{width:100%;padding:15px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;font-weight:700;font-size:15px;font-family:var(--body);cursor:pointer;transition:opacity .2s}
+  .authbox .abtn:disabled{opacity:.5;cursor:default}
+  .authbox .abtn:hover:not(:disabled){opacity:.9}
+  .authbox .aerr{font-size:13px;color:#FF5C7C;line-height:1.5;margin-bottom:8px}
+  .authbox .ainfo{font-size:13px;color:#39D6E4;line-height:1.5;margin-bottom:8px}
+  .authbox .aswitch{text-align:center;font-size:13.5px;color:var(--ink-3);margin-top:18px}
+  .authbox .aswitch a{color:var(--accent);cursor:pointer}
+  .authbox .aswitch a:hover{color:var(--ink)}
+  .authbox .askip{text-align:center;margin-top:14px}
+  .authbox .askip a{font-size:13px;color:var(--ink-3);cursor:pointer}
+  .authbox .askip a:hover{color:var(--ink)}
+
   footer{border-top:1px solid var(--line);padding:46px 0;margin-top:36px}
   footer .row{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;color:var(--ink-3);font-size:14px}
 
@@ -659,6 +686,24 @@
   </div>
 </div>
 
+<div class="authover" id="authModal">
+  <div class="authbox">
+    <button class="ax" id="authClose">&times;</button>
+    <div class="alogo"><img src="/icon-512.png" alt="CreatorOS" width="48" height="48"></div>
+    <div class="atitle" id="authTitle">Create your account</div>
+    <div class="asub" id="authSub">Sign up to get started with CreatorOS.</div>
+    <div class="afields">
+      <input type="email" id="authEmail" placeholder="Email" autocomplete="email">
+      <input type="password" id="authPass" placeholder="Password" autocomplete="new-password">
+    </div>
+    <div class="aerr" id="authErr" style="display:none"></div>
+    <div class="ainfo" id="authInfo" style="display:none"></div>
+    <button class="abtn" id="authSubmit">Create Account</button>
+    <div class="aswitch" id="authSwitch">Already have an account? <a id="authToggle">Sign in</a></div>
+    <div class="askip"><a id="authSkip">Skip for now</a></div>
+  </div>
+</div>
+
 <footer>
   <div class="wrap row">
     <div class="logo" style="font-size:18px"><img class="mark" src="/icon-512.png" alt="CreatorOS logo" style="width:26px;height:26px"><span><b>Creator</b><i>OS</i></span></div>
@@ -783,6 +828,109 @@
     });},{threshold:.2});
     cio2.observe(cl);
   })();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  var SB_URL='https://xiudsyiinkqtmowkiqxh.supabase.co';
+  var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpdWRzeWlpbmtxdG1vd2tpcXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzU5OTcsImV4cCI6MjA4OTQ1MTk5N30.8aHpQIcEcrDXo9DJN52SWAOee-rrkp-ti00h72-_sZE';
+  var sb=window.supabase.createClient(SB_URL,SB_KEY);
+  var modal=document.getElementById('authModal');
+  var emailIn=document.getElementById('authEmail');
+  var passIn=document.getElementById('authPass');
+  var submitBtn=document.getElementById('authSubmit');
+  var errEl=document.getElementById('authErr');
+  var infoEl=document.getElementById('authInfo');
+  var titleEl=document.getElementById('authTitle');
+  var subEl=document.getElementById('authSub');
+  var switchEl=document.getElementById('authSwitch');
+  var toggleEl=document.getElementById('authToggle');
+  var mode='signup';
+  var pendingHref=null;
+  var authed=false;
+
+  function showErr(msg){errEl.textContent=msg;errEl.style.display='block';infoEl.style.display='none';}
+  function showInfo(msg){infoEl.textContent=msg;infoEl.style.display='block';errEl.style.display='none';}
+  function clearMsg(){errEl.style.display='none';infoEl.style.display='none';}
+
+  function setMode(m){
+    mode=m; clearMsg();
+    if(m==='signin'){
+      titleEl.textContent='Welcome back';
+      subEl.textContent='Sign in to your CreatorOS account.';
+      submitBtn.textContent='Sign In';
+      switchEl.innerHTML='Don\'t have an account? <a id="authToggle">Sign up</a>';
+      passIn.autocomplete='current-password';
+    } else {
+      titleEl.textContent='Create your account';
+      subEl.textContent='Sign up to get started with CreatorOS.';
+      submitBtn.textContent='Create Account';
+      switchEl.innerHTML='Already have an account? <a id="authToggle">Sign in</a>';
+      passIn.autocomplete='new-password';
+    }
+    document.getElementById('authToggle').addEventListener('click',function(){setMode(mode==='signup'?'signin':'signup');});
+  }
+
+  function openModal(href){
+    if(authed){if(href)window.location.href=href;return;}
+    pendingHref=href||null;
+    modal.classList.add('open');
+    document.body.style.overflow='hidden';
+    setTimeout(function(){emailIn.focus();},350);
+  }
+  function closeModal(){
+    modal.classList.remove('open');
+    document.body.style.overflow='';
+  }
+
+  document.getElementById('authClose').addEventListener('click',closeModal);
+  document.getElementById('authSkip').addEventListener('click',closeModal);
+  modal.addEventListener('click',function(e){if(e.target===modal)closeModal();});
+
+  toggleEl.addEventListener('click',function(){setMode(mode==='signup'?'signin':'signup');});
+
+  submitBtn.addEventListener('click',async function(){
+    clearMsg();
+    var email=emailIn.value.trim(), pass=passIn.value;
+    if(!email||!pass){showErr('Enter your email and password.');return;}
+    if(mode==='signup'&&pass.length<6){showErr('Password must be at least 6 characters.');return;}
+    submitBtn.disabled=true;
+    try{
+      if(mode==='signup'){
+        var r=await sb.auth.signUp({email:email,password:pass});
+        if(r.error) throw r.error;
+        if(r.data.session){
+          authed=true; closeModal();
+          if(pendingHref)window.location.href=pendingHref;
+        } else {
+          showInfo('Check your email to confirm your account, then sign in.');
+          setMode('signin');
+        }
+      } else {
+        var r2=await sb.auth.signInWithPassword({email:email,password:pass});
+        if(r2.error) throw r2.error;
+        authed=true; closeModal();
+        if(pendingHref)window.location.href=pendingHref;
+      }
+    }catch(e){showErr(e.message||'Something went wrong.');}
+    submitBtn.disabled=false;
+  });
+
+  passIn.addEventListener('keydown',function(e){if(e.key==='Enter')submitBtn.click();});
+
+  // check if already logged in
+  sb.auth.getSession().then(function(r){
+    if(r.data.session){authed=true;}
+    else{setTimeout(function(){openModal();},2500);}
+  });
+
+  // intercept plan buttons
+  document.querySelectorAll('a[href*="buy.stripe.com"], a[data-plan]').forEach(function(a){
+    a.addEventListener('click',function(e){
+      if(!authed){e.preventDefault();openModal(a.href||'/');}
+    });
+  });
+})();
 </script>
 </body>
 </html>
