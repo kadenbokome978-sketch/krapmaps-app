@@ -1939,7 +1939,7 @@ const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hook
   const [vidLoading, setVidLoading]   = useState({});
   const [vidErr, setVidErr]           = useState(null);
   const cfg = loadJSON(KEYS_KEY,{});
-  const hasAnthrop = !!(cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY);
+  const hasAnthrop = !!(USE_BACKEND || cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY);
 
   const hasGeminiKey = !!(cfg?.keys?.gemini);
 
@@ -4736,8 +4736,8 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
       {/* 2 col layout */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:16, alignItems:"start" }}>
 
-        {/* LEFT — API Keys */}
-        <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"22px 24px", background:"linear-gradient(145deg,rgba(255,45,120,0.07),rgba(10,6,20,0.95))", border:`1px solid ${C.pink}25`, position:"relative", overflow:"hidden" }}>
+        {/* LEFT — API Keys (admin only — regular users go through backend proxy) */}
+        {_activeCfg.clientId==="krapmaps" && <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"22px 24px", background:"linear-gradient(145deg,rgba(255,45,120,0.07),rgba(10,6,20,0.95))", border:`1px solid ${C.pink}25`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
           <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>API Keys</div>
           <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginBottom:12, lineHeight:1.5 }}>Keys auto-save to cloud (Supabase) — persist across devices &amp; new builds. Requires a <code style={{background:"rgba(255,255,255,0.07)",padding:"1px 5px",borderRadius:4}}>km_config</code> table in your Supabase project.</div>
@@ -4772,7 +4772,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
               </div>
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* RIGHT — Status + Creator Config */}
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
@@ -8639,13 +8639,13 @@ function Dashboard({ keys, onEditKeys }) {
     setNav("ai");
     setSub(null);
     // Background: auto-score if not already scored
-    if(!idea.viral && (keys?.anthropic||BAKED_ANTHROPIC_KEY)) {
+    if(!idea.viral && (USE_BACKEND||keys?.anthropic||BAKED_ANTHROPIC_KEY)) {
       setTimeout(()=>scoreIdea(idea), 500);
     }
   };
 
   const runDebrief = async () => {
-    if(!(keys?.anthropic||BAKED_ANTHROPIC_KEY)) return;
+    if(!(USE_BACKEND||keys?.anthropic||BAKED_ANTHROPIC_KEY)) return;
     setDebriefLoading(true);
     try {
       const vids = loadJSON(VIDEOS_KEY,[]);
@@ -11263,7 +11263,7 @@ function OnboardingPage({ onComplete }) {
             <div style={{ display:"flex", flexDirection:"column", gap:0, width:"100%", maxWidth:440, animation:"fadeLeft 0.4s ease" }}>
               {/* Progress */}
               <div style={{ display:"flex", gap:4, marginBottom:40 }}>
-                {[0,1,2,3].map(i=><div key={i} style={{ height:2, flex:1, background:i<=1?"#FF2D78":"rgba(255,255,255,0.08)", transition:"all 0.3s" }}/>)}
+                {[0,1].map(i=><div key={i} style={{ height:2, flex:1, background:i<=1?"#FF2D78":"rgba(255,255,255,0.08)", transition:"all 0.3s" }}/>)}
               </div>
               <div style={{ fontSize:9, color:"rgba(255,255,255,0.5)", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", marginBottom:isMobile?14:10 }}>YOUR CHANNEL</div>
               <div style={{ fontSize:28, fontWeight:800, color:"#fff", marginBottom:6, lineHeight:1.1, letterSpacing:"-0.02em" }}>Your channel.<br/><span style={{ color:"rgba(255,255,255,0.5)" }}>Your strategy.</span></div>
@@ -11273,7 +11273,7 @@ function OnboardingPage({ onComplete }) {
                 <input
                   value={handle}
                   onChange={e=>setHandle(e.target.value)}
-                  onKeyDown={e=>e.key==="Enter"&&setStep(3)}
+                  onKeyDown={e=>e.key==="Enter"&&finish("")}
                   placeholder="@yourchannel"
                   autoFocus
                   style={{ width:"100%", background:"transparent", border:"none", borderBottom:`1px solid ${handle?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.12)"}`, color:"#fff", padding:"10px 0", fontSize:18, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s", fontFamily:"Courier New,monospace", letterSpacing:"0.08em", caretColor:"#FF2D78" }}
@@ -11283,58 +11283,14 @@ function OnboardingPage({ onComplete }) {
                 ◈ &nbsp;Baked into every AI prompt — idea scoring, hook testing, debrief.<br/>
                 ◈ &nbsp;The more specific your niche, the sharper the advice.
               </div>
-              <button onClick={()=>setStep(3)} style={{ padding:"16px 0", border:"1px solid rgba(255,255,255,0.22)", borderRadius:2, background:"transparent", color:"#fff", fontWeight:700, fontSize:11, cursor:"pointer", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", transition:"all 0.2s", width:"100%", marginBottom:isMobile?22:14 }}
+              <button onClick={()=>finish("")} style={{ padding:"16px 0", border:"1px solid rgba(255,255,255,0.22)", borderRadius:2, background:"transparent", color:"#fff", fontWeight:700, fontSize:11, cursor:"pointer", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", transition:"all 0.2s", width:"100%", marginBottom:isMobile?22:14 }}
                 onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.4)"; }}
                 onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(255,255,255,0.22)"; }}
-              >CONTINUE →</button>
-              <button onClick={()=>setStep(3)} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.38)", fontSize:10, cursor:"pointer", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", padding:0, textAlign:"center", width:"100%" }}>SKIP FOR NOW</button>
+              >LAUNCH →</button>
+              <button onClick={()=>finish("")} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.38)", fontSize:10, cursor:"pointer", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", padding:0, textAlign:"center", width:"100%" }}>SKIP FOR NOW</button>
             </div>
           )}
 
-          {/* Step 3 — AI Key */}
-          {step === 3 && (
-            <div style={{ display:"flex", flexDirection:"column", gap:0, width:"100%", maxWidth:440, animation:"fadeLeft 0.4s ease" }}>
-              {/* Progress */}
-              <div style={{ display:"flex", gap:4, marginBottom:40 }}>
-                {[0,1,2,3].map(i=><div key={i} style={{ height:2, flex:1, background:i<=2?"#FF2D78":"rgba(255,255,255,0.08)", transition:"all 0.3s" }}/>)}
-              </div>
-              <div style={{ fontSize:9, color:"rgba(255,255,255,0.5)", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", marginBottom:isMobile?14:10 }}>CONNECT AI</div>
-              <div style={{ fontSize:28, fontWeight:800, color:"#fff", marginBottom:6, lineHeight:1.1, letterSpacing:"-0.02em" }}>Unlock the<br/><span style={{ color:"rgba(255,255,255,0.5)" }}>full system.</span></div>
-              <div style={{ fontSize:12, color:"rgba(255,255,255,0.62)", lineHeight:1.7, marginBottom:28, fontFamily:"Courier New,monospace", letterSpacing:"0.04em" }}>Add your Anthropic key to activate scoring, scripts, hook testing and weekly strategy. Stored on device only.</div>
-              <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:28 }}>
-                {[["target","Idea Scoring","Virality scores before you film"],["write","Script Builder","Full scripts from any idea"],["bar","Weekly Debrief","Strategic summary of what's working"],["flask","Hook Tester","AI picks the winning hook"]].map(([ic,l,d])=>(
-                  <div key={l} style={{ display:"flex", alignItems:"center", gap:12, padding:isMobile?"13px 16px":"10px 14px", border:"1px solid rgba(255,255,255,0.07)", borderRadius:2 }}>
-                    <div style={{ color:"#FF2D78", width:16, display:"flex", justifyContent:"center" }}>{I[ic](12,"#FF2D78")}</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:11, fontWeight:600, color:"rgba(255,255,255,0.7)", fontFamily:"Courier New,monospace", letterSpacing:"0.06em" }}>{l}</div>
-                      <div style={{ fontSize:10, color:"rgba(255,255,255,0.5)", fontFamily:"Courier New,monospace" }}>{d}</div>
-                    </div>
-                    <div style={{ fontSize:8, color:apiKey.trim()?"#39FF14":"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>{apiKey.trim()?"UNLOCKED":"LOCKED"}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginBottom:8 }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:isMobile?14:10 }}>
-                  <div style={{ fontSize:9, color:"rgba(255,255,255,0.5)", letterSpacing:"0.18em", fontFamily:"Courier New,monospace" }}>ANTHROPIC API KEY</div>
-                  <a href="https://console.anthropic.com/keys" target="_blank" rel="noreferrer" style={{ fontSize:9, color:"rgba(255,255,255,0.55)", textDecoration:"none", fontFamily:"Courier New,monospace", letterSpacing:"0.08em" }}>GET KEY →</a>
-                </div>
-                <input
-                  value={apiKey}
-                  onChange={e=>setApiKey(e.target.value)}
-                  placeholder="sk-ant-api03-..."
-                  type="password"
-                  style={{ width:"100%", background:"transparent", border:"none", borderBottom:`1px solid ${apiKey?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.12)"}`, color:"#fff", padding:"10px 0", fontSize:14, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s", fontFamily:"Courier New,monospace", caretColor:"#FF2D78" }}
-                />
-                <div style={{ fontSize:9, color:"rgba(255,255,255,0.45)", marginTop:6, fontFamily:"Courier New,monospace", letterSpacing:"0.06em" }}>You can add or change this later in Settings</div>
-              </div>
-              <div style={{ marginBottom:isMobile?22:14 }}/>
-              <button onClick={()=>finish(apiKey)} style={{ padding:"16px 0", border:"1px solid rgba(255,255,255,0.22)", borderRadius:2, background:"transparent", color:"#fff", fontWeight:700, fontSize:11, cursor:"pointer", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", transition:"all 0.2s", width:"100%", marginBottom:isMobile?22:14 }}
-                onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.4)"; }}
-                onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(255,255,255,0.22)"; }}
-              >{apiKey.trim() ? "LAUNCH →" : "LAUNCH WITHOUT AI →"}</button>
-              <button onClick={()=>setStep(2)} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.38)", fontSize:10, cursor:"pointer", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", padding:0, textAlign:"center", width:"100%" }}>← BACK</button>
-            </div>
-          )}
 
         </div>
       </div>
