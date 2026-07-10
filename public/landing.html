@@ -54,6 +54,9 @@
   .navlinks{display:flex;align-items:center;gap:30px;font-family:var(--disp);font-size:15px;font-weight:600;letter-spacing:-.01em;color:var(--ink-2)}
   .navlinks a:not(.btn):hover{color:var(--ink)}
   .navlinks .login{font-weight:500}
+  .nav-user{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink-2);font-weight:500}
+  .nav-avatar{width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:700;font-size:13px;color:var(--accent);background:rgba(255,61,129,.1);overflow:hidden;flex-shrink:0}
+  .nav-avatar img{width:100%;height:100%;object-fit:cover}
   @media(max-width:780px){.navlinks .hidem{display:none}}
 
   /* hero */
@@ -379,8 +382,8 @@
       <a href="#features" class="hidem">Features</a>
       <a href="#smarter" class="hidem">Why us</a>
       <a href="#plans" class="hidem">Pricing</a>
-      <a href="/" class="hidem login" data-auth-gate>Activate</a>
-      <a href="#plans" class="btn btn-primary btn-sm">Get started</a>
+      <a href="/" class="hidem login" data-auth-gate id="navAuth">Activate</a>
+      <a href="#plans" class="btn btn-primary btn-sm" id="navCta">Get started</a>
     </div>
   </div>
 </nav>
@@ -907,7 +910,7 @@
         var r=await sb.auth.signUp({email:email,password:pass});
         if(r.error) throw r.error;
         if(r.data.session){
-          authed=true; closeModal();
+          showSignedIn(r.data.session); closeModal();
           if(pendingHref)window.location.href=pendingHref;
         } else {
           showInfo('Check your email to confirm your account, then sign in.');
@@ -916,7 +919,7 @@
       } else {
         var r2=await sb.auth.signInWithPassword({email:email,password:pass});
         if(r2.error) throw r2.error;
-        authed=true; closeModal();
+        showSignedIn(r2.data.session); closeModal();
         if(pendingHref)window.location.href=pendingHref;
       }
     }catch(e){showErr(e.message||'Something went wrong.');}
@@ -933,9 +936,27 @@
     if(r.error) showErr(r.error.message);
   });
 
+  function showSignedIn(session){
+    authed=true;
+    var u=session.user, meta=u.user_metadata||{};
+    var name=meta.full_name||meta.name||u.email||'';
+    var pic=meta.avatar_url||meta.picture||'';
+    var initial=(name||'?')[0].toUpperCase();
+    var navAuth=document.getElementById('navAuth');
+    var navCta=document.getElementById('navCta');
+    var av=pic?'<img src="'+pic+'" alt="">':initial;
+    navAuth.className='nav-user';
+    navAuth.href='/';
+    navAuth.removeAttribute('data-auth-gate');
+    navAuth.innerHTML='<span class="nav-avatar">'+av+'</span>'+(name.split('@')[0]||'Account');
+    navCta.textContent='Open app';
+    navCta.href='/';
+    navCta.removeAttribute('data-plan');
+  }
+
   // check if already logged in
   sb.auth.getSession().then(function(r){
-    if(r.data.session){authed=true;}
+    if(r.data.session){showSignedIn(r.data.session);}
     else{setTimeout(function(){openModal();},2500);}
   });
 
