@@ -1016,7 +1016,7 @@
     if(!idea||idea.length<5){fsIdea.focus();return;}
     fsBox.classList.add('fs-loading');
     fsBtn.textContent='Scoring...';
-    fetch('/api/free-score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:idea})})
+    fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json','X-Free-Score':'1'},body:JSON.stringify({idea:idea})})
       .then(function(r){return r.json();})
       .then(function(d){
         if(d.error){alert(d.error);fsBox.classList.remove('fs-loading');fsBtn.textContent='Score it free';return;}
