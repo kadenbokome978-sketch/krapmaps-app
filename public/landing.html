@@ -367,6 +367,29 @@
 
   .reveal{opacity:0;transform:translateY(22px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
   .reveal.in{opacity:1;transform:none}
+  .free-score-box{width:100%;max-width:480px}
+  .fs-input-row{display:flex;gap:8px}
+  .fs-input{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.13);border-radius:12px;padding:14px 18px;color:#fff;font-size:15px;font-family:var(--body);outline:none;transition:border-color .2s}
+  .fs-input:focus{border-color:var(--accent)}
+  .fs-input::placeholder{color:var(--ink-3)}
+  .fs-btn{white-space:nowrap;flex-shrink:0}
+  .fs-hint{font-size:13px;color:var(--ink-3);margin-top:8px}
+  .fs-result{background:var(--card);border:1px solid var(--line-2);border-radius:18px;padding:28px;max-width:480px;width:100%;animation:fsPop .4s cubic-bezier(.2,.7,.2,1)}
+  @keyframes fsPop{from{opacity:0;transform:scale(.95) translateY(8px)}to{opacity:1;transform:none}}
+  .fs-ring-wrap{text-align:center;margin-bottom:16px}
+  .fs-ring{display:inline-flex;align-items:baseline;gap:2px;font-family:var(--disp);font-weight:800;font-size:52px;color:var(--ink);background:linear-gradient(135deg,var(--accent),var(--accent-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .fs-ring small{font-size:18px;font-weight:600;-webkit-text-fill-color:var(--ink-3)}
+  .fs-verdict{font-size:16px;color:var(--ink);font-weight:600;margin-bottom:16px;line-height:1.5}
+  .fs-bars{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+  .fs-bar-row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-3)}
+  .fs-bar-row>span:first-child{width:80px;flex-shrink:0}
+  .fs-track{flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+  .fs-fill{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0;transition:width .8s cubic-bezier(.2,.7,.2,1)}
+  .fs-tip{font-size:14px;color:var(--ink-2);padding:12px 14px;background:rgba(255,255,255,.04);border-radius:10px;border-left:3px solid var(--accent);line-height:1.5}
+  .fs-cta{display:flex;gap:10px;margin-top:18px}
+  .fs-loading .fs-btn{pointer-events:none;opacity:.6}
+  @media(max-width:600px){.fs-input-row{flex-direction:column}.fs-cta{flex-direction:column}}
+
   @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.btn:hover,.b:hover,.loopstep:hover{transform:none}.pulse,.aurora span,.mock-card,.mock-tag,.wave i,.dots i,.closer .cpulse-bar span{width:var(--pw,0);transition:none}.closer .cring-fill{stroke-dashoffset:32.67;transition:none}.fb .fl{width:var(--w,0);transition:none}.evbars .bar{height:var(--h,0);transition:none}.chat .bub{opacity:1;transform:none}html{scroll-behavior:auto}}
 </style>
 </head>
@@ -395,8 +418,32 @@
       <h1 class="hh">Know if it'll hit <em>before you post.</em></h1>
       <p class="hsub">CreatorOS reads your channel, scores any idea before you film it, and writes in your exact voice. It gets sharper with every video you post. No guessing. No soulless AI slop.</p>
       <div class="hcta">
-        <a href="#plans" class="btn btn-primary">Score your next video</a>
-        <a href="#features" class="btn btn-ghost">See everything it does</a>
+        <div class="free-score-box" id="freeScoreBox">
+          <div class="fs-input-row">
+            <input type="text" id="fsIdea" class="fs-input" placeholder="Type your video idea..." maxlength="500">
+            <button id="fsBtn" class="btn btn-primary fs-btn">Score it free</button>
+          </div>
+          <div class="fs-hint">Try it now, no account needed</div>
+        </div>
+        <div class="fs-result" id="fsResult" style="display:none">
+          <div class="fs-ring-wrap">
+            <div class="fs-ring"><b id="fsScore">0</b><small>/100</small></div>
+          </div>
+          <div class="fs-details">
+            <div class="fs-verdict" id="fsVerdict"></div>
+            <div class="fs-bars">
+              <div class="fs-bar-row"><span>Hook</span><span class="fs-track"><span class="fs-fill" id="fsHook"></span></span></div>
+              <div class="fs-bar-row"><span>Retention</span><span class="fs-track"><span class="fs-fill" id="fsRetention"></span></span></div>
+              <div class="fs-bar-row"><span>Shareability</span><span class="fs-track"><span class="fs-fill" id="fsShare"></span></span></div>
+            </div>
+            <div class="fs-tip" id="fsTip"></div>
+          </div>
+          <div class="fs-cta">
+            <a href="#plans" class="btn btn-primary">Get the full breakdown</a>
+            <button id="fsAgain" class="btn btn-ghost">Score another</button>
+          </div>
+        </div>
+        <a href="#features" class="btn btn-ghost" id="fsSeeAll">See everything it does</a>
       </div>
       <div class="htrust">
         <span><span class="d"></span>Grounded in your real results</span>
@@ -958,6 +1005,39 @@
   sb.auth.getSession().then(function(r){
     if(r.data.session){showSignedIn(r.data.session);}
     else{setTimeout(function(){openModal();},2500);}
+  });
+
+  // free score
+  var fsBox=document.getElementById('freeScoreBox'),fsResult=document.getElementById('fsResult');
+  var fsBtn=document.getElementById('fsBtn'),fsIdea=document.getElementById('fsIdea');
+  var fsSeeAll=document.getElementById('fsSeeAll');
+  fsBtn.addEventListener('click',function(){
+    var idea=fsIdea.value.trim();
+    if(!idea||idea.length<5){fsIdea.focus();return;}
+    fsBox.classList.add('fs-loading');
+    fsBtn.textContent='Scoring...';
+    fetch('/api/free-score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:idea})})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(d.error){alert(d.error);fsBox.classList.remove('fs-loading');fsBtn.textContent='Score it free';return;}
+        fsBox.style.display='none';
+        fsSeeAll.style.display='none';
+        fsResult.style.display='block';
+        document.getElementById('fsScore').textContent=d.score||0;
+        document.getElementById('fsVerdict').textContent=d.verdict||'';
+        document.getElementById('fsTip').textContent=d.hookTip||'';
+        setTimeout(function(){
+          document.getElementById('fsHook').style.width=(d.hook||0)+'%';
+          document.getElementById('fsRetention').style.width=(d.retention||0)+'%';
+          document.getElementById('fsShare').style.width=(d.share||0)+'%';
+        },50);
+      })
+      .catch(function(){alert('Something went wrong. Try again.');fsBox.classList.remove('fs-loading');fsBtn.textContent='Score it free';});
+  });
+  fsIdea.addEventListener('keydown',function(e){if(e.key==='Enter')fsBtn.click();});
+  document.getElementById('fsAgain').addEventListener('click',function(){
+    fsResult.style.display='none';fsBox.style.display='block';fsSeeAll.style.display='';
+    fsBox.classList.remove('fs-loading');fsBtn.textContent='Score it free';fsIdea.value='';fsIdea.focus();
   });
 
   // intercept plan buttons
