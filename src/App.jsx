@@ -11324,7 +11324,7 @@ function AuthGate({ onAuthed }) {
       <div style={{ width:"100%", maxWidth:400, position:"relative", zIndex:1 }}>
         <div style={{ textAlign:"center", marginBottom:32 }}>
           <img src="/icon-512.png" alt={appName} style={{ width:56, height:56, borderRadius:16, boxShadow:`0 0 28px ${accent}44`, marginBottom:16 }} />
-          <div style={{ fontSize:isMobile?28:34, fontWeight:800, background:`linear-gradient(135deg,${accent},${accent2})`, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", letterSpacing:"-0.02em" }}>{appName}</div>
+          <div style={{ fontSize:isMobile?28:34, fontWeight:800, letterSpacing:"-0.02em" }}><span style={{ color:"#fff" }}>Creator</span><span style={{ color:accent }}>OS</span></div>
           <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:8 }}>{mode==="signin" ? "Sign in to your account" : mode==="reset" ? "Choose a new password" : "Create your account"}</div>
         </div>
         {mode!=="reset" && <button onClick={()=>{ window.location.href=`${getSbUrl()}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(window.location.origin+'/dashboard')}`; }}

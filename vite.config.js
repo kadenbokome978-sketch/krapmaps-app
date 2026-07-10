@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
+      input: 'app.html',
       output: {
         // Split React into its own long-lived chunk. App code changes on nearly
         // every deploy; React does not — so returning visitors keep React cached
