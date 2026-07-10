@@ -303,7 +303,6 @@
 
   /* interactive alive closer */
   .closer{position:relative;overflow:hidden;text-align:center;padding:100px 26px 110px;margin-top:70px}
-  .closer canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}
   .closer .cinner{position:relative;z-index:2;max-width:800px;margin:0 auto}
   .closer .cring-wrap{width:120px;height:120px;margin:0 auto 30px;position:relative}
   .closer .cring-wrap svg{width:100%;height:100%}
@@ -634,11 +633,10 @@
 </section>
 
 <div class="closer reveal" id="closer">
-  <canvas id="closerCanvas"></canvas>
   <div class="cinner">
     <div class="cring-wrap">
       <svg viewBox="0 0 120 120">
-        <defs><linearGradient id="closeGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#A580FF"/><stop offset="100%" stop-color="#7B4DFF"/></linearGradient></defs>
+        <defs><linearGradient id="closeGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF3D81"/><stop offset="100%" stop-color="#FF6B9D"/></linearGradient></defs>
         <circle class="cring-track" cx="60" cy="60" r="52"/>
         <circle class="cring-fill" cx="60" cy="60" r="52" transform="rotate(-90 60 60)"/>
       </svg>
@@ -647,10 +645,10 @@
     <h2>Your next video is<br>waiting to be scored.</h2>
     <p>The creators who win don't guess. They know before they film.</p>
     <div class="cpulse-row">
-      <div class="cpulse-stat"><span class="cpn" data-to="92">0</span><span class="cpl">Hook</span><div class="cpulse-bar"><span style="--pw:92%;background:linear-gradient(90deg,#7B4DFF,#A580FF)"></span></div></div>
-      <div class="cpulse-stat"><span class="cpn" data-to="78">0</span><span class="cpl">Retention</span><div class="cpulse-bar"><span style="--pw:78%;background:linear-gradient(90deg,#6C5CE7,#A29BFE)"></span></div></div>
-      <div class="cpulse-stat"><span class="cpn" data-to="85">0</span><span class="cpl">Share</span><div class="cpulse-bar"><span style="--pw:85%;background:linear-gradient(90deg,#8B5CF6,#C4B5FD)"></span></div></div>
-      <div class="cpulse-stat"><span class="cpn" data-to="88">0</span><span class="cpl">Overall</span><div class="cpulse-bar"><span style="--pw:88%;background:linear-gradient(90deg,#7B4DFF,#A580FF)"></span></div></div>
+      <div class="cpulse-stat"><span class="cpn" data-to="92">0</span><span class="cpl">Hook</span><div class="cpulse-bar"><span style="--pw:92%;background:linear-gradient(90deg,#FF3D81,#FF6B9D)"></span></div></div>
+      <div class="cpulse-stat"><span class="cpn" data-to="78">0</span><span class="cpl">Retention</span><div class="cpulse-bar"><span style="--pw:78%;background:linear-gradient(90deg,#FF3D81,#FF6B9D)"></span></div></div>
+      <div class="cpulse-stat"><span class="cpn" data-to="85">0</span><span class="cpl">Share</span><div class="cpulse-bar"><span style="--pw:85%;background:linear-gradient(90deg,#FF3D81,#FF6B9D)"></span></div></div>
+      <div class="cpulse-stat"><span class="cpn" data-to="88">0</span><span class="cpl">Overall</span><div class="cpulse-bar"><span style="--pw:88%;background:linear-gradient(90deg,#FF3D81,#FF6B9D)"></span></div></div>
     </div>
     <div class="fcta">
       <a href="#plans" class="btn btn-white">Score your next video</a>
@@ -760,29 +758,9 @@
 
   // ── Closer: particle canvas + counting numbers ──
   (function(){
-    var cl=document.getElementById('closer'), cv=document.getElementById('closerCanvas');
-    if(!cl||!cv) return;
-    var ctx=cv.getContext('2d'), dpr=window.devicePixelRatio||1, W,H, particles=[];
+    var cl=document.getElementById('closer');
+    if(!cl) return;
     var reduceM=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-    function resize(){W=cl.offsetWidth;H=cl.offsetHeight;cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);}
-    resize(); window.addEventListener('resize',resize);
-    var colors=['rgba(123,77,255,','rgba(165,128,255,','rgba(108,92,231,'];
-    for(var i=0;i<40;i++) particles.push({x:Math.random()*2000,y:Math.random()*1000,r:Math.random()*2.5+1,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)-.15,o:Math.random()*.35+.1,c:colors[i%3]});
-    var running=false;
-    function draw(){
-      if(!running) return;
-      ctx.clearRect(0,0,W,H);
-      for(var i=0;i<particles.length;i++){
-        var p=particles[i];
-        p.x+=p.vx; p.y+=p.vy;
-        if(p.y<-10) p.y=H+10;
-        if(p.x<-10) p.x=W+10;
-        if(p.x>W+10) p.x=-10;
-        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283);
-        ctx.fillStyle=p.c+p.o+')'; ctx.fill();
-      }
-      requestAnimationFrame(draw);
-    }
     function countTo(el,target){
       var t0=null, dur=1600;
       function step(ts){if(!t0)t0=ts;var prog=Math.min(1,(ts-t0)/dur);el.textContent=Math.round(target*(1-Math.pow(1-prog,3)));if(prog<1)requestAnimationFrame(step);}
@@ -793,7 +771,6 @@
       if(e.isIntersecting&&!fired){
         fired=true; cio2.unobserve(e.target);
         if(!reduceM){
-          running=true; draw();
           var scoreEl=document.getElementById('cscore');
           countTo(scoreEl,88);
           cl.querySelectorAll('.cpn').forEach(function(n){countTo(n,parseInt(n.getAttribute('data-to'),10));});
