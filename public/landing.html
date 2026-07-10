@@ -382,7 +382,7 @@
       <a href="#features" class="hidem">Features</a>
       <a href="#smarter" class="hidem">Why us</a>
       <a href="#plans" class="hidem">Pricing</a>
-      <a href="/" class="hidem login" data-auth-gate id="navAuth">Activate</a>
+      <a href="/dashboard" class="hidem login" data-auth-gate id="navAuth">Activate</a>
       <a href="#plans" class="btn btn-primary btn-sm" id="navCta">Get started</a>
     </div>
   </div>
@@ -717,7 +717,7 @@
 <footer>
   <div class="wrap row">
     <div class="logo" style="font-size:18px"><img class="mark" src="/icon-512.png" alt="CreatorOS logo" style="width:26px;height:26px"><span><b>Creator</b><i>OS</i></span></div>
-    <div>© <span id="yr"></span> CreatorOS · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:hello@creatoros.app">Contact</a></div>
+    <div>© <span id="yr"></span> CreatorOS · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="mailto:hello@creatoros.app">Contact</a></div>
   </div>
 </footer>
 </div>
@@ -931,7 +931,7 @@
   // Google OAuth
   document.getElementById('authGoogle').addEventListener('click',async function(){
     clearMsg();
-    var dest=pendingHref||window.location.origin+'/landing.html';
+    var dest=pendingHref||window.location.origin+'/';
     var r=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:dest}});
     if(r.error) showErr(r.error.message);
   });
@@ -946,11 +946,11 @@
     var navCta=document.getElementById('navCta');
     var av=pic?'<img src="'+pic+'" alt="">':initial;
     navAuth.className='nav-user';
-    navAuth.href='/';
+    navAuth.href='/dashboard';
     navAuth.removeAttribute('data-auth-gate');
     navAuth.innerHTML='<span class="nav-avatar">'+av+'</span>'+(name.split('@')[0]||'Account');
     navCta.textContent='Open app';
-    navCta.href='/';
+    navCta.href='/dashboard';
     navCta.removeAttribute('data-plan');
   }
 
@@ -963,7 +963,7 @@
   // intercept plan buttons
   document.querySelectorAll('a[href*="buy.stripe.com"], a[data-plan], a[data-auth-gate]').forEach(function(a){
     a.addEventListener('click',function(e){
-      if(!authed){e.preventDefault();openModal(a.href||'/');}
+      if(!authed){e.preventDefault();openModal(a.href||'/dashboard');}
     });
   });
 })();

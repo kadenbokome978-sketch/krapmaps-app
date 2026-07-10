@@ -1,6 +1,10 @@
 {
   "rewrites": [
     { "source": "/r/:handle", "destination": "/api/r?u=:handle" },
-    { "source": "/((?!api/).*)", "destination": "/" }
+    { "source": "/dashboard", "destination": "/index.html" },
+    { "source": "/", "destination": "/landing.html" },
+    { "source": "/terms", "destination": "/terms.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/((?!api/|landing|terms|privacy|dashboard).*)", "destination": "/index.html" }
   ]
 }
