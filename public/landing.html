@@ -301,30 +301,38 @@
   details[open] summary .plus{transform:rotate(45deg)}
   details p{margin-top:15px;color:var(--ink-2);font-size:15px;line-height:1.65}
 
-  /* bold full-bleed gradient closer */
-  .finalband{position:relative;overflow:hidden;text-align:center;padding:110px 26px;margin-top:70px}
-  .finalband .fbg{position:absolute;inset:0;z-index:0;background:linear-gradient(122deg,#FF2D78 0%,#C4379B 44%,#7B4DFF 100%)}
-  .finalband .fbg::after{content:"";position:absolute;inset:0;background:radial-gradient(700px 340px at 50% -30%,rgba(255,255,255,.22),transparent 70%),radial-gradient(500px 400px at 90% 120%,rgba(0,0,0,.28),transparent 60%)}
-  .finalband .fgrain{position:absolute;inset:0;z-index:1;opacity:.06;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-  .finalband .fbg::before{content:"";position:absolute;top:-30%;left:50%;width:60%;height:120%;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(255,255,255,.28),transparent);filter:blur(50px);opacity:.6;animation:fpulse 5s ease-in-out infinite}
-  @keyframes fpulse{0%,100%{opacity:.4}50%{opacity:.75}}
-  .finalband .finner{position:relative;z-index:2;max-width:800px;margin:0 auto}
-  .finalband .fmark{width:56px;height:56px;border-radius:16px;margin:0 auto 26px;display:block;box-shadow:0 12px 34px rgba(0,0,0,.3)}
-  .finalband h2{font-family:var(--disp);font-weight:800;color:#fff;font-size:clamp(40px,6.4vw,72px);letter-spacing:-.03em;line-height:.96;margin-bottom:20px;text-wrap:balance;text-shadow:0 4px 30px rgba(0,0,0,.2)}
-  .finalband p{color:rgba(255,255,255,.85);font-size:clamp(18px,2vw,21px);max-width:44ch;margin:0 auto 36px;line-height:1.5}
+  /* interactive alive closer */
+  .closer{position:relative;overflow:hidden;text-align:center;padding:100px 26px 110px;margin-top:70px}
+  .closer canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+  .closer .cinner{position:relative;z-index:2;max-width:800px;margin:0 auto}
+  .closer .cring-wrap{width:120px;height:120px;margin:0 auto 30px;position:relative}
+  .closer .cring-wrap svg{width:100%;height:100%}
+  .closer .cring-track{fill:none;stroke:rgba(255,255,255,.08);stroke-width:6}
+  .closer .cring-fill{fill:none;stroke:url(#closeGrad);stroke-width:6;stroke-linecap:round;stroke-dasharray:326.7;stroke-dashoffset:326.7;transition:stroke-dashoffset 2s cubic-bezier(.2,.7,.2,1)}
+  .closer.in .cring-fill{stroke-dashoffset:32.67}
+  .closer .cscore{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:800;font-size:38px;color:#fff;letter-spacing:-.02em}
+  .closer h2{font-family:var(--disp);font-weight:800;color:#fff;font-size:clamp(36px,5.8vw,64px);letter-spacing:-.03em;line-height:1;margin-bottom:18px;text-wrap:balance}
+  .closer p{color:var(--ink-2);font-size:clamp(17px,1.9vw,20px);max-width:42ch;margin:0 auto 14px;line-height:1.55}
+  .closer .cpulse-row{display:flex;justify-content:center;gap:28px;margin:26px auto 36px;flex-wrap:wrap}
+  .closer .cpulse-stat{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .closer .cpulse-stat .cpn{font-family:var(--disp);font-weight:800;font-size:28px;color:#fff;letter-spacing:-.02em}
+  .closer .cpulse-stat .cpl{font-size:12.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em}
+  .closer .cpulse-bar{width:60px;height:4px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:4px}
+  .closer .cpulse-bar span{display:block;height:100%;border-radius:4px;width:0;transition:width 1.8s cubic-bezier(.2,.7,.2,1) .3s}
+  .closer.in .cpulse-bar span{width:var(--pw,0)}
   .fcta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
   .btn-white{background:#fff;color:#12071A;padding:16px 30px;font-weight:700;box-shadow:0 12px 34px rgba(0,0,0,.28);border-radius:14px}
   .btn-white:hover{transform:translateY(-2px);box-shadow:0 20px 50px rgba(0,0,0,.36)}
   .btn-clear{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.4);padding:16px 28px;border-radius:14px;font-weight:600;backdrop-filter:blur(6px)}
   .btn-clear:hover{background:rgba(255,255,255,.22)}
-  .ftrust{margin-top:26px;font-size:13.5px;color:rgba(255,255,255,.72)}
+  .ftrust{margin-top:26px;font-size:13.5px;color:var(--ink-3)}
 
   footer{border-top:1px solid var(--line);padding:46px 0;margin-top:36px}
   footer .row{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;color:var(--ink-3);font-size:14px}
 
   .reveal{opacity:0;transform:translateY(22px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
   .reveal.in{opacity:1;transform:none}
-  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.btn:hover,.b:hover,.loopstep:hover{transform:none}.pulse,.aurora span,.mock-card,.mock-tag,.wave i,.dots i,.finalband .fbg::before{animation:none}.fb .fl{width:var(--w,0);transition:none}.evbars .bar{height:var(--h,0);transition:none}.chat .bub{opacity:1;transform:none}html{scroll-behavior:auto}}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.btn:hover,.b:hover,.loopstep:hover{transform:none}.pulse,.aurora span,.mock-card,.mock-tag,.wave i,.dots i,.closer .cpulse-bar span{width:var(--pw,0);transition:none}.closer .cring-fill{stroke-dashoffset:32.67;transition:none}.fb .fl{width:var(--w,0);transition:none}.evbars .bar{height:var(--h,0);transition:none}.chat .bub{opacity:1;transform:none}html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
@@ -625,13 +633,25 @@
   </div>
 </section>
 
-<div class="finalband reveal">
-  <div class="fbg"></div>
-  <div class="fgrain"></div>
-  <div class="finner">
-    <img class="fmark" src="/icon-512.png" alt="CreatorOS" width="56" height="56">
-    <h2>Stop guessing.<br>Start knowing.</h2>
-    <p>Score your next idea before you film it — and post like you already know it'll land.</p>
+<div class="closer reveal" id="closer">
+  <canvas id="closerCanvas"></canvas>
+  <div class="cinner">
+    <div class="cring-wrap">
+      <svg viewBox="0 0 120 120">
+        <defs><linearGradient id="closeGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF3D81"/><stop offset="100%" stop-color="#7B4DFF"/></linearGradient></defs>
+        <circle class="cring-track" cx="60" cy="60" r="52"/>
+        <circle class="cring-fill" cx="60" cy="60" r="52" transform="rotate(-90 60 60)"/>
+      </svg>
+      <div class="cscore" id="cscore">0</div>
+    </div>
+    <h2>Your next video is<br>waiting to be scored.</h2>
+    <p>The creators who win don't guess — they know before they film.</p>
+    <div class="cpulse-row">
+      <div class="cpulse-stat"><span class="cpn" data-to="92">0</span><span class="cpl">Hook</span><div class="cpulse-bar"><span style="--pw:92%;background:linear-gradient(90deg,#FF3D81,#FF6B9D)"></span></div></div>
+      <div class="cpulse-stat"><span class="cpn" data-to="78">0</span><span class="cpl">Retention</span><div class="cpulse-bar"><span style="--pw:78%;background:linear-gradient(90deg,#C4379B,#E066B8)"></span></div></div>
+      <div class="cpulse-stat"><span class="cpn" data-to="85">0</span><span class="cpl">Share</span><div class="cpulse-bar"><span style="--pw:85%;background:linear-gradient(90deg,#7B4DFF,#A580FF)"></span></div></div>
+      <div class="cpulse-stat"><span class="cpn" data-to="88">0</span><span class="cpl">Overall</span><div class="cpulse-bar"><span style="--pw:88%;background:linear-gradient(90deg,#FF3D81,#7B4DFF)"></span></div></div>
+    </div>
     <div class="fcta">
       <a href="#plans" class="btn btn-white">Score your next video</a>
       <a href="https://buy.stripe.com/fZucN8gmu5fhaJG8Y073G00" class="btn btn-clear">Try a £19.99 audit</a>
@@ -737,6 +757,54 @@
       cio.observe(chat);
     }
   }
+
+  // ── Closer: particle canvas + counting numbers ──
+  (function(){
+    var cl=document.getElementById('closer'), cv=document.getElementById('closerCanvas');
+    if(!cl||!cv) return;
+    var ctx=cv.getContext('2d'), dpr=window.devicePixelRatio||1, W,H, particles=[];
+    var reduceM=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+    function resize(){W=cl.offsetWidth;H=cl.offsetHeight;cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);}
+    resize(); window.addEventListener('resize',resize);
+    var colors=['rgba(255,61,129,','rgba(123,77,255,','rgba(196,55,155,'];
+    for(var i=0;i<40;i++) particles.push({x:Math.random()*2000,y:Math.random()*1000,r:Math.random()*2.5+1,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)-.15,o:Math.random()*.35+.1,c:colors[i%3]});
+    var running=false;
+    function draw(){
+      if(!running) return;
+      ctx.clearRect(0,0,W,H);
+      for(var i=0;i<particles.length;i++){
+        var p=particles[i];
+        p.x+=p.vx; p.y+=p.vy;
+        if(p.y<-10) p.y=H+10;
+        if(p.x<-10) p.x=W+10;
+        if(p.x>W+10) p.x=-10;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283);
+        ctx.fillStyle=p.c+p.o+')'; ctx.fill();
+      }
+      requestAnimationFrame(draw);
+    }
+    function countTo(el,target){
+      var t0=null, dur=1600;
+      function step(ts){if(!t0)t0=ts;var prog=Math.min(1,(ts-t0)/dur);el.textContent=Math.round(target*(1-Math.pow(1-prog,3)));if(prog<1)requestAnimationFrame(step);}
+      requestAnimationFrame(step);
+    }
+    var fired=false;
+    var cio2=new IntersectionObserver(function(es){es.forEach(function(e){
+      if(e.isIntersecting&&!fired){
+        fired=true; cio2.unobserve(e.target);
+        if(!reduceM){
+          running=true; draw();
+          var scoreEl=document.getElementById('cscore');
+          countTo(scoreEl,88);
+          cl.querySelectorAll('.cpn').forEach(function(n){countTo(n,parseInt(n.getAttribute('data-to'),10));});
+        } else {
+          document.getElementById('cscore').textContent='88';
+          cl.querySelectorAll('.cpn').forEach(function(n){n.textContent=n.getAttribute('data-to');});
+        }
+      }
+    });},{threshold:.2});
+    cio2.observe(cl);
+  })();
 </script>
 </body>
 </html>
