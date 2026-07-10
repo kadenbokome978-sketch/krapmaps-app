@@ -1360,6 +1360,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
           {!isMobile && <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", marginBottom:isMobile?14:10 }}>Quick Expand</div>}
           <div style={{ display:"flex", gap:8 }}>
             <input
+              data-tour-input
               value={quickExpand}
               onChange={e=>setQuickExpand(e.target.value)}
               onKeyDown={e=>e.key==="Enter"&&doQuickExpand()}
@@ -8431,10 +8432,88 @@ Be extremely specific with timestamps. This is for someone who is not confident 
   );
 }
 
+// ── GUIDED FIRST-SCORE TOUR ──────────────────────────────────────
+function GuidedTour({ step, onSkip, onGoContent }) {
+  const isMobile = typeof window!=="undefined" && window.innerWidth < 900;
+  const [pos, setPos] = useState(null);
+
+  useEffect(()=>{
+    const update = ()=>{
+      if(step===0) {
+        if(isMobile) { setPos({center:true}); return; }
+        const el = document.querySelector('[data-tour-nav="content"]');
+        if(el) { const r=el.getBoundingClientRect(); setPos({top:r.top,left:r.right+12,anchor:"left"}); }
+      } else if(step===1) {
+        const el = document.querySelector('[data-tour-input]');
+        if(el) { const r=el.getBoundingClientRect(); setPos({top:r.bottom+12,left:Math.min(r.left, window.innerWidth-320),anchor:"top"}); el.focus(); }
+        else setPos({center:true});
+      }
+    };
+    update();
+    const t = setTimeout(update, 300);
+    return ()=>clearTimeout(t);
+  },[step]);
+
+  if(step===2) return (
+    <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", zIndex:9999, textAlign:"center", animation:"tourFadeIn 0.4s ease" }}>
+      <style>{`@keyframes tourFadeIn{from{opacity:0;transform:translate(-50%,-50%) scale(0.9)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}`}</style>
+      <div style={{ background:"rgba(8,7,12,0.95)", border:"1px solid rgba(255,61,129,0.3)", borderRadius:20, padding:"40px 48px", backdropFilter:"blur(20px)", boxShadow:"0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(255,61,129,0.15)" }}>
+        <div style={{ fontSize:48, marginBottom:16 }}>🎉</div>
+        <div style={{ fontSize:22, fontWeight:800, color:"#fff", marginBottom:8 }}>First score done!</div>
+        <div style={{ fontSize:14, color:"rgba(255,255,255,0.6)", maxWidth:280, lineHeight:1.5 }}>You're all set. Keep adding ideas and let AI tell you which ones to film.</div>
+      </div>
+    </div>
+  );
+
+  if(!pos || step>2) return null;
+  const posStyle = pos.center
+    ? { position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", zIndex:9998 }
+    : { position:"fixed", top:pos.top, left:pos.left, zIndex:9998 };
+
+  const TIPS = [
+    { title:"Let's score your first idea", desc:"Head to the Content tab to start scoring video ideas with AI.", cta:"Go to Content →", action:onGoContent },
+    { title:"Type a video idea", desc:"Describe any video concept — AI will expand and score it instantly.", cta:null, action:null },
+  ];
+  const tip = TIPS[step];
+  if(!tip) return null;
+
+  return (
+    <>
+      <style>{`
+        @keyframes tourPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,61,129,0.4)}50%{box-shadow:0 0 0 12px rgba(255,61,129,0)}}
+        @keyframes tourSlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+      `}</style>
+      {step===0 && <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:9997 }} onClick={onSkip} />}
+      <div style={{
+        ...posStyle,
+        background:"rgba(8,7,12,0.96)", border:"1px solid rgba(255,61,129,0.3)", borderRadius:14,
+        padding:isMobile?"20px":"18px 22px", maxWidth:300, backdropFilter:"blur(16px)",
+        boxShadow:"0 12px 40px rgba(0,0,0,0.5), 0 0 20px rgba(255,61,129,0.1)",
+        animation:"tourSlideIn 0.3s ease, tourPulse 2s ease-in-out infinite"
+      }}>
+        <div style={{ fontSize:15, fontWeight:700, color:"#fff", marginBottom:6 }}>{tip.title}</div>
+        <div style={{ fontSize:13, color:"rgba(255,255,255,0.6)", lineHeight:1.5, marginBottom:tip.cta?14:0 }}>{tip.desc}</div>
+        {tip.cta && <button onClick={tip.action} style={{ padding:"10px 20px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#FF3D81,#FF6B9D)", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", width:"100%" }}>{tip.cta}</button>}
+        <button onClick={onSkip} style={{ marginTop:8, background:"none", border:"none", color:"rgba(255,255,255,0.35)", fontSize:11, cursor:"pointer", padding:0, width:"100%", textAlign:"center" }}>Skip tour</button>
+      </div>
+    </>
+  );
+}
+
 // ── DASHBOARD ─────────────────────────────────────────────────────
 function Dashboard({ keys, onEditKeys }) {
   const isPhone = typeof window!=="undefined" && window.innerWidth < 520;
   const [isMobile] = useState(() => (typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900)));
+
+  // ── GUIDED FIRST-SCORE TOUR ──────────────────────────────────
+  const [tourStep, setTourStep] = useState(()=>{
+    if(loadJSON("krapmaps_v1_tour_done",false)) return null;
+    const hasIdeas = loadJSON(IDEAS_KEY,[]).length > 0;
+    return hasIdeas ? null : 0;
+  });
+  const tourRef = useRef(null);
+  const advanceTour = (to) => { setTourStep(to); };
+  const finishTour = () => { setTourStep(null); saveJSON("krapmaps_v1_tour_done",true); };
 
   // ── STATE ──────────────────────────────────────────────────────
   const [nav, setNav]   = useState("home");
@@ -9608,6 +9687,7 @@ Return ONLY valid JSON:
     } catch(e) { setAiErr("Score failed: "+e.message); console.error("scoreIdea error:", e); }
     addXP(20);
     setAiLoad(l=>({...l,[key]:false}));
+    if(tourStep===1 || tourStep===2) { advanceTour(2); setTimeout(finishTour, 4000); }
   };
 
   const genCaption = async (idea) => {
@@ -10022,7 +10102,7 @@ Return JSON:
           {NAV.map(n=>{
             const active = nav===n.id;
             return (
-              <button data-nav-btn key={n.id} onClick={()=>{ setNav(n.id); setSub(null); }}
+              <button data-nav-btn data-tour-nav={n.id} key={n.id} onClick={()=>{ setNav(n.id); setSub(null); if(tourStep===0 && n.id==="content") advanceTour(1); }}
                 style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 16px", borderRadius:16, border:"none", cursor:"pointer", transition:"all 0.18s", position:"relative", overflow:"hidden",
                   background: active ? `linear-gradient(135deg,${WL.accentColor}18,${WL.accentColor2}0c)` : "transparent",
                   color: active ? "#fff" : "rgba(255,255,255,0.6)",
@@ -10111,7 +10191,7 @@ Return JSON:
                   {NAV.map(n=>{
                     const active = nav===n.id;
                     return (
-                      <button key={n.id} onClick={()=>{ setNav(n.id); setSub(null); setDrawerOpen(false); }}
+                      <button key={n.id} onClick={()=>{ setNav(n.id); setSub(null); setDrawerOpen(false); if(tourStep===0 && n.id==="content") advanceTour(1); }}
                         style={{ display:"flex", alignItems:"center", gap:16, width:"100%", padding:"16px 18px", borderRadius:16, border:`1px solid ${active?WL.accentColor+"40":"rgba(255,255,255,0.06)"}`, background:active?`linear-gradient(135deg,${WL.accentColor}20,${WL.accentColor2}10)`:"rgba(255,255,255,0.03)", marginBottom:8, cursor:"pointer", textAlign:"left" }}>
                         <div style={{ width:38, height:38, borderRadius:12, background:active?`linear-gradient(135deg,${WL.accentColor}30,${WL.accentColor2}20)`:"rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                           {n.ic(18, active?WL.accentColor:"rgba(255,255,255,0.5)")}
@@ -10255,6 +10335,9 @@ Return JSON:
         </div>{/* end web-inner */}
       </div>{/* end web-content */}
 
+
+      {/* GUIDED TOUR */}
+      {tourStep !== null && <GuidedTour step={tourStep} onSkip={finishTour} onGoContent={()=>{ setNav("content"); setSub(null); advanceTour(1); }} />}
 
       {/* MODALS */}
       {modals.addVideo    && <AddVideoModal />}
