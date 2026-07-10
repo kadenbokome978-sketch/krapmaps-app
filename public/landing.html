@@ -380,7 +380,7 @@
       <a href="#features" class="hidem">Features</a>
       <a href="#smarter" class="hidem">Why us</a>
       <a href="#plans" class="hidem">Pricing</a>
-      <a href="/" class="hidem login">Activate</a>
+      <a href="/" class="hidem login" data-auth-gate>Activate</a>
       <a href="#plans" class="btn btn-primary btn-sm">Get started</a>
     </div>
   </div>
@@ -940,7 +940,7 @@
   });
 
   // intercept plan buttons
-  document.querySelectorAll('a[href*="buy.stripe.com"], a[data-plan]').forEach(function(a){
+  document.querySelectorAll('a[href*="buy.stripe.com"], a[data-plan], a[data-auth-gate]').forEach(function(a){
     a.addEventListener('click',function(e){
       if(!authed){e.preventDefault();openModal(a.href||'/');}
     });
