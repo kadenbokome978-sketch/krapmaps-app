@@ -1016,7 +1016,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
       {/* ══ UPCOMING + IDEAS ═══════════════════════════════════════ */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:14 }}>
         {[
-          { title:"Upcoming", sub:"Scheduled content", icon:I.cal, color:C.cyan, items:upcoming, empty:"Nothing scheduled yet",
+          { title:"Upcoming", sub:"Scheduled content", icon:I.cal, color:C.cyan, items:upcoming, empty:"Nothing scheduled yet", emptyCta:"Schedule", emptyAction:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addCal"),50); },
             renderItem:(c,i,arr)=>(
               <div key={c.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0", borderBottom:i<arr.length-1?`1px solid rgba(255,255,255,0.05)`:"none" }}>
                 <div style={{ width:6, height:6, borderRadius:"50%", background:C.cyan, flexShrink:0, boxShadow:`0 0 6px ${C.cyan}` }} />
@@ -1025,7 +1025,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
               </div>
             )
           },
-          { title:"Top Ideas", sub:"Highest virality score", icon:I.idea, color:C.purple, items:topIdeas, empty:"No ideas yet",
+          { title:"Top Ideas", sub:"Highest virality score", icon:I.idea, color:C.purple, items:topIdeas, empty:"No ideas yet", emptyCta:"Add Idea", emptyAction:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); },
             renderItem:(idea,i,arr)=>(
               <div key={idea.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:i<arr.length-1?`1px solid rgba(255,255,255,0.05)`:"none" }}>
                 <div style={{ fontSize:isMobile?20:30, fontWeight:400, fontFamily:C.fontHead, color:Number(idea.viral)>=70?C.green:Number(idea.viral)>=50?C.yellow:C.dim, width:36, lineHeight:1, textShadow:`0 0 10px currentColor`, flexShrink:0 }}>{idea.viral||0}</div>
@@ -1049,7 +1049,10 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
               {section.items.length===0
-                ? <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", fontStyle:"italic", padding:"12px 0" }}>{section.empty}</div>
+                ? <div style={{ textAlign:"center", padding:"20px 0" }}>
+                    <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", marginBottom:section.emptyCta?12:0 }}>{section.empty}</div>
+                    {section.emptyCta && <button onClick={section.emptyAction} style={{ padding:"8px 18px", borderRadius:8, border:`1px solid ${section.color}40`, background:`${section.color}15`, color:section.color, fontSize:12, fontWeight:700, cursor:"pointer", letterSpacing:"0.06em" }}>{section.emptyCta} →</button>}
+                  </div>
                 : section.items.map((item,i,arr)=>section.renderItem(item,i,arr))
               }
             </div>
@@ -4285,6 +4288,60 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
         );
       })()}
 
+      {/* 1.75 SCORE HISTORY TREND */}
+      {(()=>{
+        const hist = loadJSON(SCORE_HISTORY_KEY,[]);
+        if(hist.length < 2) return null;
+        const recent = hist.slice(-30);
+        const maxS = Math.max(...recent.map(h=>h.score),100);
+        const minS = Math.min(...recent.map(h=>h.score),0);
+        const range = Math.max(maxS-minS,20);
+        const w = 600, h2 = 120, pad = 20;
+        const pts = recent.map((e,i)=>({
+          x: pad + (i/(recent.length-1))*(w-2*pad),
+          y: pad + (1-(e.score-minS)/range)*(h2-2*pad),
+          ...e
+        }));
+        const line = pts.map((p,i)=>i===0?`M${p.x},${p.y}`:`L${p.x},${p.y}`).join(" ");
+        const avgScore = Math.round(recent.reduce((s,e)=>s+e.score,0)/recent.length);
+        const firstHalf = recent.slice(0,Math.floor(recent.length/2));
+        const secondHalf = recent.slice(Math.floor(recent.length/2));
+        const avg1 = firstHalf.length ? firstHalf.reduce((s,e)=>s+e.score,0)/firstHalf.length : 0;
+        const avg2 = secondHalf.length ? secondHalf.reduce((s,e)=>s+e.score,0)/secondHalf.length : 0;
+        const trend = avg2 - avg1;
+        const trendColor = trend>2 ? C.green : trend<-2 ? C.pink : C.yellow;
+        const trendLabel = trend>2 ? "Improving" : trend<-2 ? "Declining" : "Stable";
+        return card(
+          <>
+            {sectionHead("Score History", C.purple)}
+            <div style={{ display:"flex", gap:isMobile?16:24, marginBottom:16, flexWrap:"wrap" }}>
+              {[
+                { l:"TOTAL SCORES", v:hist.length, c:C.purple },
+                { l:"AVG SCORE", v:`${avgScore}/100`, c:C.cyan },
+                { l:"TREND", v:trendLabel, c:trendColor },
+                { l:"LAST 30", v:recent.length, c:"rgba(255,255,255,0.5)" },
+              ].map((s,si)=>(
+                <div key={si} style={{ padding:"12px 16px", background:"rgba(255,255,255,0.03)", borderRadius:10, border:`1px solid ${C.border}` }}>
+                  <div style={{ fontSize:9, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700, marginBottom:4 }}>{s.l}</div>
+                  <div style={{ fontSize:18, fontWeight:700, color:s.c, fontFamily:C.fontHead }}>{s.v}</div>
+                </div>
+              ))}
+            </div>
+            <svg width="100%" height={h2} viewBox={`0 0 ${w} ${h2}`} preserveAspectRatio="none" style={{ display:"block" }}>
+              <defs><linearGradient id="shg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.purple} stopOpacity="0.3"/><stop offset="100%" stopColor={C.purple} stopOpacity="0"/></linearGradient></defs>
+              <path d={`${line} L${pts[pts.length-1].x},${h2-pad} L${pts[0].x},${h2-pad} Z`} fill="url(#shg)"/>
+              <path d={line} fill="none" stroke={C.purple} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              {pts.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r="3" fill={p.score>=70?C.green:p.score>=50?C.yellow:C.pink} stroke="rgba(0,0,0,0.5)" strokeWidth="1"><title>{p.title}: {p.score}/100</title></circle>)}
+            </svg>
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:"rgba(255,255,255,0.3)", marginTop:4, padding:"0 20px" }}>
+              <span>{recent[0].date?.slice(0,10)}</span>
+              <span>{recent[recent.length-1].date?.slice(0,10)}</span>
+            </div>
+          </>,
+          C.purple
+        );
+      })()}
+
       {/* 2. AI SCORE VS REAL VIEWS TABLE */}
       {card(
         <>
@@ -5033,6 +5090,7 @@ const MEMORY_KEY      = "krapmaps_v1_memory";
 const COMPETE_KEY     = "krapmaps_v1_competitors";
 const PREDICT_KEY     = "krapmaps_v1_predictions";
 const SCORES_KEY        = "krapmaps_v1_scores";
+const SCORE_HISTORY_KEY = "krapmaps_v1_score_history";
 const CUR_TRENDS_KEY    = "krapmaps_v1_cur_trends";
 const CHANNEL_THEORY_KEY = "krapmaps_v1_channel_theory";
 const HOOK_DB_KEY  = "krapmaps_v1_hookdb";
@@ -9684,6 +9742,12 @@ Return ONLY valid JSON:
           _scoredAt: Date.now(), // transient: powers the fresh-score celebration
         };
       }));
+      try {
+        const hist = loadJSON(SCORE_HISTORY_KEY,[]);
+        hist.push({ id:idea.id, title:(idea.title||"").slice(0,60), score:r.viralityScore, date:new Date().toISOString() });
+        if(hist.length > 200) hist.splice(0, hist.length-200);
+        saveJSON(SCORE_HISTORY_KEY, hist);
+      } catch {}
     } catch(e) { setAiErr("Score failed: "+e.message); console.error("scoreIdea error:", e); }
     addXP(20);
     setAiLoad(l=>({...l,[key]:false}));
