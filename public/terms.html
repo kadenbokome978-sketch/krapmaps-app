@@ -1,29 +1,76 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Terms of Service · CreatorOS</title>
-<link rel="icon" href="/icon-512.png" type="image/png">
+<link rel="icon" href="/icon-192.png">
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=switzer@400,500,600&display=swap" rel="stylesheet">
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  :root{--bg:#08070C;--ink:#fff;--ink-2:rgba(255,255,255,.7);--accent:#FF3D81;--line:rgba(255,255,255,.08)}
-  body{background:var(--bg);color:var(--ink-2);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased}
+  :root{
+    --bg:#08070C;--card:#100D19;
+    --line:rgba(255,255,255,.07);--line-2:rgba(255,255,255,.13);
+    --ink:#F4F1F8;--ink-2:#A49CB4;--ink-3:#6B6480;
+    --accent:#FF3D81;--accent-2:#9B6BFF;
+    --disp:"Cabinet Grotesk",ui-sans-serif,-apple-system,"Segoe UI",sans-serif;
+    --body:"Switzer",ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink-2);font-family:var(--body);font-size:16.5px;line-height:1.72;-webkit-font-smoothing:antialiased;overflow-x:hidden}
   a{color:var(--accent);text-decoration:none}
-  a:hover{text-decoration:underline}
-  .wrap{max-width:700px;margin:0 auto;padding:60px 24px 100px}
-  h1{color:var(--ink);font-size:32px;font-weight:700;margin-bottom:8px;letter-spacing:-.02em}
-  .updated{font-size:14px;color:rgba(255,255,255,.4);margin-bottom:40px}
-  h2{color:var(--ink);font-size:20px;font-weight:600;margin:36px 0 12px;letter-spacing:-.01em}
-  p,ul{margin-bottom:16px}
-  ul{padding-left:20px}
-  li{margin-bottom:6px}
-  .back{display:inline-block;margin-bottom:30px;font-size:14px}
+  a:hover{color:#fff}
+  ::selection{background:rgba(255,61,129,.28)}
+
+  .aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .aurora span{position:absolute;border-radius:50%;filter:blur(110px)}
+  .a1{top:-16vh;left:-8vw;width:52vw;height:52vw;background:radial-gradient(circle,rgba(255,61,129,.5),transparent 62%);opacity:.25;animation:drift1 28s ease-in-out infinite}
+  .a2{top:24vh;right:-14vw;width:48vw;height:48vw;background:radial-gradient(circle,rgba(155,107,255,.44),transparent 62%);opacity:.18;animation:drift2 34s ease-in-out infinite}
+  @keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(6vw,4vh) scale(1.12)}}
+  @keyframes drift2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-5vw,6vh) scale(1.08)}}
+  .grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.045;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+  .content{position:relative;z-index:3}
+
+  nav{position:sticky;top:0;z-index:60;backdrop-filter:blur(18px) saturate(1.4);background:rgba(8,7,12,.62);border-bottom:1px solid var(--line)}
+  nav .row{display:flex;align-items:center;justify-content:space-between;height:74px;max-width:1160px;margin:0 auto;padding:0 26px}
+  .logo{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:700;font-size:20px;letter-spacing:-.02em;color:var(--ink);text-decoration:none}
+  .logo .mark{width:32px;height:32px;border-radius:9px;object-fit:cover;display:block;flex-shrink:0;box-shadow:0 0 22px rgba(255,61,129,.34)}
+  .logo b{color:#fff;font-weight:700} .logo i{color:var(--accent);font-style:normal;font-weight:700}
+
+  .wrap{max-width:740px;margin:0 auto;padding:80px 26px 120px}
+
+  h1{font-family:var(--disp);font-weight:800;font-size:clamp(32px,5vw,48px);color:var(--ink);letter-spacing:-.03em;line-height:1.1;margin-bottom:10px}
+  .updated{font-size:14px;color:var(--ink-3);margin-bottom:50px}
+  h2{font-family:var(--disp);font-weight:700;font-size:20px;color:var(--ink);letter-spacing:-.01em;margin:44px 0 14px;padding-top:20px;border-top:1px solid var(--line)}
+  h2:first-of-type{border-top:none;padding-top:0}
+  p,ul{margin-bottom:18px}
+  ul{padding-left:22px}
+  li{margin-bottom:8px}
+  li b{color:var(--ink);font-weight:600}
+  strong,b{color:var(--ink)}
+
+  footer{border-top:1px solid var(--line);padding:46px 26px;margin-top:36px;position:relative;z-index:3}
+  footer .row{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;color:var(--ink-3);font-size:14px;max-width:1160px;margin:0 auto}
+  footer a{color:var(--ink-3)}
+  footer a:hover{color:var(--ink)}
+
+  @media(prefers-reduced-motion:reduce){.aurora span{animation:none}}
 </style>
 </head>
 <body>
+<div class="aurora"><span class="a1"></span><span class="a2"></span></div>
+<div class="grain"></div>
+
+<nav>
+  <div class="row">
+    <a href="/landing.html" class="logo"><img class="mark" src="/icon-512.png" alt="CreatorOS logo" width="32" height="32"><span><b>Creator</b><i>OS</i></span></a>
+  </div>
+</nav>
+
+<div class="content">
 <div class="wrap">
-<a href="/landing.html" class="back">&larr; Back to CreatorOS</a>
 <h1>Terms of Service</h1>
 <p class="updated">Last updated: 10 July 2025</p>
 
@@ -71,5 +118,14 @@
 <h2>Contact</h2>
 <p>Questions? Email <a href="mailto:hello@creatoros.app">hello@creatoros.app</a></p>
 </div>
+</div>
+
+<footer>
+  <div class="row">
+    <a href="/landing.html" class="logo" style="font-size:18px"><img class="mark" src="/icon-512.png" alt="CreatorOS logo" style="width:26px;height:26px"><span><b>Creator</b><i>OS</i></span></a>
+    <div>© <span id="yr"></span> CreatorOS · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:hello@creatoros.app">Contact</a></div>
+  </div>
+</footer>
+<script>document.getElementById('yr').textContent=new Date().getFullYear();</script>
 </body>
 </html>
