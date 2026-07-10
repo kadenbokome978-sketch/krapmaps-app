@@ -638,7 +638,7 @@
   <div class="cinner">
     <div class="cring-wrap">
       <svg viewBox="0 0 120 120">
-        <defs><linearGradient id="closeGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF3D81"/><stop offset="100%" stop-color="#7B4DFF"/></linearGradient></defs>
+        <defs><linearGradient id="closeGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#A580FF"/><stop offset="100%" stop-color="#7B4DFF"/></linearGradient></defs>
         <circle class="cring-track" cx="60" cy="60" r="52"/>
         <circle class="cring-fill" cx="60" cy="60" r="52" transform="rotate(-90 60 60)"/>
       </svg>
@@ -647,10 +647,10 @@
     <h2>Your next video is<br>waiting to be scored.</h2>
     <p>The creators who win don't guess — they know before they film.</p>
     <div class="cpulse-row">
-      <div class="cpulse-stat"><span class="cpn" data-to="92">0</span><span class="cpl">Hook</span><div class="cpulse-bar"><span style="--pw:92%;background:linear-gradient(90deg,#FF3D81,#FF6B9D)"></span></div></div>
-      <div class="cpulse-stat"><span class="cpn" data-to="78">0</span><span class="cpl">Retention</span><div class="cpulse-bar"><span style="--pw:78%;background:linear-gradient(90deg,#C4379B,#E066B8)"></span></div></div>
-      <div class="cpulse-stat"><span class="cpn" data-to="85">0</span><span class="cpl">Share</span><div class="cpulse-bar"><span style="--pw:85%;background:linear-gradient(90deg,#7B4DFF,#A580FF)"></span></div></div>
-      <div class="cpulse-stat"><span class="cpn" data-to="88">0</span><span class="cpl">Overall</span><div class="cpulse-bar"><span style="--pw:88%;background:linear-gradient(90deg,#FF3D81,#7B4DFF)"></span></div></div>
+      <div class="cpulse-stat"><span class="cpn" data-to="92">0</span><span class="cpl">Hook</span><div class="cpulse-bar"><span style="--pw:92%;background:linear-gradient(90deg,#7B4DFF,#A580FF)"></span></div></div>
+      <div class="cpulse-stat"><span class="cpn" data-to="78">0</span><span class="cpl">Retention</span><div class="cpulse-bar"><span style="--pw:78%;background:linear-gradient(90deg,#6C5CE7,#A29BFE)"></span></div></div>
+      <div class="cpulse-stat"><span class="cpn" data-to="85">0</span><span class="cpl">Share</span><div class="cpulse-bar"><span style="--pw:85%;background:linear-gradient(90deg,#8B5CF6,#C4B5FD)"></span></div></div>
+      <div class="cpulse-stat"><span class="cpn" data-to="88">0</span><span class="cpl">Overall</span><div class="cpulse-bar"><span style="--pw:88%;background:linear-gradient(90deg,#7B4DFF,#A580FF)"></span></div></div>
     </div>
     <div class="fcta">
       <a href="#plans" class="btn btn-white">Score your next video</a>
@@ -766,7 +766,7 @@
     var reduceM=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
     function resize(){W=cl.offsetWidth;H=cl.offsetHeight;cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);}
     resize(); window.addEventListener('resize',resize);
-    var colors=['rgba(255,61,129,','rgba(123,77,255,','rgba(196,55,155,'];
+    var colors=['rgba(123,77,255,','rgba(165,128,255,','rgba(108,92,231,'];
     for(var i=0;i<40;i++) particles.push({x:Math.random()*2000,y:Math.random()*1000,r:Math.random()*2.5+1,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)-.15,o:Math.random()*.35+.1,c:colors[i%3]});
     var running=false;
     function draw(){
