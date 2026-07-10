@@ -7,6 +7,13 @@
 <meta name="description" content="The AI that scores your video before you film it, writes in your exact voice, and gets smarter with every post. Grounded in your own real results.">
 <meta property="og:title" content="CreatorOS · Know if it'll pop before you post">
 <meta property="og:description" content="AI that predicts your video's views before you film. In your own voice, grounded in your real results.">
+<meta property="og:image" content="/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CreatorOS · Know if it'll pop before you post">
+<meta name="twitter:description" content="AI that scores your video before you film it. Grounded in your real results.">
+<meta name="twitter:image" content="/og.png">
 <link rel="icon" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
@@ -367,6 +374,15 @@
 
   .reveal{opacity:0;transform:translateY(22px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
   .reveal.in{opacity:1;transform:none}
+  @media(max-width:480px){
+    header.hero{padding:60px 0 24px}
+    .hh{font-size:clamp(30px,9vw,42px)}
+    .hsub{font-size:15px}
+    .htrust{flex-direction:column;gap:6px;align-items:flex-start}
+    .closer h2{font-size:clamp(28px,7vw,48px)}
+    .closer .cpulse-row{gap:18px}
+    footer .row{flex-direction:column;text-align:center;gap:14px}
+  }
   @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.btn:hover,.b:hover,.loopstep:hover{transform:none}.pulse,.aurora span,.mock-card,.mock-tag,.wave i,.dots i,.closer .cpulse-bar span{width:var(--pw,0);transition:none}.closer .cring-fill{stroke-dashoffset:32.67;transition:none}.fb .fl{width:var(--w,0);transition:none}.evbars .bar{height:var(--h,0);transition:none}.chat .bub{opacity:1;transform:none}html{scroll-behavior:auto}}
 </style>
 </head>
@@ -764,8 +780,7 @@
       requestAnimationFrame(step);
     }
     var reduceM=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-    function run(){
-      var r=score(input.value); if(!r){ verdictEl.textContent='Type an idea first'; return; }
+    function show(r){
       prg.style.strokeDashoffset = C*(1-r.s/100);
       if(reduceM) numEl.textContent=r.s; else countUp(r.s);
       verdictEl.textContent=r.verdict; verdictEl.style.color=r.vcol;
@@ -773,6 +788,24 @@
       document.getElementById('dbHook').style.width=r.hook+'%';
       document.getElementById('dbRet').style.width=r.ret+'%';
       document.getElementById('dbShare').style.width=r.share+'%';
+    }
+    var scoring=false;
+    function run(){
+      var idea=input.value.trim(); if(!idea){ verdictEl.textContent='Type an idea first'; return; }
+      var r=score(idea); if(r) show(r);
+      if(scoring) return; scoring=true;
+      btn.textContent='Scoring...'; btn.disabled=true;
+      fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json','X-Free-Score':'1'},body:JSON.stringify({idea:idea})})
+        .then(function(res){return res.json();})
+        .then(function(d){
+          if(!d.error&&d.score){
+            var s=d.score, vcol=s>=70?'var(--accent)':s>=55?'#fff':'var(--ink-2)';
+            var verdict=s>=85?'Elite · post this':s>=70?'Strong · worth filming':s>=55?'Decent · sharpen the hook':'Needs a stronger hook';
+            show({s:s,hook:d.hook||s,ret:d.retention||s-6,share:d.share||s-2,verdict:d.verdict||verdict,vcol:vcol,views:fmt(Math.round(s*s*50))+' – '+fmt(Math.round(s*s*150))});
+          }
+        })
+        .catch(function(){})
+        .finally(function(){scoring=false;btn.textContent='Score it';btn.disabled=false;});
     }
     btn.addEventListener('click', run);
     input.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); run(); } });
