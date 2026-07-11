@@ -7815,8 +7815,8 @@ Return ONLY JSON:
 // Shown when a user hits their plan limit, or opened from Settings. Upgrading
 // sends them to Stripe Checkout; the webhook flips their tier on return.
 const PRICING_PLANS = [
-  { id:"free",   name:"Free",   price:"£0",  per:"to start", tagline:"Try it out", feats:["10 idea scores / month","Voice DNA + your analytics","Growth tracking","Shareable results page"] },
-  { id:"pro",    name:"Pro",    price:"£29", per:"/month",  tagline:"The full engine, every day", hot:true, feats:["Unlimited idea scoring","Live trends + competitor spy","Multi-model consensus scoring","Priority AI, no queue","Audit buyers: £19/mo for 3 months"] },
+  { id:"audit", name:"Audit", price:"Free", per:"first one", oneoff:true, tagline:"See the magic — first one free", feats:["Full AI breakdown of your channel","What's working & what's costing views","Your Voice DNA, decoded","5 video ideas in your voice","First free · £19 for each extra audit"] },
+  { id:"pro",   name:"Pro",   price:"£29", per:"/month",  tagline:"The full engine, every day", hot:true, feats:["Unlimited idea scoring","Live trends + competitor spy","Multi-model consensus scoring","Priority AI, no queue","Buy a £19 audit → £19/mo for 3 months (first 10)"] },
 ];
 function PricingModal({ tier="free", reason, onClose }){
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
@@ -7857,9 +7857,9 @@ function PricingModal({ tier="free", reason, onClose }){
                 </div>
                 {current
                   ? <div style={{ textAlign:"center", padding:"11px", borderRadius:11, border:"1px solid rgba(255,255,255,0.12)", color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, fontFamily:C.fontHead }}>CURRENT PLAN</div>
-                  : p.id==="free"
-                    ? <div style={{ height:1 }}/>
-                    : <button onClick={()=>go(p.id)} disabled={!!busy} style={{ padding:"11px", borderRadius:11, border:"none", background:p.hot?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.08)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:busy?"wait":"pointer", opacity:busy&&busy!==p.id?0.5:1 }}>{busy===p.id?"OPENING…":"Upgrade"}</button>
+                  : p.oneoff
+                    ? <div style={{ textAlign:"center", padding:"11px", borderRadius:11, border:`1px solid ${C.green}30`, background:`${C.green}0e`, color:C.green, fontSize:12.5, fontWeight:700, fontFamily:C.fontHead }}>INCLUDED FREE</div>
+                    : <button onClick={()=>go(p.id)} disabled={!!busy} style={{ padding:"11px", borderRadius:11, border:"none", background:p.hot?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.08)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:busy?"wait":"pointer", opacity:busy&&busy!==p.id?0.5:1 }}>{busy===p.id?"OPENING…":"Upgrade to Pro"}</button>
                 }
               </div>
             );
