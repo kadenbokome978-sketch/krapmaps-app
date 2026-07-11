@@ -4689,7 +4689,6 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
     { id:"gpt4o", label:"GPT-4o", desc:"Multi-model consensus", color:C.green },
     { id:"tikwm", label:"TikTok (RapidAPI)", desc:"Auto TikTok sync", color:"#FF2D55" },
     { id:"gemini", label:"Gemini", desc:"Video reader + 3rd scoring vote", color:C.yellow },
-    { id:"igscraper", label:"Instagram (RapidAPI)", desc:"Auto reel sync", color:"#E1306C" },
   ];
 
   // Live integration health — updates when any sync reports a result
@@ -4707,11 +4706,11 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
   };
   const _sb = _hStatus("supabase", "CONNECTED", C.green);
   const _tt = _hStatus("tiktok", scrapedStats?"SYNCED "+(()=>{try{const h=Math.round((Date.now()-new Date(scrapedStats.scraped_at))/3600000);return h<1?"<1h ago":h+"h ago";}catch{return "unknown";}})()+" ("+( scrapedStats.video_count||0)+" videos)":"NOT SYNCED", scrapedStats?C.green:C.yellow);
-  const _ig = _hStatus("instagram", keys?.igscraper?"KEY SET":"ADD KEY", keys?.igscraper?C.green:C.yellow);
+  const _ig = _hStatus("instagram", keys?.ig?"CONNECTED":"NOT CONNECTED", keys?.ig?C.green:C.yellow);
   const statusItems = [
     { label:"Supabase DB", value:_sb.value, color:_sb.color, id:"db", detail:_sb.detail },
     { label:"TikTok Scraper", value:_tt.value, color:_tt.color, id:"tikwm", detail:_tt.detail },
-    { label:"Instagram Scraper", value:_ig.value, color:_ig.color, id:"igscraper", detail:_ig.detail },
+    { label:"Instagram", value:_ig.value, color:_ig.color, id:"igscraper", detail:_ig.detail },
     { label:"Anthropic AI", value:keys?.anthropic?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.anthropic||USE_BACKEND)?C.green:C.pink, id:"anthropic" },
     { label:"Perplexity", value:keys?.perplexity?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.perplexity||USE_BACKEND)?C.green:C.yellow, id:"perplexity" },
     { label:"Gemini Video", value:keys?.gemini?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.gemini||USE_BACKEND)?C.green:C.yellow, id:"gemini" },
@@ -8874,12 +8873,11 @@ function Dashboard({ keys, onEditKeys }) {
     try {
       const r = await fetch(`https://graph.instagram.com/me?fields=id,username,media_count,followers_count&access_token=${keys.ig}`);
       const profile = await r.json();
-      const mr = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,media_product_type,timestamp,like_count,comments_count,permalink&limit=20&access_token=${keys.ig}`);
+      const mr = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,media_product_type,timestamp,like_count,comments_count,permalink,thumbnail_url,media_url&limit=50&access_token=${keys.ig}`);
       const media = await mr.json();
       const items = media.data || [];
       // Views live in the Insights API now (the old video_views/plays media fields
-      // are deprecated). Pull each item's views; "views" is the current metric,
-      // with "plays" as a fallback for older reels. Images/carousels just get 0.
+      // are deprecated). "views" is the current metric, "plays" the older fallback.
       const readInsight = async (id, metric) => {
         try {
           const ir = await fetch(`https://graph.instagram.com/${id}/insights?metric=${metric}&access_token=${keys.ig}`);
@@ -8895,6 +8893,20 @@ function Dashboard({ keys, onEditKeys }) {
         return { ...m, views: views || 0 };
       }));
       setIgData({ profile, media: enriched });
+      // Feed the official media straight into the video library so the whole app
+      // (IG Views, reel cards, analytics) uses real Instagram data — no scraper.
+      const fresh = enriched.map(m => ({
+        id: "ig_"+m.id,
+        title: (m.caption||"").slice(0,100) || "Instagram post",
+        views: m.views||0, likes: m.like_count||0, comments: m.comments_count||0, shares: 0,
+        cover: m.thumbnail_url || m.media_url || "",
+        videoUrl: m.permalink || "", url: m.permalink || "",
+        platform: "instagram",
+        _igId: m.id, _source: "ig_official",
+        created_at: m.timestamp || new Date().toISOString(),
+        type: m.media_product_type==="REELS" ? "reel" : "post",
+      }));
+      if(fresh.length) setVideos(prev => [...prev.filter(v=>v.platform!=="instagram"), ...fresh]);
     } catch(e) { setAiErr("IG fetch failed: "+e.message); }
     setIgLoad(false);
   },[keys,igLoad,hasIG]);
@@ -9122,6 +9134,9 @@ function Dashboard({ keys, onEditKeys }) {
 
   // ── IG REELS AUTO-SCRAPER ─────────────────────────────────────
   const fetchIGFollowers = useCallback(async()=>{
+    // Deprecated — official Instagram (fetchIG) now provides followers + reels.
+    return;
+    /* eslint-disable no-unreachable */
     const cfg = loadJSON(KEYS_KEY,{});
     const rapidKey = cfg?.keys?.igscraper; // IG needs a dedicated scraper key; tikwm fallback causes 403
     if(!rapidKey && !USE_BACKEND) return;
@@ -9148,6 +9163,9 @@ function Dashboard({ keys, onEditKeys }) {
   },[]);
 
   const fetchIGReels = useCallback(async(force=false)=>{
+    // Deprecated — official Instagram (fetchIG) now populates reels + views.
+    return;
+    /* eslint-disable no-unreachable */
     const cfg = loadJSON(KEYS_KEY,{});
     const rapidKey = cfg?.keys?.igscraper; // IG needs a dedicated scraper key; tikwm fallback causes 403
     if(!rapidKey && !USE_BACKEND) return;
