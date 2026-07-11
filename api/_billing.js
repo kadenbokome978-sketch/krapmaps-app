@@ -14,7 +14,10 @@
 const SB_URL = process.env.SUPABASE_URL || process.env.VITE_SB_URL;
 const SVC = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TABLE = "km_billing";
-const _h = () => ({ apikey: SVC, Authorization: "Bearer " + SVC, "Content-Type": "application/json" });
+// New-style secret keys (sb_secret_…) authorize via the apikey header and are
+// NOT valid Bearer JWTs, so we send only apikey (legacy service_role keys also
+// work fine this way). The secret key bypasses RLS — server-side only.
+const _h = () => ({ apikey: SVC, "Content-Type": "application/json" });
 
 // Monthly allowances per tier. `scores` gates AI scoring calls (the main cost).
 export const TIERS = {
