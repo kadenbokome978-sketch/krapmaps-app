@@ -1,8 +1,8 @@
 // Shared helpers for API routes. Underscore prefix => Vercel does NOT expose this as an endpoint.
 
 // Public Supabase values (safe to expose) — used to verify the caller's session token.
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://xiudsyiinkqtmowkiqxh.supabase.co";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_yTwU-ZhqsyiENrB4luw3Dg_kC3fJn96";
 
 export function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");

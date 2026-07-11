@@ -5197,7 +5197,7 @@ const getIntelligenceLevel = (videos=[], ideas=[], memory={}, theory="") => {
 };
 
 const DEFAULT_SB_URL = "https://xiudsyiinkqtmowkiqxh.supabase.co";
-const DEFAULT_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpdWRzeWlpbmtxdG1vd2tpcXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzU5OTcsImV4cCI6MjA4OTQ1MTk5N30.8aHpQIcEcrDXo9DJN52SWAOee-rrkp-ti00h72-_sZE";
+const DEFAULT_SB_KEY = "sb_publishable_yTwU-ZhqsyiENrB4luw3Dg_kC3fJn96"; // new-style publishable key (legacy JWT keys are disabled on the project)
 
 const WL_KEY = "krapmaps_v1_wl";
 const CLIENT_KEY = "krapmaps_v1_client";
@@ -6892,13 +6892,17 @@ const _sbHeaders = async () => {
   // getAccessToken refreshes the JWT if it's near expiry; falls back to anon key.
   let token = null;
   try { token = await getAccessToken(); } catch {}
-  return { apikey:key, "Authorization":"Bearer "+(token || key), "Content-Type":"application/json" };
+  // Only a real user JWT goes in Authorization — publishable (sb_publishable_...)
+  // keys aren't valid Bearer tokens; the apikey header alone grants anon access.
+  const h = { apikey:key, "Content-Type":"application/json" };
+  if(token) h["Authorization"] = "Bearer "+token;
+  return h;
 };
 // Anon-key-only headers built from the baked-in defaults — the last-resort retry
 // path when a stale localStorage override or a bad session token gets rejected.
 const _sbDefaultHeaders = () => {
   const key = _ENV.VITE_SB_KEY || _ENV.VITE_SUPABASE_ANON_KEY || DEFAULT_SB_KEY;
-  return { apikey:key, "Authorization":"Bearer "+key, "Content-Type":"application/json" };
+  return { apikey:key, "Content-Type":"application/json" };
 };
 // Fetch wrapper: on 401/403, drop any stale localStorage URL/key override and
 // retry once against the default project with the plain anon key.
