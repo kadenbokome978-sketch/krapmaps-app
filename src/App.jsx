@@ -6899,21 +6899,16 @@ const perfScore = v => {
 };
 
 // ── SUPABASE ──────────────────────────────────────────────────────
-const _sbHeaders = async () => {
-  const key = getSbKey();
-  // getAccessToken refreshes the JWT if it's near expiry; falls back to anon key.
-  let token = null;
-  try { token = await getAccessToken(); } catch {}
-  // Only a real user JWT goes in Authorization — publishable (sb_publishable_...)
-  // keys aren't valid Bearer tokens; the apikey header alone grants anon access.
-  const h = { apikey:key, "Content-Type":"application/json" };
-  if(token) h["Authorization"] = "Bearer "+token;
-  return h;
-};
-// Anon-key-only headers built from the baked-in defaults — the last-resort retry
-// path when a stale localStorage override or a bad session token gets rejected.
+// Cloud sync uses anon (publishable-key) access only — RLS is disabled and rows
+// are isolated by the wsId(...) workspace prefix, not by the caller's identity.
+// We deliberately do NOT attach the user's Bearer JWT: PostgREST would validate
+// that token and reject it (401) if it was issued under the project's old JWT
+// signing setup, even though the publishable apikey is perfectly valid.
+const _sbHeaders = async () => ({ apikey:getSbKey(), "Content-Type":"application/json" });
+// Same headers from the baked-in default key — the last-resort retry path.
 const _sbDefaultHeaders = () => {
-  const key = _ENV.VITE_SB_KEY || _ENV.VITE_SUPABASE_ANON_KEY || DEFAULT_SB_KEY;
+  const env = _ENV.VITE_SB_KEY || _ENV.VITE_SUPABASE_ANON_KEY;
+  const key = _validSbKey(env) ? env.trim() : DEFAULT_SB_KEY;
   return { apikey:key, "Content-Type":"application/json" };
 };
 // Fetch wrapper: on 401/403, drop any stale localStorage URL/key override and
