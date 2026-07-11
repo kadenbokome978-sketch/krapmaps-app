@@ -10206,6 +10206,7 @@ Return JSON:
               </div>
             </div>
           </div>
+          {REQUIRE_AUTH && <button onClick={_signalSignedOut} style={{ marginTop:10, width:"100%", padding:"10px 16px", borderRadius:10, border:"1px solid rgba(255,255,255,0.08)", background:"rgba(255,255,255,0.03)", color:"rgba(255,255,255,0.45)", fontSize:12, fontWeight:600, cursor:"pointer", letterSpacing:"0.06em", transition:"all 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,60,60,0.1)";e.currentTarget.style.borderColor="rgba(255,60,60,0.3)";e.currentTarget.style.color="rgba(255,100,100,0.8)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.03)";e.currentTarget.style.borderColor="rgba(255,255,255,0.08)";e.currentTarget.style.color="rgba(255,255,255,0.45)";}}>Sign out</button>}
         </div>
       </div>
 
@@ -10271,6 +10272,9 @@ Return JSON:
                     );
                   })}
                 </div>
+                {REQUIRE_AUTH && <div style={{ padding:"16px 16px 0" }}>
+                  <button onClick={()=>{setDrawerOpen(false);_signalSignedOut();}} style={{ width:"100%", padding:"14px 18px", borderRadius:12, border:"1px solid rgba(255,255,255,0.08)", background:"rgba(255,255,255,0.03)", color:"rgba(255,255,255,0.45)", fontSize:14, fontWeight:600, cursor:"pointer" }}>Sign out</button>
+                </div>}
               </div>
             </div>
           )}
