@@ -4851,7 +4851,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             </div>
             <button onClick={()=>{
               const redirect = `${window.location.origin}/api/ig-callback`;
-              const scope = "instagram_business_basic";
+              const scope = "instagram_business_basic,instagram_business_manage_insights";
               const url = `https://www.instagram.com/oauth/authorize?client_id=${encodeURIComponent(IG_APP_ID)}&redirect_uri=${encodeURIComponent(redirect)}&response_type=code&scope=${encodeURIComponent(scope)}&state=${encodeURIComponent(WS())}`;
               window.location.href = url;
             }} style={{ width:"100%", padding:isMobile?"14px 18px":"11px 16px", borderRadius:10, border:"none", background:"linear-gradient(90deg,#f09433,#dc2743,#bc1888)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", letterSpacing:"0.02em" }}>
@@ -8874,9 +8874,27 @@ function Dashboard({ keys, onEditKeys }) {
     try {
       const r = await fetch(`https://graph.instagram.com/me?fields=id,username,media_count,followers_count&access_token=${keys.ig}`);
       const profile = await r.json();
-      const mr = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,timestamp,like_count,comments_count,video_views,plays&limit=20&access_token=${keys.ig}`);
+      const mr = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,media_product_type,timestamp,like_count,comments_count,permalink&limit=20&access_token=${keys.ig}`);
       const media = await mr.json();
-      setIgData({ profile, media:media.data||[] });
+      const items = media.data || [];
+      // Views live in the Insights API now (the old video_views/plays media fields
+      // are deprecated). Pull each item's views; "views" is the current metric,
+      // with "plays" as a fallback for older reels. Images/carousels just get 0.
+      const readInsight = async (id, metric) => {
+        try {
+          const ir = await fetch(`https://graph.instagram.com/${id}/insights?metric=${metric}&access_token=${keys.ig}`);
+          if(!ir.ok) return null;
+          const j = await ir.json();
+          const d = j?.data?.[0];
+          return d?.values?.[0]?.value ?? d?.total_value?.value ?? null;
+        } catch { return null; }
+      };
+      const enriched = await Promise.all(items.map(async(m)=>{
+        let views = await readInsight(m.id, "views");
+        if(views==null) views = await readInsight(m.id, "plays");
+        return { ...m, views: views || 0 };
+      }));
+      setIgData({ profile, media: enriched });
     } catch(e) { setAiErr("IG fetch failed: "+e.message); }
     setIgLoad(false);
   },[keys,igLoad,hasIG]);
