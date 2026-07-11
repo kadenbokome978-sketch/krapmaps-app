@@ -7815,8 +7815,8 @@ Return ONLY JSON:
 // Shown when a user hits their plan limit, or opened from Settings. Upgrading
 // sends them to Stripe Checkout; the webhook flips their tier on return.
 const PRICING_PLANS = [
-  { id:"audit", name:"Audit", price:"Free", per:"first one", oneoff:true, tagline:"See the magic — first one free", feats:["Full AI breakdown of your channel","What's working & what's costing views","Your Voice DNA, decoded","5 video ideas in your voice","First free · £19 for each extra audit"] },
-  { id:"pro",   name:"Pro",   price:"£29", per:"/month",  tagline:"The full engine, every day", hot:true, feats:["Unlimited idea scoring","Live trends + competitor spy","Multi-model consensus scoring","Priority AI, no queue","Buy a £19 audit → £19/mo for 3 months (first 10)"] },
+  { id:"audit", name:"Free", price:"Free", per:"1 / month", oneoff:true, tagline:"One audit a month, on us", feats:["One full channel audit every month","What's working & what's costing views","Your Voice DNA, decoded","5 video ideas in your voice","No card needed"] },
+  { id:"pro",   name:"Pro",   price:"£29", per:"/month",  tagline:"The full engine, every day", hot:true, feats:["Unlimited audits + idea scoring","Live trends + competitor spy","Multi-model consensus scoring","Priority AI, no queue","First 10 signups: £19/mo for 3 months (founding)"] },
 ];
 function PricingModal({ tier="free", reason, onClose }){
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
