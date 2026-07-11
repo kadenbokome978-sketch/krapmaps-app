@@ -1,7 +1,7 @@
 // Returns the signed-in user's plan + usage. The client reads its tier from here
 // (never from the client-writable side) so entitlements can't be forged.
 import { cors, requireUser } from "./_lib.js";
-import { getBilling, TIERS, configured } from "./_billing.js";
+import { getBilling, TIERS, configured, isFounder } from "./_billing.js";
 
 export default async function handler(req, res) {
   cors(res);
@@ -10,6 +10,11 @@ export default async function handler(req, res) {
   const user = await requireUser(req, res);
   if (!user) return;
   if (user.byoOnly) return res.status(200).json({ tier: "byo", usage: {}, billingConfigured: false });
+
+  // Founding / comped accounts get unlimited access with no metering.
+  if (isFounder(user.email)) {
+    return res.status(200).json({ tier: "founder", usage: {}, period: null, limits: {}, billingConfigured: configured() });
+  }
 
   const b = await getBilling(user.id);
   // Expose limits as finite numbers or null (JSON can't carry Infinity).
