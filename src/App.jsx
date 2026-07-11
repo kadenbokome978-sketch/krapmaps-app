@@ -4712,6 +4712,20 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginTop:6 }}>
               {!USE_BACKEND ? "Tap to see the exact pricing page buyers get. Goes live when you turn billing on." : plan?.tier==="founder" ? "Unlimited scoring — founding creator 🙌" : plan?.tier==="studio" ? "Unlimited scoring." : (_scoreLimit!=null ? `${_scoreUsed} / ${_scoreLimit} scores used this month` : `${_scoreUsed} scores used this month`)}
             </div>
+            {USE_BACKEND && (()=>{
+              const unlimited = plan?.tier==="founder" || plan?.tier==="studio" || _scoreLimit==null;
+              const pct = unlimited ? 1 : Math.min(1, _scoreLimit>0 ? _scoreUsed/_scoreLimit : 0);
+              const near = !unlimited && pct>=0.8;
+              const barCol = unlimited ? C.green : near ? C.pink : C.cyan;
+              return (
+                <div style={{ marginTop:12, maxWidth:340 }}>
+                  <div style={{ height:7, borderRadius:99, background:"rgba(255,255,255,0.08)", overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:`${Math.round(pct*100)}%`, borderRadius:99, background:unlimited?`linear-gradient(90deg,${C.green},${C.cyan})`:barCol, transition:"width 0.4s ease" }}/>
+                  </div>
+                  {near && <div style={{ fontSize:11.5, color:C.pink, marginTop:6, fontWeight:600 }}>{_scoreUsed>=_scoreLimit ? "You've hit your monthly limit — upgrade for more." : `Only ${_scoreLimit-_scoreUsed} scores left this month.`}</div>}
+                </div>
+              );
+            })()}
           </div>
           <button onClick={onManagePlan} style={{ padding:isMobile?"11px 20px":"13px 26px", borderRadius:12, border:"none", background:(!USE_BACKEND||plan?.tier==="free")?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.08)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", flexShrink:0 }}>
             {!USE_BACKEND ? "SEE PLANS" : plan?.tier==="free" ? "UPGRADE" : "CHANGE PLAN"}
