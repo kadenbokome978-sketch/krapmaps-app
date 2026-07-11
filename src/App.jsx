@@ -10434,7 +10434,8 @@ function OnboardingPage({ onComplete }) {
   const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900);
   const _pendingStep = parseInt(localStorage.getItem("krapmaps_v1_pending_step")||"0",10);
   if(_pendingStep) { localStorage.removeItem("krapmaps_v1_pending_step"); }
-  const [step, setStep] = useState(_pendingStep||0);
+  const _initStep = _pendingStep || 0;
+  const [step, setStep] = useState(_initStep);
   const [handle, setHandle] = useState(WL.handle || "");
   const [apiKey, setApiKey] = useState("");
   const [codeInput, setCodeInput] = useState("");
