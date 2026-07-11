@@ -11756,15 +11756,17 @@ export default function App() {
       if(!rows||!rows.length) return;
       const remote = rows[0]?.data;
       if(!remote) return;
-      // Merge: local keys win over remote (most recent manual entry takes priority)
+      // Merge: local keys win over remote (most recent manual entry takes priority).
+      // Use the functional form and NEVER drop an Instagram token that the
+      // separate ig_token load may have already set — the two loads race, and the
+      // old code let this one clobber the IG token, causing constant disconnects.
       const local = loadJSON(KEYS_KEY,{});
-      const merged = {
-        ...remote,
-        ...local,
-        keys:{ ...(remote.keys||{}), ...(local.keys||{}) },
-      };
-      setConfig(merged);
-      saveJSON(KEYS_KEY, merged);
+      setConfig(prev=>{
+        const merged = { ...remote, ...local, keys:{ ...(remote.keys||{}), ...(local.keys||{}) } };
+        if(prev?.keys?.ig && !merged.keys.ig) merged.keys.ig = prev.keys.ig;
+        saveJSON(KEYS_KEY, merged);
+        return merged;
+      });
     }).catch(()=>{});
     // The Instagram token lives in its own row so config saves can't clobber it.
     // Pull it in and merge onto keys.ig so the official IG sync always has it.
