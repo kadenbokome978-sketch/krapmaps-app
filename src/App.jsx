@@ -4797,6 +4797,31 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             ))}
           </div>
 
+          {/* Connect Instagram (official Meta OAuth) — visible to all users */}
+          {IG_APP_ID && <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"22px 24px", background:"linear-gradient(145deg,rgba(188,24,136,0.08),rgba(10,6,20,0.95))", border:`1px solid #bc188830`, position:"relative", overflow:"hidden" }}>
+            <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:"linear-gradient(90deg,#bc1888,#bc188800)" }}/>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8, gap:10 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:36, height:36, borderRadius:10, background:"rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><ApiLogo id="igscraper"/></div>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:700, color:"#fff" }}>Instagram</div>
+                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>{keys?.ig ? "Connected — auto reel &amp; follower sync" : "Connect your account to auto-sync"}</div>
+                </div>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ width:8, height:8, borderRadius:"50%", background:keys?.ig?C.green:"rgba(255,255,255,0.2)", boxShadow:keys?.ig?`0 0 6px ${C.green}`:"" }}/>
+              </div>
+            </div>
+            <button onClick={()=>{
+              const redirect = `${window.location.origin}/api/ig-callback`;
+              const scope = "instagram_business_basic,instagram_business_manage_insights";
+              const url = `https://www.instagram.com/oauth/authorize?client_id=${encodeURIComponent(IG_APP_ID)}&redirect_uri=${encodeURIComponent(redirect)}&response_type=code&scope=${encodeURIComponent(scope)}&state=${encodeURIComponent(WS())}`;
+              window.location.href = url;
+            }} style={{ width:"100%", padding:isMobile?"14px 18px":"11px 16px", borderRadius:10, border:"none", background:"linear-gradient(90deg,#f09433,#dc2743,#bc1888)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", letterSpacing:"0.02em" }}>
+              {keys?.ig ? "RECONNECT INSTAGRAM" : "CONNECT INSTAGRAM"}
+            </button>
+          </div>}
+
           {/* Cloud Sync (Supabase) — fixable in-app when the project key rotates */}
           <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"22px 24px", background:"linear-gradient(145deg,rgba(0,207,255,0.05),rgba(10,6,20,0.95))", border:`1px solid ${C.cyan}20`, position:"relative", overflow:"hidden" }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }}/>
@@ -7003,6 +7028,9 @@ const sbLoadArray = async (table) => {
 // set, the app behaves exactly as before — this is a safe, opt-in rollout switch.
 const AUTH_KEY = "km_auth_session";
 const REQUIRE_AUTH = (_ENV.VITE_REQUIRE_AUTH === "true");
+// Instagram (official) app id — public, safe to ship. Enables the "Connect
+// Instagram" OAuth button. Secret + token exchange live server-side (/api/ig-*).
+const IG_APP_ID = _ENV.VITE_IG_APP_ID || "";
 const loadSession  = () => loadJSON(AUTH_KEY, null);
 const saveSession  = (s) => saveJSON(AUTH_KEY, s);
 const clearSession = () => { try { localStorage.removeItem(AUTH_KEY); } catch {} };
@@ -11525,6 +11553,33 @@ export default function App() {
     const onOut = () => setSession(null);
     window.addEventListener("km-signed-out", onOut);
     return ()=>window.removeEventListener("km-signed-out", onOut);
+  },[]);
+
+  // Instagram OAuth return: /dashboard?ig=<status>. Surface the outcome, strip the
+  // param from the URL, and let the config re-fetch below pick up the new token.
+  useEffect(()=>{
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const ig = p.get("ig");
+      if(!ig) return;
+      const msgs = { connected:"Instagram connected ✓", denied:"Instagram connection cancelled", unconfigured:"Instagram isn't set up yet — add IG_APP_ID / IG_APP_SECRET.", exchangefail:"Instagram rejected the login — try again.", savefail:"Connected, but saving failed — retry.", nocode:"Instagram login didn't complete.", error:"Instagram connection error — try again." };
+      reportHealth("instagram", ig==="connected"?"ok":"error", msgs[ig]||"Instagram: "+ig);
+      p.delete("ig");
+      const qs = p.toString();
+      window.history.replaceState({}, "", window.location.pathname + (qs?"?"+qs:""));
+    } catch {}
+  },[]);
+
+  // Keep the Instagram long-lived token fresh — refresh server-side when it's
+  // within ~10 days of expiry (Meta tokens last 60 days, refreshable after 24h).
+  useEffect(()=>{
+    try {
+      const cfg = loadJSON(KEYS_KEY,{});
+      const exp = cfg?.igMeta?.expiresAt;
+      if(cfg?.keys?.ig && exp && (exp - Date.now()) < 10*24*3600*1000) {
+        fetch(`/api/ig-refresh?state=${encodeURIComponent(WS())}`).catch(()=>{});
+      }
+    } catch {}
   },[]);
 
   // On mount: pull config from Supabase so keys survive across devices/builds
