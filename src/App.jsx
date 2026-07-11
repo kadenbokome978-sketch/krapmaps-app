@@ -8579,6 +8579,7 @@ function Dashboard({ keys, onEditKeys }) {
   const [aiErr, setAiErr] = useState(null);
   useEffect(()=>{ if(!aiErr) return; const t=setTimeout(()=>setAiErr(null), 15000); return ()=>clearTimeout(t); },[aiErr]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [assistPreload, setAssistPreload] = useState(null);
   // ── BILLING ─────────────────────────────────────────────────────
   const [plan, setPlan] = useState({ tier: USE_BACKEND?"free":"unmetered", usage:{}, billingConfigured:false });
@@ -10206,7 +10207,6 @@ Return JSON:
               </div>
             </div>
           </div>
-          {REQUIRE_AUTH && <button onClick={_signalSignedOut} style={{ marginTop:10, width:"100%", padding:"10px 16px", borderRadius:10, border:"1px solid rgba(255,255,255,0.08)", background:"rgba(255,255,255,0.03)", color:"rgba(255,255,255,0.45)", fontSize:12, fontWeight:600, cursor:"pointer", letterSpacing:"0.06em", transition:"all 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,60,60,0.1)";e.currentTarget.style.borderColor="rgba(255,60,60,0.3)";e.currentTarget.style.color="rgba(255,100,100,0.8)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.03)";e.currentTarget.style.borderColor="rgba(255,255,255,0.08)";e.currentTarget.style.color="rgba(255,255,255,0.45)";}}>Sign out</button>}
         </div>
       </div>
 
@@ -10293,12 +10293,21 @@ Return JSON:
                   <span style={{ fontSize:12, color:C.green, fontWeight:600, letterSpacing:"0.06em" }}>LIVE</span>
                 </div>
               )}
-              <div style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 14px 6px 8px", borderRadius:10, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)" }}>
-                <div style={{ width:30, height:30, borderRadius:9, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:900, color:"#fff" }}>{(WL.creator1||"B")[0]}</div>
-                <div>
-                  <div style={{ fontSize:13, fontWeight:600, color:"#fff", lineHeight:1 }}>{WL.creator1}</div>
-                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", marginTop:2 }}>Creator</div>
+              <div style={{ position:"relative" }}>
+                <div onClick={()=>setProfileOpen(p=>!p)} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 14px 6px 8px", borderRadius:10, background:profileOpen?"rgba(255,255,255,0.1)":"rgba(255,255,255,0.05)", border:`1px solid ${profileOpen?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.08)"}`, cursor:"pointer", transition:"all 0.15s" }}>
+                  <div style={{ width:30, height:30, borderRadius:9, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:900, color:"#fff" }}>{(WL.creator1||"B")[0]}</div>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:600, color:"#fff", lineHeight:1 }}>{WL.creator1}</div>
+                    <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", marginTop:2 }}>Creator</div>
+                  </div>
                 </div>
+                {profileOpen && <>
+                  <div onClick={()=>setProfileOpen(false)} style={{ position:"fixed", inset:0, zIndex:199 }}/>
+                  <div style={{ position:"absolute", top:"calc(100% + 8px)", right:0, zIndex:200, background:"rgba(10,6,20,0.98)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:6, minWidth:180, boxShadow:"0 12px 40px rgba(0,0,0,0.6)", backdropFilter:"blur(20px)" }}>
+                    <button onClick={()=>{setProfileOpen(false);setNav("settings");setSub(null);}} style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"none", background:"transparent", color:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:600, cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:10 }} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.06)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{I.settings(15,"rgba(255,255,255,0.5)")} Settings</button>
+                    {REQUIRE_AUTH && <button onClick={()=>{setProfileOpen(false);_signalSignedOut();}} style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"none", background:"transparent", color:"rgba(255,100,100,0.7)", fontSize:13, fontWeight:600, cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:10 }} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,60,60,0.08)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{I.x(15,"rgba(255,100,100,0.7)")} Sign out</button>}
+                  </div>
+                </>}
               </div>
             </div>
           </div>
