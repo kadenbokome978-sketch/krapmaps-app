@@ -6887,7 +6887,12 @@ const perfScore = v => {
 };
 
 // ── SUPABASE ──────────────────────────────────────────────────────
-const _sbHeaders = () => ({ apikey:getSbKey(),"Authorization":"Bearer "+getSbKey(),"Content-Type":"application/json" });
+const _sbHeaders = () => {
+  const key = getSbKey();
+  const sess = loadJSON(AUTH_KEY, null);
+  const token = (sess && sess.access_token) || key;
+  return { apikey:key, "Authorization":"Bearer "+token, "Content-Type":"application/json" };
+};
 
 // ── WORKSPACE SCOPING ─────────────────────────────────────────────
 // Every account's cloud data is namespaced by its activation code so that
