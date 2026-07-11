@@ -10697,21 +10697,27 @@ function OnboardingPage({ onComplete }) {
 
   const submitCode = async () => {
     const entered = codeInput.trim().toUpperCase();
-    let matched = CLIENTS[entered];
-    // Self-serve: accept the signed-in user's own paid/founder access code
-    // (minted server-side, returned by /api/me) → activate a personal CreatorOS
-    // workspace keyed to that code. Can't be forged: the code lives server-side.
-    if(!matched && REQUIRE_AUTH) {
+    let matched = null;
+    if(REQUIRE_AUTH) {
+      // Builds are account-bound: the server decides whether THIS account may use
+      // this code (admin → any · founder → their code · paid → their minted code ·
+      // hand-made build → allow-listed emails). A shared code won't work for others.
+      let ok = false;
       try {
         const token = await getAccessToken();
         if(token) {
-          const r = await fetch("/api/me", { headers:{ Authorization:"Bearer "+token } });
-          const d = await r.json().catch(()=>({}));
-          if(d.accessCode && entered === String(d.accessCode).toUpperCase()) {
-            matched = { ...CLIENT_CONFIG, clientId:"creator", appName: CLIENT_CONFIG.appName || "CreatorOS", activationCode: entered };
-          }
+          const r = await fetch("/api/me", { method:"POST", headers:{ Authorization:"Bearer "+token, "Content-Type":"application/json" }, body:JSON.stringify({ code:entered }) });
+          const d = await r.json().catch(()=>({ ok:false }));
+          ok = !!d.ok;
         }
       } catch {}
+      if(!ok) { setCodeError(true); setCodeShake(true); setTimeout(()=>setCodeShake(false),600); return; }
+      // Authorized → use the hand-made client config if one exists, else a personal
+      // CreatorOS workspace keyed to this code.
+      matched = CLIENTS[entered] || { ...CLIENT_CONFIG, clientId:"creator", appName: CLIENT_CONFIG.appName || "CreatorOS", activationCode: entered };
+    } else {
+      // Self-host / no-auth builds: local code check only.
+      matched = CLIENTS[entered];
     }
     if(matched) {
       // Persist client config so WL loads correctly after reload
