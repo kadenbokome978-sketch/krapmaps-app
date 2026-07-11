@@ -6887,12 +6887,30 @@ const perfScore = v => {
 };
 
 // ── SUPABASE ──────────────────────────────────────────────────────
-const _sbHeaders = () => {
+const _sbHeaders = async () => {
   const key = getSbKey();
-  const sess = loadJSON(AUTH_KEY, null);
-  // Only use the user's JWT while it's still valid — an expired token gets 401/403'd.
-  const fresh = sess && sess.access_token && (!sess.expires_at || sess.expires_at > Date.now() + 30000);
-  return { apikey:key, "Authorization":"Bearer "+(fresh ? sess.access_token : key), "Content-Type":"application/json" };
+  // getAccessToken refreshes the JWT if it's near expiry; falls back to anon key.
+  let token = null;
+  try { token = await getAccessToken(); } catch {}
+  return { apikey:key, "Authorization":"Bearer "+(token || key), "Content-Type":"application/json" };
+};
+// Anon-key-only headers built from the baked-in defaults — the last-resort retry
+// path when a stale localStorage override or a bad session token gets rejected.
+const _sbDefaultHeaders = () => {
+  const key = _ENV.VITE_SB_KEY || DEFAULT_SB_KEY;
+  return { apikey:key, "Authorization":"Bearer "+key, "Content-Type":"application/json" };
+};
+// Fetch wrapper: on 401/403, drop any stale localStorage URL/key override and
+// retry once against the default project with the plain anon key.
+const _sbRequest = async (path, opts={}) => {
+  const headers = { ...(await _sbHeaders()), ...(opts.headers||{}) };
+  let r = await fetch(`${getSbUrl()}${path}`, { ...opts, headers });
+  if(r.status===401 || r.status===403) {
+    try { localStorage.removeItem(SB_URL_KEY); localStorage.removeItem(SB_KEY_KEY); } catch {}
+    const url = _ENV.VITE_SB_URL || DEFAULT_SB_URL;
+    r = await fetch(`${url}${path}`, { ...opts, headers:{ ..._sbDefaultHeaders(), ...(opts.headers||{}) } });
+  }
+  return r;
 };
 
 // ── WORKSPACE SCOPING ─────────────────────────────────────────────
@@ -6936,7 +6954,7 @@ const reportHealth = (service, state, msg) => {
 
 const sbFetch = async (table,filter="") => {
   try {
-    const r = await fetch(`${getSbUrl()}/rest/v1/${table}?${filter}&limit=1000`,{ headers:_sbHeaders() });
+    const r = await _sbRequest(`/rest/v1/${table}?${filter}&limit=1000`);
     if(r.status===401||r.status===403) { console.warn("[sb] auth error on",table,"— project may be paused"); reportHealth("supabase","error",`Cloud sync rejected (${r.status}) — Supabase project paused or key rotated. Data still saves on this device.`); return null; }
     if(r.ok) reportHealth("supabase","ok","Connected");
     if(!r.ok) { console.warn("[sb] fetch error",r.status,"on",table); return null; }
@@ -6945,13 +6963,13 @@ const sbFetch = async (table,filter="") => {
 };
 const sbUpsert = async (table,data) => {
   try {
-    const r = await fetch(`${getSbUrl()}/rest/v1/${table}`,{ method:"POST", headers:{..._sbHeaders(),"Prefer":"resolution=merge-duplicates"}, body:JSON.stringify(data) });
+    const r = await _sbRequest(`/rest/v1/${table}`,{ method:"POST", headers:{"Prefer":"resolution=merge-duplicates"}, body:JSON.stringify(data) });
     if(!r.ok) console.warn("[sb] upsert error",r.status,"on",table);
   } catch(e) { console.warn("[sb] upsert network error:",e.message); }
 };
 const sbDelete = async (table,id) => {
   try {
-    await fetch(`${getSbUrl()}/rest/v1/${table}?id=eq.${id}`,{ method:"DELETE", headers:_sbHeaders() });
+    await _sbRequest(`/rest/v1/${table}?id=eq.${id}`,{ method:"DELETE" });
   } catch {}
 };
 // Sync a full array of objects to a table — each item must have an `id` field.
