@@ -4507,6 +4507,29 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
   );
 };
 
+// Collapsible settings card — shows just a title bar until clicked, to cut the
+// wall-of-text clutter. Action buttons (SAVE/GENERATE) appear only when open.
+function CollapsibleCard({ title, subtitle, accent="#8B5CF6", actions, children, bg }){
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ borderRadius:16, padding:isMobile?"18px 20px":"18px 24px", background: bg||`linear-gradient(145deg,${accent}14,rgba(10,6,20,0.95))`, border:`1px solid ${accent}25`, position:"relative", overflow:"hidden" }}>
+      <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${accent},${accent}00)` }}/>
+      <div onClick={()=>setOpen(o=>!o)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, cursor:"pointer" }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>{title}</div>
+          {subtitle && <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:3 }}>{subtitle}</div>}
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:12, flexShrink:0 }}>
+          {open && actions && <span onClick={e=>e.stopPropagation()} style={{ display:"flex", gap:8 }}>{actions}</span>}
+          <span style={{ color:accent, fontSize:11, transform:open?"rotate(180deg)":"none", transition:"transform 0.2s", display:"inline-block" }}>▼</span>
+        </div>
+      </div>
+      {open && <div style={{ marginTop:14 }}>{children}</div>}
+    </div>
+  );
+}
+
 const SettingsView = ({ plan, onManagePlan, keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[], onBulkImport }) => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [editing, setEditing] = useState(null);
@@ -4913,15 +4936,9 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
       </div>
 
       {/* Current Trends — injected into every AI call */}
-      <div style={{ borderRadius:16, padding:isMobile?"22px 20px":"22px 28px", background:`linear-gradient(145deg,rgba(255,107,53,0.08),rgba(10,6,20,0.95))`, border:`1px solid ${C.orange}25`, position:"relative", overflow:"hidden" }}>
-        <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.orange},${C.orange}00)` }}/>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?14:10 }}>
-          <div>
-            <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>Current Trends</div>
-            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:3 }}>{loadJSON(KEYS_KEY,{})?.keys?.perplexity ? "Auto-fetched via Perplexity every 12hrs — also editable below" : "Update weekly — add Perplexity key for auto-fetch"}</div>
-          </div>
-          <button onClick={saveTrends} style={{ padding:"9px 20px", borderRadius:11, border:`1px solid ${trendsSaved?C.green:C.orange}50`, background:trendsSaved?`${C.green}20`:`${C.orange}18`, color:trendsSaved?C.green:C.orange, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{trendsSaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>
-        </div>
+      <CollapsibleCard title="Current Trends" accent={C.orange}
+        subtitle={loadJSON(KEYS_KEY,{})?.keys?.perplexity ? "Auto-fetched via Perplexity every 12hrs — also editable" : "Update weekly — add Perplexity key for auto-fetch"}
+        actions={<button onClick={saveTrends} style={{ padding:"9px 20px", borderRadius:11, border:`1px solid ${trendsSaved?C.green:C.orange}50`, background:trendsSaved?`${C.green}20`:`${C.orange}18`, color:trendsSaved?C.green:C.orange, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{trendsSaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>}>
         <textarea
           value={trendsDraft}
           onChange={e=>setTrendsDraft(e.target.value)}
@@ -4929,21 +4946,15 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
           rows={isMobile?3:7}
           style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.orange}25`, borderRadius:12, color:"#fff", padding:isMobile?"18px 18px":"14px 16px", fontSize:13, fontFamily:C.fontHead, outline:"none", boxSizing:"border-box", resize:"vertical", lineHeight:1.6 }}
         />
-      </div>
+      </CollapsibleCard>
 
       {/* Channel Viral Theory — the deep "why this channel goes viral" model */}
-      <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"22px 24px", background:`linear-gradient(145deg,rgba(139,92,246,0.08),rgba(10,6,20,0.95))`, border:`1px solid ${C.purple}25`, position:"relative", overflow:"hidden" }}>
-        <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.purple},${C.purple}00)` }}/>
-        <div style={{ display:"flex", alignItems:isMobile?"flex-start":"center", justifyContent:"space-between", gap:12, marginBottom:isMobile?14:10, flexWrap:isMobile?"wrap":"nowrap" }}>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>Channel Viral Theory</div>
-            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:3 }}>The deep "why this channel goes viral" — injected into every score. Generate from your data or write it yourself.</div>
-          </div>
-          <div style={{ display:"flex", gap:8, flexShrink:0 }}>
-            <button onClick={generateChannelTheory} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||theoryLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.purple}50`, background:`${C.purple}18`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||theoryLoading)?0.5:1 }}>{theoryLoading?"GENERATING...":<span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.zap(12,"currentColor")} GENERATE</span>}</button>
-            <button onClick={saveTheory} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${theorySaved?C.green:C.purple}50`, background:theorySaved?`${C.green}20`:`${C.purple}18`, color:theorySaved?C.green:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{theorySaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>
-          </div>
-        </div>
+      <CollapsibleCard title="Channel Viral Theory" accent={C.purple}
+        subtitle={`The deep "why this channel goes viral" — injected into every score.`}
+        actions={<>
+          <button onClick={generateChannelTheory} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||theoryLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.purple}50`, background:`${C.purple}18`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||theoryLoading)?0.5:1 }}>{theoryLoading?"GENERATING...":<span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.zap(12,"currentColor")} GENERATE</span>}</button>
+          <button onClick={saveTheory} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${theorySaved?C.green:C.purple}50`, background:theorySaved?`${C.green}20`:`${C.purple}18`, color:theorySaved?C.green:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{theorySaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>
+        </>}>
         <textarea
           value={theoryDraft}
           onChange={e=>setTheoryDraft(e.target.value)}
@@ -4951,21 +4962,15 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
           rows={8}
           style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.purple}25`, borderRadius:12, color:"#fff", padding:isMobile?"18px 18px":"14px 16px", fontSize:13, fontFamily:C.fontHead, outline:"none", boxSizing:"border-box", resize:"vertical", lineHeight:1.6 }}
         />
-      </div>
+      </CollapsibleCard>
 
       {/* Voice DNA — the creator's own voice, learned and editable */}
-      <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"22px 24px", background:`linear-gradient(145deg,rgba(0,229,255,0.07),rgba(10,6,20,0.95))`, border:`1px solid ${C.cyan}25`, position:"relative", overflow:"hidden" }}>
-        <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }}/>
-        <div style={{ display:"flex", alignItems:isMobile?"flex-start":"center", justifyContent:"space-between", gap:12, marginBottom:isMobile?14:10, flexWrap:isMobile?"wrap":"nowrap" }}>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>Voice DNA</div>
-            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:3 }}>How you actually write — learned from your own posts and injected into every idea, hook, caption and script so nothing sounds like a bot. Edit it to correct anything.</div>
-          </div>
-          <div style={{ display:"flex", gap:8, flexShrink:0 }}>
-            <button onClick={generateVoice} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.cyan}50`, background:`${C.cyan}18`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading)?0.5:1 }}>{voiceLoading?"LEARNING...":<span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.zap(12,"currentColor")} RELEARN</span>}</button>
-            <button onClick={saveVoice} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${voiceSaved?C.green:C.cyan}50`, background:voiceSaved?`${C.green}20`:`${C.cyan}18`, color:voiceSaved?C.green:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{voiceSaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>
-          </div>
-        </div>
+      <CollapsibleCard title="Voice DNA" accent={C.cyan}
+        subtitle="How you actually write — injected into every idea, hook, caption and script so nothing sounds like a bot."
+        actions={<>
+          <button onClick={generateVoice} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.cyan}50`, background:`${C.cyan}18`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading)?0.5:1 }}>{voiceLoading?"LEARNING...":<span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.zap(12,"currentColor")} RELEARN</span>}</button>
+          <button onClick={saveVoice} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${voiceSaved?C.green:C.cyan}50`, background:voiceSaved?`${C.green}20`:`${C.cyan}18`, color:voiceSaved?C.green:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{voiceSaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>
+        </>}>
         {/* Measured traits — the deterministic read of their style (always on, no API) */}
         {measuredVoice ? (
           <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginBottom:12 }}>
@@ -4992,12 +4997,11 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
           rows={7}
           style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.cyan}25`, borderRadius:12, color:"#fff", padding:isMobile?"18px 18px":"14px 16px", fontSize:13, fontFamily:C.fontHead, outline:"none", boxSizing:"border-box", resize:"vertical", lineHeight:1.6 }}
         />
-      </div>
+      </CollapsibleCard>
 
       {/* Bulk Video Import (CSV) */}
-      <div style={{ padding:isMobile?"26px 20px":"20px 24px", borderRadius:16, border:`1px solid ${C.yellow}20`, background:`${C.yellow}05` }}>
-        <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:4 }}>Bulk Video Import (CSV)</div>
-        <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginBottom:isMobile?16:12 }}>Paste rows: <span style={{color:C.yellow}}>title, views, likes, type, hook, platform</span> (one per line, comma-separated). Header row optional.</div>
+      <CollapsibleCard title="Bulk Video Import (CSV)" accent={C.yellow} bg={`${C.yellow}05`}
+        subtitle={<>Paste rows: <span style={{color:C.yellow}}>title, views, likes, type, hook, platform</span> — one per line.</>}>
         <textarea value={csvDraft} onChange={e=>setCsvDraft(e.target.value)} rows={5} placeholder={"title,views,likes,type,hook,platform\nMy first video,12000,900,facecam,achievement,tiktok\n..."} style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.yellow}25`, borderRadius:12, color:"#fff", padding:"12px 14px", fontSize:12, fontFamily:"monospace", outline:"none", boxSizing:"border-box", resize:"vertical" }}/>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10 }}>
           <button onClick={()=>{
@@ -5016,15 +5020,12 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
           }} style={{ padding:"9px 18px", borderRadius:11, border:`1px solid ${C.yellow}40`, background:`${C.yellow}15`, color:C.yellow, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>IMPORT</button>
           {csvMsg && <span style={{ fontSize:13, color:/^Imported/.test(csvMsg)?C.green:C.pink }}>{csvMsg}</span>}
         </div>
-      </div>
+      </CollapsibleCard>
 
       {/* Channel Intelligence Export */}
-      <div style={{ padding:isMobile?"26px 20px":"20px 24px", borderRadius:16, border:`1px solid ${C.cyan}20`, background:`${C.cyan}05` }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?16:12 }}>
-          <div>
-            <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase" }}>Channel Intelligence Export</div>
-            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:3 }}>Download a full snapshot of your channel data, insights, and viral theory for sharing or backup.</div>
-          </div>
+      <CollapsibleCard title="Channel Intelligence Export" accent={C.cyan} bg={`${C.cyan}05`}
+        subtitle="Download a full snapshot of your channel data, insights and viral theory.">
+        <div>
           <button onClick={()=>{
             const insights = buildChannelInsights(videos);
             const theory = loadJSON(CHANNEL_THEORY_KEY,"");
@@ -5069,7 +5070,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             ↓ EXPORT
           </button>
         </div>
-      </div>
+      </CollapsibleCard>
       {/* Hidden reset — tap 5× on the version label to trigger */}
       <ResetZone />
     </div>
