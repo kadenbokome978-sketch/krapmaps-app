@@ -6870,8 +6870,8 @@ const STATUS_C    = { idea:C.dim, scripted:C.purple, filming:C.yellow, editing:C
 
 const loadJSON  = (k,fb) => { try { const v=JSON.parse(localStorage.getItem(k)); return v!=null?v:fb; } catch { return fb; } };
 const saveJSON  = (k,d)  => { try { localStorage.setItem(k,JSON.stringify(d)); } catch {} };
-const getSbUrl  = () => localStorage.getItem(SB_URL_KEY) || _ENV.VITE_SB_URL || DEFAULT_SB_URL;
-const getSbKey  = () => localStorage.getItem(SB_KEY_KEY) || _ENV.VITE_SB_KEY || DEFAULT_SB_KEY;
+const getSbUrl  = () => localStorage.getItem(SB_URL_KEY) || _ENV.VITE_SB_URL || _ENV.VITE_SUPABASE_URL || DEFAULT_SB_URL;
+const getSbKey  = () => localStorage.getItem(SB_KEY_KEY) || _ENV.VITE_SB_KEY || _ENV.VITE_SUPABASE_ANON_KEY || DEFAULT_SB_KEY;
 const today     = () => new Date().toISOString().slice(0,10);
 const getDays   = d => { const t=new Date(d); const n=new Date(); return Math.ceil((t-n)/86400000); };
 const fmtDate   = d => { try { return new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"}).toUpperCase(); } catch { return d||""; } };
@@ -6897,7 +6897,7 @@ const _sbHeaders = async () => {
 // Anon-key-only headers built from the baked-in defaults — the last-resort retry
 // path when a stale localStorage override or a bad session token gets rejected.
 const _sbDefaultHeaders = () => {
-  const key = _ENV.VITE_SB_KEY || DEFAULT_SB_KEY;
+  const key = _ENV.VITE_SB_KEY || _ENV.VITE_SUPABASE_ANON_KEY || DEFAULT_SB_KEY;
   return { apikey:key, "Authorization":"Bearer "+key, "Content-Type":"application/json" };
 };
 // Fetch wrapper: on 401/403, drop any stale localStorage URL/key override and
@@ -6907,7 +6907,7 @@ const _sbRequest = async (path, opts={}) => {
   let r = await fetch(`${getSbUrl()}${path}`, { ...opts, headers });
   if(r.status===401 || r.status===403) {
     try { localStorage.removeItem(SB_URL_KEY); localStorage.removeItem(SB_KEY_KEY); } catch {}
-    const url = _ENV.VITE_SB_URL || DEFAULT_SB_URL;
+    const url = _ENV.VITE_SB_URL || _ENV.VITE_SUPABASE_URL || DEFAULT_SB_URL;
     r = await fetch(`${url}${path}`, { ...opts, headers:{ ..._sbDefaultHeaders(), ...(opts.headers||{}) } });
   }
   return r;
