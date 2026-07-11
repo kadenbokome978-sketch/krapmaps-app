@@ -1,8 +1,8 @@
 // Shared helpers for API routes. Underscore prefix => Vercel does NOT expose this as an endpoint.
 
 // Public Supabase values (safe to expose) — used to verify the caller's session token.
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 export function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -53,5 +53,5 @@ export async function readJson(req) {
 // Resolve which key to use: the user's own (BYO) if they sent one, else the server key.
 export function resolveKey(req, envName) {
   const byo = req.headers["x-byo-key"];
-  return (byo && String(byo).trim()) || process.env[envName] || "";
+  return (byo && String(byo).trim()) || process.env[envName] || process.env[`VITE_${envName}`] || "";
 }
