@@ -6871,7 +6871,19 @@ const STATUS_C    = { idea:C.dim, scripted:C.purple, filming:C.yellow, editing:C
 const loadJSON  = (k,fb) => { try { const v=JSON.parse(localStorage.getItem(k)); return v!=null?v:fb; } catch { return fb; } };
 const saveJSON  = (k,d)  => { try { localStorage.setItem(k,JSON.stringify(d)); } catch {} };
 const getSbUrl  = () => localStorage.getItem(SB_URL_KEY) || _ENV.VITE_SB_URL || _ENV.VITE_SUPABASE_URL || DEFAULT_SB_URL;
-const getSbKey  = () => localStorage.getItem(SB_KEY_KEY) || _ENV.VITE_SB_KEY || _ENV.VITE_SUPABASE_ANON_KEY || DEFAULT_SB_KEY;
+// The project has legacy JWT (eyJ…) anon keys DISABLED — only new-style
+// sb_publishable_… keys are accepted. To stay immune to a stale build-time env
+// var or a stale localStorage override still holding the old eyJ key, we only
+// honour keys that look like new-style keys and otherwise fall back to the
+// baked-in publishable default. Publishable keys are safe to ship in the client.
+const _validSbKey = (k) => typeof k === "string" && /^sb_(publishable|secret)_/.test(k.trim());
+const getSbKey  = () => {
+  const ls = localStorage.getItem(SB_KEY_KEY);
+  if(_validSbKey(ls)) return ls.trim();
+  const env = _ENV.VITE_SB_KEY || _ENV.VITE_SUPABASE_ANON_KEY;
+  if(_validSbKey(env)) return env.trim();
+  return DEFAULT_SB_KEY;
+};
 const today     = () => new Date().toISOString().slice(0,10);
 const getDays   = d => { const t=new Date(d); const n=new Date(); return Math.ceil((t-n)/86400000); };
 const fmtDate   = d => { try { return new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"}).toUpperCase(); } catch { return d||""; } };

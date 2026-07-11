@@ -2,7 +2,10 @@
 
 // Public Supabase values (safe to expose) — used to verify the caller's session token.
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://xiudsyiinkqtmowkiqxh.supabase.co";
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_yTwU-ZhqsyiENrB4luw3Dg_kC3fJn96";
+// Legacy eyJ… anon keys are disabled on the project — only accept new-style
+// sb_publishable_/sb_secret_ keys, else fall back to the baked-in publishable key.
+const _envKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+const SUPABASE_ANON_KEY = /^sb_(publishable|secret)_/.test(_envKey) ? _envKey : "sb_publishable_yTwU-ZhqsyiENrB4luw3Dg_kC3fJn96";
 
 export function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
