@@ -6890,8 +6890,9 @@ const perfScore = v => {
 const _sbHeaders = () => {
   const key = getSbKey();
   const sess = loadJSON(AUTH_KEY, null);
-  const token = (sess && sess.access_token) || key;
-  return { apikey:key, "Authorization":"Bearer "+token, "Content-Type":"application/json" };
+  // Only use the user's JWT while it's still valid — an expired token gets 401/403'd.
+  const fresh = sess && sess.access_token && (!sess.expires_at || sess.expires_at > Date.now() + 30000);
+  return { apikey:key, "Authorization":"Bearer "+(fresh ? sess.access_token : key), "Content-Type":"application/json" };
 };
 
 // ── WORKSPACE SCOPING ─────────────────────────────────────────────
