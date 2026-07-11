@@ -4708,7 +4708,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:11, letterSpacing:"0.12em", color:"rgba(255,255,255,0.45)", fontWeight:700, textTransform:"uppercase", marginBottom:5 }}>{USE_BACKEND ? "Your Plan" : "Plans — Preview"}</div>
-            <div style={{ fontSize:22, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1 }}>{USE_BACKEND ? _tierLabel : "Free · Pro · Studio"}</div>
+            <div style={{ fontSize:22, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1 }}>{USE_BACKEND ? _tierLabel : "Free · Pro"}</div>
             <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginTop:6 }}>
               {!USE_BACKEND ? "Tap to see the exact pricing page buyers get. Goes live when you turn billing on." : plan?.tier==="studio" ? "Unlimited scoring." : (_scoreLimit!=null ? `${_scoreUsed} / ${_scoreLimit} scores used this month` : `${_scoreUsed} scores used this month`)}
             </div>
@@ -7801,9 +7801,8 @@ Return ONLY JSON:
 // Shown when a user hits their plan limit, or opened from Settings. Upgrading
 // sends them to Stripe Checkout; the webhook flips their tier on return.
 const PRICING_PLANS = [
-  { id:"free",   name:"Free",   price:"£0",  per:"forever", tagline:"Test the waters", feats:["10 idea scores / month","Voice DNA + your analytics","Growth tracking","Shareable results page"] },
-  { id:"pro",    name:"Pro",    price:"£29", per:"/month",  tagline:"For serious creators", hot:true, feats:["400 idea scores / month","Live trends + competitor spy","Multi-model consensus scoring","Priority AI, no queue"] },
-  { id:"studio", name:"Studio", price:"£99", per:"/month",  tagline:"Full-time & teams", feats:["Unlimited scoring","Neural predictor + analog grounding","Everything in Pro","Early access to new features"] },
+  { id:"free",   name:"Free",   price:"£0",  per:"to start", tagline:"Try it out", feats:["10 idea scores / month","Voice DNA + your analytics","Growth tracking","Shareable results page"] },
+  { id:"pro",    name:"Pro",    price:"£29", per:"/month",  tagline:"The full engine, every day", hot:true, feats:["Unlimited idea scoring","Live trends + competitor spy","Multi-model consensus scoring","Priority AI, no queue","Audit buyers: £19/mo for 3 months"] },
 ];
 function PricingModal({ tier="free", reason, onClose }){
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
@@ -7821,7 +7820,7 @@ function PricingModal({ tier="free", reason, onClose }){
           <button onClick={onClose} aria-label="Close" style={{ background:"rgba(255,255,255,0.06)", border:"none", borderRadius:9, width:34, height:34, color:"#fff", fontSize:18, cursor:"pointer", flexShrink:0 }}>{I.x?I.x(14,"currentColor"):"✕"}</button>
         </div>
         {reason && <div style={{ fontSize:13.5, color:C.yellow, background:`${C.yellow}0e`, border:`1px solid ${C.yellow}28`, borderRadius:10, padding:"10px 13px", marginBottom:18, lineHeight:1.5 }}>{reason}</div>}
-        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(3,1fr)", gap:14 }}>
+        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(2,1fr)", gap:14, maxWidth:620, margin:"0 auto" }}>
           {PRICING_PLANS.map(p=>{
             const current = tier===p.id;
             return (
