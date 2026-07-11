@@ -11557,10 +11557,43 @@ function AuthGate({ onAuthed }) {
   );
 }
 
+// ── FREE APP — what a signed-in, not-yet-activated user sees ─────────
+// Self-serve free users land here instead of the activation screen: a single
+// Audit screen (their free monthly audit). "I have a code" takes anyone who's
+// upgraded to Pro to the activation screen to unlock the full app.
+function FreeAuditApp({ onActivate }){
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const [showPricing, setShowPricing] = useState(false);
+  const wl = loadWL();
+  const btn = (bg,col,bd) => ({ padding:isMobile?"9px 14px":"9px 16px", borderRadius:10, border:bd||"none", background:bg, color:col, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", whiteSpace:"nowrap" });
+  return (
+    <div style={{ minHeight:"100vh", background:"#07050F", color:"#fff" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:isMobile?"14px 16px":"18px 32px", borderBottom:"1px solid rgba(255,255,255,0.07)", gap:12, flexWrap:"wrap" }}>
+        <div style={{ fontFamily:C.fontHead, fontWeight:800, fontSize:18 }}>{wl.appName||"CreatorOS"}</div>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <button onClick={()=>setShowPricing(true)} style={btn(`linear-gradient(135deg,${C.pink},${C.purple})`,"#fff")}>Upgrade to Pro</button>
+          <button onClick={onActivate} style={btn("rgba(255,255,255,0.06)","rgba(255,255,255,0.85)","1px solid rgba(255,255,255,0.12)")}>I have a code</button>
+          <button onClick={_signalSignedOut} style={btn("transparent","rgba(255,255,255,0.4)","1px solid rgba(255,255,255,0.08)")}>Sign out</button>
+        </div>
+      </div>
+      <div style={{ maxWidth:920, margin:"0 auto", padding:isMobile?"22px 14px":"34px 24px" }}>
+        <div style={{ marginBottom:22 }}>
+          <div style={{ fontSize:12, letterSpacing:"0.14em", color:C.cyan, fontWeight:700, textTransform:"uppercase" }}>Free Audit · 1 / month</div>
+          <h1 style={{ fontFamily:C.fontHead, fontSize:isMobile?25:34, fontWeight:800, margin:"6px 0 8px", lineHeight:1.1 }}>Audit your channel, free.</h1>
+          <p style={{ color:"rgba(255,255,255,0.55)", fontSize:15, lineHeight:1.6, maxWidth:580 }}>Drop your TikTok handle for a full AI breakdown — what's working, what's costing you views, your Voice DNA, and 5 video ideas in your voice. Want the full daily engine? <button onClick={()=>setShowPricing(true)} style={{ background:"none", border:"none", color:C.pink, fontWeight:700, cursor:"pointer", padding:0, fontSize:15 }}>Go Pro →</button></p>
+        </div>
+        <ProspectAuditView WL={wl} />
+      </div>
+      {showPricing && <PricingModal tier="free" onClose={()=>setShowPricing(false)} />}
+    </div>
+  );
+}
+
 // ROOT
 export default function App() {
   const [config, setConfig] = useState(()=>loadJSON(KEYS_KEY,{}));
   const [onboarded, setOnboarded] = useState(()=>loadJSON("krapmaps_v1_onboarded", false));
+  const [showActivate, setShowActivate] = useState(false);
   const [session, setSession] = useState(()=>loadSession());
   useEffect(()=>{
     const onOut = () => setSession(null);
@@ -11648,11 +11681,16 @@ export default function App() {
     return <AppErrorBoundary><AuthGate onAuthed={(s)=>setSession(s)} /></AppErrorBoundary>;
   }
 
-  return (
-    <AppErrorBoundary>
-      {!onboarded
-        ? <OnboardingPage onComplete={()=>setOnboarded(true)} />
-        : <Dashboard keys={config.keys||{}} onEditKeys={handleEditKeys} />}
-    </AppErrorBoundary>
-  );
+  // Routing:
+  // - Activated (entered a code — Pro customers, Thierno, KrapMaps) → full Dashboard.
+  // - Signed-in but not activated (self-serve free signup) → audit-only FreeAuditApp,
+  //   with "I have a code" opening the activation screen to unlock the full app.
+  // - Non-auth / self-host → unchanged (activation screen when not onboarded).
+  if(onboarded) {
+    return <AppErrorBoundary><Dashboard keys={config.keys||{}} onEditKeys={handleEditKeys} /></AppErrorBoundary>;
+  }
+  if(REQUIRE_AUTH && !showActivate) {
+    return <AppErrorBoundary><FreeAuditApp onActivate={()=>setShowActivate(true)} /></AppErrorBoundary>;
+  }
+  return <AppErrorBoundary><OnboardingPage onComplete={()=>setOnboarded(true)} /></AppErrorBoundary>;
 }
