@@ -4547,7 +4547,7 @@ const SettingsView = ({ plan, onManagePlan, keys, onEditKeys, scrapedStats, hasI
     if(!url || !key) { setSbMsg({ ok:false, text:"Enter both the project URL and the key." }); return; }
     setSbMsg({ ok:true, text:"Testing connection…" });
     try {
-      const r = await fetch(`${url}/rest/v1/km_config?select=id&limit=1`, { headers:{ apikey:key, Authorization:"Bearer "+key } });
+      const r = await fetch(`${url}/rest/v1/km_config?select=id&limit=1`, { headers:{ apikey:key } });
       if(r.status===401||r.status===403) { setSbMsg({ ok:false, text:`Rejected (${r.status}) — wrong key, or the project is paused. Copy the anon / publishable key from Supabase → Settings → API.` }); return; }
       if(!r.ok && r.status!==404) { setSbMsg({ ok:false, text:`Connection failed (HTTP ${r.status}).` }); return; }
       localStorage.setItem(SB_URL_KEY, url);
