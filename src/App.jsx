@@ -11645,6 +11645,38 @@ export default function App() {
     return ()=>window.removeEventListener("km-signed-out", onOut);
   },[]);
 
+  // Account isolation: localStorage remembers "onboarded" per-browser, so a
+  // DIFFERENT account signing in on the same browser would inherit the previous
+  // account's activated workspace. On load, re-verify server-side that THIS
+  // account is authorized for the workspace's code (admin / owner / allow-listed).
+  // On an explicit 403 we wipe local activation + cached workspace data and drop
+  // them to the free audit screen. Fails open on network errors so a blip never
+  // locks anyone out.
+  useEffect(()=>{
+    if(!(REQUIRE_AUTH && onboarded && session)) return;
+    let cancelled = false;
+    (async()=>{
+      try {
+        const raw = localStorage.getItem(CLIENT_KEY);
+        const code = raw ? (JSON.parse(raw).activationCode||"") : "";
+        if(!code) return;
+        const token = await getAccessToken();
+        if(!token) return;
+        const r = await fetch("/api/me", { method:"POST", headers:{ Authorization:"Bearer "+token, "Content-Type":"application/json" }, body:JSON.stringify({ code }) });
+        if(r.status===403 && !cancelled) {
+          [ "krapmaps_v1_onboarded","krapmaps_activated",CLIENT_KEY,WL_KEY,
+            VIDEOS_KEY,IDEAS_KEY,CAL_KEY,TASKS_KEY,APPIDEAS_KEY,ANALYSIS_KEY,NEXTVIDS_KEY,
+            WEEKLY_KEY,TRENDS_KEY,SCRAPE_KEY,SCORES_KEY,MEMORY_KEY,COMPETE_KEY,PREDICT_KEY,
+            CUR_TRENDS_KEY,CHANNEL_THEORY_KEY,HOOK_DB_KEY,PATTERN_KEY,GAP_KEY,MANUAL_KEY,
+            STREAK_KEY,XP_KEY,VOICE_KEY,VOICE_KEY+"_meta",VOICE_FB_KEY,VISION_KEY,COMMENTS_KEY,NN_KEY,EMB_KEY
+          ].forEach(k=>{ try{localStorage.removeItem(k);}catch{} });
+          setOnboarded(false);
+        }
+      } catch {}
+    })();
+    return ()=>{ cancelled = true; };
+  },[session, onboarded]);
+
   // Instagram OAuth return: /dashboard?ig=<status>. Surface the outcome, strip the
   // param from the URL, and let the config re-fetch below pick up the new token.
   useEffect(()=>{
