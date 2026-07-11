@@ -8873,6 +8873,13 @@ function Dashboard({ keys, onEditKeys }) {
     try {
       const r = await fetch(`https://graph.instagram.com/me?fields=id,username,media_count,followers_count&access_token=${keys.ig}`);
       const profile = await r.json();
+      // A bad/expired token comes back as { error: {...} } with HTTP 400 — surface
+      // it and stop, rather than silently showing zeros.
+      if(profile?.error || !r.ok) {
+        const msg = profile?.error?.message || `HTTP ${r.status}`;
+        reportHealth("instagram","error",`Instagram connection expired — reconnect in Settings. (${msg})`);
+        setIgLoad(false); return;
+      }
       const mr = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,media_product_type,timestamp,like_count,comments_count,permalink,thumbnail_url,media_url&limit=50&access_token=${keys.ig}`);
       const media = await mr.json();
       const items = media.data || [];
@@ -8907,7 +8914,10 @@ function Dashboard({ keys, onEditKeys }) {
         type: m.media_product_type==="REELS" ? "reel" : "post",
       }));
       if(fresh.length) setVideos(prev => [...prev.filter(v=>v.platform!=="instagram"), ...fresh]);
-    } catch(e) { setAiErr("IG fetch failed: "+e.message); }
+      // Success — clears any stale scraper error and flips the status to Connected.
+      const fc = profile?.followers_count;
+      reportHealth("instagram","ok",`Connected — @${profile?.username||"account"}${fc!=null?` · ${fc} followers`:""}`);
+    } catch(e) { reportHealth("instagram","error","Instagram fetch failed: "+e.message); }
     setIgLoad(false);
   },[keys,igLoad,hasIG]);
 
