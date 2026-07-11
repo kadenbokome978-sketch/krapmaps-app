@@ -7643,6 +7643,10 @@ function ProspectAuditView({ WL }){
     try {
       const { handle:h, nick, followers, videos } = await scrapeProspectTikTok(handle);
       if(videos.length < 3) throw new Error(`Only ${videos.length} videos found — need a few more to audit properly.`);
+      // Meter only once we have a real channel to audit, so a typo never burns
+      // a free user's monthly audit. Pro/founder are unlimited (meter passes).
+      const gate = await meterAction("audits");
+      if(!gate.allowed){ setPhase("error"); setErr("You've used your free audit this month. Upgrade to Pro for unlimited audits →"); return; }
       setPhase("analysing");
       const withV = videos.filter(v=>v.views>0);
       const avg = withV.length ? Math.round(withV.reduce((s,v)=>s+v.views,0)/withV.length) : 0;
@@ -10514,7 +10518,7 @@ function OnboardingPage({ onComplete }) {
   const [step, setStep] = useState(_initStep);
   const [handle, setHandle] = useState(WL.handle || "");
   const [apiKey, setApiKey] = useState("");
-  const [codeInput, setCodeInput] = useState("");
+  const [codeInput, setCodeInput] = useState(()=>{ try { return localStorage.getItem("krapmaps_pending_code")||""; } catch { return ""; } });
   const [codeError, setCodeError] = useState(false);
   const [codeShake, setCodeShake] = useState(false);
   const [demoIdx, setDemoIdx] = useState(0);
@@ -10691,9 +10695,24 @@ function OnboardingPage({ onComplete }) {
     return ()=>clearInterval(t);
   },[step]);
 
-  const submitCode = () => {
+  const submitCode = async () => {
     const entered = codeInput.trim().toUpperCase();
-    const matched = CLIENTS[entered];
+    let matched = CLIENTS[entered];
+    // Self-serve: accept the signed-in user's own paid/founder access code
+    // (minted server-side, returned by /api/me) → activate a personal CreatorOS
+    // workspace keyed to that code. Can't be forged: the code lives server-side.
+    if(!matched && REQUIRE_AUTH) {
+      try {
+        const token = await getAccessToken();
+        if(token) {
+          const r = await fetch("/api/me", { headers:{ Authorization:"Bearer "+token } });
+          const d = await r.json().catch(()=>({}));
+          if(d.accessCode && entered === String(d.accessCode).toUpperCase()) {
+            matched = { ...CLIENT_CONFIG, clientId:"creator", appName: CLIENT_CONFIG.appName || "CreatorOS", activationCode: entered };
+          }
+        }
+      } catch {}
+    }
     if(matched) {
       // Persist client config so WL loads correctly after reload
       // Wipe data only when activating a NEW client for the first time
@@ -10703,6 +10722,10 @@ function OnboardingPage({ onComplete }) {
         const isNewClient = prevId !== matched.clientId;
         localStorage.setItem(CLIENT_KEY, JSON.stringify(matched));
         localStorage.removeItem(WL_KEY);
+        try { localStorage.removeItem("krapmaps_pending_code"); } catch {}
+        // Persist that this account has activated, so the post-reload router
+        // continues into onboarding/Dashboard instead of the free audit screen.
+        try { localStorage.setItem("krapmaps_activated", "true"); } catch {}
         if(isNewClient && matched.clientId !== "krapmaps") {
           [VIDEOS_KEY,IDEAS_KEY,CAL_KEY,TASKS_KEY,APPIDEAS_KEY,ANALYSIS_KEY,
            NEXTVIDS_KEY,WEEKLY_KEY,TRENDS_KEY,SCRAPE_KEY,SCORES_KEY,MEMORY_KEY,
@@ -11564,18 +11587,29 @@ function AuthGate({ onAuthed }) {
 function FreeAuditApp({ onActivate }){
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [showPricing, setShowPricing] = useState(false);
+  const [me, setMe] = useState(null);
   const wl = loadWL();
+  // Check the server plan: if they've upgraded, they'll have an access code to activate.
+  useEffect(()=>{ if(!USE_BACKEND) return; fetchPlan().then(setMe).catch(()=>{}); },[]);
+  const paid = me && me.accessCode && me.tier && me.tier!=="free";
+  const activateWithCode = () => { try { localStorage.setItem("krapmaps_pending_code", me.accessCode); } catch {} onActivate(); };
   const btn = (bg,col,bd) => ({ padding:isMobile?"9px 14px":"9px 16px", borderRadius:10, border:bd||"none", background:bg, color:col, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", whiteSpace:"nowrap" });
   return (
     <div style={{ minHeight:"100vh", background:"#07050F", color:"#fff" }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:isMobile?"14px 16px":"18px 32px", borderBottom:"1px solid rgba(255,255,255,0.07)", gap:12, flexWrap:"wrap" }}>
         <div style={{ fontFamily:C.fontHead, fontWeight:800, fontSize:18 }}>{wl.appName||"CreatorOS"}</div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <button onClick={()=>setShowPricing(true)} style={btn(`linear-gradient(135deg,${C.pink},${C.purple})`,"#fff")}>Upgrade to Pro</button>
+          {!paid && <button onClick={()=>setShowPricing(true)} style={btn(`linear-gradient(135deg,${C.pink},${C.purple})`,"#fff")}>Upgrade to Pro</button>}
           <button onClick={onActivate} style={btn("rgba(255,255,255,0.06)","rgba(255,255,255,0.85)","1px solid rgba(255,255,255,0.12)")}>I have a code</button>
           <button onClick={_signalSignedOut} style={btn("transparent","rgba(255,255,255,0.4)","1px solid rgba(255,255,255,0.08)")}>Sign out</button>
         </div>
       </div>
+      {paid && (
+        <div style={{ background:`linear-gradient(90deg,${C.green}18,${C.cyan}10)`, borderBottom:`1px solid ${C.green}30`, padding:isMobile?"12px 16px":"14px 32px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
+          <div style={{ fontSize:14, color:"#fff", fontWeight:600 }}>🎉 You're {TIER_LABELS[me.tier]||"Pro"}! Your access code: <span style={{ fontFamily:"monospace", color:C.green, letterSpacing:"0.08em", fontWeight:700 }}>{me.accessCode}</span></div>
+          <button onClick={activateWithCode} style={btn(`linear-gradient(135deg,${C.green},${C.cyan})`,"#07050F")}>Activate &amp; unlock full app →</button>
+        </div>
+      )}
       <div style={{ maxWidth:920, margin:"0 auto", padding:isMobile?"22px 14px":"34px 24px" }}>
         <div style={{ marginBottom:22 }}>
           <div style={{ fontSize:12, letterSpacing:"0.14em", color:C.cyan, fontWeight:700, textTransform:"uppercase" }}>Free Audit · 1 / month</div>
@@ -11594,6 +11628,9 @@ export default function App() {
   const [config, setConfig] = useState(()=>loadJSON(KEYS_KEY,{}));
   const [onboarded, setOnboarded] = useState(()=>loadJSON("krapmaps_v1_onboarded", false));
   const [showActivate, setShowActivate] = useState(false);
+  // Set once a valid code is entered — survives the activation reload so the
+  // router resumes into onboarding/Dashboard, not back to the free audit screen.
+  const activated = (()=>{ try { return localStorage.getItem("krapmaps_activated")==="true"; } catch { return false; } })();
   const [session, setSession] = useState(()=>loadSession());
   useEffect(()=>{
     const onOut = () => setSession(null);
@@ -11689,7 +11726,7 @@ export default function App() {
   if(onboarded) {
     return <AppErrorBoundary><Dashboard keys={config.keys||{}} onEditKeys={handleEditKeys} /></AppErrorBoundary>;
   }
-  if(REQUIRE_AUTH && !showActivate) {
+  if(REQUIRE_AUTH && !showActivate && !activated) {
     return <AppErrorBoundary><FreeAuditApp onActivate={()=>setShowActivate(true)} /></AppErrorBoundary>;
   }
   return <AppErrorBoundary><OnboardingPage onComplete={()=>setOnboarded(true)} /></AppErrorBoundary>;
