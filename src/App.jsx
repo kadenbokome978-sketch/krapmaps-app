@@ -11766,6 +11766,15 @@ export default function App() {
       setConfig(merged);
       saveJSON(KEYS_KEY, merged);
     }).catch(()=>{});
+    // The Instagram token lives in its own row so config saves can't clobber it.
+    // Pull it in and merge onto keys.ig so the official IG sync always has it.
+    sbFetch("km_config",`select=*&id=eq.${wsId("ig_token")}`).then(rows=>{
+      const tok = rows?.[0]?.data?.ig;
+      if(!tok) return;
+      setConfig(prev=>{ const u={ ...prev, keys:{ ...(prev.keys||{}), ig:tok } }; saveJSON(KEYS_KEY,u); return u; });
+    }).catch(()=>{});
+    // Clear any stale Instagram health left by the removed RapidAPI scraper.
+    try { const h=loadHealth(); if(h.instagram && /scraper|rapidapi/i.test(h.instagram.msg||"")) { delete h.instagram; saveJSON(HEALTH_KEY,h); } } catch {}
     // Pull the learned Voice DNA down so it follows the creator across devices.
     sbFetch("km_config",`select=*&id=eq.${wsId("voice_dna")}`).then(rows=>{
       const remote = rows?.[0]?.data;

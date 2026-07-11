@@ -13,7 +13,10 @@ const SB_KEY = /^sb_(publishable|secret)_/.test(_envKey) ? _envKey : "sb_publish
 const APP_ID = process.env.IG_APP_ID || "";
 const APP_SECRET = process.env.IG_APP_SECRET || "";
 
-const rowIdFor = (state) => `${String(state || "default").toUpperCase().replace(/[^A-Z0-9]/g, "") || "default"}:workspace_config`;
+const wsOf = (state) => String(state || "default").toUpperCase().replace(/[^A-Z0-9]/g, "") || "default";
+// The IG token lives in its OWN row (not workspace_config) so a client-side
+// config save can never overwrite it — that was causing repeated disconnects.
+const igRowIdFor = (state) => `${wsOf(state)}:ig_token`;
 
 async function readConfig(rowId) {
   try {
@@ -60,34 +63,29 @@ async function handleCallback(req, res) {
     const token = longData.access_token || shortData.access_token;
     const expiresIn = longData.expires_in || 60 * 24 * 3600;
 
-    const rowId = rowIdFor(state);
-    const existing = await readConfig(rowId);
-    const merged = {
-      ...existing,
-      keys: { ...(existing.keys || {}), ig: token },
-      igMeta: { userId: shortData.user_id || null, expiresAt: Date.now() + expiresIn * 1000, connectedAt: Date.now() },
-    };
-    const up = await writeConfig(rowId, merged);
-    if (!up.ok) { console.warn("[ig] config upsert failed:", up.status); return bounce("savefail"); }
+    const up = await writeConfig(igRowIdFor(state), {
+      ig: token,
+      userId: shortData.user_id || null,
+      expiresAt: Date.now() + expiresIn * 1000,
+      connectedAt: Date.now(),
+      longLived: !!longData.access_token,
+    });
+    if (!up.ok) { console.warn("[ig] token upsert failed:", up.status); return bounce("savefail"); }
     return bounce("connected");
   } catch (e) { console.error("[ig] callback error:", e.message); return bounce("error"); }
 }
 
 // ── Long-lived token refresh ───────────────────────────────────────
 async function handleRefresh(req, res) {
-  const rowId = rowIdFor(req.query.state);
+  const rowId = igRowIdFor(req.query.state);
   try {
     const data = await readConfig(rowId);
-    const token = data?.keys?.ig;
+    const token = data?.ig;
     if (!token) return res.status(200).json({ refreshed: false, reason: "no-token" });
     const rr = await fetch(`https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(token)}`);
     const rd = await rr.json().catch(() => ({}));
     if (!rr.ok || !rd.access_token) return res.status(200).json({ refreshed: false, reason: "refresh-failed" });
-    const merged = {
-      ...data, keys: { ...(data.keys || {}), ig: rd.access_token },
-      igMeta: { ...(data.igMeta || {}), expiresAt: Date.now() + (rd.expires_in || 60 * 24 * 3600) * 1000, refreshedAt: Date.now() },
-    };
-    await writeConfig(rowId, merged);
+    await writeConfig(rowId, { ...data, ig: rd.access_token, expiresAt: Date.now() + (rd.expires_in || 60 * 24 * 3600) * 1000, refreshedAt: Date.now() });
     return res.status(200).json({ refreshed: true, expiresIn: rd.expires_in });
   } catch (e) { return res.status(200).json({ refreshed: false, reason: e.message }); }
 }
