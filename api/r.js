@@ -3,7 +3,7 @@
 // Reached via /r/<handle> (rewritten to /api/r?u=<handle>).
 
 const SB_URL = process.env.SUPABASE_URL || process.env.VITE_SB_URL || "https://xiudsyiinkqtmowkiqxh.supabase.co";
-const SB_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SB_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpdWRzeWlpbmtxdG1vd2tpcXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzU5OTcsImV4cCI6MjA4OTQ1MTk5N30.8aHpQIcEcrDXo9DJN52SWAOee-rrkp-ti00h72-_sZE";
+const SB_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SB_KEY || "sb_publishable_yTwU-ZhqsyiENrB4luw3Dg_kC3fJn96";
 
 const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // Only allow hex colours through to inline styles (defence-in-depth against CSS injection).
