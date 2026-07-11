@@ -40,10 +40,22 @@ export default async function handler(req, res) {
   const meta = obj.metadata || {};
   const userId = meta.userId || obj.client_reference_id;
 
+  // A short, readable, unambiguous access code the customer types on the
+  // activation screen to unlock the full app (e.g. "CR7Q2M4K").
+  const genCode = () => {
+    const abc = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0/O/1/I/L
+    const bytes = crypto.randomBytes(6);
+    let s = "CR";
+    for (let i = 0; i < 6; i++) s += abc[bytes[i] % abc.length];
+    return s;
+  };
+
   const grant = async (tier) => {
     if (!userId) return;
     const b = await getBilling(userId);
-    await setBilling(userId, { ...b, tier, stripeCustomerId: obj.customer || b.stripeCustomerId, updatedBy: event.type });
+    // Mint a code on first upgrade to a paid tier; keep it stable afterwards.
+    const accessCode = (tier !== "free" && !b.accessCode) ? genCode() : b.accessCode;
+    await setBilling(userId, { ...b, tier, accessCode, stripeCustomerId: obj.customer || b.stripeCustomerId, updatedBy: event.type });
   };
 
   try {

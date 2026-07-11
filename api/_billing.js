@@ -18,9 +18,9 @@ const _h = () => ({ apikey: SVC, Authorization: "Bearer " + SVC, "Content-Type":
 
 // Monthly allowances per tier. `scores` gates AI scoring calls (the main cost).
 export const TIERS = {
-  free:   { label: "Free",   scores: 10,       price: 0 },
-  pro:    { label: "Pro",    scores: 400,      price: 29 },
-  studio: { label: "Studio", scores: Infinity, price: 99 },
+  free:   { label: "Free",   scores: 10,       audits: 1,        price: 0 },
+  pro:    { label: "Pro",    scores: Infinity, audits: Infinity, price: 29 },
+  studio: { label: "Studio", scores: Infinity, audits: Infinity, price: 99 },
 };
 
 // Founding / comped accounts — unlimited access, no Stripe. Set FOUNDER_EMAILS

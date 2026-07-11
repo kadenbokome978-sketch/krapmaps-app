@@ -11,9 +11,11 @@ export default async function handler(req, res) {
   if (!user) return;
   if (user.byoOnly) return res.status(200).json({ tier: "byo", usage: {}, billingConfigured: false });
 
-  // Founding / comped accounts get unlimited access with no metering.
+  // Founding / comped accounts get unlimited access with no metering. Their
+  // access code is stable (derived from their id) so they can activate too.
   if (isFounder(user.email)) {
-    return res.status(200).json({ tier: "founder", usage: {}, period: null, limits: {}, billingConfigured: configured() });
+    const code = "FND" + String(user.id).replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase();
+    return res.status(200).json({ tier: "founder", usage: {}, period: null, limits: {}, accessCode: code, billingConfigured: configured() });
   }
 
   const b = await getBilling(user.id);
@@ -24,6 +26,7 @@ export default async function handler(req, res) {
     usage: b.usage || {},
     period: b.period || null,
     limits,
+    accessCode: b.accessCode || null,
     billingConfigured: configured(),
   });
 }
