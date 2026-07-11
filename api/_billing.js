@@ -23,6 +23,18 @@ export const TIERS = {
   studio: { label: "Studio", scores: Infinity, price: 99 },
 };
 
+// Founding / comped accounts — unlimited access, no Stripe. Set FOUNDER_EMAILS
+// to a comma-separated list of the founding creators' login emails (server env,
+// no VITE_ prefix). Matching is case-insensitive. These accounts get the top
+// tier for free — used for design partners who pay in data + testimonials.
+const FOUNDERS = new Set(
+  String(process.env.FOUNDER_EMAILS || "")
+    .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)
+);
+export function isFounder(email) {
+  return !!email && FOUNDERS.has(String(email).trim().toLowerCase());
+}
+
 export function periodKey(d = new Date()) {
   return d.getUTCFullYear() + "-" + String(d.getUTCMonth() + 1).padStart(2, "0");
 }

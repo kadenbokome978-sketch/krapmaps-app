@@ -3,7 +3,7 @@
 // so the multi-model consensus fan-out is billed as a single unit. Only meaningful
 // in backend mode (server keys); BYO/direct callers are never metered.
 import { cors, requireUser, readJson } from "./_lib.js";
-import { meter } from "./_billing.js";
+import { meter, isFounder } from "./_billing.js";
 
 export default async function handler(req, res) {
   cors(res);
@@ -13,6 +13,7 @@ export default async function handler(req, res) {
   const user = await requireUser(req, res);
   if (!user) return;
   if (user.byoOnly) return res.status(200).json({ allowed: true, tier: "byo" });
+  if (isFounder(user.email)) return res.status(200).json({ allowed: true, tier: "founder", remaining: null });
 
   let body; try { body = await readJson(req); } catch { body = {}; }
   const m = await meter(user.id, String(body.metric || "scores"), Number(body.cost) || 1);

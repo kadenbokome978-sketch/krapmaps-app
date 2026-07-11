@@ -4710,7 +4710,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             <div style={{ fontSize:11, letterSpacing:"0.12em", color:"rgba(255,255,255,0.45)", fontWeight:700, textTransform:"uppercase", marginBottom:5 }}>{USE_BACKEND ? "Your Plan" : "Plans — Preview"}</div>
             <div style={{ fontSize:22, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1 }}>{USE_BACKEND ? _tierLabel : "Free · Pro"}</div>
             <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginTop:6 }}>
-              {!USE_BACKEND ? "Tap to see the exact pricing page buyers get. Goes live when you turn billing on." : plan?.tier==="studio" ? "Unlimited scoring." : (_scoreLimit!=null ? `${_scoreUsed} / ${_scoreLimit} scores used this month` : `${_scoreUsed} scores used this month`)}
+              {!USE_BACKEND ? "Tap to see the exact pricing page buyers get. Goes live when you turn billing on." : plan?.tier==="founder" ? "Unlimited scoring — founding creator 🙌" : plan?.tier==="studio" ? "Unlimited scoring." : (_scoreLimit!=null ? `${_scoreUsed} / ${_scoreLimit} scores used this month` : `${_scoreUsed} scores used this month`)}
             </div>
           </div>
           <button onClick={onManagePlan} style={{ padding:isMobile?"11px 20px":"13px 26px", borderRadius:12, border:"none", background:(!USE_BACKEND||plan?.tier==="free")?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.08)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", flexShrink:0 }}>
@@ -7088,7 +7088,7 @@ const _signalSignedOut = () => { try { clearSession(); window.dispatchEvent(new 
 // Entitlements live server-side (forgery-proof). These helpers read the plan and
 // meter actions. All are no-ops outside backend mode, so direct/self-host builds
 // are unaffected — nothing is gated unless you've turned billing on.
-const TIER_LABELS = { free:"Free", pro:"Pro", studio:"Studio", byo:"Your keys", unmetered:"Unlimited" };
+const TIER_LABELS = { free:"Free", pro:"Pro", studio:"Studio", byo:"Your keys", unmetered:"Unlimited", founder:"Founding Creator" };
 async function fetchPlan() {
   if(!USE_BACKEND) return { tier:"unmetered", billingConfigured:false };
   try {
