@@ -9212,7 +9212,7 @@ function Dashboard({ keys, onEditKeys }) {
       try {
         const codes = fresh.map(v=>v._igCode).filter(Boolean).join(',');
         if(codes) {
-          const proxyUrl = 'https://krapmaps-app.vercel.app/api/ig-views?codes=' + codes;
+          const proxyUrl = '/api/ig?action=views&codes=' + codes;
           const pr = await fetch(proxyUrl);
           if(pr.ok) {
             const viewData = await pr.json();
@@ -11577,7 +11577,7 @@ export default function App() {
       const cfg = loadJSON(KEYS_KEY,{});
       const exp = cfg?.igMeta?.expiresAt;
       if(cfg?.keys?.ig && exp && (exp - Date.now()) < 10*24*3600*1000) {
-        fetch(`/api/ig-refresh?state=${encodeURIComponent(WS())}`).catch(()=>{});
+        fetch(`/api/ig?action=refresh&state=${encodeURIComponent(WS())}`).catch(()=>{});
       }
     } catch {}
   },[]);

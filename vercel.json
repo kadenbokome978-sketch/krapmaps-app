@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api/ig-callback", "destination": "/api/ig?action=callback" },
     { "source": "/r/:handle", "destination": "/api/r?u=:handle" },
     { "source": "/dashboard", "destination": "/app.html" },
     { "source": "/", "destination": "/landing.html" },
