@@ -4814,7 +4814,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             </div>
             <button onClick={()=>{
               const redirect = `${window.location.origin}/api/ig-callback`;
-              const scope = "instagram_business_basic,instagram_business_manage_insights";
+              const scope = "instagram_business_basic";
               const url = `https://www.instagram.com/oauth/authorize?client_id=${encodeURIComponent(IG_APP_ID)}&redirect_uri=${encodeURIComponent(redirect)}&response_type=code&scope=${encodeURIComponent(scope)}&state=${encodeURIComponent(WS())}`;
               window.location.href = url;
             }} style={{ width:"100%", padding:isMobile?"14px 18px":"11px 16px", borderRadius:10, border:"none", background:"linear-gradient(90deg,#f09433,#dc2743,#bc1888)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", letterSpacing:"0.02em" }}>
