@@ -110,6 +110,44 @@ async function handleViews(req, res) {
   res.json(results);
 }
 
+// ── Server-side sync ───────────────────────────────────────────────
+// Fetches profile + media + per-media views from the Instagram Graph API using
+// the server-stored token, so the browser never calls Instagram directly (Safari
+// blocks cross-site requests to graph.instagram.com). Returns clean JSON.
+async function handleSync(req, res) {
+  const rowId = igRowIdFor(req.query.state);
+  const data = await readConfig(rowId);
+  const token = data?.ig;
+  if (!token) return res.status(200).json({ connected: false, reason: "no-token" });
+  try {
+    const pr = await fetch(`https://graph.instagram.com/me?fields=id,username,media_count,followers_count&access_token=${encodeURIComponent(token)}`);
+    const profile = await pr.json();
+    if (profile?.error || !pr.ok) {
+      return res.status(200).json({ connected: false, reason: profile?.error?.message || `HTTP ${pr.status}` });
+    }
+    const mr = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,media_product_type,timestamp,like_count,comments_count,permalink,thumbnail_url,media_url&limit=50&access_token=${encodeURIComponent(token)}`);
+    const media = await mr.json();
+    const items = media?.data || [];
+    const readInsight = async (id, metric) => {
+      try {
+        const ir = await fetch(`https://graph.instagram.com/${id}/insights?metric=${metric}&access_token=${encodeURIComponent(token)}`);
+        if (!ir.ok) return null;
+        const j = await ir.json();
+        const d = j?.data?.[0];
+        return d?.values?.[0]?.value ?? d?.total_value?.value ?? null;
+      } catch { return null; }
+    };
+    const enriched = await Promise.all(items.map(async (m) => {
+      let views = await readInsight(m.id, "views");
+      if (views == null) views = await readInsight(m.id, "plays");
+      return { ...m, views: views || 0 };
+    }));
+    return res.status(200).json({ connected: true, profile, media: enriched });
+  } catch (e) {
+    return res.status(200).json({ connected: false, reason: e.message });
+  }
+}
+
 export default async function handler(req, res) {
   cors(res);
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -117,5 +155,6 @@ export default async function handler(req, res) {
   if (action === "callback") return handleCallback(req, res);
   if (action === "refresh") return handleRefresh(req, res);
   if (action === "views") return handleViews(req, res);
+  if (action === "sync") return handleSync(req, res);
   return res.status(400).json({ error: "unknown action" });
 }

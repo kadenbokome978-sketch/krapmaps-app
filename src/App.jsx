@@ -8869,46 +8869,23 @@ function Dashboard({ keys, onEditKeys }) {
   // ── FETCH IG ──────────────────────────────────────────────────
   const fetchIG = useCallback(async()=>{
     if(igLoad) return;
-    // Resolve the token robustly — prop, then the dedicated ig_token row, then the
-    // legacy workspace_config location. This makes IG sync immune to the config
-    // load timing that was dropping the token.
-    let token = keys?.ig;
-    if(!token){ try { const rows = await sbFetch("km_config",`select=*&id=eq.${wsId("ig_token")}`); token = rows?.[0]?.data?.ig; } catch {} }
-    if(!token){ try { const rows = await sbFetch("km_config",`select=*&id=eq.${wsId("workspace_config")}`); token = rows?.[0]?.data?.keys?.ig; } catch {} }
-    if(!token) return; // genuinely not connected
     setIgLoad(true);
     try {
-      const r = await fetch(`https://graph.instagram.com/me?fields=id,username,media_count,followers_count&access_token=${token}`);
-      const profile = await r.json();
-      // A bad/expired token comes back as { error: {...} } with HTTP 400 — surface
-      // it and stop, rather than silently showing zeros.
-      if(profile?.error || !r.ok) {
-        const msg = profile?.error?.message || `HTTP ${r.status}`;
-        reportHealth("instagram","error",`Instagram connection expired — reconnect in Settings. (${msg})`);
+      // Server-side sync — the browser never calls Instagram directly (Safari
+      // blocks cross-site requests to graph.instagram.com). The backend uses the
+      // stored token and returns clean data.
+      const r = await fetch(`/api/ig?action=sync&state=${encodeURIComponent(WS())}`);
+      const d = await r.json().catch(()=>({}));
+      if(!d.connected) {
+        if(d.reason==="no-token") { setIgLoad(false); return; } // not connected yet — no error
+        reportHealth("instagram","error",`Instagram connection expired — reconnect in Settings. (${d.reason||"unknown"})`);
         setIgLoad(false); return;
       }
-      const mr = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,media_product_type,timestamp,like_count,comments_count,permalink,thumbnail_url,media_url&limit=50&access_token=${token}`);
-      const media = await mr.json();
-      const items = media.data || [];
-      // Views live in the Insights API now (the old video_views/plays media fields
-      // are deprecated). "views" is the current metric, "plays" the older fallback.
-      const readInsight = async (id, metric) => {
-        try {
-          const ir = await fetch(`https://graph.instagram.com/${id}/insights?metric=${metric}&access_token=${token}`);
-          if(!ir.ok) return null;
-          const j = await ir.json();
-          const d = j?.data?.[0];
-          return d?.values?.[0]?.value ?? d?.total_value?.value ?? null;
-        } catch { return null; }
-      };
-      const enriched = await Promise.all(items.map(async(m)=>{
-        let views = await readInsight(m.id, "views");
-        if(views==null) views = await readInsight(m.id, "plays");
-        return { ...m, views: views || 0 };
-      }));
+      const profile = d.profile || {};
+      const enriched = d.media || [];
       setIgData({ profile, media: enriched });
-      // Feed the official media straight into the video library so the whole app
-      // (IG Views, reel cards, analytics) uses real Instagram data — no scraper.
+      // Feed the official media into the video library so the whole app
+      // (IG Views, reel cards, analytics) uses real Instagram data.
       const fresh = enriched.map(m => ({
         id: "ig_"+m.id,
         title: (m.caption||"").slice(0,100) || "Instagram post",
@@ -8921,12 +8898,11 @@ function Dashboard({ keys, onEditKeys }) {
         type: m.media_product_type==="REELS" ? "reel" : "post",
       }));
       if(fresh.length) setVideos(prev => [...prev.filter(v=>v.platform!=="instagram"), ...fresh]);
-      // Success — clears any stale scraper error and flips the status to Connected.
       const fc = profile?.followers_count;
       reportHealth("instagram","ok",`Connected — @${profile?.username||"account"}${fc!=null?` · ${fc} followers`:""}`);
     } catch(e) { reportHealth("instagram","error","Instagram fetch failed: "+e.message); }
     setIgLoad(false);
-  },[keys,igLoad]);
+  },[igLoad]);
 
   // Run once on mount (fetchIG self-resolves the token from Supabase) and again
   // whenever the token prop arrives.
