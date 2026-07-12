@@ -148,6 +148,32 @@ async function handleSync(req, res) {
   }
 }
 
+// ── Diagnostic — reports exact connection state without exposing the token ──
+async function handleDebug(req, res) {
+  const rowId = igRowIdFor(req.query.state);
+  const out = { rowId };
+  try {
+    const data = await readConfig(rowId);
+    out.tokenRowFound = !!data?.ig;
+    out.tokenPrefix = data?.ig ? String(data.ig).slice(0, 6) + "…" : null;
+    out.tokenLength = data?.ig ? String(data.ig).length : 0;
+    out.longLived = data?.longLived ?? null;
+    out.connectedAt = data?.connectedAt ? new Date(data.connectedAt).toISOString() : null;
+    out.expiresAt = data?.expiresAt ? new Date(data.expiresAt).toISOString() : null;
+    // Legacy location check
+    const legacy = await readConfig(`${wsOf(req.query.state)}:workspace_config`);
+    out.legacyTokenFound = !!legacy?.keys?.ig;
+    const token = data?.ig || legacy?.keys?.ig;
+    if (token) {
+      const pr = await fetch(`https://graph.instagram.com/me?fields=id,username,followers_count&access_token=${encodeURIComponent(token)}`);
+      out.graphStatus = pr.status;
+      out.graphBody = await pr.json().catch(() => null);
+    }
+    out.env = { hasAppId: !!APP_ID, hasSecret: !!APP_SECRET, hasSbKey: !!SB_KEY };
+  } catch (e) { out.error = e.message; }
+  return res.status(200).json(out);
+}
+
 export default async function handler(req, res) {
   cors(res);
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -156,5 +182,6 @@ export default async function handler(req, res) {
   if (action === "refresh") return handleRefresh(req, res);
   if (action === "views") return handleViews(req, res);
   if (action === "sync") return handleSync(req, res);
+  if (action === "debug") return handleDebug(req, res);
   return res.status(400).json({ error: "unknown action" });
 }
