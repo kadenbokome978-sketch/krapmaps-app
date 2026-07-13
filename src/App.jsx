@@ -678,7 +678,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
 
       {/* ══ INTEGRATION HEALTH — actionable, dismissible sync warnings ══ */}
       {healthIssues.length > 0 && (
-        <div data-card style={{ borderRadius:14, padding:isMobile?"16px 16px":"16px 20px", background:`linear-gradient(135deg,${C.pink}12,rgba(10,6,20,0.95))`, border:`1px solid ${C.pink}35` }}>
+        <div data-card style={{ borderRadius:16, padding:isMobile?"16px 16px":"16px 20px", background:`linear-gradient(135deg,${C.pink}12,rgba(10,6,20,0.95))`, border:`1px solid ${C.pink}35` }}>
           <div style={{ display:"flex", alignItems:"flex-start", gap:12 }}>
             <span style={{ display:"inline-flex", flexShrink:0 }}>{I.warn(18,C.pink)}</span>
             <div style={{ flex:1, minWidth:0 }}>
@@ -688,7 +688,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
                   <span style={{ color:C.pink, fontWeight:700, textTransform:"capitalize" }}>{iss.service}: </span>{iss.msg}
                 </div>
               ))}
-              <button onClick={()=>setNav&&setNav("settings")} style={{ marginTop:6, padding:"7px 14px", borderRadius:9, border:`1px solid ${C.pink}40`, background:`${C.pink}12`, color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", letterSpacing:"0.06em" }}>CHECK SETTINGS →</button>
+              <button onClick={()=>setNav&&setNav("settings")} style={{ marginTop:6, padding:"7px 14px", borderRadius:10, border:`1px solid ${C.pink}40`, background:`${C.pink}12`, color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", letterSpacing:"0.06em" }}>CHECK SETTINGS →</button>
             </div>
             <button onClick={dismissHealth} aria-label="Dismiss sync warnings" style={{ background:"none", border:"none", color:"rgba(255,255,255,0.45)", cursor:"pointer", fontSize:18, lineHeight:1, padding:"0 2px", flexShrink:0 }}>×</button>
           </div>
@@ -697,7 +697,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
 
       {/* ══ GETTING STARTED — first-run activation path ══════════════ */}
       {isFirstRun && (
-        <div data-card style={{ borderRadius:18, padding:isMobile?"24px 20px":"22px 26px", background:`linear-gradient(135deg,${C.cyan}0d,${C.purple}08)`, border:`1px solid ${C.cyan}30`, position:"relative", overflow:"hidden" }}>
+        <div data-card style={{ borderRadius:16, padding:isMobile?"24px 20px":"22px 26px", background:`linear-gradient(135deg,${C.cyan}0d,${C.purple}08)`, border:`1px solid ${C.cyan}30`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${C.cyan}70,transparent)` }}/>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
             <span style={{ display:"inline-flex" }}>{I.rocket(19,C.cyan)}</span>
@@ -725,7 +725,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
 
       {/* ══ WEEKLY RITUAL — the retention loop that feeds the AI ══════ */}
       {!isFirstRun && (ritual.pending > 0 ? (
-        <div data-card style={{ borderRadius:18, padding:isMobile?"26px 20px":"20px 24px", background:`linear-gradient(135deg,${C.pink}10,${C.purple}08)`, border:`1px solid ${C.pink}30`, position:"relative", overflow:"hidden" }}>
+        <div data-card style={{ borderRadius:16, padding:isMobile?"26px 20px":"20px 24px", background:`linear-gradient(135deg,${C.pink}10,${C.purple}08)`, border:`1px solid ${C.pink}30`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${C.pink}70,transparent)` }}/>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:isMobile?22:14 }}>
             <span style={{ display:"inline-flex" }}>{I.target(19,C.pink)}</span>
@@ -767,7 +767,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", marginTop:12, fontFamily:C.fontBody }}>Clear these and your AI scoring gets measurably sharper — the model literally learns from every result you log.</div>
         </div>
       ) : (
-        <div data-card style={{ borderRadius:18, padding:"16px 24px", background:`${C.green}08`, border:`1px solid ${C.green}25`, display:"flex", alignItems:"center", gap:14 }}>
+        <div data-card style={{ borderRadius:16, padding:"16px 24px", background:`${C.green}08`, border:`1px solid ${C.green}25`, display:"flex", alignItems:"center", gap:14 }}>
           <span style={{ display:"inline-flex" }}>{I.fire(20,C.orange)}</span>
           <div>
             <div style={{ fontSize:14, fontWeight:700, color:C.green }}>Ritual complete — AI fully fed this week</div>
@@ -832,7 +832,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
       </div>
 
       {/* ══ HERO BANNER ══════════════════════════════════════════ */}
-      <div style={{ borderRadius:24, overflow:"hidden", position:"relative", background:"linear-gradient(135deg,#0A0614 0%,#120820 50%,#0A0614 100%)", border:"1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ borderRadius:20, overflow:"hidden", position:"relative", background:"linear-gradient(135deg,#0A0614 0%,#120820 50%,#0A0614 100%)", border:"1px solid rgba(255,255,255,0.06)" }}>
         {/* Ambient orbs */}
         <div style={{ position:"absolute", top:-100, left:-80, width:400, height:400, borderRadius:"50%", background:`radial-gradient(circle,${C.pink}25 0%,transparent 70%)`, pointerEvents:"none" }}/>
         <div style={{ position:"absolute", bottom:-100, right:-80, width:350, height:350, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}20 0%,transparent 70%)`, pointerEvents:"none" }}/>
@@ -886,11 +886,11 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           { label:"IG Followers", value:(()=>{ const f=igData?.profile?.followers_count||m?.ig_followers||0; return f>=1e3?(f/1e3).toFixed(1)+"K":f?String(f):"--"; })(), color:C.yellow, icon:I.ig },
           { label:"IG Organic", value:(()=>{ const t=videos.filter(v=>v.platform==="instagram").reduce((s,v)=>s+(v.views||0),0); return t>=1e6?(t/1e6).toFixed(1)+"M":t>=1e3?(t/1e3).toFixed(1)+"K":String(t||0); })(), color:C.purple, icon:I.ig },
         ].map((s,i)=>(
-          <div key={i} data-card style={{ borderRadius:22, padding:isMobile?"20px 16px 16px":"26px 26px 22px", background:`linear-gradient(145deg,${s.color}16 0%,rgba(8,5,18,0.95) 70%)`, border:`1px solid ${s.color}30`, position:"relative", overflow:"hidden", boxShadow:`0 8px 32px ${s.color}08` }}>
+          <div key={i} data-card style={{ borderRadius:20, padding:isMobile?"20px 16px 16px":"26px 26px 22px", background:`linear-gradient(145deg,${s.color}16 0%,rgba(8,5,18,0.95) 70%)`, border:`1px solid ${s.color}30`, position:"relative", overflow:"hidden", boxShadow:`0 8px 32px ${s.color}08` }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${s.color},${s.color}00)`, borderRadius:"28px 28px 0 0" }}/>
             <div style={{ position:"absolute", bottom:-40, right:-40, width:130, height:130, borderRadius:"50%", background:`${s.color}12`, filter:"blur(40px)", pointerEvents:"none" }}/>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
-              <div style={{ width:42, height:42, borderRadius:13, background:`linear-gradient(135deg,${s.color}25,${s.color}0a)`, border:`1px solid ${s.color}30`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 4px 16px ${s.color}18` }}>{s.icon(18,s.color)}</div>
+              <div style={{ width:42, height:42, borderRadius:12, background:`linear-gradient(135deg,${s.color}25,${s.color}0a)`, border:`1px solid ${s.color}30`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 4px 16px ${s.color}18` }}>{s.icon(18,s.color)}</div>
               <div style={{ width:28, height:28, borderRadius:8, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                 {I.trend(12,s.color)}
               </div>
@@ -905,7 +905,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
       </div>
 
       {/* ══ PERFORMANCE CHART ══════════════════════════════════════ */}
-      <div style={{ borderRadius:22, overflow:"hidden", background:"linear-gradient(145deg,#0E0B1E,#080514)", border:"1px solid rgba(255,255,255,0.07)", position:"relative", boxShadow:"0 8px 40px rgba(0,0,0,0.4)" }}>
+      <div style={{ borderRadius:20, overflow:"hidden", background:"linear-gradient(145deg,#0E0B1E,#080514)", border:"1px solid rgba(255,255,255,0.07)", position:"relative", boxShadow:"0 8px 40px rgba(0,0,0,0.4)" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.pink},${C.purple},${C.cyan},transparent)` }}/>
         <div style={{ position:"absolute", top:0, right:0, width:300, height:300, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}08,transparent 70%)`, pointerEvents:"none" }}/>
         <div style={{ padding:isMobile?"16px 16px 0":"28px 32px 0" }}>
@@ -917,7 +917,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             </div>
             <div style={{ display:"flex", gap:8, alignSelf:isMobile?"stretch":"flex-start" }}>
               {[{c:C.pink,l:"TikTok",v:last7.reduce((s,d)=>s+d.value,0)},{c:C.purple,l:"Instagram",v:igLast7.reduce((s,d)=>s+d.value,0)}].map((p,i)=>(
-                <div key={i} style={{ padding:isMobile?"14px 14px":"14px 20px", borderRadius:14, background:`linear-gradient(145deg,${p.c}12,rgba(8,5,18,0.8))`, border:`1px solid ${p.c}25`, flex:isMobile?1:undefined, minWidth:isMobile?undefined:110, textAlign:"center" }}>
+                <div key={i} style={{ padding:isMobile?"14px 14px":"14px 20px", borderRadius:16, background:`linear-gradient(145deg,${p.c}12,rgba(8,5,18,0.8))`, border:`1px solid ${p.c}25`, flex:isMobile?1:undefined, minWidth:isMobile?undefined:110, textAlign:"center" }}>
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:5, marginBottom:5 }}>
                     <div style={{ width:7, height:7, borderRadius:"50%", background:p.c }}/>
                     <span style={{ fontSize:10, color:"rgba(255,255,255,0.5)", letterSpacing:"0.1em", textTransform:"uppercase" }}>{p.l}</span>
@@ -1052,7 +1052,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             )
           },
         ].map((section,si)=>(
-          <div key={si} style={{ borderRadius:22, padding:isMobile?"20px 18px":"24px 26px", background:`linear-gradient(145deg,${section.color}0f,rgba(8,5,18,0.96))`, border:`1px solid ${section.color}20`, position:"relative", overflow:"hidden", boxShadow:`0 8px 40px rgba(0,0,0,0.3)` }}>
+          <div key={si} style={{ borderRadius:20, padding:isMobile?"20px 18px":"24px 26px", background:`linear-gradient(145deg,${section.color}0f,rgba(8,5,18,0.96))`, border:`1px solid ${section.color}20`, position:"relative", overflow:"hidden", boxShadow:`0 8px 40px rgba(0,0,0,0.3)` }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${section.color}cc,transparent 60%)` }}/>
             <div style={{ position:"absolute", bottom:-40, right:-40, width:140, height:140, borderRadius:"50%", background:`${section.color}08`, filter:"blur(40px)" }}/>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
@@ -1096,7 +1096,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         })).sort((a,b)=>b.avg-a.avg);
         const maxAvg = Math.max(...dayPerf.map(d=>d.avg),1);
         return videos.length > 3 ? (
-          <div style={{ borderRadius:22, padding:isMobile?"20px 18px":"24px 26px", background:"linear-gradient(145deg,rgba(255,107,53,0.08),rgba(8,5,18,0.96))", border:`1px solid ${C.orange}20`, position:"relative", overflow:"hidden" }}>
+          <div style={{ borderRadius:20, padding:isMobile?"20px 18px":"24px 26px", background:"linear-gradient(145deg,rgba(255,107,53,0.08),rgba(8,5,18,0.96))", border:`1px solid ${C.orange}20`, position:"relative", overflow:"hidden" }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.orange}cc,transparent 60%)` }}/>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
               <div>
@@ -1135,7 +1135,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             <button data-btn key={i} onClick={()=>runAI&&runAI(a.m)} disabled={aiLoad&&aiLoad[a.m]}
               style={{ display:"flex", alignItems:"center", gap:14, padding:"16px 18px", borderRadius:16, background:`linear-gradient(135deg,${a.c}0c,rgba(10,6,20,0.6))`, border:`1px solid ${a.c}1e`, cursor:"pointer", fontFamily:C.fontHead, opacity:aiLoad&&aiLoad[a.m]?0.5:1, transition:"all 0.2s", textAlign:"left", position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, left:0, bottom:0, width:2, background:`linear-gradient(180deg,${a.c},${a.c}00)`, borderRadius:"14px 0 0 14px" }}/>
-              <div style={{ width:46, height:46, borderRadius:13, background:`linear-gradient(135deg,${a.c}18,${a.c}06)`, border:`1px solid ${a.c}25`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{a.ic(22,a.c)}</div>
+              <div style={{ width:46, height:46, borderRadius:12, background:`linear-gradient(135deg,${a.c}18,${a.c}06)`, border:`1px solid ${a.c}25`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{a.ic(22,a.c)}</div>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.04em", marginBottom:3 }}>{a.l}</div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)" }}>{aiLoad&&aiLoad[a.m]?"Running...":a.desc}</div>
@@ -1377,7 +1377,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
       {sub==="IDEAS" && (
         <>
         {/* Quick expand panel */}
-        <div style={{ borderRadius:14, padding:isMobile?"26px 20px":"16px 20px", background:`${C.purple}0a`, border:`1px solid ${C.purple}25` }}>
+        <div style={{ borderRadius:16, padding:isMobile?"26px 20px":"16px 20px", background:`${C.purple}0a`, border:`1px solid ${C.purple}25` }}>
           {!isMobile && <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", marginBottom:isMobile?14:10 }}>Quick Expand</div>}
           <div style={{ display:"flex", gap:8 }}>
             <input
@@ -1475,7 +1475,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
                     {/* Improved hook — only in expanded */}
                     {isExpanded && idea.improvedHook && (
-                      <div style={{ padding:isMobile?"13px 16px":"10px 14px", background:`${C.green}08`, border:`1px solid ${C.green}18`, borderRadius:11, marginBottom:isMobile?14:10 }}>
+                      <div style={{ padding:isMobile?"13px 16px":"10px 14px", background:`${C.green}08`, border:`1px solid ${C.green}18`, borderRadius:12, marginBottom:isMobile?14:10 }}>
                         <div style={{ fontSize:10, color:C.green, fontWeight:700, letterSpacing:"0.12em", marginBottom:4 }}>IMPROVED HOOK</div>
                         <div style={{ fontSize:13, color:"#fff", fontStyle:"italic", lineHeight:1.5 }}>"{idea.improvedHook}"</div>
                         <VoiceVote text={idea.improvedHook} />
@@ -1687,7 +1687,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                         const stages = ["idea","script_ready","filming","posted"];
                         const cur = stages.indexOf(idea.status||"idea");
                         setIdeaStage(idea, stages[Math.min(cur+1, stages.length-1)]);
-                      }} style={{ padding:"7px 10px", borderRadius:9, cursor:"pointer", fontFamily:C.fontHead, fontWeight:700, fontSize:11, letterSpacing:"0.08em",
+                      }} style={{ padding:"7px 10px", borderRadius:10, cursor:"pointer", fontFamily:C.fontHead, fontWeight:700, fontSize:11, letterSpacing:"0.08em",
                         border:`1px solid ${stageColor}35`, background:`${stageColor}0e`, color:stageColor }}>
                         {({idea:"IDEA →",script_ready:"SCRIPTED →",filming:"FILMING →"})[idea.status||"idea"]}
                       </button>
@@ -1705,7 +1705,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                           style={{ padding:"6px 9px", borderRadius:8, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"rgba(255,255,255,0.4)", fontSize:13, cursor:"pointer", display:"inline-flex", alignItems:"center", justifyContent:"center" }}>{I.x(13,"currentColor")}</button>
                       </div>
                     ) : (
-                      <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:9, background:`${C.green}10`, border:`1px solid ${C.green}28` }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:10, background:`${C.green}10`, border:`1px solid ${C.green}28` }}>
                         <div style={{ width:6, height:6, borderRadius:"50%", background:C.green, boxShadow:`0 0 6px ${C.green}` }}/>
                         <span style={{ fontSize:11, fontWeight:700, color:C.green }}>POSTED{idea.postedViews>0?` · ${fmt(idea.postedViews)}`:""}</span>
                       </div>
@@ -1714,15 +1714,15 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                     {/* Utility icons — right side */}
                     <div style={{ marginLeft:"auto", display:"flex", gap:4, alignItems:"center" }}>
                       <button title="Edit" onClick={()=>{ setEditIdeaTarget&&setEditIdeaTarget(idea); setModals&&setModals(m=>({...m,editIdea:true})); }}
-                        style={{ padding:"7px 9px", borderRadius:9, border:"1px solid rgba(255,255,255,0.08)", background:"transparent", color:"rgba(255,255,255,0.35)", cursor:"pointer", fontSize:13, display:"inline-flex", alignItems:"center", justifyContent:"center" }}>{I.write(12,"currentColor")}</button>
+                        style={{ padding:"7px 9px", borderRadius:10, border:"1px solid rgba(255,255,255,0.08)", background:"transparent", color:"rgba(255,255,255,0.35)", cursor:"pointer", fontSize:13, display:"inline-flex", alignItems:"center", justifyContent:"center" }}>{I.write(12,"currentColor")}</button>
                       <button title="Schedule" onClick={()=>{ setSub("CALENDAR"); openModal&&openModal("addCal"); }}
-                        style={{ padding:"7px 9px", borderRadius:9, border:"1px solid rgba(255,255,255,0.08)", background:"transparent", color:"rgba(255,255,255,0.35)", cursor:"pointer", fontSize:13, display:"inline-flex", alignItems:"center", justifyContent:"center" }}>{I.cal(12,"currentColor")}</button>
+                        style={{ padding:"7px 9px", borderRadius:10, border:"1px solid rgba(255,255,255,0.08)", background:"transparent", color:"rgba(255,255,255,0.35)", cursor:"pointer", fontSize:13, display:"inline-flex", alignItems:"center", justifyContent:"center" }}>{I.cal(12,"currentColor")}</button>
                       <button onClick={()=>setExpanded(expanded===idea.id?null:idea.id)}
-                        style={{ padding:"7px 9px", borderRadius:9, border:"1px solid rgba(255,255,255,0.08)", background:isExpanded?"rgba(255,255,255,0.06)":"transparent", color:"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:12, fontWeight:700 }}>
+                        style={{ padding:"7px 9px", borderRadius:10, border:"1px solid rgba(255,255,255,0.08)", background:isExpanded?"rgba(255,255,255,0.06)":"transparent", color:"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:12, fontWeight:700 }}>
                         {isExpanded?"▲":"▼"}
                       </button>
                       <button onClick={()=>setIdeas(is=>is.filter(x=>x.id!==idea.id))}
-                        style={{ padding:"7px 9px", borderRadius:9, border:`1px solid ${C.pink}18`, background:"transparent", color:`${C.pink}70`, cursor:"pointer" }}>{I.trash(12,C.pink)}</button>
+                        style={{ padding:"7px 9px", borderRadius:10, border:`1px solid ${C.pink}18`, background:"transparent", color:`${C.pink}70`, cursor:"pointer" }}>{I.trash(12,C.pink)}</button>
                     </div>
                   </div>
                 </div>
@@ -1750,7 +1750,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
               setHookABResult(r); addXP(10);
             } catch(e){}
             setHookABLoading(false);
-          }} disabled={hookABLoading||!hookA.trim()||!hookB.trim()} style={{ padding:isMobile?"10px 14px":"10px 22px", borderRadius:11, border:"none", background:hookABLoading?`${C.purple}30`:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:hookABLoading?"wait":"pointer", marginBottom:hookABResult?14:0, opacity:(!hookA.trim()||!hookB.trim())?0.5:1 }}>
+          }} disabled={hookABLoading||!hookA.trim()||!hookB.trim()} style={{ padding:isMobile?"10px 14px":"10px 22px", borderRadius:12, border:"none", background:hookABLoading?`${C.purple}30`:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:hookABLoading?"wait":"pointer", marginBottom:hookABResult?14:0, opacity:(!hookA.trim()||!hookB.trim())?0.5:1 }}>
             {hookABLoading?<span style={{display:"inline-flex",alignItems:"center",gap:6}}><Spin s={12}/> ANALYSING</span>:<span style={{display:"inline-flex",alignItems:"center",gap:6}}>{I.zap(13,"currentColor")} TEST HOOKS</span>}
           </button>
           {hookABResult && (
@@ -2075,11 +2075,11 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                     </div>
                     {/* Actions */}
                     <div style={{ padding:"10px 18px", borderTop:"1px solid rgba(255,255,255,0.05)", display:"flex", gap:8, alignItems:"center" }}>
-                      <button onClick={()=>{ setUpdateTarget&&setUpdateTarget(v); openModal&&openModal("updateVideo"); }} style={{ padding:"6px 14px", borderRadius:9, border:`1px solid ${C.cyan}30`, background:`${C.cyan}10`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>UPDATE</button>
-                      <button onClick={()=>analyseVideo&&analyseVideo(v)} style={{ padding:"6px 14px", borderRadius:9, border:`1px solid ${C.purple}30`, background:vidAnalysis?.[v.id]?`${C.purple}25`:vidLoading?.[v.id]?`${C.purple}20`:`${C.purple}10`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:vidLoading?.[v.id]?"wait":"pointer", opacity:vidLoading?.[v.id]?0.7:1, transition:"all 0.2s" }}>
+                      <button onClick={()=>{ setUpdateTarget&&setUpdateTarget(v); openModal&&openModal("updateVideo"); }} style={{ padding:"6px 14px", borderRadius:10, border:`1px solid ${C.cyan}30`, background:`${C.cyan}10`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>UPDATE</button>
+                      <button onClick={()=>analyseVideo&&analyseVideo(v)} style={{ padding:"6px 14px", borderRadius:10, border:`1px solid ${C.purple}30`, background:vidAnalysis?.[v.id]?`${C.purple}25`:vidLoading?.[v.id]?`${C.purple}20`:`${C.purple}10`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:vidLoading?.[v.id]?"wait":"pointer", opacity:vidLoading?.[v.id]?0.7:1, transition:"all 0.2s" }}>
                         {vidLoading?.[v.id] ? <span style={{display:"inline-flex",alignItems:"center",gap:6}}><Spin s={11}/> ANALYSING</span> : vidAnalysis?.[v.id] ? <span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.tick(12,"currentColor")} TEARDOWN</span> : "AI TEARDOWN"}
                       </button>
-                      <button onClick={()=>deleteVideo&&deleteVideo(v.id)} aria-label="Delete" style={{ marginLeft:"auto", padding:isMobile?"10px 12px":"6px 10px", borderRadius:9, border:`1px solid ${C.pink}20`, background:`${C.pink}08`, color:C.pink, fontFamily:C.fontHead, cursor:"pointer" }}>{I.trash(13,C.pink)}</button>
+                      <button onClick={()=>deleteVideo&&deleteVideo(v.id)} aria-label="Delete" style={{ marginLeft:"auto", padding:isMobile?"10px 12px":"6px 10px", borderRadius:10, border:`1px solid ${C.pink}20`, background:`${C.pink}08`, color:C.pink, fontFamily:C.fontHead, cursor:"pointer" }}>{I.trash(13,C.pink)}</button>
                     </div>
                     {/* Loading state */}
                     {vidLoading?.[v.id] && (
@@ -2185,7 +2185,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
               ) : (
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, padding:"0 22px 20px" }}>
                   {plt.stats.map((s,i)=>(
-                    <div key={i} style={{ padding:isMobile?"18px 18px":"14px 16px", borderRadius:14, background:`${s.c}10`, border:`1px solid ${s.c}20` }}>
+                    <div key={i} style={{ padding:isMobile?"18px 18px":"14px 16px", borderRadius:16, background:`${s.c}10`, border:`1px solid ${s.c}20` }}>
                       <div style={{ fontSize:isMobile?12:10, color:"rgba(255,255,255,0.45)", letterSpacing:"0.08em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>{s.l}</div>
                       <div style={{ fontSize:isMobile?28:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
                     </div>
@@ -2314,7 +2314,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
               {/* TikTok column */}
               <div style={{ display:"flex", flexDirection:"column", gap:isMobile?22:12 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, padding:isMobile?"14px 18px":"12px 16px", borderRadius:16, background:`${C.pink}10`, border:`1px solid ${C.pink}25` }}>
-                  <div style={{ width:28, height:28, borderRadius:9, background:`${C.pink}20`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.tt(14,C.pink)}</div>
+                  <div style={{ width:28, height:28, borderRadius:10, background:`${C.pink}20`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.tt(14,C.pink)}</div>
                   <span style={{ fontSize:15, fontWeight:700, color:C.pink, letterSpacing:"0.05em" }}>TIKTOK</span>
                   <span style={{ marginLeft:"auto", fontSize:12, color:`${C.pink}aa`, fontWeight:700 }}>{prep(videos.filter(v=>v.platform!=="instagram")).length} VIDEOS</span>
                 </div>
@@ -2323,7 +2323,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
               {/* Instagram column */}
               <div style={{ display:"flex", flexDirection:"column", gap:isMobile?22:12 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, padding:isMobile?"14px 18px":"12px 16px", borderRadius:16, background:`${C.purple}10`, border:`1px solid ${C.purple}25` }}>
-                  <div style={{ width:28, height:28, borderRadius:9, background:`${C.purple}20`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.ig(14,C.purple)}</div>
+                  <div style={{ width:28, height:28, borderRadius:10, background:`${C.purple}20`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.ig(14,C.purple)}</div>
                   <span style={{ fontSize:15, fontWeight:700, color:C.purple, letterSpacing:"0.05em" }}>INSTAGRAM</span>
                   <span style={{ marginLeft:"auto", fontSize:12, color:`${C.purple}aa`, fontWeight:700 }}>{prep(videos.filter(v=>v.platform==="instagram")).length} REELS</span>
                 </div>
@@ -2358,7 +2358,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
               {l:"Trends",         c:C.orange, m:"trends",   load:aiLoad.trends},
             ].map((a,i)=>(
               <button key={i} onClick={()=>runAI&&runAI(a.m)} disabled={a.load}
-                style={{ padding:"14px 10px", borderRadius:14, border:`1px solid ${a.c}30`, background:`linear-gradient(135deg,${a.c}15,${a.c}05)`, color:a.c, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:a.load?0.5:1, letterSpacing:"0.06em", position:"relative", overflow:"hidden" }}>
+                style={{ padding:"14px 10px", borderRadius:16, border:`1px solid ${a.c}30`, background:`linear-gradient(135deg,${a.c}15,${a.c}05)`, color:a.c, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:a.load?0.5:1, letterSpacing:"0.06em", position:"relative", overflow:"hidden" }}>
                 <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${a.c},${a.c}00)` }}/>
                 {a.load?"Running...":a.l}
               </button>
@@ -2446,7 +2446,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
               emptyMsg:'Run "Trends" for live trending topics',
               content: trends?.trends?.map((t,i)=>(
                 <div key={i} style={{ display:"flex", gap:14, alignItems:"flex-start", padding:"14px 0", borderBottom:i<trends.trends.length-1?"1px solid rgba(255,255,255,0.05)":"none" }}>
-                  <div style={{ width:26, height:26, borderRadius:7, background:`${C.orange}15`, border:`1px solid ${C.orange}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11, fontWeight:700, color:C.orange }}>{i+1}</div>
+                  <div style={{ width:26, height:26, borderRadius:8, background:`${C.orange}15`, border:`1px solid ${C.orange}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11, fontWeight:700, color:C.orange }}>{i+1}</div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:14, fontWeight:700, color:"#fff", marginBottom:5, lineHeight:1.3 }}>{t.trend}</div>
                     <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.55, fontFamily:C.fontBody, marginBottom:6 }}>{t.tiktokAngle}</div>
@@ -2521,7 +2521,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
               ),
             }] : []),
           ].map(card=>(
-            <div key={card.key} data-card style={{ borderRadius:18, background:"rgba(255,255,255,0.025)", border:`1px solid ${card.color}22`, position:"relative", overflow:"hidden" }}>
+            <div key={card.key} data-card style={{ borderRadius:16, background:"rgba(255,255,255,0.025)", border:`1px solid ${card.color}22`, position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.4, background:`linear-gradient(90deg,${card.color},${card.color}00)` }}/>
               {/* Card header */}
               <div style={{ display:"flex", alignItems:"center", gap:8, padding:"16px 18px", borderBottom:hiddenInsights[card.key]?"none":`1px solid rgba(255,255,255,0.05)` }}>
@@ -2665,13 +2665,13 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                     <button
                       onClick={()=>setTasks(ts=>ts.map(x=>x.id===t.id?{...x,done:true}:x))}
                       aria-label="Mark done"
-                      style={{ width:24, height:24, borderRadius:7, border:`2px solid ${ac(t.assignee)}`, background:"transparent", cursor:"pointer", flexShrink:0, transition:"all 0.2s" }}
+                      style={{ width:24, height:24, borderRadius:8, border:`2px solid ${ac(t.assignee)}`, background:"transparent", cursor:"pointer", flexShrink:0, transition:"all 0.2s" }}
                     />
                     <div style={{ flex:1, minWidth:0 }}>
                       {pm && <span style={{ fontSize:9, fontWeight:800, letterSpacing:"0.1em", color:pm.c, background:`${pm.c}18`, border:`1px solid ${pm.c}45`, borderRadius:5, padding:"2px 7px", marginRight:9, verticalAlign:"middle" }}>{pm.label}</span>}
                       <span style={{ fontSize:14, color:"#fff", fontWeight:500, lineHeight:1.5 }}>{t.text}</span>
                     </div>
-                    <div style={{ width:32, height:32, borderRadius:9, background:`${ac(t.assignee)}20`, border:`1px solid ${ac(t.assignee)}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:ac(t.assignee), flexShrink:0 }}>
+                    <div style={{ width:32, height:32, borderRadius:10, background:`${ac(t.assignee)}20`, border:`1px solid ${ac(t.assignee)}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:ac(t.assignee), flexShrink:0 }}>
                       {acLabel(t.assignee)}
                     </div>
                     <button onClick={()=>setTasks(ts=>ts.filter(x=>x.id!==t.id))} aria-label="Delete task" style={{ width:28, height:28, borderRadius:8, border:"1px solid rgba(255,45,120,0.2)", background:"rgba(255,45,120,0.08)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
@@ -3270,7 +3270,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
           { label:"HOOK DATABASE", desc:`${hookDB.length} hooks tracked`, icon:I.trend, color:C.yellow, action:()=>document.getElementById("hookdb-section")?.scrollIntoView({behavior:"smooth"}), key:"" },
         ].map((btn,i)=>(
           <button key={i} data-btn onClick={btn.action} disabled={btn.key&&loading[btn.key]} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?12:10, padding:isMobile?"16px 10px":"20px 12px", borderRadius:16, background:`linear-gradient(145deg,${btn.color}18,${btn.color}06)`, border:`1px solid ${btn.color}35`, cursor:"pointer", fontFamily:C.fontHead, opacity:btn.key&&loading[btn.key]?0.6:1, transition:"all 0.2s", position:"relative", overflow:"hidden" }}>
-            <div style={{ width:isMobile?40:52, height:isMobile?40:52, borderRadius:14, background:`${btn.color}22`, border:`1px solid ${btn.color}45`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 0 20px ${btn.color}25` }}>{btn.icon(isMobile?18:22,btn.color)}</div>
+            <div style={{ width:isMobile?40:52, height:isMobile?40:52, borderRadius:16, background:`${btn.color}22`, border:`1px solid ${btn.color}45`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 0 20px ${btn.color}25` }}>{btn.icon(isMobile?18:22,btn.color)}</div>
             <div style={{ textAlign:"center" }}>
               <div style={{ fontSize:isMobile?11:16, fontWeight:700, color:"#fff", letterSpacing:"0.04em", textTransform:"uppercase" }}>{btn.key&&loading[btn.key]?"RUNNING...":btn.label}</div>
               <div style={{ fontSize:isMobile?10:14, color:"rgba(255,255,255,0.7)", marginTop:2 }}>{btn.desc}</div>
@@ -4206,7 +4206,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
   );
 
   const card = (children, accent=C.cyan) => (
-    <div style={{ borderRadius:18, background:C.card, border:`1px solid ${C.border}`, overflow:"hidden", position:"relative" }}>
+    <div style={{ borderRadius:16, background:C.card, border:`1px solid ${C.border}`, overflow:"hidden", position:"relative" }}>
       <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${accent},${accent}50,transparent)` }}/>
       <div style={{ padding:isMobile?"26px 20px":"24px 28px" }}>{children}</div>
     </div>
@@ -4477,7 +4477,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
       )}
 
       {/* 4. SHAREABLE SCORE CARD */}
-      <div style={{ borderRadius:18, overflow:"hidden", background:`linear-gradient(135deg,rgba(20,10,40,0.98),rgba(10,6,25,0.98))`, border:`1px solid ${C.border}`, position:"relative" }}>
+      <div style={{ borderRadius:16, overflow:"hidden", background:`linear-gradient(135deg,rgba(20,10,40,0.98),rgba(10,6,25,0.98))`, border:`1px solid ${C.border}`, position:"relative" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.purple},${C.pink},${C.cyan})` }}/>
         <div style={{ position:"absolute", top:-60, right:-60, width:260, height:260, borderRadius:"50%", background:`${C.purple}08`, filter:"blur(80px)", pointerEvents:"none" }}/>
         <div style={{ padding:isMobile?"18px 18px":"28px 32px" }}>
@@ -4513,7 +4513,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
             <div style={{ display:"flex", flexDirection:"column", gap:10, alignItems:isMobile?"stretch":"flex-end", width:isMobile?"100%":"auto" }}>
               <button
                 onClick={handleShare}
-                style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8, padding:"14px 28px", borderRadius:14, background:`linear-gradient(135deg,${C.purple},${C.pink})`, border:"none", color:"#fff", fontSize:15, fontWeight:700, cursor:"pointer", letterSpacing:"0.04em", boxShadow:`0 4px 20px ${C.purple}40`, width:isMobile?"100%":"auto" }}
+                style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8, padding:"14px 28px", borderRadius:16, background:`linear-gradient(135deg,${C.purple},${C.pink})`, border:"none", color:"#fff", fontSize:15, fontWeight:700, cursor:"pointer", letterSpacing:"0.04em", boxShadow:`0 4px 20px ${C.purple}40`, width:isMobile?"100%":"auto" }}
               >
                 {I.rocket(15,"#fff")} Publish &amp; Share
               </button>
@@ -4820,7 +4820,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                     <div style={{ width:8, height:8, borderRadius:"50%", background:keys?.[k.id]?C.green:"rgba(255,255,255,0.2)", boxShadow:keys?.[k.id]?`0 0 6px ${C.green}`:""  }}/>
                     <button onClick={()=>{ setEditing(editing===k.id?null:k.id); setDraftKey(keys?.[k.id]||""); }}
-                      style={{ padding:"6px 14px", borderRadius:9, border:`1px solid ${keys?.[k.id]?k.color+"40":"rgba(255,255,255,0.1)"}`, background:keys?.[k.id]?`${k.color}12`:"rgba(255,255,255,0.04)", color:keys?.[k.id]?k.color:"rgba(255,255,255,0.85)", fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer" }}>
+                      style={{ padding:"6px 14px", borderRadius:10, border:`1px solid ${keys?.[k.id]?k.color+"40":"rgba(255,255,255,0.1)"}`, background:keys?.[k.id]?`${k.color}12`:"rgba(255,255,255,0.04)", color:keys?.[k.id]?k.color:"rgba(255,255,255,0.85)", fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer" }}>
                       {keys?.[k.id]?"CHANGE":"ADD"}
                     </button>
                   </div>
@@ -4847,7 +4847,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             {statusItems.map((s,i)=>(
               <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, padding:isMobile?"14px 0":"12px 0", borderBottom:i<statusItems.length-1?"1px solid rgba(255,255,255,0.05)":"none", flexWrap:"wrap" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-                  <div style={{ width:24, height:24, borderRadius:7, background:"rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <div style={{ width:24, height:24, borderRadius:8, background:"rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                     {s.id==="db" ? <span style={{display:"inline-flex"}}>{I.database(13,"rgba(255,255,255,0.7)")}</span> : <ApiLogo id={s.id}/>}
                   </div>
                   <span style={{ fontSize:14, color:"rgba(255,255,255,0.85)", fontWeight:500 }}>{s.label}</span>
@@ -4965,7 +4965,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
       {/* Current Trends — injected into every AI call */}
       <CollapsibleCard title="Current Trends" accent={C.orange}
         subtitle={loadJSON(KEYS_KEY,{})?.keys?.perplexity ? "Auto-fetched via Perplexity every 12hrs — also editable" : "Update weekly — add Perplexity key for auto-fetch"}
-        actions={<button onClick={saveTrends} style={{ padding:"9px 20px", borderRadius:11, border:`1px solid ${trendsSaved?C.green:C.orange}50`, background:trendsSaved?`${C.green}20`:`${C.orange}18`, color:trendsSaved?C.green:C.orange, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{trendsSaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>}>
+        actions={<button onClick={saveTrends} style={{ padding:"9px 20px", borderRadius:12, border:`1px solid ${trendsSaved?C.green:C.orange}50`, background:trendsSaved?`${C.green}20`:`${C.orange}18`, color:trendsSaved?C.green:C.orange, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{trendsSaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>}>
         <textarea
           value={trendsDraft}
           onChange={e=>setTrendsDraft(e.target.value)}
@@ -4979,8 +4979,8 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
       <CollapsibleCard title="Channel Viral Theory" accent={C.purple}
         subtitle={`The deep "why this channel goes viral" — injected into every score.`}
         actions={<>
-          <button onClick={generateChannelTheory} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||theoryLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.purple}50`, background:`${C.purple}18`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||theoryLoading)?0.5:1 }}>{theoryLoading?<span style={{display:"inline-flex",alignItems:"center",gap:6}}><Spin s={11} c={C.purple}/> GENERATING</span>:<span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.zap(12,"currentColor")} GENERATE</span>}</button>
-          <button onClick={saveTheory} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${theorySaved?C.green:C.purple}50`, background:theorySaved?`${C.green}20`:`${C.purple}18`, color:theorySaved?C.green:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{theorySaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>
+          <button onClick={generateChannelTheory} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||theoryLoading} style={{ padding:"9px 16px", borderRadius:12, border:`1px solid ${C.purple}50`, background:`${C.purple}18`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||theoryLoading)?0.5:1 }}>{theoryLoading?<span style={{display:"inline-flex",alignItems:"center",gap:6}}><Spin s={11} c={C.purple}/> GENERATING</span>:<span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.zap(12,"currentColor")} GENERATE</span>}</button>
+          <button onClick={saveTheory} style={{ padding:"9px 16px", borderRadius:12, border:`1px solid ${theorySaved?C.green:C.purple}50`, background:theorySaved?`${C.green}20`:`${C.purple}18`, color:theorySaved?C.green:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{theorySaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>
         </>}>
         <textarea
           value={theoryDraft}
@@ -4995,8 +4995,8 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
       <CollapsibleCard title="Voice DNA" accent={C.cyan}
         subtitle="How you actually write — injected into every idea, hook, caption and script so nothing sounds like a bot."
         actions={<>
-          <button onClick={generateVoice} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.cyan}50`, background:`${C.cyan}18`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading)?0.5:1 }}>{voiceLoading?<span style={{display:"inline-flex",alignItems:"center",gap:6}}><Spin s={11} c={C.cyan}/> LEARNING</span>:<span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.zap(12,"currentColor")} RELEARN</span>}</button>
-          <button onClick={saveVoice} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${voiceSaved?C.green:C.cyan}50`, background:voiceSaved?`${C.green}20`:`${C.cyan}18`, color:voiceSaved?C.green:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{voiceSaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>
+          <button onClick={generateVoice} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading} style={{ padding:"9px 16px", borderRadius:12, border:`1px solid ${C.cyan}50`, background:`${C.cyan}18`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading)?0.5:1 }}>{voiceLoading?<span style={{display:"inline-flex",alignItems:"center",gap:6}}><Spin s={11} c={C.cyan}/> LEARNING</span>:<span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.zap(12,"currentColor")} RELEARN</span>}</button>
+          <button onClick={saveVoice} style={{ padding:"9px 16px", borderRadius:12, border:`1px solid ${voiceSaved?C.green:C.cyan}50`, background:voiceSaved?`${C.green}20`:`${C.cyan}18`, color:voiceSaved?C.green:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{voiceSaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>
         </>}>
         {/* Measured traits — the deterministic read of their style (always on, no API) */}
         {measuredVoice ? (
@@ -5044,7 +5044,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             setCsvMsg(`Imported ${parsed.length} videos`);
             setCsvDraft("");
             setTimeout(()=>setCsvMsg(""),3000);
-          }} style={{ padding:"9px 18px", borderRadius:11, border:`1px solid ${C.yellow}40`, background:`${C.yellow}15`, color:C.yellow, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>IMPORT</button>
+          }} style={{ padding:"9px 18px", borderRadius:12, border:`1px solid ${C.yellow}40`, background:`${C.yellow}15`, color:C.yellow, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>IMPORT</button>
           {csvMsg && <span style={{ fontSize:13, color:/^Imported/.test(csvMsg)?C.green:C.pink }}>{csvMsg}</span>}
         </div>
       </CollapsibleCard>
@@ -5093,7 +5093,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             const a = document.createElement("a");
             a.href = url; a.download = `${(WL.appName||"content-os").toLowerCase().replace(/\s+/g,"-")}-intel-${new Date().toISOString().slice(0,10)}.txt`;
             a.click(); URL.revokeObjectURL(url);
-          }} style={{ padding:"10px 18px", borderRadius:11, border:`1px solid ${C.cyan}40`, background:`${C.cyan}15`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", whiteSpace:"nowrap" }}>
+          }} style={{ padding:"10px 18px", borderRadius:12, border:`1px solid ${C.cyan}40`, background:`${C.cyan}15`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", whiteSpace:"nowrap" }}>
             ↓ EXPORT
           </button>
         </div>
@@ -5118,7 +5118,7 @@ const ResetZone = () => {
     <div style={{ textAlign:"center", marginTop:40, paddingBottom:32, borderTop:"1px solid rgba(255,255,255,0.05)", paddingTop:24 }}>
       <div onClick={tap} style={{ fontSize:11, color:"rgba(255,255,255,0.3)", letterSpacing:"0.18em", cursor:"pointer", userSelect:"none", fontFamily:"Courier New,monospace", display:"inline-block", padding:"6px 14px", borderRadius:8, border:"1px solid rgba(255,255,255,0.07)" }}>v1.0 · tap 5× to reset</div>
       {show && (
-        <div style={{ marginTop:16, padding:"18px 20px", borderRadius:14, border:"1px solid rgba(255,59,59,0.3)", background:"rgba(255,59,59,0.06)" }}>
+        <div style={{ marginTop:16, padding:"18px 20px", borderRadius:16, border:"1px solid rgba(255,59,59,0.3)", background:"rgba(255,59,59,0.06)" }}>
           <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)", marginBottom:14, fontFamily:"Courier New,monospace", letterSpacing:"0.06em" }}>Reset workspace — shows activation screen on next load</div>
           <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
             <button onClick={()=>setShow(false)} style={{ padding:"8px 18px", borderRadius:10, border:"1px solid rgba(255,255,255,0.12)", background:"transparent", color:"rgba(255,255,255,0.5)", fontFamily:"Courier New,monospace", fontSize:12, cursor:"pointer" }}>Cancel</button>
@@ -7781,8 +7781,8 @@ Return ONLY JSON:
             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8 }}>
               <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.cyan, fontWeight:700, textAlign:"right" }}>CONTENT AUDIT<br/><span style={{ color:"rgba(255,255,255,0.4)", letterSpacing:"0.04em" }}>by {report.app}</span></div>
               <div style={{ display:"flex", gap:8 }}>
-                <button onClick={saveImage} disabled={saving} style={{ padding:"6px 12px", borderRadius:9, border:`1px solid ${C.cyan}40`, background:`${C.cyan}12`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:saving?"wait":"pointer", whiteSpace:"nowrap", opacity:saving?0.6:1 }}>{saving?"MAKING…":"SHARE IMAGE"}</button>
-                <button onClick={copyReport} style={{ padding:"6px 12px", borderRadius:9, border:`1px solid ${copied?C.green:"rgba(255,255,255,0.15)"}`, background:copied?`${C.green}18`:"rgba(255,255,255,0.05)", color:copied?C.green:"rgba(255,255,255,0.75)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", whiteSpace:"nowrap" }}>{copied?"COPIED":"COPY AS TEXT"}</button>
+                <button onClick={saveImage} disabled={saving} style={{ padding:"6px 12px", borderRadius:10, border:`1px solid ${C.cyan}40`, background:`${C.cyan}12`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:saving?"wait":"pointer", whiteSpace:"nowrap", opacity:saving?0.6:1 }}>{saving?"MAKING…":"SHARE IMAGE"}</button>
+                <button onClick={copyReport} style={{ padding:"6px 12px", borderRadius:10, border:`1px solid ${copied?C.green:"rgba(255,255,255,0.15)"}`, background:copied?`${C.green}18`:"rgba(255,255,255,0.05)", color:copied?C.green:"rgba(255,255,255,0.75)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", whiteSpace:"nowrap" }}>{copied?"COPIED":"COPY AS TEXT"}</button>
               </div>
             </div>
           </div>
@@ -7835,7 +7835,7 @@ Return ONLY JSON:
               <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.pink, fontWeight:700, marginBottom:10 }}>5 VIDEOS TO POST NEXT — IN THEIR VOICE</div>
               <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
                 {report.ai.ideas.slice(0,5).map((idea,i)=>(
-                  <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:11, padding:"13px 15px" }}>
+                  <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:12, padding:"13px 15px" }}>
                     <div style={{ fontSize:14.5, fontWeight:700, color:"#fff", marginBottom:idea.hook?4:0 }}>{i+1}. {idea.title}</div>
                     {idea.hook && <div style={{ fontSize:13.5, color:C.cyan, fontStyle:"italic" }}>"{idea.hook}"</div>}
                     {idea.why && <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", marginTop:3 }}>{idea.why}</div>}
@@ -7876,7 +7876,7 @@ function PricingModal({ tier="free", reason, onClose }){
             <div style={{ fontSize:isMobile?23:28, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1.1 }}>Choose your plan</div>
             <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:5 }}>Cancel anytime. No key setup — scoring just works.</div>
           </div>
-          <button onClick={onClose} aria-label="Close" style={{ background:"rgba(255,255,255,0.06)", border:"none", borderRadius:9, width:34, height:34, color:"#fff", fontSize:18, cursor:"pointer", flexShrink:0 }}>{I.x?I.x(14,"currentColor"):"✕"}</button>
+          <button onClick={onClose} aria-label="Close" style={{ background:"rgba(255,255,255,0.06)", border:"none", borderRadius:10, width:34, height:34, color:"#fff", fontSize:18, cursor:"pointer", flexShrink:0 }}>{I.x?I.x(14,"currentColor"):"✕"}</button>
         </div>
         {reason && <div style={{ fontSize:13.5, color:C.yellow, background:`${C.yellow}0e`, border:`1px solid ${C.yellow}28`, borderRadius:10, padding:"10px 13px", marginBottom:18, lineHeight:1.5 }}>{reason}</div>}
         <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(2,1fr)", gap:14, maxWidth:620, margin:"0 auto" }}>
@@ -7901,10 +7901,10 @@ function PricingModal({ tier="free", reason, onClose }){
                   ))}
                 </div>
                 {current
-                  ? <div style={{ textAlign:"center", padding:"11px", borderRadius:11, border:"1px solid rgba(255,255,255,0.12)", color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, fontFamily:C.fontHead }}>CURRENT PLAN</div>
+                  ? <div style={{ textAlign:"center", padding:"11px", borderRadius:12, border:"1px solid rgba(255,255,255,0.12)", color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, fontFamily:C.fontHead }}>CURRENT PLAN</div>
                   : p.oneoff
-                    ? <div style={{ textAlign:"center", padding:"11px", borderRadius:11, border:`1px solid ${C.green}30`, background:`${C.green}0e`, color:C.green, fontSize:12.5, fontWeight:700, fontFamily:C.fontHead }}>INCLUDED FREE</div>
-                    : <button onClick={()=>go(p.id)} disabled={!!busy} style={{ padding:"11px", borderRadius:11, border:"none", background:p.hot?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.08)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:busy?"wait":"pointer", opacity:busy&&busy!==p.id?0.5:1 }}>{busy===p.id?"OPENING…":"Upgrade to Pro"}</button>
+                    ? <div style={{ textAlign:"center", padding:"11px", borderRadius:12, border:`1px solid ${C.green}30`, background:`${C.green}0e`, color:C.green, fontSize:12.5, fontWeight:700, fontFamily:C.fontHead }}>INCLUDED FREE</div>
+                    : <button onClick={()=>go(p.id)} disabled={!!busy} style={{ padding:"11px", borderRadius:12, border:"none", background:p.hot?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.08)", color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:busy?"wait":"pointer", opacity:busy&&busy!==p.id?0.5:1 }}>{busy===p.id?"OPENING…":"Upgrade to Pro"}</button>
                 }
               </div>
             );
@@ -8488,7 +8488,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?16:16, flexShrink:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <div style={{ width:isMobile?36:42, height:isMobile?36:42, borderRadius:14, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 4px 20px ${C.pink}40` }}>
+          <div style={{ width:isMobile?36:42, height:isMobile?36:42, borderRadius:16, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 4px 20px ${C.pink}40` }}>
             {I.brain(isMobile?16:20,"#fff")}
           </div>
           <div>
@@ -8528,7 +8528,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
           <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:msg.role==="user"?"flex-end":"flex-start", gap:8 }}>
             <div style={{ display:"flex", justifyContent:msg.role==="user"?"flex-end":"flex-start", gap:8, alignItems:"flex-end", maxWidth:isMobile?"92%":"85%" }}>
               {msg.role==="assistant" && (
-                <div style={{ width:28, height:28, borderRadius:9, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <div style={{ width:28, height:28, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                   {I.brain(13,"#fff")}
                 </div>
               )}
@@ -8544,12 +8544,12 @@ Be extremely specific with timestamps. This is for someone who is not confident 
                 {renderMsgContent(msg)}
               </div>
               {msg.role==="user" && (
-                <div style={{ width:28, height:28, borderRadius:9, background:`linear-gradient(135deg,${C.pink}70,${C.purple}70)`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:10, fontWeight:700, color:"#fff" }}>{creator1Init}</div>
+                <div style={{ width:28, height:28, borderRadius:10, background:`linear-gradient(135deg,${C.pink}70,${C.purple}70)`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:10, fontWeight:700, color:"#fff" }}>{creator1Init}</div>
               )}
             </div>
             {msg.showCapcutBtn && (
               <button onClick={getCapcutPlan} disabled={loading}
-                style={{ marginLeft:36, display:"flex", alignItems:"center", gap:8, padding:"10px 16px", borderRadius:14, border:`1px solid ${C.cyan}45`, cursor:loading?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.cyan}14,${C.purple}14)`, color:C.cyan, fontSize:12, fontFamily:C.fontHead, fontWeight:700, opacity:loading?0.5:1 }}>
+                style={{ marginLeft:36, display:"flex", alignItems:"center", gap:8, padding:"10px 16px", borderRadius:16, border:`1px solid ${C.cyan}45`, cursor:loading?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.cyan}14,${C.purple}14)`, color:C.cyan, fontSize:12, fontFamily:C.fontHead, fontWeight:700, opacity:loading?0.5:1 }}>
                 {I.write(12,C.cyan)} CapCut Edit Plan →
               </button>
             )}
@@ -8557,7 +8557,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
         ))}
         {(loading||uploading) && (
           <div style={{ display:"flex", alignItems:"flex-end", gap:8 }}>
-            <div style={{ width:28, height:28, borderRadius:9, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{I.brain(13,"#fff")}</div>
+            <div style={{ width:28, height:28, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{I.brain(13,"#fff")}</div>
             <div style={{ padding:"12px 18px", borderRadius:"4px 18px 18px 18px", background:"rgba(255,255,255,0.06)", border:`1px solid rgba(255,255,255,0.09)`, display:"flex", gap:5, alignItems:"center" }}>
               {[0,1,2].map(k=><div key={k} style={{ width:6, height:6, borderRadius:"50%", background:`linear-gradient(135deg,${C.pink},${C.purple})`, animation:`pulse 1.2s ${k*0.22}s infinite` }}/>)}
             </div>
@@ -8568,7 +8568,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
 
       {/* Video preview pill */}
       {videoFile && (
-        <div style={{ background:`${C.purple}10`, border:`1px solid ${C.purple}35`, borderRadius:14, marginTop:8, flexShrink:0, overflow:"hidden" }}>
+        <div style={{ background:`${C.purple}10`, border:`1px solid ${C.purple}35`, borderRadius:16, marginTop:8, flexShrink:0, overflow:"hidden" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8, padding:isMobile?"13px 16px":"10px 12px" }}>
             <div style={{ width:28, height:28, borderRadius:8, background:`${C.purple}35`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{I.vid(13,C.purple)}</div>
             <span style={{ fontSize:12, color:"rgba(255,255,255,0.85)", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{videoFile.name}</span>
@@ -8576,7 +8576,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
           </div>
           <div style={{ padding:"0 12px 10px" }}>
             <input value={videoContext} onChange={e=>setVideoContext(e.target.value)} placeholder="Goal for this clip? (optional)"
-              style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1px solid ${C.purple}25`, borderRadius:9, color:"rgba(255,255,255,0.8)", padding:"8px 11px", fontSize:12, fontFamily:C.fontHead, outline:"none", boxSizing:"border-box", marginBottom:8 }}/>
+              style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1px solid ${C.purple}25`, borderRadius:10, color:"rgba(255,255,255,0.8)", padding:"8px 11px", fontSize:12, fontFamily:C.fontHead, outline:"none", boxSizing:"border-box", marginBottom:8 }}/>
             <button onClick={()=>analyseVideo(videoFile)} disabled={uploading}
               style={{ width:"100%", padding:"10px", borderRadius:10, border:"none", cursor:uploading?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontSize:13, fontFamily:C.fontHead, fontWeight:700, opacity:uploading?0.6:1 }}>
               {uploading?"Uploading...":"Analyse clip →"}
@@ -8586,7 +8586,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
       )}
 
       {/* Input bar */}
-      <div style={{ display:"flex", gap:8, padding:isMobile?"13px 16px":"10px 12px", background:"rgba(255,255,255,0.05)", borderRadius:18, border:`1px solid rgba(255,255,255,0.1)`, marginTop:10, alignItems:"center", flexShrink:0 }}>
+      <div style={{ display:"flex", gap:8, padding:isMobile?"13px 16px":"10px 12px", background:"rgba(255,255,255,0.05)", borderRadius:16, border:`1px solid rgba(255,255,255,0.1)`, marginTop:10, alignItems:"center", flexShrink:0 }}>
         <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e=>{ if(e.target.files[0]) setVideoFile(e.target.files[0]); }} />
         <button onClick={()=>fileRef.current?.click()} title="Upload video clip"
           style={{ width:34, height:34, borderRadius:10, border:`1px solid rgba(255,255,255,0.1)`, background:"rgba(255,255,255,0.05)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
@@ -8665,7 +8665,7 @@ function GuidedTour({ step, onSkip, onGoContent }) {
       {step===0 && <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:9997 }} onClick={onSkip} />}
       <div style={{
         ...posStyle,
-        background:"rgba(8,7,12,0.96)", border:"1px solid rgba(255,61,129,0.3)", borderRadius:14,
+        background:"rgba(8,7,12,0.96)", border:"1px solid rgba(255,61,129,0.3)", borderRadius:16,
         padding:isMobile?"20px":"18px 22px", maxWidth:300, backdropFilter:"blur(16px)",
         boxShadow:"0 12px 40px rgba(0,0,0,0.5), 0 0 20px rgba(255,61,129,0.1)",
         animation:"tourSlideIn 0.3s ease, tourPulse 2s ease-in-out infinite"
@@ -10020,7 +10020,7 @@ Return JSON:
   };
   const MLabel = ({children}) => <div style={{ fontSize:11,fontWeight:700,letterSpacing:"0.12em",color:"rgba(255,255,255,0.45)",marginBottom:7,textTransform:"uppercase" }}>{children}</div>;
   const MInput = ({value,onChange,placeholder,type="text"}) => <input type={type} value={value||""} onChange={onChange} placeholder={placeholder} style={{ width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,color:"#fff",padding:"14px 16px",fontSize:16,fontFamily:C.fontHead,outline:"none",boxSizing:"border-box",marginBottom:14,colorScheme:"dark" }} />;
-  const MBtn = ({children,onClick,color=C.pink}) => <button onClick={onClick} style={{ width:"100%",padding:"16px",borderRadius:14,border:"none",background:`linear-gradient(135deg,${color},${color}cc)`,color:"#fff",fontFamily:C.fontHead,fontWeight:700,fontSize:16,cursor:"pointer",marginTop:8,boxShadow:`0 4px 20px ${color}40` }}>{children}</button>;
+  const MBtn = ({children,onClick,color=C.pink}) => <button onClick={onClick} style={{ width:"100%",padding:"16px",borderRadius:16,border:"none",background:`linear-gradient(135deg,${color},${color}cc)`,color:"#fff",fontFamily:C.fontHead,fontWeight:700,fontSize:16,cursor:"pointer",marginTop:8,boxShadow:`0 4px 20px ${color}40` }}>{children}</button>;
 
   const AddVideoModal = () => {
     const [tab, setTab] = useState("manual");
@@ -10330,7 +10330,7 @@ Return JSON:
                   boxShadow: active ? `inset 0 0 0 1px ${WL.accentColor}30, 0 4px 20px ${WL.accentColor}08` : "none"
                 }}>
                 {active && <div style={{ position:"absolute", left:0, top:"18%", bottom:"18%", width:3, borderRadius:"0 3px 3px 0", background:`linear-gradient(180deg,${WL.accentColor},${WL.accentColor2})`, boxShadow:`0 0 10px ${WL.accentColor}80` }} />}
-                <div style={{ width:34, height:34, borderRadius:11, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.18s",
+                <div style={{ width:34, height:34, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.18s",
                   background: active ? `linear-gradient(135deg,${WL.accentColor}30,${WL.accentColor2}18)` : "rgba(255,255,255,0.05)",
                   boxShadow: active ? `0 4px 16px ${WL.accentColor}25` : "none"
                 }}>
@@ -10341,7 +10341,7 @@ Return JSON:
                 {n.id==="content" && !active && (() => {
                   const unscored = (ideas||[]).filter(i=>!(i.viral>0)&&i.status!=="posted").length;
                   return unscored > 0 ? (
-                    <div style={{ minWidth:18, height:18, borderRadius:9, background:C.pink, color:"#fff", fontSize:10, fontWeight:900, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 5px" }}>{unscored}</div>
+                    <div style={{ minWidth:18, height:18, borderRadius:10, background:C.pink, color:"#fff", fontSize:10, fontWeight:900, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 5px" }}>{unscored}</div>
                   ) : null;
                 })()}
               </button>
@@ -10353,7 +10353,7 @@ Return JSON:
         <div>
           <div style={{ padding:"16px 16px", borderRadius:16, background:`linear-gradient(135deg,${WL.accentColor}14,${WL.accentColor2}0a)`, border:`1px solid ${WL.accentColor}22` }}>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-              <div style={{ width:40, height:40, borderRadius:13, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:17, fontWeight:900, color:"#fff", flexShrink:0, boxShadow:`0 4px 14px ${WL.accentColor}35` }}>{(WL.creator1||"B")[0]}</div>
+              <div style={{ width:40, height:40, borderRadius:12, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:17, fontWeight:900, color:"#fff", flexShrink:0, boxShadow:`0 4px 14px ${WL.accentColor}35` }}>{(WL.creator1||"B")[0]}</div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:14, fontWeight:700, color:"#fff", letterSpacing:"0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{WL.creator1}{WL.creator2?` + ${WL.creator2}`:""}</div>
                 <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:4 }}>
@@ -10373,7 +10373,7 @@ Return JSON:
           {/* MOBILE HEADER */}
           <div className="mobile-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px", background:"rgba(8,5,18,0.97)", borderBottom:"1px solid rgba(255,255,255,0.07)", backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", position:"sticky", top:0, zIndex:150 }}>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-              <div style={{ width:36, height:36, borderRadius:11, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:900, color:"#fff", flexShrink:0 }}>{(WL.creator1||"B")[0]}</div>
+              <div style={{ width:36, height:36, borderRadius:12, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:900, color:"#fff", flexShrink:0 }}>{(WL.creator1||"B")[0]}</div>
               <div style={{ fontSize:19, fontWeight:700, color:"#fff", fontFamily:C.fontHead, letterSpacing:"0.01em" }}>{NAV.find(n=>n.id===nav)?.label||nav}</div>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -10451,7 +10451,7 @@ Return JSON:
               )}
               <div style={{ position:"relative" }}>
                 <div onClick={()=>setProfileOpen(p=>!p)} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 14px 6px 8px", borderRadius:10, background:profileOpen?"rgba(255,255,255,0.1)":"rgba(255,255,255,0.05)", border:`1px solid ${profileOpen?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.08)"}`, cursor:"pointer", transition:"all 0.15s" }}>
-                  <div style={{ width:30, height:30, borderRadius:9, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:900, color:"#fff" }}>{(WL.creator1||"B")[0]}</div>
+                  <div style={{ width:30, height:30, borderRadius:10, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:900, color:"#fff" }}>{(WL.creator1||"B")[0]}</div>
                   <div>
                     <div style={{ fontSize:13, fontWeight:600, color:"#fff", lineHeight:1 }}>{WL.creator1}</div>
                     <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", marginTop:2 }}>Creator</div>
@@ -11101,7 +11101,7 @@ function OnboardingPage({ onComplete }) {
                   <div style={{ fontSize:13, fontWeight:700, color:"rgba(255,255,255,0.85)", letterSpacing:"0.22em", fontFamily:"Courier New,monospace" }}>6 TOOLS &nbsp;·&nbsp; 1 SYSTEM</div>
                   <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)", letterSpacing:"0.18em", fontFamily:"Courier New,monospace", marginTop:5 }}>BUILT FOR CREATORS WHO MEAN IT</div>
                 </div>
-                <div style={{ width:"100%", height:"calc(100vh - 130px)", maxHeight:740, background:"rgba(7,7,7,0.98)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, overflow:"hidden", boxShadow:"0 60px 160px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,255,255,0.04)", animation:"slideInRight 0.9s cubic-bezier(0.16,1,0.3,1) forwards", display:"flex", flexDirection:"column" }}>
+                <div style={{ width:"100%", height:"calc(100vh - 130px)", maxHeight:740, background:"rgba(7,7,7,0.98)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:16, overflow:"hidden", boxShadow:"0 60px 160px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,255,255,0.04)", animation:"slideInRight 0.9s cubic-bezier(0.16,1,0.3,1) forwards", display:"flex", flexDirection:"column" }}>
 
                   {/* Window chrome */}
                   <div style={{ display:"flex", alignItems:"center", gap:7, padding:"13px 18px", borderBottom:"1px solid rgba(255,255,255,0.07)", background:"rgba(255,255,255,0.02)", flexShrink:0 }}>
@@ -11267,7 +11267,7 @@ function OnboardingPage({ onComplete }) {
                           </div>
                           <div style={{ display:"flex", gap:7 }}>
                             {SC.stats.map(({label,val,col})=>(
-                              <div key={label} style={{ flex:1, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:9, padding:"8px" }}>
+                              <div key={label} style={{ flex:1, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"8px" }}>
                                 <div style={{ fontSize:6, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:3 }}>{label}</div>
                                 <div style={{ fontSize:14, fontFamily:"'Lilita One',Georgia,serif", color:col, lineHeight:1 }}>{val}</div>
                               </div>
@@ -11275,7 +11275,7 @@ function OnboardingPage({ onComplete }) {
                           </div>
                           <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:7 }}>
                             {SC.quickActions.map(({icon,label,sub,col})=>(
-                              <div key={label} style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:9, padding:"8px 10px", display:"flex", gap:8, alignItems:"center", cursor:"pointer" }}>
+                              <div key={label} style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:10, padding:"8px 10px", display:"flex", gap:8, alignItems:"center", cursor:"pointer" }}>
                                 <div style={{ fontSize:14, color:col }}>{icon}</div>
                                 <div>
                                   <div style={{ fontSize:8, color:"rgba(255,255,255,0.7)", fontFamily:"Courier New,monospace", fontWeight:700 }}>{label}</div>
@@ -11285,7 +11285,7 @@ function OnboardingPage({ onComplete }) {
                               </div>
                             ))}
                           </div>
-                          <div style={{ background:"rgba(255,213,10,0.05)", border:"1px solid rgba(255,213,10,0.15)", borderRadius:9, padding:"7px 12px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                          <div style={{ background:"rgba(255,213,10,0.05)", border:"1px solid rgba(255,213,10,0.15)", borderRadius:10, padding:"7px 12px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                             <div style={{ fontSize:8, color:"rgba(255,255,255,0.45)" }}>Weekly AI debrief ready</div>
                             <div style={{ fontSize:8, color:"#FFD50A", fontFamily:"Courier New,monospace" }}>↺ RUN DEBRIEF</div>
                           </div>
@@ -11310,7 +11310,7 @@ function OnboardingPage({ onComplete }) {
                               {label:"IN PROGRESS",val:"3",col:"#FFD50A"},
                               {label:"IN DEALS",val:"2",col:"#FF2D78"},
                             ].map(({label,val,col})=>(
-                              <div key={label} style={{ flex:1, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:9, padding:"8px" }}>
+                              <div key={label} style={{ flex:1, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"8px" }}>
                                 <div style={{ fontSize:6, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:3 }}>{label}</div>
                                 <div style={{ fontSize:14, fontFamily:"'Lilita One',Georgia,serif", color:col, lineHeight:1 }}>{val}</div>
                               </div>
@@ -11482,15 +11482,15 @@ function OnboardingPage({ onComplete }) {
                 onKeyDown={e=>e.key==="Enter"&&finish("")}
                 placeholder="@yourchannel"
                 autoFocus
-                style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1.5px solid ${handle?"#FF2D78":"rgba(255,255,255,0.12)"}`, borderRadius:14, color:"#fff", padding:"15px 18px", fontSize:17, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s", fontFamily:F, fontWeight:600, caretColor:"#FF2D78", marginBottom:32 }}
+                style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1.5px solid ${handle?"#FF2D78":"rgba(255,255,255,0.12)"}`, borderRadius:16, color:"#fff", padding:"15px 18px", fontSize:17, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s", fontFamily:F, fontWeight:600, caretColor:"#FF2D78", marginBottom:32 }}
               />
 
               {/* How it works */}
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.1em", fontWeight:700, textTransform:"uppercase", marginBottom:14 }}>How it works</div>
               <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:34 }}>
                 {steps.map(s=>(
-                  <div key={s.n} style={{ display:"flex", gap:14, alignItems:"flex-start", padding:"14px 16px", borderRadius:14, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)" }}>
-                    <div style={{ width:28, height:28, borderRadius:9, flexShrink:0, background:`${s.c}1e`, border:`1px solid ${s.c}55`, color:s.c, fontWeight:800, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>{s.n}</div>
+                  <div key={s.n} style={{ display:"flex", gap:14, alignItems:"flex-start", padding:"14px 16px", borderRadius:16, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)" }}>
+                    <div style={{ width:28, height:28, borderRadius:10, flexShrink:0, background:`${s.c}1e`, border:`1px solid ${s.c}55`, color:s.c, fontWeight:800, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>{s.n}</div>
                     <div>
                       <div style={{ fontSize:14.5, fontWeight:700, color:"#fff", marginBottom:2 }}>{s.t}</div>
                       <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.5)", lineHeight:1.5 }}>{s.d}</div>
@@ -11500,7 +11500,7 @@ function OnboardingPage({ onComplete }) {
               </div>
 
               <button onClick={()=>finish("")}
-                style={{ padding:"16px 0", border:"none", borderRadius:14, background:"linear-gradient(135deg,#FF2D78,#C566FF)", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", letterSpacing:"0.01em", fontFamily:F, width:"100%", marginBottom:14, boxShadow:"0 10px 30px rgba(255,45,120,0.28)", transition:"transform 0.15s, box-shadow 0.2s" }}
+                style={{ padding:"16px 0", border:"none", borderRadius:16, background:"linear-gradient(135deg,#FF2D78,#C566FF)", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", letterSpacing:"0.01em", fontFamily:F, width:"100%", marginBottom:14, boxShadow:"0 10px 30px rgba(255,45,120,0.28)", transition:"transform 0.15s, box-shadow 0.2s" }}
                 onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 14px 38px rgba(255,45,120,0.4)"; }}
                 onMouseLeave={e=>{ e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="0 10px 30px rgba(255,45,120,0.28)"; }}
               >Enter CreatorOS →</button>
