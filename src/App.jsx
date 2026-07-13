@@ -2073,10 +2073,10 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
           {/* Caption output */}
           {aiLoad&&aiLoad.caption ? (
-            <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?22:12 }}>
-              <div style={{ display:"flex" }}>{I.write(30,"rgba(255,255,255,0.5)")}</div>
-              <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>Writing captions...</div>
-              <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>AI is crafting your captions — this takes a few seconds</div>
+            <div className="km-shimmer-wrap" style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
+              <div style={{ display:"flex" }}>{I.write(30,C.pink)}</div>
+              <AiThinking preset="caption" color={C.pink} size={15} />
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Platform-ready TikTok &amp; Instagram captions, coming up</div>
             </div>
           ) : captionResult && captionIdea ? (
             <div style={{ display:"flex", flexDirection:"column", gap:isMobile?22:12 }}>
@@ -2316,9 +2316,8 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                     </div>
                     {/* Loading state */}
                     {vidLoading?.[v.id] && (
-                      <div style={{ padding:"12px 18px", borderTop:`1px solid ${C.purple}20`, background:`${C.purple}06`, fontSize:13, color:C.purple, display:"flex", alignItems:"center", gap:8 }}>
-                        <div style={{ width:8, height:8, borderRadius:"50%", background:C.purple, animation:"pulse 1s infinite" }}/>
-                        {cfg?.keys?.gemini ? "Gemini watching... Claude analysing..." : "Claude analysing..."}
+                      <div className="km-shimmer-wrap" style={{ padding:"12px 18px", borderTop:`1px solid ${C.purple}20`, background:`${C.purple}06` }}>
+                        <AiThinking preset="clip" msgs={cfg?.keys?.gemini ? ["Gemini watching the video…","Reading the hook & pacing…","Claude writing the teardown…"] : ["Reading the hook & pacing…","Spotting what worked…","Writing the teardown…"]} size={13} />
                       </div>
                     )}
                     {/* AI teardown */}
@@ -2781,13 +2780,21 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                   {card.hasData && card.content
                     ? card.content
                     : (
-                      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", gap:14, padding:"6px 0 4px" }}>
-                        <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", lineHeight:1.5 }}>{card.emptyMsg || "Nothing here yet — run it to generate fresh insights."}</div>
-                        {card.runKey && (
-                          <button onClick={()=>runAI&&runAI(card.runKey)} disabled={aiLoad?.[card.runKey]}
-                            style={{ padding:"9px 16px", borderRadius:10, border:`1px solid ${card.color}45`, background:`${card.color}14`, color:card.color, fontFamily:C.fontHead, fontWeight:700, fontSize:12.5, cursor:aiLoad?.[card.runKey]?"default":"pointer", display:"inline-flex", alignItems:"center", gap:7 }}>
-                            {aiLoad?.[card.runKey] ? <><Spin s={12} c={card.color}/> Running…</> : <>{I.zap(13,"currentColor")} Run now</>}
-                          </button>
+                      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", gap:14, padding:"6px 0 4px", width:"100%" }}>
+                        {aiLoad?.[card.runKey] ? (
+                          <div className="km-shimmer-wrap" style={{ width:"100%", padding:"18px 16px", borderRadius:10, background:`${card.color}0c`, border:`1px solid ${card.color}30`, display:"flex", justifyContent:"center" }}>
+                            <AiThinking preset="generic" color={card.color} msgs={["Reading your data…","Finding the patterns…","Writing your insights…"]} />
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", lineHeight:1.5 }}>{card.emptyMsg || "Nothing here yet — run it to generate fresh insights."}</div>
+                            {card.runKey && (
+                              <button onClick={()=>runAI&&runAI(card.runKey)}
+                                style={{ padding:"9px 16px", borderRadius:10, border:`1px solid ${card.color}45`, background:`${card.color}14`, color:card.color, fontFamily:C.fontHead, fontWeight:700, fontSize:12.5, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:7 }}>
+                                {I.zap(13,"currentColor")} Run now
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     )
@@ -3699,6 +3706,12 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
           </button>
         </div>
 
+        {loading.predict && !predictResult && (
+          <div className="km-shimmer-wrap km-working" style={{ marginTop:4, padding:"28px 20px", borderRadius:12, background:`${C.purple}0c`, border:`1px solid ${C.purple}30`, display:"flex", justifyContent:"center", alignItems:"center" }}>
+            <AiThinking preset="predict" />
+          </div>
+        )}
+
         {predictResult && (
           <div style={{ marginTop:4 }}>
             {/* Score overview */}
@@ -4208,9 +4221,7 @@ Return ONLY JSON: {
               {isLoading && (
                 <div style={{ padding:"6px 0", display:"flex", alignItems:"center", gap:12 }}>
                   <ScoreDial size={44} loading />
-                  <div style={{ fontSize:13, color:C.purple, fontWeight:600 }}>
-                    {hasGemini?"Gemini watching · Claude analysing…":"Analysing…"}
-                  </div>
+                  <AiCyclingLabel color={C.purple} size={13} msgs={hasGemini?["Gemini watching the video…","Reading the hook & pacing…","Claude writing the teardown…"]:["Reading the hook & pacing…","Spotting what worked…","Writing the teardown…"]} />
                 </div>
               )}
               {res && !isLoading && (
