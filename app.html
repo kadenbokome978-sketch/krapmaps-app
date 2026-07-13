@@ -108,6 +108,14 @@
     @keyframes badgePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.025)} }
     @keyframes km-spin { to { transform:rotate(360deg) } }
     .km-spinner { display:inline-block; border-radius:50%; border-style:solid; animation:km-spin .7s linear infinite; }
+    /* Cinematic dashboard entrance — children rise + fade in a staggered cascade */
+    @keyframes km-cascade { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
+    .km-stagger > * { animation:km-cascade .55s cubic-bezier(.2,.8,.2,1) both; }
+    .km-stagger > *:nth-child(1){animation-delay:.02s} .km-stagger > *:nth-child(2){animation-delay:.09s}
+    .km-stagger > *:nth-child(3){animation-delay:.16s} .km-stagger > *:nth-child(4){animation-delay:.23s}
+    .km-stagger > *:nth-child(5){animation-delay:.30s} .km-stagger > *:nth-child(6){animation-delay:.37s}
+    .km-stagger > *:nth-child(7){animation-delay:.44s} .km-stagger > *:nth-child(n+8){animation-delay:.5s}
+    @media (prefers-reduced-motion:reduce){ .km-stagger > * { animation:none } }
 
     /* ── TYPE SYSTEM ── */
     /* Lilita One everywhere, Inter only for long-form reading text */
