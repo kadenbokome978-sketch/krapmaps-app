@@ -316,7 +316,7 @@ const Row = ({ children, style={} }) => (
 const Divider = ({ my=10 }) => <div style={{ height:1, background:C.border, margin:`${my}px 0` }} />;
 const SectionHead = ({ title, color=C.text, action, actionColor=C.pink }) => (
   <Row style={{ marginBottom:20 }}>
-    <div style={{ fontSize:22, fontWeight:700, fontFamily:C.fontHead, letterSpacing:"0.01em", color:"#fff" }}>{title}</div>
+    <div style={{ fontSize:22, fontWeight:700, fontFamily:C.fontHead, letterSpacing:"-0.02em", color:"#fff" }}>{title}</div>
     {action && <button onClick={action} style={{ width:36, height:36, borderRadius:10, background:`${actionColor}15`, border:`1px solid ${actionColor}35`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:actionColor }}>{I.plus(15,actionColor)}</button>}
   </Row>
 );
@@ -10302,7 +10302,7 @@ Return JSON:
         {/* Logo */}
         <div style={{ marginBottom:28, paddingLeft:4 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <div style={{ width:40, height:40, borderRadius:16, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:`0 0 20px ${WL.accentColor}40`, fontSize:18, fontWeight:900, color:"#fff", fontFamily:"Georgia,serif" }}>
+            <div style={{ width:40, height:40, borderRadius:14, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:`0 0 20px ${WL.accentColor}40`, fontSize:19, fontWeight:700, color:"#fff", fontFamily:C.fontHead, letterSpacing:"-0.02em" }}>
               {WL.appName[0]}
             </div>
             <div>
@@ -10476,7 +10476,7 @@ Return JSON:
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:600, marginBottom:6 }}>
                   {nav==="home"?"Dashboard":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":nav==="audit"?"Prospecting":"Settings"}
                 </div>
-                <div style={{ fontSize:34, fontWeight:700, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:6 }}>
+                <div style={{ fontSize:34, fontWeight:700, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:6, letterSpacing:"-0.025em" }}>
                   {nav==="home" && <span><span style={{color:WL.accentColor}}>{WL.appName.slice(0,-2)||"Content"}</span>{WL.appName.slice(-2)||" OS"}</span>}
                   {nav==="content" && <span>Manage <span style={{color:C.cyan}}>Content</span></span>}
                   {nav==="analytics" && <span>Track <span style={{color:C.yellow}}>Performance</span></span>}
