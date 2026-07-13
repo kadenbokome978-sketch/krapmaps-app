@@ -2531,7 +2531,17 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 <div style={{ padding:"16px 18px" }}>
                   {card.hasData && card.content
                     ? card.content
-                    : <div style={{ fontSize:13, color:"rgba(255,255,255,0.3)", fontStyle:"italic", padding:"8px 0" }}>{card.emptyMsg}</div>
+                    : (
+                      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", gap:14, padding:"6px 0 4px" }}>
+                        <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", lineHeight:1.5 }}>{card.emptyMsg || "Nothing here yet — run it to generate fresh insights."}</div>
+                        {card.runKey && (
+                          <button onClick={()=>runAI&&runAI(card.runKey)} disabled={aiLoad?.[card.runKey]}
+                            style={{ padding:"9px 16px", borderRadius:10, border:`1px solid ${card.color}45`, background:`${card.color}14`, color:card.color, fontFamily:C.fontHead, fontWeight:700, fontSize:12.5, cursor:aiLoad?.[card.runKey]?"default":"pointer", display:"inline-flex", alignItems:"center", gap:7 }}>
+                            {aiLoad?.[card.runKey] ? <><Spin s={12} c={card.color}/> Running…</> : <>{I.zap(13,"currentColor")} Run now</>}
+                          </button>
+                        )}
+                      </div>
+                    )
                   }
                 </div>
               )}
