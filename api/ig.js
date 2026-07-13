@@ -205,18 +205,30 @@ async function handleDebug(req, res) {
         out.mediaCount = items.length;
         out.breakdown = [];
         let total = 0;
-        for (const m of items.slice(0, 15)) {
+        const metricVal = async (id, metric) => {
+          const ir = await fetch(`https://graph.instagram.com/${id}/insights?metric=${metric}&access_token=${encodeURIComponent(token)}`);
+          const j = await ir.json().catch(() => ({}));
+          return j?.data?.[0]?.values?.[0]?.value ?? j?.data?.[0]?.total_value?.value ?? (j?.error?.message ? "ERR:" + j.error.message.slice(0, 40) : null);
+        };
+        for (const m of items) {
           const isVideo = m.media_product_type === "REELS" || m.media_type === "VIDEO";
           let views = 0;
-          if (isVideo) {
-            const ir = await fetch(`https://graph.instagram.com/${m.id}/insights?metric=views&access_token=${encodeURIComponent(token)}`);
-            const j = await ir.json().catch(() => ({}));
-            views = j?.data?.[0]?.values?.[0]?.value ?? j?.data?.[0]?.total_value?.value ?? 0;
-          }
+          if (isVideo) { const v = await metricVal(m.id, "views"); views = typeof v === "number" ? v : 0; }
           total += views;
           out.breakdown.push({ type: m.media_product_type || m.media_type, views, likes: m.like_count });
         }
-        out.viewsTotalFirst15 = total;
+        out.viewsTotalAll = total;
+        // For the top reel, sample every plausible metric so we can see which one
+        // matches Instagram's on-screen number.
+        const topVideo = items.filter(m => m.media_product_type === "REELS" || m.media_type === "VIDEO")
+          .sort((a, b) => (out.breakdown[items.indexOf(b)]?.views || 0) - (out.breakdown[items.indexOf(a)]?.views || 0))[0];
+        if (topVideo) {
+          out.topReelId = topVideo.id;
+          out.topReelMetrics = {};
+          for (const mtc of ["views", "plays", "reach", "total_interactions", "ig_reels_video_view_total_count", "ig_reels_aggregated_all_actions_count", "clips_replays_count"]) {
+            out.topReelMetrics[mtc] = await metricVal(topVideo.id, mtc);
+          }
+        }
       } catch (e) { out.breakdownError = e.message; }
     }
     out.env = { hasAppId: !!APP_ID, hasSecret: !!APP_SECRET, hasSbKey: !!SB_KEY };
