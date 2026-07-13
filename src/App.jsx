@@ -759,14 +759,32 @@ const Spin = ({ s=13, c="currentColor" }) => <span className="km-spinner" style=
 // AiThinking — a premium "working" line: spinner + status text that cycles, so
 // the wait feels like real work happening rather than a frozen screen. Reusable
 // anywhere a feature is thinking (scoring, scripts, captions, audits…).
-const AI_THINK_MSGS = ["Reading your hook…","Checking trend timing…","Weighing virality factors…","Scoring against your channel…"];
-const AiThinking = ({ color=C.purple, msgs=AI_THINK_MSGS, size=13 }) => {
+// Contextual status sets per feature — the wait tells you what's happening.
+const AI_PRESETS = {
+  score:   ["Reading your hook…","Checking trend timing…","Weighing virality factors…","Scoring against your channel…"],
+  debrief: ["Reviewing this week's posts…","Spotting what worked…","Finding your focus…","Writing your debrief…"],
+  hooks:   ["Studying your concept…","Testing angles…","Writing 3 hooks…","Ranking the strongest…"],
+  script:  ["Structuring the hook…","Building the payoff…","Timing each beat…","Writing your CTA…"],
+  caption: ["Reading the vibe…","Writing your captions…","Picking hashtags…"],
+  chat:    ["Thinking…","Pulling your data…","Writing a reply…"],
+  predict: ["Modelling the hook…","Comparing to your channel…","Estimating reach…"],
+  audit:   ["Reading their content…","Spotting the patterns…","Writing the audit…"],
+  clip:    ["Uploading your clip…","Watching it frame by frame…","Writing the teardown…"],
+  generic: ["Working on it…","Almost there…"],
+};
+// Just the cycling text (no spinner) — for places that already show a spinner/dots.
+const AiCyclingLabel = ({ color=C.purple, preset="generic", msgs, size=13 }) => {
+  const list = msgs || AI_PRESETS[preset] || AI_PRESETS.generic;
   const [i,setI] = useState(0);
-  useEffect(()=>{ const t=setInterval(()=>setI(p=>(p+1)%msgs.length), 1500); return ()=>clearInterval(t); },[msgs.length]);
+  useEffect(()=>{ const t=setInterval(()=>setI(p=>(p+1)%list.length), 1500); return ()=>clearInterval(t); },[list.length]);
+  return <span key={i} style={{ color, fontWeight:600, fontSize:size, letterSpacing:"0.01em", animation:"km-fadein 0.4s ease" }}>{list[i]}</span>;
+};
+const AiThinking = ({ color=C.purple, preset="score", msgs, size=13 }) => {
+  const list = msgs || AI_PRESETS[preset] || AI_PRESETS.generic;
   return (
     <span style={{ display:"inline-flex", alignItems:"center", gap:9 }}>
       <Spin s={size-1} c={color}/>
-      <span key={i} style={{ color, fontWeight:600, fontSize:size, letterSpacing:"0.01em", animation:"km-fadein 0.4s ease" }}>{msgs[i]}</span>
+      <AiCyclingLabel color={color} msgs={list} size={size}/>
     </span>
   );
 };
@@ -1223,6 +1241,10 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)", fontFamily:C.fontBody, lineHeight:1.5 }}>{weeklyDebrief.watchOut}</div>
             </div>}
           </div>
+        ) : debriefLoading ? (
+          <div className="km-shimmer-wrap" style={{ padding:"36px 20px", display:"flex", justifyContent:"center", alignItems:"center" }}>
+            <AiThinking preset="debrief" />
+          </div>
         ) : (
           <div style={{ padding:"32px 20px", textAlign:"center" }}>
             <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody }}>Run your weekly debrief to get a strategic summary of what's working and what to focus on</div>
@@ -1331,13 +1353,15 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             { ic:I.write,  l:`${(WL.creator2||"WEEKLY").toUpperCase()} BRIEF`, desc:"Weekly filming brief", c:C.yellow, m:"weekly"   },
             { ic:I.trend,  l:"TRENDS",           desc:"What's hot now", c:C.orange, m:"trends"   },
           ].map((a,i)=>(
-            <button data-btn key={i} onClick={()=>runAI&&runAI(a.m)} disabled={aiLoad&&aiLoad[a.m]}
-              style={{ display:"flex", alignItems:"center", gap:14, padding:"16px 18px", borderRadius:16, background:`linear-gradient(135deg,${a.c}0c,rgba(10,6,20,0.6))`, border:`1px solid ${a.c}1e`, cursor:"pointer", fontFamily:C.fontHead, opacity:aiLoad&&aiLoad[a.m]?0.5:1, transition:"all 0.2s", textAlign:"left", position:"relative", overflow:"hidden" }}>
+            <button data-btn key={i} onClick={()=>runAI&&runAI(a.m)} disabled={aiLoad&&aiLoad[a.m]} className={aiLoad&&aiLoad[a.m]?"km-shimmer-wrap":undefined}
+              style={{ display:"flex", alignItems:"center", gap:14, padding:"16px 18px", borderRadius:16, background:`linear-gradient(135deg,${a.c}0c,rgba(10,6,20,0.6))`, border:`1px solid ${aiLoad&&aiLoad[a.m]?a.c+"55":a.c+"1e"}`, cursor:"pointer", fontFamily:C.fontHead, opacity:aiLoad&&aiLoad[a.m]?0.85:1, transition:"all 0.2s", textAlign:"left", position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, left:0, bottom:0, width:2, background:`linear-gradient(180deg,${a.c},${a.c}00)`, borderRadius:"14px 0 0 14px" }}/>
-              <div style={{ width:46, height:46, borderRadius:12, background:`linear-gradient(135deg,${a.c}18,${a.c}06)`, border:`1px solid ${a.c}25`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{a.ic(22,a.c)}</div>
+              <div style={{ width:46, height:46, borderRadius:12, background:`linear-gradient(135deg,${a.c}18,${a.c}06)`, border:`1px solid ${a.c}25`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{aiLoad&&aiLoad[a.m]?<Spin s={20} c={a.c}/>:a.ic(22,a.c)}</div>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.04em", marginBottom:3 }}>{a.l}</div>
-                <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)" }}>{aiLoad&&aiLoad[a.m]?"Running...":a.desc}</div>
+                {aiLoad&&aiLoad[a.m]
+                  ? <span key="w" style={{ fontSize:13, color:a.c, fontWeight:600, animation:"km-fadein 0.4s ease" }}>Working…</span>
+                  : <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)" }}>{a.desc}</div>}
               </div>
               <div style={{ fontSize:16, color:`${a.c}60` }}>›</div>
             </button>
@@ -8785,8 +8809,11 @@ Be extremely specific with timestamps. This is for someone who is not confident 
         {(loading||uploading) && (
           <div style={{ display:"flex", alignItems:"flex-end", gap:8 }}>
             <div style={{ width:28, height:28, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{I.brain(13,"#fff")}</div>
-            <div style={{ padding:"12px 18px", borderRadius:"4px 18px 18px 18px", background:"rgba(255,255,255,0.06)", border:`1px solid rgba(255,255,255,0.09)`, display:"flex", gap:5, alignItems:"center" }}>
-              {[0,1,2].map(k=><div key={k} style={{ width:6, height:6, borderRadius:"50%", background:`linear-gradient(135deg,${C.pink},${C.purple})`, animation:`pulse 1.2s ${k*0.22}s infinite` }}/>)}
+            <div style={{ padding:"12px 18px", borderRadius:"4px 18px 18px 18px", background:"rgba(255,255,255,0.06)", border:`1px solid rgba(255,255,255,0.09)`, display:"flex", gap:9, alignItems:"center" }}>
+              <div style={{ display:"flex", gap:5, alignItems:"center" }}>
+                {[0,1,2].map(k=><div key={k} style={{ width:6, height:6, borderRadius:"50%", background:`linear-gradient(135deg,${C.pink},${C.purple})`, animation:`pulse 1.2s ${k*0.22}s infinite` }}/>)}
+              </div>
+              {!uploading && <AiCyclingLabel preset="chat" color="rgba(255,255,255,0.5)" />}
             </div>
           </div>
         )}
@@ -10427,7 +10454,11 @@ Return JSON:
               {loadingHooks?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={12}/> GENERATING</span>:(displayHooks?"REGENERATE":"GENERATE 3")}
             </button>
           </div>
-          {displayHooks ? displayHooks.map((h,i)=>(
+          {loadingHooks ? (
+            <div className="km-shimmer-wrap km-working" style={{ padding:"20px 16px",borderRadius:10,background:`${C.purple}0c`,border:`1px solid ${C.purple}30`,display:"flex",justifyContent:"center",alignItems:"center" }}>
+              <AiThinking preset="hooks" />
+            </div>
+          ) : displayHooks ? displayHooks.map((h,i)=>(
             <div key={i} onClick={()=>setTitle(h.hook)} style={{ padding:isMobile?"13px 16px":"10px 12px",borderRadius:10,background:`${C.purple}08`,border:`1px solid ${C.purple}25`,marginBottom:i<displayHooks.length-1?8:0,cursor:"pointer",transition:"all 0.15s" }}>
               <div style={{ fontSize:15,fontWeight:700,color:C.text,marginBottom:4,lineHeight:1.4 }}>"{h.hook}"</div>
               <div style={{ display:"flex",gap:6,alignItems:"center" }}>
