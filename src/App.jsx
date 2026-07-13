@@ -273,7 +273,7 @@ const ScoreDial = ({ score=0, size=72, stroke, label, animate=true, celebrate=fa
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={band.c} strokeWidth={sw} strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off} style={{ transition:reduce?"none":"stroke-dashoffset 0.95s cubic-bezier(.2,.8,.2,1)", filter:`drop-shadow(0 0 5px ${band.c}80)` }}/>
       </svg>
       <div style={{ textAlign:"center", lineHeight:0.95 }}>
-        <div style={{ fontSize:Math.round(size*0.37), fontWeight:400, fontFamily:C.fontHead, color:band.c, letterSpacing:"-0.02em", textShadow:`0 0 16px ${band.c}55`, animation:settled?"scoreSettle 0.46s cubic-bezier(.2,1.3,.4,1)":"none" }}>{num}</div>
+        <div style={{ fontSize:Math.round(size*0.37), fontWeight:700, fontFamily:C.fontHead, color:band.c, letterSpacing:"-0.02em", textShadow:`0 0 16px ${band.c}55`, animation:settled?"scoreSettle 0.46s cubic-bezier(.2,1.3,.4,1)":"none" }}>{num}</div>
         {label!==false && <div style={{ fontSize:Math.max(8,Math.round(size*0.115)), color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.12em", marginTop:size*0.03 }}>{label||band.label}</div>}
       </div>
     </div>
@@ -305,7 +305,7 @@ const Pill = ({ children, color, active, onClick }) => (
   <button onClick={onClick} style={{ padding:"7px 16px", borderRadius:20, border:`1px solid ${active?color:C.border}`, background:active?`${color}20`:"transparent", color:active?color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, letterSpacing:"0.05em", cursor:"pointer", fontFamily:C.fontHead, transition:"all 0.15s", whiteSpace:"nowrap" }}>{children}</button>
 );
 const Num = ({ children, color, size=26 }) => (
-  <div style={{ fontSize:size, fontWeight:400, fontFamily:C.fontHead, letterSpacing:"0.04em", color, textShadow:`0 0 18px ${color}45`, lineHeight:1 }}>{children}</div>
+  <div style={{ fontSize:size, fontWeight:700, fontFamily:C.fontHead, letterSpacing:"-0.01em", color, textShadow:`0 0 18px ${color}45`, lineHeight:1 }}>{children}</div>
 );
 const SLabel = ({ children, color=C.dim, mb=10 }) => (
   <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", color, marginBottom:mb, fontFamily:C.fontHead, textTransform:"uppercase" }}>{children}</div>
@@ -573,7 +573,7 @@ const GlowDonut = ({ data=[], size=120, innerRadius=38, outerRadius=54 }) => {
       </svg>
       {topPct>0 && (
         <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", pointerEvents:"none" }}>
-          <div style={{ fontSize:Math.round(size*0.2), fontWeight:400, fontFamily:C.fontHead, color:top.color||"#fff", lineHeight:1 }}>{topPct}%</div>
+          <div style={{ fontSize:Math.round(size*0.2), fontWeight:700, fontFamily:C.fontHead, color:top.color||"#fff", lineHeight:1 }}>{topPct}%</div>
           {(top.name||top.label) && <div style={{ fontSize:Math.max(7,Math.round(size*0.075)), color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", marginTop:2 }}>{(top.name||top.label).slice(0,9)}</div>}
         </div>
       )}
@@ -737,7 +737,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
               <div key={t.id} onClick={()=>setNav(t.nav)} style={{ display:"flex", alignItems:"center", gap:12, padding:isMobile?"14px 16px":"12px 14px", borderRadius:12, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", cursor:"pointer", transition:"background 0.15s" }}
                 onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.05)"}
                 onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,0.025)"}>
-                <div style={{ fontSize:20, fontWeight:400, fontFamily:C.fontHead, color:C.pink, minWidth:30, textAlign:"center" }}>{t.n}</div>
+                <div style={{ fontSize:20, fontWeight:700, fontFamily:C.fontHead, color:C.pink, minWidth:30, textAlign:"center" }}>{t.n}</div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:14, color:"#fff", fontWeight:600, marginBottom:2 }}>{t.label}</div>
                   <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody }}>{t.why}</div>
@@ -782,7 +782,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         <div data-card style={{ borderRadius:16, padding:"16px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${streak.count>=7?C.orange:"rgba(255,255,255,0.08)"}`, display:"flex", alignItems:"center", gap:14 }}>
           <div style={{ display:"flex" }}>{streak.count>=7?I.fire(26,C.orange):streak.count>=3?I.zap(26,C.yellow):I.cal(24,"rgba(255,255,255,0.6)")}</div>
           <div>
-            <div style={{ fontSize:24, fontWeight:400, fontFamily:C.fontHead, color:streak.count>=7?C.orange:streak.count>=3?C.yellow:"#fff", lineHeight:1 }}>{streak.count}<span style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginLeft:4 }}>day{streak.count!==1?"s":""}</span></div>
+            <div style={{ fontSize:24, fontWeight:700, fontFamily:C.fontHead, color:streak.count>=7?C.orange:streak.count>=3?C.yellow:"#fff", lineHeight:1 }}>{streak.count}<span style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginLeft:4 }}>day{streak.count!==1?"s":""}</span></div>
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700, marginTop:2 }}>STREAK{streak.best>streak.count?` · BEST ${streak.best}`:""}</div>
           </div>
         </div>
@@ -792,7 +792,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700 }}>CREATOR LEVEL</div>
             <div style={{ fontSize:11, fontWeight:700, color:C.purple, background:`${C.purple}15`, border:`1px solid ${C.purple}30`, borderRadius:6, padding:"2px 8px" }}>LVL {xp.level}</div>
           </div>
-          <div style={{ fontSize:22, fontWeight:400, fontFamily:C.fontHead, color:"#fff", lineHeight:1, marginBottom:8 }}>{xp.total.toLocaleString()} <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>XP</span></div>
+          <div style={{ fontSize:22, fontWeight:700, fontFamily:C.fontHead, color:"#fff", lineHeight:1, marginBottom:8 }}>{xp.total.toLocaleString()} <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>XP</span></div>
           <div style={{ height:4, borderRadius:2, background:"rgba(255,255,255,0.06)" }}>
             <div style={{ height:"100%", width:`${xpProgress}%`, borderRadius:2, background:`linear-gradient(90deg,${C.purple},${C.pink})`, transition:"width 0.6s ease" }}/>
           </div>
@@ -803,7 +803,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:isMobile?"0.04em":"0.1em", fontWeight:700, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{isMobile?"AI LEVEL":"AI INTELLIGENCE"}</div>
             <div style={{ fontSize:isMobile?9:11, fontWeight:700, color:C.cyan, background:`${C.cyan}12`, border:`1px solid ${C.cyan}25`, borderRadius:6, padding:isMobile?"3px 6px":"2px 8px", flexShrink:0, whiteSpace:"nowrap", letterSpacing:"0.04em" }}>{intelLevel<30?"LEARNING":intelLevel<60?"BUILDING":intelLevel<80?"SHARP":"ELITE"}</div>
           </div>
-          <div style={{ fontSize:22, fontWeight:400, fontFamily:C.fontHead, color:C.cyan, lineHeight:1, marginBottom:8 }}>{intelLevel}<span style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginLeft:2 }}>/100</span></div>
+          <div style={{ fontSize:22, fontWeight:700, fontFamily:C.fontHead, color:C.cyan, lineHeight:1, marginBottom:8 }}>{intelLevel}<span style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginLeft:2 }}>/100</span></div>
           <div style={{ height:4, borderRadius:2, background:"rgba(255,255,255,0.06)" }}>
             <div style={{ height:"100%", width:`${intelLevel}%`, borderRadius:2, background:`linear-gradient(90deg,${C.cyan},${C.purple})`, transition:"width 0.6s ease" }}/>
           </div>
@@ -816,7 +816,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           return urgent > 0 ? (
             <div data-card style={{ borderRadius:16, padding:"16px 20px", background:`${C.pink}08`, border:`1px solid ${C.pink}25`, cursor:"pointer" }} onClick={()=>setNav("content")}>
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700, marginBottom:8 }}>NEEDS ATTENTION</div>
-              <div style={{ fontSize:22, fontWeight:400, fontFamily:C.fontHead, color:C.pink, lineHeight:1, marginBottom:6 }}>{urgent} <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>open loop{urgent!==1?"s":""}</span></div>
+              <div style={{ fontSize:22, fontWeight:700, fontFamily:C.fontHead, color:C.pink, lineHeight:1, marginBottom:6 }}>{urgent} <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>open loop{urgent!==1?"s":""}</span></div>
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody }}>
                 {unscored>0&&`${unscored} unscored`}{unscored>0&&stale>0?" · ":" "}{stale>0&&`${stale} stale`}
               </div>
@@ -824,7 +824,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           ) : (
             <div data-card style={{ borderRadius:16, padding:"16px 20px", background:`${C.green}08`, border:`1px solid ${C.green}25` }}>
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700, marginBottom:8 }}>STATUS</div>
-              <div style={{ fontSize:22, fontWeight:400, fontFamily:C.fontHead, color:C.green, lineHeight:1, marginBottom:4, display:"flex", alignItems:"center", gap:8 }}>All clear {I.tick(20,C.green)}</div>
+              <div style={{ fontSize:22, fontWeight:700, fontFamily:C.fontHead, color:C.green, lineHeight:1, marginBottom:4, display:"flex", alignItems:"center", gap:8 }}>All clear {I.tick(20,C.green)}</div>
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", fontFamily:C.fontBody }}>No open loops</div>
             </div>
           );
@@ -846,7 +846,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
               <div style={{ width:32, height:32, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.eye(14,"#fff")}</div>
               <span style={{ fontSize:14, color:"rgba(255,255,255,0.85)", letterSpacing:"0.2em", textTransform:"uppercase", fontWeight:700 }}>Total Views All Time</span>
             </div>
-            <HeroCount value={allViewsDisplay} style={{ fontSize:isMobile?52:88, fontWeight:400, lineHeight:0.85, fontFamily:C.fontHead, color:"#fff", letterSpacing:"-0.01em", textShadow:`0 0 100px ${C.pink}35`, display:"block" }} />
+            <HeroCount value={allViewsDisplay} style={{ fontSize:isMobile?52:88, fontWeight:700, lineHeight:0.85, fontFamily:C.fontHead, color:"#fff", letterSpacing:"-0.03em", textShadow:`0 0 100px ${C.pink}35`, display:"block" }} />
             {sinceDelta && (
               <div style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:12, padding:isMobile?"6px 12px":"6px 14px", borderRadius:20, background:`${C.green}14`, border:`1px solid ${C.green}35` }}>
                 <span style={{ fontSize:11, color:C.green }}>▲</span>
@@ -861,7 +861,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
               ].map((s,i)=>(
                 <div key={i}>
                   <div style={{ fontSize:isMobile?10:14, color:"rgba(255,255,255,0.6)", letterSpacing:"0.14em", textTransform:"uppercase" }}>{s.l}</div>
-                  <div style={{ fontSize:isMobile?22:28, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1.1, textShadow:`0 0 16px ${s.c}50` }}>{s.v.toLocaleString()}</div>
+                  <div style={{ fontSize:isMobile?22:28, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1.1, textShadow:`0 0 16px ${s.c}50` }}>{s.v.toLocaleString()}</div>
                 </div>
               ))}
               {!isMobile && <div style={{ height:40, width:1, background:"rgba(255,255,255,0.08)" }}/>}
@@ -895,7 +895,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
                 {I.trend(12,s.color)}
               </div>
             </div>
-            <div style={{ fontSize:isMobile?28:44, fontWeight:400, fontFamily:C.fontHead, color:"#fff", lineHeight:1, letterSpacing:"-0.01em", marginBottom:10, textShadow:`0 0 30px ${s.color}30` }}>{s.value}</div>
+            <div style={{ fontSize:isMobile?28:44, fontWeight:700, fontFamily:C.fontHead, color:"#fff", lineHeight:1, letterSpacing:"-0.01em", marginBottom:10, textShadow:`0 0 30px ${s.color}30` }}>{s.value}</div>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.35)", letterSpacing:"0.12em", textTransform:"uppercase" }}>{s.label}</div>
               <div style={{ width:40, height:2, borderRadius:1, background:`linear-gradient(90deg,${s.color}80,${s.color}10)` }}/>
@@ -912,7 +912,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           <div style={{ display:"flex", flexDirection:isMobile?"column":"row", alignItems:isMobile?"flex-start":"flex-start", justifyContent:"space-between", gap:12, marginBottom:isMobile?24:16 }}>
             <div>
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.18em", textTransform:"uppercase", marginBottom:8, fontWeight:600 }}>Platform Views — 7 Days</div>
-              <div style={{ fontSize:isMobile?28:48, fontWeight:400, fontFamily:C.fontHead, color:"#fff", lineHeight:1, letterSpacing:"-0.01em" }}>{(last7.reduce((s,d)=>s+d.value,0)+igLast7.reduce((s,d)=>s+d.value,0)).toLocaleString()}</div>
+              <div style={{ fontSize:isMobile?28:48, fontWeight:700, fontFamily:C.fontHead, color:"#fff", lineHeight:1, letterSpacing:"-0.01em" }}>{(last7.reduce((s,d)=>s+d.value,0)+igLast7.reduce((s,d)=>s+d.value,0)).toLocaleString()}</div>
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.25)", marginTop:6 }}>Total across both platforms this week</div>
             </div>
             <div style={{ display:"flex", gap:8, alignSelf:isMobile?"stretch":"flex-start" }}>
@@ -922,7 +922,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
                     <div style={{ width:7, height:7, borderRadius:"50%", background:p.c }}/>
                     <span style={{ fontSize:10, color:"rgba(255,255,255,0.5)", letterSpacing:"0.1em", textTransform:"uppercase" }}>{p.l}</span>
                   </div>
-                  <div style={{ fontSize:isMobile?18:24, fontWeight:400, color:p.c, fontFamily:C.fontHead }}>{p.v.toLocaleString()}</div>
+                  <div style={{ fontSize:isMobile?18:24, fontWeight:700, color:p.c, fontFamily:C.fontHead }}>{p.v.toLocaleString()}</div>
                 </div>
               ))}
             </div>
@@ -1046,7 +1046,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           { title:"Top Ideas", sub:"Highest virality score", icon:I.idea, color:C.purple, items:topIdeas, empty:"No ideas yet", emptyCta:"Add Idea", emptyAction:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); },
             renderItem:(idea,i,arr)=>(
               <div key={idea.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:i<arr.length-1?`1px solid rgba(255,255,255,0.05)`:"none" }}>
-                <div style={{ fontSize:isMobile?20:30, fontWeight:400, fontFamily:C.fontHead, color:Number(idea.viral)>=70?C.green:Number(idea.viral)>=50?C.yellow:C.dim, width:36, lineHeight:1, textShadow:`0 0 10px currentColor`, flexShrink:0 }}>{idea.viral||0}</div>
+                <div style={{ fontSize:isMobile?20:30, fontWeight:700, fontFamily:C.fontHead, color:Number(idea.viral)>=70?C.green:Number(idea.viral)>=50?C.yellow:C.dim, width:36, lineHeight:1, textShadow:`0 0 10px currentColor`, flexShrink:0 }}>{idea.viral||0}</div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)", lineHeight:1.5, flex:1, fontWeight:500 }}>{idea.title?.slice(0,52)}{(idea.title?.length||0)>52?"...":""}</div>
               </div>
             )
@@ -2067,7 +2067,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                           ...(v.views48h>0 ? [{l:"48HR/LIKE", v:(v.views48h>0&&v.likes>0?((v.likes/v.views48h)*100).toFixed(1)+"%":"—"), c:(v.views48h>0&&v.likes>0&&((v.likes/v.views48h)*100)>=(r*1.3))?C.green:C.orange}] : [{l:"COMMENTS", v:v.comments||0, c:C.purple}]),
                         ].map((s,j)=>(
                           <div key={j} style={{ padding:isMobile?"11px 16px":"8px 10px", background:`${s.c}08`, borderRadius:10, border:`1px solid ${s.c}18`, textAlign:"center" }}>
-                            <div style={{ fontSize:15, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+                            <div style={{ fontSize:15, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
                             <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", marginTop:4 }}>{s.l}</div>
                           </div>
                         ))}
@@ -2096,7 +2096,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                       return (
                         <div style={{ padding:"14px 18px", borderTop:`1px solid ${C.purple}20`, background:`${C.purple}06` }}>
                           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:isMobile?14:10 }}>
-                            <div style={{ fontSize:32, fontWeight:400, fontFamily:C.fontHead, color:sc_c, textShadow:`0 0 12px ${sc_c}50` }}>{sc2}</div>
+                            <div style={{ fontSize:32, fontWeight:700, fontFamily:C.fontHead, color:sc_c, textShadow:`0 0 12px ${sc_c}50` }}>{sc2}</div>
                             <div>
                               <Tag color={sc2>=80?C.green:sc2>=60?C.yellow:C.pink} sm>{(ar.performance_verdict||"analysed").replace("_"," ").toUpperCase()}</Tag>
                               <div style={{ fontSize:10, color:"rgba(255,255,255,0.5)", marginTop:2, fontWeight:700, letterSpacing:"0.06em" }}>AI SCORE</div>
@@ -2178,7 +2178,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                   {plt.stats.map((s,i)=>(
                     <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:isMobile?"20px 0":"16px 0", borderBottom:i<plt.stats.length-1?`1px solid rgba(255,255,255,0.06)`:"none" }}>
                       <div style={{ fontSize:14, color:"rgba(255,255,255,0.55)", fontWeight:600 }}>{s.l}</div>
-                      <div style={{ fontSize:32, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+                      <div style={{ fontSize:32, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
                     </div>
                   ))}
                 </div>
@@ -2187,7 +2187,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                   {plt.stats.map((s,i)=>(
                     <div key={i} style={{ padding:isMobile?"18px 18px":"14px 16px", borderRadius:16, background:`${s.c}10`, border:`1px solid ${s.c}20` }}>
                       <div style={{ fontSize:isMobile?12:10, color:"rgba(255,255,255,0.45)", letterSpacing:"0.08em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>{s.l}</div>
-                      <div style={{ fontSize:isMobile?28:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+                      <div style={{ fontSize:isMobile?28:36, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
                     </div>
                   ))}
                 </div>
@@ -2202,7 +2202,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
               <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?24:16 }}>
                 <div style={{ fontSize:isMobile?15:14, fontWeight:700, color:"#fff", letterSpacing:"0.06em" }}>TikTok Top Videos</div>
-                <span style={{ fontSize:20, fontWeight:400, fontFamily:C.fontHead, color:C.pink }}>{fmt(ttBarData[0]?.value||0)}</span>
+                <span style={{ fontSize:20, fontWeight:700, fontFamily:C.fontHead, color:C.pink }}>{fmt(ttBarData[0]?.value||0)}</span>
               </div>
               {ttBarData.length>0 ? <GlowBarChart data={ttBarData} color={C.pink} height={160} dataKey="value" xKey="label"/>
                 : <div style={{height:160,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"rgba(255,255,255,0.45)",fontStyle:"italic"}}>No TikTok videos yet</div>}
@@ -2213,7 +2213,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
               <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.purple},${C.purple}00)` }}/>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?24:16 }}>
                 <div style={{ fontSize:isMobile?15:14, fontWeight:700, color:"#fff", letterSpacing:"0.06em" }}>Instagram Top Reels</div>
-                <span style={{ fontSize:20, fontWeight:400, fontFamily:C.fontHead, color:C.purple }}>{fmt(igBarData[0]?.value||0)}</span>
+                <span style={{ fontSize:20, fontWeight:700, fontFamily:C.fontHead, color:C.purple }}>{fmt(igBarData[0]?.value||0)}</span>
               </div>
               {igBarData.length>0 ? <GlowBarChart data={igBarData} color={C.purple} height={160} dataKey="value" xKey="label"/>
                 : <div style={{height:160,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"rgba(255,255,255,0.45)",fontStyle:"italic"}}>Sync IG reels via Settings</div>}
@@ -2694,7 +2694,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                 {l:"TOTAL", v:tasks.length, c:C.cyan},
               ].map((s,i)=>(
                 <div key={i} style={{ borderRadius:16, padding:isMobile?"18px 18px":"14px 16px", background:`${s.c}10`, border:`1px solid ${s.c}25`, textAlign:"center" }}>
-                  <div style={{ fontSize:isMobile?24:36, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+                  <div style={{ fontSize:isMobile?24:36, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
                   <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.12em", textTransform:"uppercase", marginTop:6, fontWeight:700 }}>{s.l}</div>
                 </div>
               ))}
@@ -2776,7 +2776,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                     <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, marginBottom:isMobile?16:12 }}>
                       <div style={{ fontSize:14, color:"#fff", fontWeight:600, lineHeight:1.5, flex:1 }}>{idea.text}</div>
                       <div style={{ textAlign:"center", flexShrink:0 }}>
-                        <div style={{ fontSize:isMobile?24:40, fontWeight:400, fontFamily:C.fontHead, color:sc_c, lineHeight:1, textShadow:`0 0 16px ${sc_c}50` }}>{sc}</div>
+                        <div style={{ fontSize:isMobile?24:40, fontWeight:700, fontFamily:C.fontHead, color:sc_c, lineHeight:1, textShadow:`0 0 16px ${sc_c}50` }}>{sc}</div>
                         <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700 }}>SCORE</div>
                       </div>
                     </div>
@@ -3601,7 +3601,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
                 </div>
               </div>
               <div style={{ textAlign:"right", flexShrink:0 }}>
-                <div style={{ fontSize:22, fontWeight:400, fontFamily:C.fontHead, color:i===0?C.green:i===1?C.yellow:"rgba(255,255,255,0.8)", lineHeight:1 }}>{(h.avgViews||0).toLocaleString()}</div>
+                <div style={{ fontSize:22, fontWeight:700, fontFamily:C.fontHead, color:i===0?C.green:i===1?C.yellow:"rgba(255,255,255,0.8)", lineHeight:1 }}>{(h.avgViews||0).toLocaleString()}</div>
                 <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", marginTop:3 }}>AVG VIEWS</div>
               </div>
             </div>
@@ -7526,7 +7526,7 @@ const DealsView = () => {
         {[{l:"TOTAL EARNED",v:`£${totalEarned.toLocaleString()}`,c:C.green},{l:"IN PIPELINE",v:`£${pipeline.toLocaleString()}`,c:C.yellow},{l:"ACTIVE DEALS",v:deals.filter(d=>!["Paid","Declined"].includes(d.status)).length,c:C.cyan},{l:"ALL DEALS",v:deals.length,c:C.purple}].map((s,i)=>(
           <div key={i} data-card style={{ borderRadius:16, padding:isMobile?"20px 18px":"18px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${s.c}25` }}>
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700, marginBottom:8, fontFamily:C.fontHead }}>{s.l}</div>
-            <div style={{ fontSize:isMobile?24:28, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+            <div style={{ fontSize:isMobile?24:28, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
           </div>
         ))}
       </div>
@@ -7579,7 +7579,7 @@ const DealsView = () => {
               <div style={{ display:"flex", alignItems:"center", gap:isMobile?12:18, justifyContent:isMobile?"space-between":"flex-end" }}>
                 {deal.value && (
                   <div style={{ textAlign:isMobile?"left":"right", minWidth:isMobile?0:80 }}>
-                    <div style={{ fontSize:22, fontWeight:400, fontFamily:C.fontHead, color:isMoney?C.green:"rgba(255,255,255,0.85)", lineHeight:1 }}>£{parseFloat(deal.value).toLocaleString()}</div>
+                    <div style={{ fontSize:22, fontWeight:700, fontFamily:C.fontHead, color:isMoney?C.green:"rgba(255,255,255,0.85)", lineHeight:1 }}>£{parseFloat(deal.value).toLocaleString()}</div>
                     <div style={{ fontSize:9, color:"rgba(255,255,255,0.35)", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", marginTop:3 }}>{isMoney?"Earned":"Potential"}</div>
                   </div>
                 )}
@@ -7791,7 +7791,7 @@ Return ONLY JSON:
             {[{l:"FOLLOWERS",v:fmtN(report.followers),c:C.pink},{l:"TYPICAL VIEWS",v:fmtN(report.median),c:C.cyan},{l:"BEST VIDEO",v:fmtN(report.ceiling),c:C.purple},{l:"ENGAGEMENT",v:report.engRate.toFixed(1)+"%",c:C.green}].map((s,i)=>(
               <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:`1px solid ${s.c}22`, borderRadius:12, padding:"14px 16px" }}>
                 <div style={{ fontSize:10, letterSpacing:"0.1em", color:"rgba(255,255,255,0.4)", fontWeight:700, marginBottom:6 }}>{s.l}</div>
-                <div style={{ fontSize:isMobile?20:24, fontWeight:400, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+                <div style={{ fontSize:isMobile?20:24, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
               </div>
             ))}
           </div>
@@ -10476,7 +10476,7 @@ Return JSON:
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:600, marginBottom:6 }}>
                   {nav==="home"?"Dashboard":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":nav==="audit"?"Prospecting":"Settings"}
                 </div>
-                <div style={{ fontSize:34, fontWeight:400, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:6 }}>
+                <div style={{ fontSize:34, fontWeight:700, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:6 }}>
                   {nav==="home" && <span><span style={{color:WL.accentColor}}>{WL.appName.slice(0,-2)||"Content"}</span>{WL.appName.slice(-2)||" OS"}</span>}
                   {nav==="content" && <span>Manage <span style={{color:C.cyan}}>Content</span></span>}
                   {nav==="analytics" && <span>Track <span style={{color:C.yellow}}>Performance</span></span>}
