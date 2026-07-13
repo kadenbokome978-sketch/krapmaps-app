@@ -10681,6 +10681,7 @@ function OnboardingPage({ onComplete }) {
   const [codeShake, setCodeShake] = useState(false);
   const [demoIdx, setDemoIdx] = useState(0);
   const [slideIdx, setSlideIdx] = useState(0);
+  const [tourIdx, setTourIdx] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadLines, setLoadLines] = useState([]);
 
@@ -10852,6 +10853,12 @@ function OnboardingPage({ onComplete }) {
     const t = setInterval(()=>setSlideIdx(p=>(p+1)%7), 4000);
     return ()=>clearInterval(t);
   },[step]);
+
+  useEffect(()=>{
+    if(step!==1 || isBraz) return;
+    const t = setInterval(()=>setTourIdx(p=>(p+1)%3), 4200);
+    return ()=>clearInterval(t);
+  },[step, isBraz]);
 
   const submitCode = async () => {
     const entered = codeInput.trim().toUpperCase();
@@ -11025,8 +11032,8 @@ function OnboardingPage({ onComplete }) {
             </div>
           )}
 
-          {/* Step 1 — Welcome */}
-          {step === 1 && (
+          {/* Step 1 — Welcome (bespoke editorial brief — hand-made client builds only) */}
+          {step === 1 && isBraz && (
             <div style={{ position:"fixed", inset:0, display:"flex", overflow:"hidden", flexDirection:isMobile?"column":"row" }}>
 
               <style>{`
@@ -11534,6 +11541,144 @@ function OnboardingPage({ onComplete }) {
 
             </div>
           )}
+
+          {/* Step 1 — Universal product tour (self-serve builds) */}
+          {step === 1 && !isBraz && (()=>{
+            const F = "'Space Grotesk',system-ui,sans-serif";
+            const app = WL.appName || "CreatorOS";
+            const TOUR = [
+              {
+                key:"score", eyebrow:"01 · SCORE", accent:"#FF2D78",
+                title:"Score every idea before you film",
+                body:<>Type a rough concept and get a <span style={{color:"#fff",fontWeight:600}}>0–100 virality score</span> with hook fixes — so you only shoot the winners.</>,
+              },
+              {
+                key:"ai", eyebrow:"02 · STRATEGY", accent:"#C566FF",
+                title:"An AI strategist that knows your niche",
+                body:<>Ask what to post, get <span style={{color:"#fff",fontWeight:600}}>full scripts, captions and weekly briefs</span> — tuned to your channel, not generic advice.</>,
+              },
+              {
+                key:"grow", eyebrow:"03 · GROW", accent:"#00E5FF",
+                title:"Track growth & close brand deals",
+                body:<>Watch your views climb and manage every <span style={{color:"#fff",fontWeight:600}}>partnership and payment</span> — all in one place.</>,
+              },
+            ];
+            const t = TOUR[tourIdx];
+
+            const Mock = ({ k, accent }) => {
+              if(k==="score") return (
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:14, height:"100%" }}>
+                  <div style={{ position:"relative", width:150, height:150 }}>
+                    <svg width="150" height="150" viewBox="0 0 150 150" style={{ transform:"rotate(-90deg)" }}>
+                      <circle cx="75" cy="75" r="62" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="10"/>
+                      <circle cx="75" cy="75" r="62" fill="none" stroke={accent} strokeWidth="10" strokeLinecap="round" strokeDasharray={2*Math.PI*62} strokeDashoffset={2*Math.PI*62*(1-0.87)} style={{ filter:`drop-shadow(0 0 8px ${accent}88)` }}/>
+                    </svg>
+                    <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+                      <div style={{ fontSize:44, fontWeight:800, color:"#fff", lineHeight:1, letterSpacing:"-0.02em" }}>87</div>
+                      <div style={{ fontSize:9, color:accent, letterSpacing:"0.16em", fontFamily:"Courier New,monospace", marginTop:2 }}>/ 100</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize:10, color:accent, letterSpacing:"0.18em", fontFamily:"Courier New,monospace", background:`${accent}14`, border:`1px solid ${accent}40`, borderRadius:8, padding:"5px 12px" }}>HIGH POTENTIAL · FILM THIS</div>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontStyle:"italic", maxWidth:220, textAlign:"center", lineHeight:1.5 }}>"POV: you can't find a single bin in Bali"</div>
+                </div>
+              );
+              if(k==="ai") return (
+                <div style={{ display:"flex", flexDirection:"column", justifyContent:"center", gap:10, height:"100%", padding:"0 6px" }}>
+                  <div style={{ display:"flex", justifyContent:"flex-end" }}>
+                    <div style={{ maxWidth:"78%", background:`linear-gradient(135deg,${accent},#8B5CF6)`, borderRadius:"14px 14px 3px 14px", padding:"9px 13px", fontSize:12, color:"#fff", lineHeight:1.45 }}>Which idea should I film next?</div>
+                  </div>
+                  <div style={{ display:"flex", gap:9 }}>
+                    <div style={{ width:24, height:24, borderRadius:7, background:`linear-gradient(135deg,${accent},#8B5CF6)`, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12 }}>◎</div>
+                    <div style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.09)", borderRadius:"3px 14px 14px 14px", padding:"9px 13px", fontSize:12, color:"rgba(255,255,255,0.72)", lineHeight:1.55 }}>
+                      Film <span style={{color:accent,fontWeight:700}}>"bin in Bali"</span> — scored <span style={{color:accent}}>87/100</span>. Strong hook, great trend timing. Post Thursday 6pm.
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:2 }}>
+                    {["Write the script","Best time to post","Caption ideas"].map(c=>(
+                      <div key={c} style={{ fontSize:9, color:"rgba(255,255,255,0.5)", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:20, padding:"5px 10px" }}>{c}</div>
+                    ))}
+                  </div>
+                </div>
+              );
+              return (
+                <div style={{ display:"flex", flexDirection:"column", justifyContent:"center", gap:12, height:"100%" }}>
+                  <div style={{ display:"flex", gap:8 }}>
+                    {[{l:"TOTAL VIEWS",v:"12.4K",c:accent},{l:"FOLLOWERS",v:"+847",c:"#39FF14"},{l:"AVG VIEWS",v:"3.1K",c:"rgba(255,255,255,0.6)"}].map(s=>(
+                      <div key={s.l} style={{ flex:1, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"9px 10px" }}>
+                        <div style={{ fontSize:7, color:"rgba(255,255,255,0.35)", fontFamily:"Courier New,monospace", marginBottom:4, letterSpacing:"0.08em" }}>{s.l}</div>
+                        <div style={{ fontSize:17, fontWeight:800, color:s.c, lineHeight:1, letterSpacing:"-0.01em" }}>{s.v}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:10, padding:"8px 12px" }}>
+                    <div style={{ fontSize:7, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:6, letterSpacing:"0.1em" }}>VIEWS · 7 DAYS</div>
+                    <svg width="100%" height="34" viewBox="0 0 300 34" preserveAspectRatio="none">
+                      <defs><linearGradient id="tourgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={accent} stopOpacity="0.4"/><stop offset="100%" stopColor={accent} stopOpacity="0"/></linearGradient></defs>
+                      <polyline points="0,30 50,26 100,27 150,18 200,20 250,9 300,4" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <polygon points="0,30 50,26 100,27 150,18 200,20 250,9 300,4 300,34 0,34" fill="url(#tourgrad)"/>
+                    </svg>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(57,255,20,0.05)", border:"1px solid rgba(57,255,20,0.18)", borderRadius:10, padding:"9px 12px" }}>
+                    <div style={{ width:26, height:26, borderRadius:8, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"rgba(255,255,255,0.4)" }}>◇</div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:11, color:"rgba(255,255,255,0.85)", fontWeight:700 }}>Patagonia</div>
+                      <div style={{ fontSize:8, color:"#39FF14", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>SIGNED</div>
+                    </div>
+                    <div style={{ fontSize:16, fontWeight:800, color:"#39FF14", letterSpacing:"-0.01em" }}>£2,400</div>
+                  </div>
+                </div>
+              );
+            };
+
+            return (
+            <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center", padding:isMobile?"28px 22px":"32px", overflowY:"auto" }}>
+              {/* Ambient glow follows the active accent */}
+              <div style={{ position:"fixed", top:"12%", left:"50%", transform:"translateX(-50%)", width:520, height:520, borderRadius:"50%", background:`radial-gradient(circle,${t.accent}18 0%,transparent 65%)`, pointerEvents:"none", transition:"background 0.6s", zIndex:0 }}/>
+              {/* Dot grid */}
+              <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.035) 1px,transparent 1px)", backgroundSize:"32px 32px", pointerEvents:"none", zIndex:0 }}/>
+
+              <div style={{ width:"100%", maxWidth:420, position:"relative", zIndex:2, display:"flex", flexDirection:"column", alignItems:"center", fontFamily:F }}>
+
+                {/* Brand eyebrow */}
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", letterSpacing:"0.42em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:26, textAlign:"center" }}>
+                  WELCOME TO {app.toUpperCase()}
+                </div>
+
+                {/* Mock card */}
+                <div key={t.key} style={{ width:"100%", height:isMobile?250:270, background:"rgba(9,9,11,0.9)", border:"1px solid rgba(255,255,255,0.09)", borderRadius:20, padding:"20px 22px", boxShadow:"0 40px 100px rgba(0,0,0,0.6)", marginBottom:26, animation:"tourPop 0.5s cubic-bezier(0.16,1,0.3,1)" }}>
+                  <Mock k={t.key} accent={t.accent}/>
+                </div>
+
+                {/* Copy */}
+                <div key={t.key+"c"} style={{ textAlign:"center", animation:"tourFade 0.5s ease" }}>
+                  <div style={{ fontSize:10, color:t.accent, letterSpacing:"0.22em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:12 }}>{t.eyebrow}</div>
+                  <div style={{ fontSize:isMobile?24:27, fontWeight:800, color:"#fff", lineHeight:1.15, letterSpacing:"-0.02em", marginBottom:12 }}>{t.title}</div>
+                  <div style={{ fontSize:14.5, color:"rgba(255,255,255,0.55)", lineHeight:1.6, maxWidth:380, margin:"0 auto" }}>{t.body}</div>
+                </div>
+
+                {/* Dots */}
+                <div style={{ display:"flex", gap:7, margin:"26px 0 26px" }}>
+                  {TOUR.map((s,i)=>(
+                    <div key={i} onClick={()=>setTourIdx(i)} style={{ width:i===tourIdx?26:8, height:8, borderRadius:20, background:i===tourIdx?t.accent:"rgba(255,255,255,0.15)", cursor:"pointer", transition:"all 0.35s" }}/>
+                  ))}
+                </div>
+
+                {/* CTA */}
+                <button onClick={()=>{ if(tourIdx<2) setTourIdx(tourIdx+1); else setStep(2); }}
+                  style={{ width:"100%", maxWidth:340, padding:"16px 0", border:"none", borderRadius:16, background:"linear-gradient(135deg,#FF2D78,#C566FF)", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", fontFamily:F, boxShadow:"0 10px 30px rgba(255,45,120,0.3)", transition:"transform 0.15s, box-shadow 0.2s" }}
+                  onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 14px 38px rgba(255,45,120,0.42)"; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="0 10px 30px rgba(255,45,120,0.3)"; }}
+                >{tourIdx<2 ? "Continue →" : "Set up my channel →"}</button>
+                <button onClick={()=>finish("")} style={{ marginTop:14, background:"none", border:"none", color:"rgba(255,255,255,0.4)", fontSize:13, cursor:"pointer", fontFamily:F, fontWeight:600, padding:4 }}>Skip tour</button>
+              </div>
+
+              <style>{`
+                @keyframes tourPop{from{opacity:0;transform:scale(0.97) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+                @keyframes tourFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+              `}</style>
+            </div>
+            );
+          })()}
 
           {/* Step 2 — Channel */}
           {step === 2 && (()=>{
