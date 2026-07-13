@@ -860,24 +860,43 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
       )}
 
       {/* ══ GETTING STARTED — first-run activation path ══════════════ */}
-      {isFirstRun && (
-        <div data-card style={{ borderRadius:16, padding:isMobile?"24px 20px":"22px 26px", background:`linear-gradient(135deg,${C.cyan}0d,${C.purple}08)`, border:`1px solid ${C.cyan}30`, position:"relative", overflow:"hidden" }}>
-          <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${C.cyan}70,transparent)` }}/>
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
-            <span style={{ display:"inline-flex" }}>{I.rocket(19,C.cyan)}</span>
-            <div style={{ fontSize:13, fontWeight:800, letterSpacing:"0.14em", color:"#fff" }}>GET SET UP</div>
-            <span style={{ marginLeft:"auto", fontSize:11, fontWeight:700, color:C.cyan, background:`${C.cyan}15`, border:`1px solid ${C.cyan}30`, borderRadius:20, padding:"3px 12px" }}>{gsSteps.filter(st=>st.done).length}/{gsSteps.length}</span>
+      {isFirstRun && (() => {
+        const doneN = gsSteps.filter(st=>st.done).length;
+        const pct = Math.round((doneN/gsSteps.length)*100);
+        const R=20, CIRC=2*Math.PI*R;
+        return (
+        <div data-card style={{ borderRadius:18, padding:isMobile?"22px 20px":"24px 28px", background:`linear-gradient(135deg,${C.cyan}12,${C.purple}0c 55%,rgba(10,6,20,0.9))`, border:`1px solid ${C.cyan}35`, position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${C.cyan}90,transparent)` }}/>
+          <div style={{ position:"absolute", top:-60, right:-40, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${C.cyan}14,transparent 65%)`, pointerEvents:"none" }}/>
+          {/* Header with progress ring */}
+          <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:18, position:"relative" }}>
+            <div style={{ position:"relative", width:52, height:52, flexShrink:0 }}>
+              <svg width="52" height="52" viewBox="0 0 52 52" style={{ transform:"rotate(-90deg)" }}>
+                <circle cx="26" cy="26" r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4"/>
+                <circle cx="26" cy="26" r={R} fill="none" stroke={C.cyan} strokeWidth="4" strokeLinecap="round" strokeDasharray={CIRC} strokeDashoffset={CIRC*(1-pct/100)} style={{ transition:"stroke-dashoffset 0.8s cubic-bezier(.2,.8,.2,1)", filter:`drop-shadow(0 0 4px ${C.cyan}88)` }}/>
+              </svg>
+              <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, fontFamily:C.fontHead, color:C.cyan }}>{doneN}/{gsSteps.length}</div>
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
+                <span style={{ display:"inline-flex" }}>{I.rocket(17,C.cyan)}</span>
+                <div style={{ fontSize:13, fontWeight:800, letterSpacing:"0.14em", color:"#fff" }}>GET SET UP</div>
+              </div>
+              <div style={{ fontSize:isMobile?12:13, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody, lineHeight:1.5 }}>Four steps to your first AI-scored video · ~3 min</div>
+            </div>
           </div>
-          <div style={{ fontSize:isMobile?12:13, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody, lineHeight:1.5, marginBottom:16 }}>Four steps to your first AI-scored video. Takes about 3 minutes.</div>
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             {gsSteps.map(st=>{
               const isNext = gsNext && st.n===gsNext.n;
               return (
-                <div key={st.n} onClick={()=>!st.done&&setNav&&setNav(st.nav)} style={{ display:"flex", alignItems:"center", gap:12, padding:isMobile?"14px 16px":"12px 14px", borderRadius:12, background:isNext?`${C.cyan}0d`:"rgba(255,255,255,0.02)", border:`1px solid ${isNext?C.cyan+"40":"rgba(255,255,255,0.06)"}`, cursor:st.done?"default":"pointer", opacity:st.done?0.55:1, transition:"all 0.15s" }}>
-                  <div style={{ width:26, height:26, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:st.done?13:12, fontWeight:800, background:st.done?`${C.green}18`:isNext?`${C.cyan}20`:"rgba(255,255,255,0.06)", border:`1px solid ${st.done?C.green+"50":isNext?C.cyan+"50":"rgba(255,255,255,0.1)"}`, color:st.done?C.green:isNext?C.cyan:"rgba(255,255,255,0.4)" }}>{st.done?<span style={{display:"inline-flex"}}>{I.tick(13,C.green)}</span>:st.n}</div>
+                <div key={st.n} onClick={()=>!st.done&&setNav&&setNav(st.nav)} style={{ display:"flex", alignItems:"center", gap:13, padding:isMobile?"14px 16px":"13px 16px", borderRadius:14, background:isNext?`linear-gradient(135deg,${C.cyan}18,${C.cyan}06)`:"rgba(255,255,255,0.02)", border:`1px solid ${isNext?C.cyan+"55":"rgba(255,255,255,0.06)"}`, boxShadow:isNext?`0 0 24px ${C.cyan}22`:"none", cursor:st.done?"default":"pointer", opacity:st.done?0.5:1, transition:"all 0.2s" }}>
+                  <div style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:st.done?13:13, fontWeight:800, fontFamily:C.fontHead, background:st.done?`${C.green}18`:isNext?`linear-gradient(135deg,${C.cyan},${C.purple})`:"rgba(255,255,255,0.06)", border:`1px solid ${st.done?C.green+"50":isNext?"transparent":"rgba(255,255,255,0.1)"}`, color:st.done?C.green:isNext?"#fff":"rgba(255,255,255,0.4)", boxShadow:isNext?`0 4px 14px ${C.cyan}44`:"none" }}>{st.done?<span style={{display:"inline-flex"}}>{I.tick(13,C.green)}</span>:st.n}</div>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:14, color:"#fff", fontWeight:600, marginBottom:2, textDecoration:st.done?"line-through":"none", textDecorationColor:"rgba(255,255,255,0.3)" }}>{st.label}</div>
-                    {!st.done && <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody, lineHeight:1.45 }}>{st.why}</div>}
+                    <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                      <div style={{ fontSize:14, color:"#fff", fontWeight:600, textDecoration:st.done?"line-through":"none", textDecorationColor:"rgba(255,255,255,0.3)" }}>{st.label}</div>
+                      {isNext && <span style={{ fontSize:9, fontWeight:800, letterSpacing:"0.1em", color:C.cyan, background:`${C.cyan}18`, border:`1px solid ${C.cyan}45`, borderRadius:20, padding:"2px 8px" }}>DO THIS NEXT</span>}
+                    </div>
+                    {!st.done && <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody, lineHeight:1.45, marginTop:2 }}>{st.why}</div>}
                   </div>
                   {!st.done && <div style={{ fontSize:18, color:isNext?C.cyan:"rgba(255,255,255,0.3)", flexShrink:0 }}>→</div>}
                 </div>
@@ -885,7 +904,8 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             })}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ══ WEEKLY RITUAL — the retention loop that feeds the AI ══════ */}
       {!isFirstRun && (ritual.pending > 0 ? (
