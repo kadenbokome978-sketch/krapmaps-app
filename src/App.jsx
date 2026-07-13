@@ -7735,11 +7735,24 @@ Return ONLY JSON:
             <input value={handle} onChange={e=>setHandle(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!busy&&run()} placeholder="theirhandle" style={{ flex:1, background:"none", border:"none", outline:"none", color:"#fff", fontSize:16, padding:"13px 0", fontFamily:C.fontHead }}/>
           </div>
           <button onClick={run} disabled={busy||!handle.trim()} style={{ padding:"13px 24px", borderRadius:12, border:"none", background:busy?"rgba(255,255,255,0.1)":`linear-gradient(135deg,${C.cyan},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:busy?"wait":"pointer", opacity:(!handle.trim())?0.5:1, whiteSpace:"nowrap" }}>
-            {phase==="scraping"?"PULLING VIDEOS…":phase==="analysing"?"ANALYSING…":<span style={{display:"inline-flex",alignItems:"center",gap:6}}>{I.search(14,"currentColor")} RUN AUDIT</span>}
+            {phase==="scraping"?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={13}/> PULLING VIDEOS</span>:phase==="analysing"?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={13}/> ANALYSING</span>:<span style={{display:"inline-flex",alignItems:"center",gap:6}}>{I.search(14,"currentColor")} RUN AUDIT</span>}
           </button>
         </div>
         {err && <div style={{ marginTop:12, fontSize:13.5, color:C.pink, background:`${C.pink}10`, border:`1px solid ${C.pink}25`, borderRadius:10, padding:"10px 13px", lineHeight:1.5 }}>{err}</div>}
-        {busy && <div style={{ marginTop:12, fontSize:13, color:"rgba(255,255,255,0.45)" }}>{phase==="scraping"?"Fetching their recent videos…":"Reading their voice and scoring — a few seconds…"}</div>}
+        {busy && (
+          <div style={{ marginTop:14, display:"flex", flexDirection:"column", gap:9 }}>
+            {[{k:"scraping",l:"Pulling their recent videos"},{k:"analysing",l:"Reading their voice & scoring ideas"}].map((st,i)=>{
+              const active = phase===st.k;
+              const done = (st.k==="scraping" && phase==="analysing");
+              return (
+                <div key={st.k} style={{ display:"flex", alignItems:"center", gap:10, fontSize:13, color:done?C.green:active?"#fff":"rgba(255,255,255,0.35)" }}>
+                  <span style={{ width:16, display:"inline-flex", justifyContent:"center" }}>{done?I.tick(13,C.green):active?<Spin s={12} c={C.cyan}/>:<span style={{width:5,height:5,borderRadius:"50%",background:"rgba(255,255,255,0.25)"}}/>}</span>
+                  {st.l}{active && <span style={{color:"rgba(255,255,255,0.35)"}}>…</span>}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {report && (
