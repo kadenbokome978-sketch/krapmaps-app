@@ -37,10 +37,6 @@ export default async function handler(req, res) {
     const code = String(body.code || "").trim().toUpperCase();
     if (!code) return res.status(400).json({ ok: false, error: "No code entered." });
 
-    // TEMP UNLOCK — allow anyone to open the KrapMaps build so Harley can log in
-    // and reconnect Instagram. REMOVE THIS after the reconnect to re-lock.
-    if (code === "KRAP-9341") return res.status(200).json({ ok: true, tempUnlock: true });
-
     if (ADMINS.has(email)) return res.status(200).json({ ok: true, admin: true });
     if (isFounder(email) && code === founderCode(user.id)) return res.status(200).json({ ok: true });
     const b = await getBilling(user.id);
