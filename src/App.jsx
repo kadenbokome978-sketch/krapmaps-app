@@ -866,7 +866,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           { label:"TT Followers", value:m?.tt_followers>=1e3?(m.tt_followers/1e3).toFixed(1)+"K":String(m?.tt_followers||0), color:C.pink, icon:I.tt },
           { label:"TT Views", value:ttViewsDisplay>=1e6?(ttViewsDisplay/1e6).toFixed(1)+"M":ttViewsDisplay>=1e3?(ttViewsDisplay/1e3).toFixed(1)+"K":String(ttViewsDisplay||0), color:C.cyan, icon:I.eye },
           { label:"IG Followers", value:(()=>{ const f=igData?.profile?.followers_count||m?.ig_followers||0; return f>=1e3?(f/1e3).toFixed(1)+"K":f?String(f):"--"; })(), color:C.yellow, icon:I.ig },
-          { label:"IG Views", value:(()=>{ const t=videos.filter(v=>v.platform==="instagram").reduce((s,v)=>s+(v.views||0),0); return t>=1e6?(t/1e6).toFixed(1)+"M":t>=1e3?(t/1e3).toFixed(1)+"K":String(t||0); })(), color:C.purple, icon:I.ig },
+          { label:"IG Organic", value:(()=>{ const t=videos.filter(v=>v.platform==="instagram").reduce((s,v)=>s+(v.views||0),0); return t>=1e6?(t/1e6).toFixed(1)+"M":t>=1e3?(t/1e3).toFixed(1)+"K":String(t||0); })(), color:C.purple, icon:I.ig },
         ].map((s,i)=>(
           <div key={i} data-card style={{ borderRadius:22, padding:isMobile?"20px 16px 16px":"26px 26px 22px", background:`linear-gradient(145deg,${s.color}16 0%,rgba(8,5,18,0.95) 70%)`, border:`1px solid ${s.color}30`, position:"relative", overflow:"hidden", boxShadow:`0 8px 32px ${s.color}08` }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${s.color},${s.color}00)`, borderRadius:"28px 28px 0 0" }}/>
@@ -11413,37 +11413,60 @@ function OnboardingPage({ onComplete }) {
           )}
 
           {/* Step 2 — Channel */}
-          {step === 2 && (
-            <div style={{ display:"flex", flexDirection:"column", gap:0, width:"100%", maxWidth:440, animation:"fadeLeft 0.4s ease" }}>
+          {step === 2 && (()=>{
+            const F = "'Space Grotesk',system-ui,sans-serif";
+            const steps = [
+              { n:"1", c:"#FF2D78", t:"Drop an idea", d:"Type a rough video concept — the AI expands it into a full idea." },
+              { n:"2", c:"#C566FF", t:"Get it scored", d:"A 0–100 virality score with hook fixes, before you waste time filming." },
+              { n:"3", c:"#00E5FF", t:"Film the winners", d:"Post the high scorers, log the views — it learns your channel and gets sharper." },
+            ];
+            return (
+            <div style={{ display:"flex", flexDirection:"column", width:"100%", maxWidth:460, animation:"fadeLeft 0.45s ease", fontFamily:F, padding:isMobile?"8px 2px":0 }}>
               {/* Progress */}
-              <div style={{ display:"flex", gap:4, marginBottom:40 }}>
-                {[0,1].map(i=><div key={i} style={{ height:2, flex:1, background:i<=1?"#FF2D78":"rgba(255,255,255,0.08)", transition:"all 0.3s" }}/>)}
+              <div style={{ display:"flex", gap:5, marginBottom:28 }}>
+                {[0,1].map(i=><div key={i} style={{ height:3, flex:1, borderRadius:3, background:"linear-gradient(90deg,#FF2D78,#C566FF)" }}/>)}
               </div>
-              <div style={{ fontSize:9, color:"rgba(255,255,255,0.5)", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", marginBottom:isMobile?14:10 }}>YOUR CHANNEL</div>
-              <div style={{ fontSize:28, fontWeight:800, color:"#fff", marginBottom:6, lineHeight:1.1, letterSpacing:"-0.02em" }}>Your channel.<br/><span style={{ color:"rgba(255,255,255,0.5)" }}>Your strategy.</span></div>
-              <div style={{ fontSize:12, color:"rgba(255,255,255,0.62)", lineHeight:1.7, marginBottom:32, fontFamily:"Courier New,monospace", letterSpacing:"0.04em" }}>Tell us your handle so every AI prompt, score and strategy is calibrated to your exact niche.</div>
-              <div style={{ marginBottom:24 }}>
-                <div style={{ fontSize:9, color:"rgba(255,255,255,0.5)", letterSpacing:"0.18em", fontFamily:"Courier New,monospace", marginBottom:isMobile?14:10 }}>TIKTOK HANDLE</div>
-                <input
-                  value={handle}
-                  onChange={e=>setHandle(e.target.value)}
-                  onKeyDown={e=>e.key==="Enter"&&finish("")}
-                  placeholder="@yourchannel"
-                  autoFocus
-                  style={{ width:"100%", background:"transparent", border:"none", borderBottom:`1px solid ${handle?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.12)"}`, color:"#fff", padding:"10px 0", fontSize:18, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s", fontFamily:"Courier New,monospace", letterSpacing:"0.08em", caretColor:"#FF2D78" }}
-                />
+              <div style={{ display:"inline-flex", alignItems:"center", gap:8, alignSelf:"flex-start", padding:"5px 12px", borderRadius:100, background:"rgba(0,229,255,0.1)", border:"1px solid rgba(0,229,255,0.25)", marginBottom:18 }}>
+                <span style={{ fontSize:12 }}>🎉</span>
+                <span style={{ fontSize:12, color:"#00E5FF", fontWeight:700, letterSpacing:"0.04em" }}>You're in — last step</span>
               </div>
-              <div style={{ fontSize:10, color:"rgba(255,255,255,0.5)", fontFamily:"Courier New,monospace", letterSpacing:"0.06em", lineHeight:1.7, marginBottom:36 }}>
-                ◈ &nbsp;Baked into every AI prompt — idea scoring, hook testing, debrief.<br/>
-                ◈ &nbsp;The more specific your niche, the sharper the advice.
+              <div style={{ fontSize:isMobile?26:30, fontWeight:800, color:"#fff", marginBottom:8, lineHeight:1.1, letterSpacing:"-0.02em" }}>Let's tune it to your channel</div>
+              <div style={{ fontSize:14.5, color:"rgba(255,255,255,0.55)", lineHeight:1.6, marginBottom:28 }}>Add your handle so every score, idea and strategy is calibrated to <span style={{color:"#fff",fontWeight:600}}>your</span> niche — not generic advice.</div>
+
+              {/* Handle input */}
+              <label style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.1em", fontWeight:700, textTransform:"uppercase", marginBottom:9, display:"block" }}>Your TikTok / IG handle</label>
+              <input
+                value={handle}
+                onChange={e=>setHandle(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&finish("")}
+                placeholder="@yourchannel"
+                autoFocus
+                style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1.5px solid ${handle?"#FF2D78":"rgba(255,255,255,0.12)"}`, borderRadius:14, color:"#fff", padding:"15px 18px", fontSize:17, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s", fontFamily:F, fontWeight:600, caretColor:"#FF2D78", marginBottom:32 }}
+              />
+
+              {/* How it works */}
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.1em", fontWeight:700, textTransform:"uppercase", marginBottom:14 }}>How it works</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:34 }}>
+                {steps.map(s=>(
+                  <div key={s.n} style={{ display:"flex", gap:14, alignItems:"flex-start", padding:"14px 16px", borderRadius:14, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)" }}>
+                    <div style={{ width:28, height:28, borderRadius:9, flexShrink:0, background:`${s.c}1e`, border:`1px solid ${s.c}55`, color:s.c, fontWeight:800, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>{s.n}</div>
+                    <div>
+                      <div style={{ fontSize:14.5, fontWeight:700, color:"#fff", marginBottom:2 }}>{s.t}</div>
+                      <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.5)", lineHeight:1.5 }}>{s.d}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <button onClick={()=>finish("")} style={{ padding:"16px 0", border:"1px solid rgba(255,255,255,0.22)", borderRadius:2, background:"transparent", color:"#fff", fontWeight:700, fontSize:11, cursor:"pointer", letterSpacing:"0.22em", fontFamily:"Courier New,monospace", transition:"all 0.2s", width:"100%", marginBottom:isMobile?22:14 }}
-                onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.4)"; }}
-                onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="rgba(255,255,255,0.22)"; }}
-              >LAUNCH →</button>
-              <button onClick={()=>finish("")} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.38)", fontSize:10, cursor:"pointer", letterSpacing:"0.2em", fontFamily:"Courier New,monospace", padding:0, textAlign:"center", width:"100%" }}>SKIP FOR NOW</button>
+
+              <button onClick={()=>finish("")}
+                style={{ padding:"16px 0", border:"none", borderRadius:14, background:"linear-gradient(135deg,#FF2D78,#C566FF)", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", letterSpacing:"0.01em", fontFamily:F, width:"100%", marginBottom:14, boxShadow:"0 10px 30px rgba(255,45,120,0.28)", transition:"transform 0.15s, box-shadow 0.2s" }}
+                onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 14px 38px rgba(255,45,120,0.4)"; }}
+                onMouseLeave={e=>{ e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="0 10px 30px rgba(255,45,120,0.28)"; }}
+              >Enter CreatorOS →</button>
+              <button onClick={()=>finish("")} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", fontSize:13, cursor:"pointer", fontFamily:F, fontWeight:600, padding:"4px", textAlign:"center", width:"100%" }}>Skip for now</button>
             </div>
-          )}
+            );
+          })()}
 
 
         </div>
