@@ -246,7 +246,7 @@ const ScoreDial = ({ score=0, size=72, stroke, label, animate=true, celebrate=fa
           <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={sw}/>
           <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={C.purple} strokeWidth={sw} strokeLinecap="round" strokeDasharray={`${circ*0.28} ${circ}`} style={{ filter:`drop-shadow(0 0 5px ${C.purple}90)` }}/>
         </svg>
-        <div style={{ fontSize:Math.max(8,Math.round(size*0.13)), color:C.purple, fontWeight:700, letterSpacing:"0.08em", fontFamily:C.fontHead }}>AI</div>
+        <div style={{ width:Math.max(5,Math.round(size*0.1)), height:Math.max(5,Math.round(size*0.1)), borderRadius:"50%", background:C.purple, boxShadow:`0 0 ${Math.round(size*0.12)}px ${C.purple}`, animation:reduce?"none":"km-corepulse 1.1s ease-in-out infinite" }}/>
       </div>
     );
   }
