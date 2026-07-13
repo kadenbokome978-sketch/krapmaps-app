@@ -742,7 +742,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
   ];
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?32:28 }}>
+    <div className="km-stagger" style={{ display:"flex", flexDirection:"column", gap:isMobile?32:28 }}>
 
       {/* ══ INTEGRATION HEALTH — actionable, dismissible sync warnings ══ */}
       {healthIssues.length > 0 && (
