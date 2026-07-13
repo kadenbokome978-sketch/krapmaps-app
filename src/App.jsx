@@ -588,6 +588,9 @@ const Sparkline = ({ data=[], color=C.pink, height=40 }) => {
   );
 };
 
+// Tiny inline spinner (uses the global .km-spinner keyframe in app.html).
+const Spin = ({ s=13, c="currentColor" }) => <span className="km-spinner" style={{ width:s, height:s, borderWidth:2, borderColor:`${c}55`, borderTopColor:c, verticalAlign:"middle" }}/>;
+
 const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calItems, setNav, runAI, aiLoad, openModal, ttViewsDisplay, igViewsTotal=0, allViewsDisplay=0, m, scrapedStats, statsError, igData, videos=[], weeklyDebrief, debriefLoading, runDebrief }) => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const _allIdeas = allIdeas.length ? allIdeas : (ideas||[]);
@@ -972,7 +975,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             {weeklyDebrief?.generatedAt && <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, marginTop:2 }}>Generated {new Date(weeklyDebrief.generatedAt).toLocaleDateString()}</div>}
           </div>
           <button onClick={runDebrief} disabled={debriefLoading} style={{ padding:isMobile?"12px 18px":"8px 16px", borderRadius:10, border:`1px solid ${C.purple}40`, background:debriefLoading?`${C.purple}15`:`linear-gradient(135deg,${C.purple}30,${C.pink}20)`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:debriefLoading?"wait":"pointer", opacity:debriefLoading?0.7:1 }}>
-            {debriefLoading?"GENERATING...":"↺ RUN DEBRIEF"}
+            {debriefLoading?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={12}/> GENERATING</span>:"↺ RUN DEBRIEF"}
           </button>
         </div>
         {weeklyDebrief ? (
@@ -1648,7 +1651,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                         boxShadow: isScoring||hasScore ? "none" : `0 4px 16px ${C.purple}40`,
                         opacity: isScoring ? 0.7 : 1,
                       }}>
-                      {isScoring ? "SCORING..." : hasScore ? "RE-SCORE" : "SCORE IT"}
+                      {isScoring ? <span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={12}/> SCORING</span> : hasScore ? "RE-SCORE" : "SCORE IT"}
                     </button>
 
                     {/* Secondary: caption + script — outlined */}
@@ -1733,7 +1736,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
             } catch(e){}
             setHookABLoading(false);
           }} disabled={hookABLoading||!hookA.trim()||!hookB.trim()} style={{ padding:isMobile?"10px 14px":"10px 22px", borderRadius:11, border:"none", background:hookABLoading?`${C.purple}30`:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:hookABLoading?"wait":"pointer", marginBottom:hookABResult?14:0, opacity:(!hookA.trim()||!hookB.trim())?0.5:1 }}>
-            {hookABLoading?"ANALYSING...":<span style={{display:"inline-flex",alignItems:"center",gap:6}}>{I.zap(13,"currentColor")} TEST HOOKS</span>}
+            {hookABLoading?<span style={{display:"inline-flex",alignItems:"center",gap:6}}><Spin s={12}/> ANALYSING</span>:<span style={{display:"inline-flex",alignItems:"center",gap:6}}>{I.zap(13,"currentColor")} TEST HOOKS</span>}
           </button>
           {hookABResult && (
             <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:10 }}>
@@ -2059,7 +2062,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                     <div style={{ padding:"10px 18px", borderTop:"1px solid rgba(255,255,255,0.05)", display:"flex", gap:8, alignItems:"center" }}>
                       <button onClick={()=>{ setUpdateTarget&&setUpdateTarget(v); openModal&&openModal("updateVideo"); }} style={{ padding:"6px 14px", borderRadius:9, border:`1px solid ${C.cyan}30`, background:`${C.cyan}10`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>UPDATE</button>
                       <button onClick={()=>analyseVideo&&analyseVideo(v)} style={{ padding:"6px 14px", borderRadius:9, border:`1px solid ${C.purple}30`, background:vidAnalysis?.[v.id]?`${C.purple}25`:vidLoading?.[v.id]?`${C.purple}20`:`${C.purple}10`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:vidLoading?.[v.id]?"wait":"pointer", opacity:vidLoading?.[v.id]?0.7:1, transition:"all 0.2s" }}>
-                        {vidLoading?.[v.id] ? "ANALYSING..." : vidAnalysis?.[v.id] ? <span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.tick(12,"currentColor")} TEARDOWN</span> : "AI TEARDOWN"}
+                        {vidLoading?.[v.id] ? <span style={{display:"inline-flex",alignItems:"center",gap:6}}><Spin s={11}/> ANALYSING</span> : vidAnalysis?.[v.id] ? <span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.tick(12,"currentColor")} TEARDOWN</span> : "AI TEARDOWN"}
                       </button>
                       <button onClick={()=>deleteVideo&&deleteVideo(v.id)} aria-label="Delete" style={{ marginLeft:"auto", padding:isMobile?"10px 12px":"6px 10px", borderRadius:9, border:`1px solid ${C.pink}20`, background:`${C.pink}08`, color:C.pink, fontFamily:C.fontHead, cursor:"pointer" }}>{I.trash(13,C.pink)}</button>
                     </div>
@@ -3433,7 +3436,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
             </select>
           </div>
           <button data-btn onClick={runPredict} disabled={loading.predict||!predictInput.title.trim()} style={{ padding:"14px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:15, cursor:"pointer", opacity:loading.predict?0.6:1 }}>
-            {loading.predict?"ANALYSING...":"PREDICT PERFORMANCE"}
+            {loading.predict?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={12}/> ANALYSING</span>:"PREDICT PERFORMANCE"}
           </button>
         </div>
 
@@ -4951,7 +4954,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
       <CollapsibleCard title="Channel Viral Theory" accent={C.purple}
         subtitle={`The deep "why this channel goes viral" — injected into every score.`}
         actions={<>
-          <button onClick={generateChannelTheory} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||theoryLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.purple}50`, background:`${C.purple}18`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||theoryLoading)?0.5:1 }}>{theoryLoading?"GENERATING...":<span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.zap(12,"currentColor")} GENERATE</span>}</button>
+          <button onClick={generateChannelTheory} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||theoryLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.purple}50`, background:`${C.purple}18`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||theoryLoading)?0.5:1 }}>{theoryLoading?<span style={{display:"inline-flex",alignItems:"center",gap:6}}><Spin s={11} c={C.purple}/> GENERATING</span>:<span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.zap(12,"currentColor")} GENERATE</span>}</button>
           <button onClick={saveTheory} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${theorySaved?C.green:C.purple}50`, background:theorySaved?`${C.green}20`:`${C.purple}18`, color:theorySaved?C.green:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{theorySaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>
         </>}>
         <textarea
@@ -4967,7 +4970,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
       <CollapsibleCard title="Voice DNA" accent={C.cyan}
         subtitle="How you actually write — injected into every idea, hook, caption and script so nothing sounds like a bot."
         actions={<>
-          <button onClick={generateVoice} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.cyan}50`, background:`${C.cyan}18`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading)?0.5:1 }}>{voiceLoading?"LEARNING...":<span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.zap(12,"currentColor")} RELEARN</span>}</button>
+          <button onClick={generateVoice} disabled={(!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${C.cyan}50`, background:`${C.cyan}18`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:((!keys?.anthropic&&!USE_BACKEND&&!BAKED_ANTHROPIC_KEY)||voiceLoading)?0.5:1 }}>{voiceLoading?<span style={{display:"inline-flex",alignItems:"center",gap:6}}><Spin s={11} c={C.cyan}/> LEARNING</span>:<span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.zap(12,"currentColor")} RELEARN</span>}</button>
           <button onClick={saveVoice} style={{ padding:"9px 16px", borderRadius:11, border:`1px solid ${voiceSaved?C.green:C.cyan}50`, background:voiceSaved?`${C.green}20`:`${C.cyan}18`, color:voiceSaved?C.green:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>{voiceSaved?<span style={{display:"inline-flex",alignItems:"center",gap:5}}>SAVED {I.tick(12,"currentColor")}</span>:"SAVE"}</button>
         </>}>
         {/* Measured traits — the deterministic read of their style (always on, no API) */}
