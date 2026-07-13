@@ -10302,7 +10302,7 @@ Return JSON:
         {/* Logo */}
         <div style={{ marginBottom:28, paddingLeft:4 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <div style={{ width:40, height:40, borderRadius:16, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:`0 0 20px ${WL.accentColor}40`, fontSize:18, fontWeight:900, color:"#fff", fontFamily:"Georgia,serif" }}>
+            <div style={{ width:40, height:40, borderRadius:14, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:`0 0 20px ${WL.accentColor}40`, fontSize:19, fontWeight:700, color:"#fff", fontFamily:C.fontHead, letterSpacing:"-0.02em" }}>
               {WL.appName[0]}
             </div>
             <div>
