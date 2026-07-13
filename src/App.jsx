@@ -313,6 +313,102 @@ function ScoreReveal({ score=0, title, onClose }){
     </div>
   );
 }
+
+// ── ONBOARDING TOUR MOCKS — the real OS look, alive on mount ──────────────
+// Score slide uses the actual ScoreDial (count-up ring + particle burst).
+function OnbScoreMock({ accent="#FF2D78" }){
+  const [show, setShow] = useState(false);
+  useEffect(()=>{ const t=setTimeout(()=>setShow(true),120); return ()=>clearTimeout(t); },[]);
+  return (
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:16, height:"100%" }}>
+      <ScoreDial score={87} size={148} animate celebrate label={false} />
+      <div style={{ fontSize:10, color:accent, letterSpacing:"0.18em", fontFamily:"Courier New,monospace", background:`${accent}14`, border:`1px solid ${accent}40`, borderRadius:8, padding:"5px 12px", opacity:show?1:0, transform:show?"translateY(0)":"translateY(6px)", transition:"all 0.5s 0.9s" }}>HIGH POTENTIAL · FILM THIS</div>
+      <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.42)", fontStyle:"italic", maxWidth:230, textAlign:"center", lineHeight:1.5, opacity:show?1:0, transition:"opacity 0.5s 1.05s" }}>"POV: you can't find a single bin in Bali"</div>
+    </div>
+  );
+}
+
+// AI slide — the assistant "thinks", then types its answer word by word.
+function OnbAiMock({ accent="#C566FF" }){
+  const full = "Film “bin in Bali” — scored 87/100. Strong hook, great trend timing. Post Thursday 6pm.";
+  const words = full.split(" ");
+  const [typing, setTyping] = useState(true);
+  const [n, setN] = useState(0);
+  useEffect(()=>{
+    const t0 = setTimeout(()=>setTyping(false), 900);
+    let i=0; const iv = setInterval(()=>{ i++; setN(i); if(i>=words.length) clearInterval(iv); }, 90);
+    return ()=>{ clearTimeout(t0); clearInterval(iv); };
+  },[]);
+  const shown = words.slice(0,n).join(" ");
+  return (
+    <div style={{ display:"flex", flexDirection:"column", justifyContent:"center", gap:11, height:"100%", padding:"0 4px" }}>
+      <div style={{ display:"flex", justifyContent:"flex-end" }}>
+        <div style={{ maxWidth:"78%", background:`linear-gradient(135deg,${accent},#8B5CF6)`, borderRadius:"14px 14px 3px 14px", padding:"9px 13px", fontSize:12, color:"#fff", lineHeight:1.45, animation:"tourFade 0.4s ease" }}>Which idea should I film next?</div>
+      </div>
+      <div style={{ display:"flex", gap:9 }}>
+        <div style={{ width:24, height:24, borderRadius:7, background:`linear-gradient(135deg,${accent},#8B5CF6)`, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12 }}>◎</div>
+        <div style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.09)", borderRadius:"3px 14px 14px 14px", padding:"9px 13px", fontSize:12, color:"rgba(255,255,255,0.72)", lineHeight:1.55, minHeight:20 }}>
+          {typing
+            ? <span style={{ display:"inline-flex", gap:4, alignItems:"center" }}>{[0,1,2].map(i=><span key={i} style={{ width:5, height:5, borderRadius:"50%", background:accent, animation:`blink 1s ${i*0.2}s infinite` }}/>)}</span>
+            : <>{highlightScore(shown, accent)}{n<words.length && <span style={{ opacity:0.6 }}>▍</span>}</>}
+        </div>
+      </div>
+      <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:2, opacity:typing?0.3:1, transition:"opacity 0.4s" }}>
+        {["Write the script","Best time to post","Caption ideas"].map(c=>(
+          <div key={c} style={{ fontSize:9, color:"rgba(255,255,255,0.5)", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:20, padding:"5px 10px" }}>{c}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+// bold the idea title + score inside the typed AI answer
+function highlightScore(text, accent){
+  return text.split(/(“bin in Bali”|87\/100)/g).map((p,i)=>
+    (p==="“bin in Bali”"||p==="87/100")
+      ? <span key={i} style={{ color:accent, fontWeight:700 }}>{p}</span>
+      : <span key={i}>{p}</span>
+  );
+}
+
+// Grow slide — stats count up, the view line draws itself, the deal slides in.
+function OnbGrowMock({ accent="#00E5FF" }){
+  const stats = [{l:"TOTAL VIEWS",v:12400,d:"12.4K",c:accent},{l:"FOLLOWERS",v:847,d:"+847",c:"#39FF14"},{l:"AVG VIEWS",v:3100,d:"3.1K",c:"rgba(255,255,255,0.6)"}];
+  const [p, setP] = useState(0);
+  useEffect(()=>{ let i=0; const iv=setInterval(()=>{ i=Math.min(i+0.06,1); setP(i); if(i>=1)clearInterval(iv); },16); return ()=>clearInterval(iv); },[]);
+  const [deal, setDeal] = useState(false);
+  useEffect(()=>{ const t=setTimeout(()=>setDeal(true),700); return ()=>clearTimeout(t); },[]);
+  const ease = 1-Math.pow(1-p,3);
+  const fmt = (st)=> st.d.startsWith("+")?"+"+Math.round(847*ease): st.d.endsWith("K")?((st.v*ease)/1000).toFixed(1)+"K": Math.round(st.v*ease);
+  return (
+    <div style={{ display:"flex", flexDirection:"column", justifyContent:"center", gap:12, height:"100%" }}>
+      <div style={{ display:"flex", gap:8 }}>
+        {stats.map(st=>(
+          <div key={st.l} style={{ flex:1, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"9px 10px" }}>
+            <div style={{ fontSize:7, color:"rgba(255,255,255,0.35)", fontFamily:"Courier New,monospace", marginBottom:4, letterSpacing:"0.08em" }}>{st.l}</div>
+            <div style={{ fontSize:17, fontWeight:800, color:st.c, lineHeight:1, letterSpacing:"-0.01em" }}>{fmt(st)}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:10, padding:"8px 12px" }}>
+        <div style={{ fontSize:7, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:6, letterSpacing:"0.1em" }}>VIEWS · 7 DAYS</div>
+        <svg width="100%" height="34" viewBox="0 0 300 34" preserveAspectRatio="none">
+          <defs><linearGradient id="onbgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={accent} stopOpacity="0.4"/><stop offset="100%" stopColor={accent} stopOpacity="0"/></linearGradient></defs>
+          <polygon points="0,30 50,26 100,27 150,18 200,20 250,9 300,4 300,34 0,34" fill="url(#onbgrad)" style={{ opacity:ease }}/>
+          <polyline points="0,30 50,26 100,27 150,18 200,20 250,9 300,4" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="320" strokeDashoffset={320*(1-ease)} style={{ filter:`drop-shadow(0 0 4px ${accent}66)` }}/>
+        </svg>
+      </div>
+      <div style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(57,255,20,0.05)", border:"1px solid rgba(57,255,20,0.18)", borderRadius:10, padding:"9px 12px", opacity:deal?1:0, transform:deal?"translateX(0)":"translateX(14px)", transition:"all 0.5s cubic-bezier(0.16,1,0.3,1)" }}>
+        <div style={{ width:26, height:26, borderRadius:8, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"rgba(255,255,255,0.4)" }}>◇</div>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:11, color:"rgba(255,255,255,0.85)", fontWeight:700 }}>Patagonia</div>
+          <div style={{ fontSize:8, color:"#39FF14", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>SIGNED</div>
+        </div>
+        <div style={{ fontSize:16, fontWeight:800, color:"#39FF14", letterSpacing:"-0.01em" }}>£2,400</div>
+      </div>
+    </div>
+  );
+}
+
 // Factor bar — number counts up while the fill bar sweeps to the same value.
 const FactorBar = ({ val, color, label }) => {
   const target = Number(val) || 0;
@@ -11575,71 +11671,7 @@ function OnboardingPage({ onComplete }) {
               },
             ];
             const t = TOUR[tourIdx];
-
-            const Mock = ({ k, accent }) => {
-              if(k==="score") return (
-                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:14, height:"100%" }}>
-                  <div style={{ position:"relative", width:150, height:150 }}>
-                    <svg width="150" height="150" viewBox="0 0 150 150" style={{ transform:"rotate(-90deg)" }}>
-                      <circle cx="75" cy="75" r="62" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="10"/>
-                      <circle cx="75" cy="75" r="62" fill="none" stroke={accent} strokeWidth="10" strokeLinecap="round" strokeDasharray={2*Math.PI*62} strokeDashoffset={2*Math.PI*62*(1-0.87)} style={{ filter:`drop-shadow(0 0 8px ${accent}88)` }}/>
-                    </svg>
-                    <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
-                      <div style={{ fontSize:44, fontWeight:800, color:"#fff", lineHeight:1, letterSpacing:"-0.02em" }}>87</div>
-                      <div style={{ fontSize:9, color:accent, letterSpacing:"0.16em", fontFamily:"Courier New,monospace", marginTop:2 }}>/ 100</div>
-                    </div>
-                  </div>
-                  <div style={{ fontSize:10, color:accent, letterSpacing:"0.18em", fontFamily:"Courier New,monospace", background:`${accent}14`, border:`1px solid ${accent}40`, borderRadius:8, padding:"5px 12px" }}>HIGH POTENTIAL · FILM THIS</div>
-                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontStyle:"italic", maxWidth:220, textAlign:"center", lineHeight:1.5 }}>"POV: you can't find a single bin in Bali"</div>
-                </div>
-              );
-              if(k==="ai") return (
-                <div style={{ display:"flex", flexDirection:"column", justifyContent:"center", gap:10, height:"100%", padding:"0 6px" }}>
-                  <div style={{ display:"flex", justifyContent:"flex-end" }}>
-                    <div style={{ maxWidth:"78%", background:`linear-gradient(135deg,${accent},#8B5CF6)`, borderRadius:"14px 14px 3px 14px", padding:"9px 13px", fontSize:12, color:"#fff", lineHeight:1.45 }}>Which idea should I film next?</div>
-                  </div>
-                  <div style={{ display:"flex", gap:9 }}>
-                    <div style={{ width:24, height:24, borderRadius:7, background:`linear-gradient(135deg,${accent},#8B5CF6)`, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12 }}>◎</div>
-                    <div style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.09)", borderRadius:"3px 14px 14px 14px", padding:"9px 13px", fontSize:12, color:"rgba(255,255,255,0.72)", lineHeight:1.55 }}>
-                      Film <span style={{color:accent,fontWeight:700}}>"bin in Bali"</span> — scored <span style={{color:accent}}>87/100</span>. Strong hook, great trend timing. Post Thursday 6pm.
-                    </div>
-                  </div>
-                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:2 }}>
-                    {["Write the script","Best time to post","Caption ideas"].map(c=>(
-                      <div key={c} style={{ fontSize:9, color:"rgba(255,255,255,0.5)", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:20, padding:"5px 10px" }}>{c}</div>
-                    ))}
-                  </div>
-                </div>
-              );
-              return (
-                <div style={{ display:"flex", flexDirection:"column", justifyContent:"center", gap:12, height:"100%" }}>
-                  <div style={{ display:"flex", gap:8 }}>
-                    {[{l:"TOTAL VIEWS",v:"12.4K",c:accent},{l:"FOLLOWERS",v:"+847",c:"#39FF14"},{l:"AVG VIEWS",v:"3.1K",c:"rgba(255,255,255,0.6)"}].map(s=>(
-                      <div key={s.l} style={{ flex:1, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, padding:"9px 10px" }}>
-                        <div style={{ fontSize:7, color:"rgba(255,255,255,0.35)", fontFamily:"Courier New,monospace", marginBottom:4, letterSpacing:"0.08em" }}>{s.l}</div>
-                        <div style={{ fontSize:17, fontWeight:800, color:s.c, lineHeight:1, letterSpacing:"-0.01em" }}>{s.v}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:10, padding:"8px 12px" }}>
-                    <div style={{ fontSize:7, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:6, letterSpacing:"0.1em" }}>VIEWS · 7 DAYS</div>
-                    <svg width="100%" height="34" viewBox="0 0 300 34" preserveAspectRatio="none">
-                      <defs><linearGradient id="tourgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={accent} stopOpacity="0.4"/><stop offset="100%" stopColor={accent} stopOpacity="0"/></linearGradient></defs>
-                      <polyline points="0,30 50,26 100,27 150,18 200,20 250,9 300,4" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <polygon points="0,30 50,26 100,27 150,18 200,20 250,9 300,4 300,34 0,34" fill="url(#tourgrad)"/>
-                    </svg>
-                  </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(57,255,20,0.05)", border:"1px solid rgba(57,255,20,0.18)", borderRadius:10, padding:"9px 12px" }}>
-                    <div style={{ width:26, height:26, borderRadius:8, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"rgba(255,255,255,0.4)" }}>◇</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:11, color:"rgba(255,255,255,0.85)", fontWeight:700 }}>Patagonia</div>
-                      <div style={{ fontSize:8, color:"#39FF14", fontFamily:"Courier New,monospace", letterSpacing:"0.1em" }}>SIGNED</div>
-                    </div>
-                    <div style={{ fontSize:16, fontWeight:800, color:"#39FF14", letterSpacing:"-0.01em" }}>£2,400</div>
-                  </div>
-                </div>
-              );
-            };
+            const Mock = t.key==="score" ? OnbScoreMock : t.key==="ai" ? OnbAiMock : OnbGrowMock;
 
             return (
             <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center", padding:isMobile?"28px 22px":"32px", overflowY:"auto" }}>
@@ -11651,13 +11683,22 @@ function OnboardingPage({ onComplete }) {
               <div style={{ width:"100%", maxWidth:420, position:"relative", zIndex:2, display:"flex", flexDirection:"column", alignItems:"center", fontFamily:F }}>
 
                 {/* Brand eyebrow */}
-                <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", letterSpacing:"0.42em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:26, textAlign:"center" }}>
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", letterSpacing:"0.42em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:20, textAlign:"center" }}>
                   WELCOME TO {app.toUpperCase()}
                 </div>
 
+                {/* Story-style progress bar — active segment fills over the auto-advance */}
+                <div style={{ display:"flex", gap:6, width:"100%", maxWidth:340, marginBottom:22 }}>
+                  {TOUR.map((s,i)=>(
+                    <div key={i} onClick={()=>setTourIdx(i)} style={{ flex:1, height:3, borderRadius:3, background:"rgba(255,255,255,0.12)", overflow:"hidden", cursor:"pointer" }}>
+                      <div style={{ height:"100%", borderRadius:3, background:t.accent, width:i<tourIdx?"100%":i===tourIdx?"100%":"0%", transformOrigin:"left", animation:i===tourIdx?"tourProg 4.2s linear":"none", transition:i<tourIdx?"none":"width 0.3s" }}/>
+                    </div>
+                  ))}
+                </div>
+
                 {/* Mock card */}
-                <div key={t.key} style={{ width:"100%", height:isMobile?250:270, background:"rgba(9,9,11,0.9)", border:"1px solid rgba(255,255,255,0.09)", borderRadius:20, padding:"20px 22px", boxShadow:"0 40px 100px rgba(0,0,0,0.6)", marginBottom:26, animation:"tourPop 0.5s cubic-bezier(0.16,1,0.3,1)" }}>
-                  <Mock k={t.key} accent={t.accent}/>
+                <div key={t.key} style={{ width:"100%", height:isMobile?250:270, background:"rgba(9,9,11,0.9)", border:`1px solid ${t.accent}22`, borderRadius:20, padding:"20px 22px", boxShadow:`0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.04)`, marginBottom:26, animation:"tourPop 0.5s cubic-bezier(0.16,1,0.3,1)" }}>
+                  <Mock accent={t.accent}/>
                 </div>
 
                 {/* Copy */}
@@ -11686,6 +11727,7 @@ function OnboardingPage({ onComplete }) {
               <style>{`
                 @keyframes tourPop{from{opacity:0;transform:scale(0.97) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
                 @keyframes tourFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+                @keyframes tourProg{from{width:0%}to{width:100%}}
               `}</style>
             </div>
             );
