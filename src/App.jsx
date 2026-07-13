@@ -4910,6 +4910,17 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
           </div>
         </div>}
 
+        {/* KrapMaps-only — replay the onboarding tour (dev/preview convenience) */}
+        {_activeCfg.clientId==="krapmaps" && <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"22px 24px", background:"linear-gradient(145deg,rgba(197,102,255,0.07),rgba(10,6,20,0.95))", border:`1px solid ${C.purple||"#C566FF"}25`, position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.purple||"#C566FF"},${(C.purple||"#C566FF")}00)` }}/>
+          <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>Onboarding</div>
+          <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginBottom:16, lineHeight:1.5 }}>Replay the welcome tour from the start — jumps straight into the 3-slide product walkthrough without needing your activation code.</div>
+          <button onClick={()=>{ try { localStorage.setItem("krapmaps_v1_pending_step","1"); localStorage.removeItem("krapmaps_v1_onboarded"); } catch {} window.location.reload(); }}
+            style={{ padding:isMobile?"14px 20px":"11px 20px", borderRadius:12, border:`1px solid ${(C.purple||"#C566FF")}40`, background:`${(C.purple||"#C566FF")}12`, color:C.purple||"#C566FF", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>
+            ▶ REPLAY ONBOARDING
+          </button>
+        </div>}
+
         {/* RIGHT — Status + Creator Config */}
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           {/* System Status */}
