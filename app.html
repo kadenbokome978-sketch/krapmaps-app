@@ -119,6 +119,18 @@
     /* Drop the will-change hint once the entrance is done so it doesn't pin layers */
     .km-stagger > * { animation-fill-mode:both; }
     @media (prefers-reduced-motion:reduce){ .km-stagger > * { animation:none } }
+    /* ── Premium "working" state — used any time a feature is thinking ── */
+    @keyframes km-shimmer { 100% { transform:translateX(100%) } }
+    .km-shimmer-wrap { position:relative; }
+    .km-shimmer-wrap::after { content:""; position:absolute; inset:0; transform:translateX(-100%);
+      background:linear-gradient(90deg,transparent,rgba(197,102,255,0.09),rgba(255,255,255,0.05),transparent);
+      animation:km-shimmer 1.5s cubic-bezier(.4,0,.2,1) infinite; pointer-events:none; z-index:1; }
+    @keyframes km-workpulse {
+      0%,100% { box-shadow:0 0 0 1px rgba(197,102,255,0.28), 0 0 20px rgba(197,102,255,0.10); }
+      50%     { box-shadow:0 0 0 1px rgba(197,102,255,0.55), 0 0 32px rgba(197,102,255,0.24); } }
+    .km-working { animation:km-workpulse 1.7s ease-in-out infinite; }
+    @keyframes km-fadein { from { opacity:0; transform:translateY(3px) } to { opacity:1; transform:translateY(0) } }
+    @media (prefers-reduced-motion:reduce){ .km-shimmer-wrap::after,.km-working{animation:none} }
 
     /* ── TYPE SYSTEM ── */
     /* Lilita One everywhere, Inter only for long-form reading text */

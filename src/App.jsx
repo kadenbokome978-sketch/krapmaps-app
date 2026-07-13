@@ -756,6 +756,21 @@ const Sparkline = ({ data=[], color=C.pink, height=40 }) => {
 // Tiny inline spinner (uses the global .km-spinner keyframe in app.html).
 const Spin = ({ s=13, c="currentColor" }) => <span className="km-spinner" style={{ width:s, height:s, borderWidth:2, borderColor:`${c}55`, borderTopColor:c, verticalAlign:"middle" }}/>;
 
+// AiThinking — a premium "working" line: spinner + status text that cycles, so
+// the wait feels like real work happening rather than a frozen screen. Reusable
+// anywhere a feature is thinking (scoring, scripts, captions, audits…).
+const AI_THINK_MSGS = ["Reading your hook…","Checking trend timing…","Weighing virality factors…","Scoring against your channel…"];
+const AiThinking = ({ color=C.purple, msgs=AI_THINK_MSGS, size=13 }) => {
+  const [i,setI] = useState(0);
+  useEffect(()=>{ const t=setInterval(()=>setI(p=>(p+1)%msgs.length), 1500); return ()=>clearInterval(t); },[msgs.length]);
+  return (
+    <span style={{ display:"inline-flex", alignItems:"center", gap:9 }}>
+      <Spin s={size-1} c={color}/>
+      <span key={i} style={{ color, fontWeight:600, fontSize:size, letterSpacing:"0.01em", animation:"km-fadein 0.4s ease" }}>{msgs[i]}</span>
+    </span>
+  );
+};
+
 const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calItems, setNav, runAI, aiLoad, openModal, ttViewsDisplay, igViewsTotal=0, allViewsDisplay=0, m, scrapedStats, statsError, igData, videos=[], weeklyDebrief, debriefLoading, runDebrief }) => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const _allIdeas = allIdeas.length ? allIdeas : (ideas||[]);
@@ -1612,7 +1627,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
               const stageLabel = ({idea:"Idea",script_ready:"Scripted",filming:"Filming",filmed:"Filmed",posted:"Posted"})[idea.status||"idea"]||"Idea";
               const stageColor = ({idea:C.cyan,script_ready:C.green,filming:C.orange,filmed:C.yellow,posted:C.green})[idea.status||"idea"]||C.cyan;
               return (
-                <div key={idea.id} style={{ borderRadius:16, background:"rgba(12,8,24,0.95)", border:`1px solid ${isStale?C.pink+"40":hasScore?scoreC+"22":"rgba(255,255,255,0.08)"}`, position:"relative", overflow:"hidden", display:"flex", flexDirection:"column", transition:"border-color 0.2s" }}>
+                <div key={idea.id} className={isScoring?"km-shimmer-wrap km-working":undefined} style={{ borderRadius:16, background:"rgba(12,8,24,0.95)", border:`1px solid ${isScoring?C.purple+"55":isStale?C.pink+"40":hasScore?scoreC+"22":"rgba(255,255,255,0.08)"}`, position:"relative", overflow:"hidden", display:"flex", flexDirection:"column", transition:"border-color 0.2s" }}>
 
                   {/* Top accent line — score-coloured, full width */}
                   <div style={{ height:2, background:hasScore?`linear-gradient(90deg,${scoreC},${scoreC}40,transparent)`:isStale?`linear-gradient(90deg,${C.pink}60,transparent)`:"rgba(255,255,255,0.04)" }}/>
@@ -1653,8 +1668,15 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                       </div>
                     </div>
 
+                    {/* Working state — cycling AI status while the score computes */}
+                    {isScoring && (
+                      <div style={{ display:"flex", alignItems:"center", gap:10, padding:isMobile?"12px 14px":"10px 14px", borderRadius:12, background:`${C.purple}0e`, border:`1px solid ${C.purple}2a`, marginBottom:12 }}>
+                        <AiThinking />
+                      </div>
+                    )}
+
                     {/* Verdict — only when scored, single line clamped */}
-                    {idea.verdict && (
+                    {!isScoring && idea.verdict && (
                       <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.55, fontFamily:C.fontBody, marginBottom:12, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:isExpanded?20:2, WebkitBoxOrient:"vertical" }}>
                         {idea.verdict}
                       </div>
