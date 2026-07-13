@@ -8751,7 +8751,9 @@ function Dashboard({ keys, onEditKeys }) {
   const activeWL = wlConfig;
 
   const [manualData, setManualData] = useState(()=>loadJSON(MANUAL_KEY,{}));
-  const [videos, setVideos]         = useState(()=>loadJSON(VIDEOS_KEY,[]));
+  // Drop legacy Instagram photo/carousel posts (non-reel) that older syncs stored —
+  // they have no views and clutter a content tool. Reels + all TikToks are kept.
+  const [videos, setVideos]         = useState(()=>loadJSON(VIDEOS_KEY,[]).filter(v=>v.platform!=="instagram" || v.type==="reel"));
   const [ideas, setIdeas]           = useState(()=>loadJSON(IDEAS_KEY,[]));
   const [calItems, setCalItems]     = useState(()=>loadJSON(CAL_KEY,[]));
   const [tasks, setTasks]           = useState(()=>loadJSON(TASKS_KEY,[]));
