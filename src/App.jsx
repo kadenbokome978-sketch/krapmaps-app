@@ -8884,9 +8884,9 @@ function Dashboard({ keys, onEditKeys }) {
       const profile = d.profile || {};
       const enriched = d.media || [];
       setIgData({ profile, media: enriched });
-      // Feed the official media into the video library so the whole app
-      // (IG Views, reel cards, analytics) uses real Instagram data.
-      const fresh = enriched.map(m => ({
+      // Feed only REELS/videos into the content library — photos/carousels have no
+      // views and just clutter a content tool.
+      const fresh = enriched.filter(m => m.media_product_type==="REELS" || m.media_type==="VIDEO").map(m => ({
         id: "ig_"+m.id,
         title: (m.caption||"").slice(0,100) || "Instagram post",
         views: m.views||0, likes: m.like_count||0, comments: m.comments_count||0, shares: 0,
