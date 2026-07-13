@@ -108,13 +108,16 @@
     @keyframes badgePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.025)} }
     @keyframes km-spin { to { transform:rotate(360deg) } }
     .km-spinner { display:inline-block; border-radius:50%; border-style:solid; animation:km-spin .7s linear infinite; }
-    /* Cinematic dashboard entrance — children rise + fade in a staggered cascade */
-    @keyframes km-cascade { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
-    .km-stagger > * { animation:km-cascade .55s cubic-bezier(.2,.8,.2,1) both; }
-    .km-stagger > *:nth-child(1){animation-delay:.02s} .km-stagger > *:nth-child(2){animation-delay:.09s}
-    .km-stagger > *:nth-child(3){animation-delay:.16s} .km-stagger > *:nth-child(4){animation-delay:.23s}
-    .km-stagger > *:nth-child(5){animation-delay:.30s} .km-stagger > *:nth-child(6){animation-delay:.37s}
-    .km-stagger > *:nth-child(7){animation-delay:.44s} .km-stagger > *:nth-child(n+8){animation-delay:.5s}
+    /* Cinematic dashboard entrance — children rise + fade in a tight cascade.
+       Kept short (total window ~0.35s) so it reads as a snappy reveal, not a lag. */
+    @keyframes km-cascade { from { opacity:0; transform:translate3d(0,12px,0) } to { opacity:1; transform:translate3d(0,0,0) } }
+    .km-stagger > * { animation:km-cascade .42s cubic-bezier(.2,.8,.2,1) both; will-change:transform,opacity; }
+    .km-stagger > *:nth-child(1){animation-delay:0s} .km-stagger > *:nth-child(2){animation-delay:.04s}
+    .km-stagger > *:nth-child(3){animation-delay:.08s} .km-stagger > *:nth-child(4){animation-delay:.12s}
+    .km-stagger > *:nth-child(5){animation-delay:.16s} .km-stagger > *:nth-child(6){animation-delay:.20s}
+    .km-stagger > *:nth-child(7){animation-delay:.24s} .km-stagger > *:nth-child(n+8){animation-delay:.28s}
+    /* Drop the will-change hint once the entrance is done so it doesn't pin layers */
+    .km-stagger > * { animation-fill-mode:both; }
     @media (prefers-reduced-motion:reduce){ .km-stagger > * { animation:none } }
 
     /* ── TYPE SYSTEM ── */
