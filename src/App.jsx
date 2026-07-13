@@ -116,6 +116,13 @@ const DS = {
 const fmt = n => n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n||0);
 const perfLabel = s => s>=80?"VIRAL":s>=65?"STRONG":s>=50?"DECENT":s>=35?"WEAK":"FLOPPED";
 const perfColor = s => s>=80?C.green:s>=65?C.yellow:s>=50?C.orange:C.pink;
+// Median views across a set of videos (ignores 0-view items). Used by the audit.
+const medianViews = (vids) => {
+  const arr = (vids||[]).map(v=>v.views||0).filter(v=>v>0).sort((a,b)=>a-b);
+  if(!arr.length) return 0;
+  const m = Math.floor(arr.length/2);
+  return arr.length%2 ? arr[m] : Math.round((arr[m-1]+arr[m])/2);
+};
 
 const I = {
   bin:   (s=16,c="currentColor")=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><rect x="5" y="6" width="14" height="14" rx="2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
