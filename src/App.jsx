@@ -11682,9 +11682,10 @@ function OnboardingPage({ onComplete }) {
 
               <div style={{ width:"100%", maxWidth:420, position:"relative", zIndex:2, display:"flex", flexDirection:"column", alignItems:"center", fontFamily:F }}>
 
-                {/* Brand eyebrow */}
-                <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", letterSpacing:"0.42em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:20, textAlign:"center" }}>
-                  WELCOME TO {app.toUpperCase()}
+                {/* Brand welcome header */}
+                <div style={{ textAlign:"center", marginBottom:22 }}>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.42em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:8 }}>WELCOME TO</div>
+                  <div style={{ fontSize:isMobile?30:38, fontWeight:800, letterSpacing:"-0.02em", lineHeight:1, background:"linear-gradient(120deg,#fff 20%,#FF2D78 55%,#C566FF 90%)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundSize:"200% auto", animation:"tourShine 5s linear infinite" }}>{app}</div>
                 </div>
 
                 {/* Story-style progress bar — active segment fills over the auto-advance */}
@@ -11728,6 +11729,7 @@ function OnboardingPage({ onComplete }) {
                 @keyframes tourPop{from{opacity:0;transform:scale(0.97) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
                 @keyframes tourFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
                 @keyframes tourProg{from{width:0%}to{width:100%}}
+                @keyframes tourShine{to{background-position:200% center}}
               `}</style>
             </div>
             );
@@ -11741,17 +11743,24 @@ function OnboardingPage({ onComplete }) {
               { n:"2", c:"#C566FF", t:"Get it scored", d:"A 0–100 virality score with hook fixes, before you waste time filming." },
               { n:"3", c:"#00E5FF", t:"Film the winners", d:"Post the high scorers, log the views — it learns your channel and gets sharper." },
             ];
+            const app2 = WL.appName || "CreatorOS";
             return (
-            <div style={{ display:"flex", flexDirection:"column", width:"100%", maxWidth:460, animation:"fadeLeft 0.45s ease", fontFamily:F, padding:isMobile?"8px 2px":0 }}>
+            <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center", padding:isMobile?"28px 22px":"32px", overflowY:"auto", fontFamily:F }}>
+              {/* Ambient glows fill the space + give energy */}
+              <div style={{ position:"fixed", top:"-10%", left:"12%", width:520, height:520, borderRadius:"50%", background:"radial-gradient(circle,rgba(255,45,120,0.16) 0%,transparent 62%)", pointerEvents:"none", zIndex:0 }}/>
+              <div style={{ position:"fixed", bottom:"-14%", right:"10%", width:560, height:560, borderRadius:"50%", background:"radial-gradient(circle,rgba(197,102,255,0.14) 0%,transparent 62%)", pointerEvents:"none", zIndex:0 }}/>
+              <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.035) 1px,transparent 1px)", backgroundSize:"32px 32px", pointerEvents:"none", zIndex:0 }}/>
+
+              <div style={{ position:"relative", zIndex:2, display:"flex", flexDirection:"column", width:"100%", maxWidth:460, animation:"tourPop 0.5s cubic-bezier(0.16,1,0.3,1)" }}>
               {/* Progress */}
-              <div style={{ display:"flex", gap:5, marginBottom:28 }}>
+              <div style={{ display:"flex", gap:5, marginBottom:26 }}>
                 {[0,1].map(i=><div key={i} style={{ height:3, flex:1, borderRadius:3, background:"linear-gradient(90deg,#FF2D78,#C566FF)" }}/>)}
               </div>
-              <div style={{ display:"inline-flex", alignItems:"center", gap:8, alignSelf:"flex-start", padding:"5px 12px", borderRadius:100, background:"rgba(0,229,255,0.1)", border:"1px solid rgba(0,229,255,0.25)", marginBottom:18 }}>
-                <span style={{ fontSize:12 }}>🎉</span>
-                <span style={{ fontSize:12, color:"#00E5FF", fontWeight:700, letterSpacing:"0.04em" }}>You're in — last step</span>
+              <div style={{ display:"inline-flex", alignItems:"center", gap:8, alignSelf:"flex-start", padding:"6px 14px", borderRadius:100, background:"rgba(0,229,255,0.1)", border:"1px solid rgba(0,229,255,0.25)", marginBottom:18, boxShadow:"0 0 24px rgba(0,229,255,0.15)" }}>
+                <span style={{ fontSize:13 }}>🎉</span>
+                <span style={{ fontSize:12.5, color:"#00E5FF", fontWeight:700, letterSpacing:"0.04em" }}>You're in — last step</span>
               </div>
-              <div style={{ fontSize:isMobile?26:30, fontWeight:800, color:"#fff", marginBottom:8, lineHeight:1.1, letterSpacing:"-0.02em" }}>Let's tune it to your channel</div>
+              <div style={{ fontSize:isMobile?28:34, fontWeight:800, marginBottom:8, lineHeight:1.08, letterSpacing:"-0.02em", background:"linear-gradient(120deg,#fff 40%,#FF9ec4 80%,#C566FF)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Let's tune it to your channel</div>
               <div style={{ fontSize:14.5, color:"rgba(255,255,255,0.55)", lineHeight:1.6, marginBottom:28 }}>Add your handle so every score, idea and strategy is calibrated to <span style={{color:"#fff",fontWeight:600}}>your</span> niche — not generic advice.</div>
 
               {/* Handle input */}
@@ -11762,15 +11771,15 @@ function OnboardingPage({ onComplete }) {
                 onKeyDown={e=>e.key==="Enter"&&finish("")}
                 placeholder="@yourchannel"
                 autoFocus
-                style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1.5px solid ${handle?"#FF2D78":"rgba(255,255,255,0.12)"}`, borderRadius:16, color:"#fff", padding:"15px 18px", fontSize:17, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s", fontFamily:F, fontWeight:600, caretColor:"#FF2D78", marginBottom:32 }}
+                style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1.5px solid ${handle?"#FF2D78":"rgba(255,255,255,0.12)"}`, borderRadius:16, color:"#fff", padding:"15px 18px", fontSize:17, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s, box-shadow 0.2s", fontFamily:F, fontWeight:600, caretColor:"#FF2D78", marginBottom:32, boxShadow:handle?"0 0 26px rgba(255,45,120,0.18)":"none" }}
               />
 
               {/* How it works */}
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.1em", fontWeight:700, textTransform:"uppercase", marginBottom:14 }}>How it works</div>
               <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:34 }}>
                 {steps.map(s=>(
-                  <div key={s.n} style={{ display:"flex", gap:14, alignItems:"flex-start", padding:"14px 16px", borderRadius:16, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)" }}>
-                    <div style={{ width:28, height:28, borderRadius:10, flexShrink:0, background:`${s.c}1e`, border:`1px solid ${s.c}55`, color:s.c, fontWeight:800, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>{s.n}</div>
+                  <div key={s.n} style={{ display:"flex", gap:14, alignItems:"flex-start", padding:"14px 16px", borderRadius:16, background:`linear-gradient(135deg,${s.c}0e,rgba(255,255,255,0.02))`, border:`1px solid ${s.c}2a` }}>
+                    <div style={{ width:30, height:30, borderRadius:10, flexShrink:0, background:`${s.c}20`, border:`1px solid ${s.c}66`, color:s.c, fontWeight:800, fontSize:15, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 0 16px ${s.c}33` }}>{s.n}</div>
                     <div>
                       <div style={{ fontSize:14.5, fontWeight:700, color:"#fff", marginBottom:2 }}>{s.t}</div>
                       <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.5)", lineHeight:1.5 }}>{s.d}</div>
@@ -11783,8 +11792,9 @@ function OnboardingPage({ onComplete }) {
                 style={{ padding:"16px 0", border:"none", borderRadius:16, background:"linear-gradient(135deg,#FF2D78,#C566FF)", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", letterSpacing:"0.01em", fontFamily:F, width:"100%", marginBottom:14, boxShadow:"0 10px 30px rgba(255,45,120,0.28)", transition:"transform 0.15s, box-shadow 0.2s" }}
                 onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 14px 38px rgba(255,45,120,0.4)"; }}
                 onMouseLeave={e=>{ e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="0 10px 30px rgba(255,45,120,0.28)"; }}
-              >Enter CreatorOS →</button>
+              >Enter {app2} →</button>
               <button onClick={()=>finish("")} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", fontSize:13, cursor:"pointer", fontFamily:F, fontWeight:600, padding:"4px", textAlign:"center", width:"100%" }}>Skip for now</button>
+              </div>
             </div>
             );
           })()}
