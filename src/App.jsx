@@ -286,6 +286,33 @@ const ScoreDial = ({ score=0, size=72, stroke, label, animate=true, celebrate=fa
     </div>
   );
 };
+
+// ── SCORE REVEAL — the signature "payoff" moment when an idea is scored ──
+// Full-attention overlay: the dial fills, the number climbs, the verdict slams
+// in, and elite scores burst. Fires only on an explicit SCORE, auto-dismisses.
+function ScoreReveal({ score=0, title, onClose }){
+  const band = scoreBand(Math.round(Number(score)||0));
+  useEffect(()=>{ const t=setTimeout(onClose, 3400); return ()=>clearTimeout(t); },[]);
+  const isMobile = typeof window!=="undefined" && (window.__isMobile || window.innerWidth<900);
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:3000, background:"radial-gradient(circle at 50% 42%, rgba(20,10,32,0.92), rgba(3,2,8,0.94))", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24, cursor:"pointer", animation:"km-rvfade 0.28s ease" }}>
+      <div style={{ position:"absolute", top:"42%", left:"50%", transform:"translate(-50%,-50%)", width:520, height:520, borderRadius:"50%", background:`radial-gradient(circle,${band.c}22,transparent 62%)`, pointerEvents:"none", animation:"km-rvfade 0.6s ease" }}/>
+      <div style={{ fontSize:12, letterSpacing:"0.34em", color:"rgba(255,255,255,0.45)", fontWeight:700, textTransform:"uppercase", marginBottom:isMobile?24:34, position:"relative", animation:"km-rvrise 0.5s ease both" }}>Virality Score</div>
+      <div style={{ position:"relative", animation:"km-rvpop 0.55s cubic-bezier(.2,1.35,.4,1) both" }}>
+        <ScoreDial score={score} size={isMobile?200:240} animate celebrate label={false} />
+      </div>
+      <div style={{ marginTop:isMobile?22:28, fontSize:isMobile?30:38, fontWeight:800, fontFamily:C.fontHead, color:band.c, letterSpacing:"0.01em", textShadow:`0 0 34px ${band.c}70`, position:"relative", animation:"km-rvslam 0.5s 0.55s cubic-bezier(.2,1.5,.35,1) both" }}>{band.label}</div>
+      {title && <div style={{ marginTop:14, fontSize:15, color:"rgba(255,255,255,0.6)", maxWidth:400, textAlign:"center", lineHeight:1.55, position:"relative", animation:"km-rvrise 0.5s 0.8s ease both" }}>“{title}”</div>}
+      <div style={{ marginTop:isMobile?30:40, fontSize:12, color:"rgba(255,255,255,0.32)", position:"relative", animation:"km-rvrise 0.5s 1.1s ease both" }}>tap to continue</div>
+      <style>{`
+        @keyframes km-rvfade{from{opacity:0}to{opacity:1}}
+        @keyframes km-rvpop{from{opacity:0;transform:scale(0.62)}to{opacity:1;transform:scale(1)}}
+        @keyframes km-rvslam{0%{opacity:0;transform:scale(1.7)}100%{opacity:1;transform:scale(1)}}
+        @keyframes km-rvrise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+      `}</style>
+    </div>
+  );
+}
 // Factor bar — number counts up while the fill bar sweeps to the same value.
 const FactorBar = ({ val, color, label }) => {
   const target = Number(val) || 0;
@@ -1703,7 +1730,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                   <div style={{ padding:isMobile?"13px 16px":"10px 14px", borderTop:"1px solid rgba(255,255,255,0.05)", display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
 
                     {/* Primary CTA: score or re-score — solid gradient, most weight */}
-                    <button onClick={()=>scoreIdea&&scoreIdea(idea)} disabled={!!isScoring}
+                    <button onClick={()=>scoreIdea&&scoreIdea(idea, {reveal:true})} disabled={!!isScoring}
                       style={{ padding:isMobile?"12px 18px":"8px 16px", borderRadius:10, border:"none", fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:isScoring?"wait":"pointer", letterSpacing:"0.06em", flexShrink:0, transition:"opacity 0.15s",
                         background: isScoring ? "rgba(197,102,255,0.2)" : hasScore ? `linear-gradient(135deg,${C.purple}cc,${C.pink}99)` : `linear-gradient(135deg,${C.purple},${C.pink})`,
                         color: isScoring ? C.purple : "#fff",
@@ -8756,6 +8783,7 @@ function Dashboard({ keys, onEditKeys }) {
   // ── BILLING ─────────────────────────────────────────────────────
   const [plan, setPlan] = useState({ tier: USE_BACKEND?"free":"unmetered", usage:{}, billingConfigured:false });
   const [pricing, setPricing] = useState(null); // null | { reason }
+  const [scoreReveal, setScoreReveal] = useState(null); // null | { score, title } — the signature score-reveal moment
   const refreshPlan = useCallback(()=>{ fetchPlan().then(setPlan).catch(()=>{}); },[]);
   useEffect(()=>{ refreshPlan(); },[refreshPlan]);
   // Any over-limit action anywhere in the app opens the pricing modal.
@@ -9587,7 +9615,7 @@ LEARNING: [one sentence]`}]}, key);
     }
   };
 
-  const scoreIdea = async (idea) => {
+  const scoreIdea = async (idea, opts={}) => {
     const key = "s"+idea.id;
     // Plan gate — one meter per score (the consensus fan-out counts as a single unit).
     // No-op outside backend mode. Fails open on any billing hiccup, so scoring is
@@ -9907,6 +9935,8 @@ Return ONLY valid JSON:
           }
         }
       } catch { /* correction optional — never blocks scoring */ }
+      // Signature reveal — only when the user explicitly scored (not auto/bulk).
+      if(opts.reveal && r.viralityScore!=null) setScoreReveal({ score:r.viralityScore, title:idea.title });
       setIdeas(is=>is.map(i=>{
         if(i.id!==idea.id) return i;
         const prevScore = i.viral||null;
@@ -10561,6 +10591,7 @@ Return JSON:
         {nav==="deals"     && <DealsView />}
         {nav==="audit"     && <ProspectAuditView WL={activeWL} />}
         {pricing && <PricingModal tier={plan.tier} reason={pricing.reason} onClose={()=>setPricing(null)} />}
+        {scoreReveal && <ScoreReveal score={scoreReveal.score} title={scoreReveal.title} onClose={()=>setScoreReveal(null)} />}
         {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic || BAKED_ANTHROPIC_KEY} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} preloadMsg={assistPreload} />}
         {nav==="growth"    && <GrowthView m={m} ttViewsDisplay={ttViewsDisplay} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} scrapedStats={scrapedStats} saveManual={saveManual} setManualData={setManualData} videos={videos} ideas={ideas} />}
         {nav==="settings"  && <SettingsView plan={plan} onManagePlan={()=>setPricing({})} keys={keys} onEditKeys={onEditKeys} scrapedStats={scrapedStats} hasIG={hasIG} WL={activeWL} onEditWL={onEditWL} onSyncTikTok={async()=>{
