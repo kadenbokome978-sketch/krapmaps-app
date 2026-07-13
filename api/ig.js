@@ -162,6 +162,11 @@ async function handleSync(req, res) {
       } catch { return null; }
     };
     const enriched = await Promise.all(items.map(async (m) => {
+      // Only reels/videos have real "views" (plays). Photos/carousels report an
+      // impression-style number under the new unified metric which shouldn't be
+      // summed as views — treat them as 0 so the total reflects reel plays.
+      const isVideo = m.media_product_type === "REELS" || m.media_type === "VIDEO";
+      if (!isVideo) return { ...m, views: 0 };
       let views = await readInsight(m.id, "views");
       if (views == null) views = await readInsight(m.id, "plays");
       return { ...m, views: views || 0 };
@@ -193,6 +198,26 @@ async function handleDebug(req, res) {
       const pr = await fetch(`https://graph.instagram.com/me?fields=id,username,followers_count&access_token=${encodeURIComponent(token)}`);
       out.graphStatus = pr.status;
       out.graphBody = await pr.json().catch(() => null);
+      // Per-post breakdown so we can see exactly what's being summed as "views".
+      try {
+        const mr = await fetch(`https://graph.instagram.com/me/media?fields=id,media_type,media_product_type,like_count&limit=50&access_token=${encodeURIComponent(token)}`);
+        const items = (await mr.json())?.data || [];
+        out.mediaCount = items.length;
+        out.breakdown = [];
+        let total = 0;
+        for (const m of items.slice(0, 15)) {
+          const isVideo = m.media_product_type === "REELS" || m.media_type === "VIDEO";
+          let views = 0;
+          if (isVideo) {
+            const ir = await fetch(`https://graph.instagram.com/${m.id}/insights?metric=views&access_token=${encodeURIComponent(token)}`);
+            const j = await ir.json().catch(() => ({}));
+            views = j?.data?.[0]?.values?.[0]?.value ?? j?.data?.[0]?.total_value?.value ?? 0;
+          }
+          total += views;
+          out.breakdown.push({ type: m.media_product_type || m.media_type, views, likes: m.like_count });
+        }
+        out.viewsTotalFirst15 = total;
+      } catch (e) { out.breakdownError = e.message; }
     }
     out.env = { hasAppId: !!APP_ID, hasSecret: !!APP_SECRET, hasSbKey: !!SB_KEY };
   } catch (e) { out.error = e.message; }
