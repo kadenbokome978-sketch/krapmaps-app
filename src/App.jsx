@@ -3317,7 +3317,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
           <button key={i} data-btn onClick={btn.action} disabled={btn.key&&loading[btn.key]} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?12:10, padding:isMobile?"16px 10px":"20px 12px", borderRadius:16, background:`linear-gradient(145deg,${btn.color}18,${btn.color}06)`, border:`1px solid ${btn.color}35`, cursor:"pointer", fontFamily:C.fontHead, opacity:btn.key&&loading[btn.key]?0.6:1, transition:"all 0.2s", position:"relative", overflow:"hidden" }}>
             <div style={{ width:isMobile?40:52, height:isMobile?40:52, borderRadius:16, background:`${btn.color}22`, border:`1px solid ${btn.color}45`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 0 20px ${btn.color}25` }}>{btn.icon(isMobile?18:22,btn.color)}</div>
             <div style={{ textAlign:"center" }}>
-              <div style={{ fontSize:isMobile?11:16, fontWeight:700, color:"#fff", letterSpacing:"0.04em", textTransform:"uppercase" }}>{btn.key&&loading[btn.key]?"RUNNING...":btn.label}</div>
+              <div style={{ fontSize:isMobile?11:16, fontWeight:700, color:"#fff", letterSpacing:"0.04em", textTransform:"uppercase" }}>{btn.key&&loading[btn.key]?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={12}/> RUNNING</span>:btn.label}</div>
               <div style={{ fontSize:isMobile?10:14, color:"rgba(255,255,255,0.7)", marginTop:2 }}>{btn.desc}</div>
             </div>
           </button>
@@ -8630,7 +8630,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
               style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1px solid ${C.purple}25`, borderRadius:10, color:"rgba(255,255,255,0.8)", padding:"8px 11px", fontSize:12, fontFamily:C.fontHead, outline:"none", boxSizing:"border-box", marginBottom:8 }}/>
             <button onClick={()=>analyseVideo(videoFile)} disabled={uploading}
               style={{ width:"100%", padding:"10px", borderRadius:10, border:"none", cursor:uploading?"not-allowed":"pointer", background:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontSize:13, fontFamily:C.fontHead, fontWeight:700, opacity:uploading?0.6:1 }}>
-              {uploading?"Uploading...":"Analyse clip →"}
+              {uploading?<span style={{display:"inline-flex",alignItems:"center",gap:7,justifyContent:"center"}}><Spin s={12}/> Uploading</span>:"Analyse clip →"}
             </button>
           </div>
         </div>
@@ -8653,7 +8653,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
         />
         <button onClick={send} disabled={loading||!input.trim()}
           style={{ padding:"9px 18px", borderRadius:12, border:"none", cursor:loading||!input.trim()?"not-allowed":"pointer", background:loading||!input.trim()?"rgba(255,255,255,0.08)":`linear-gradient(135deg,${C.pink},${C.purple})`, opacity:loading||!input.trim()?0.4:1, color:"#fff", fontSize:13, fontFamily:C.fontHead, fontWeight:700, flexShrink:0, transition:"all 0.2s" }}>
-          {loading?"...":"Send"}
+          {loading?<Spin s={13}/>:"Send"}
         </button>
       </div>
 
@@ -10245,7 +10245,7 @@ Return JSON:
           <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
             <MLabel style={{ marginBottom:0 }}>ALTERNATIVE HOOKS</MLabel>
             <button onClick={genHooks} disabled={loadingHooks||!title.trim()} style={{ padding:"5px 14px",borderRadius:8,border:`1px solid ${C.purple}40`,background:`${C.purple}18`,color:C.purple,fontFamily:C.fontHead,fontSize:16,fontWeight:700,cursor:"pointer",opacity:(loadingHooks||!title.trim())?0.4:1 }}>
-              {loadingHooks?"GENERATING...":(displayHooks?"REGENERATE":"GENERATE 3")}
+              {loadingHooks?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={12}/> GENERATING</span>:(displayHooks?"REGENERATE":"GENERATE 3")}
             </button>
           </div>
           {displayHooks ? displayHooks.map((h,i)=>(
