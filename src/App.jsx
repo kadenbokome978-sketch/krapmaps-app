@@ -425,6 +425,16 @@ const GlowAreaChart = ({ data=[], color=C.pink, height=120, dataKey="value", xKe
 const DualAreaChart = ({ ttData=[], igData=[], height=160 }) => {
   const W=500, H=height, PAD=30, BPAD=24;
   const allVals = [...ttData.map(d=>d.value||0), ...igData.map(d=>d.value||0)];
+  // All-zero → don't render a dead flat line (reads as broken). Show a clear state.
+  if(allVals.reduce((s,v)=>s+v,0) <= 0) {
+    return (
+      <div style={{ height, display:"flex", flexDirection:"column", gap:9, alignItems:"center", justifyContent:"center", color:"rgba(255,255,255,0.4)", textAlign:"center", padding:"0 24px" }}>
+        <div style={{ width:48, height:48, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)" }}>{I.trend(22,"rgba(255,255,255,0.4)")}</div>
+        <div style={{ fontSize:14, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>Your weekly trend builds here</div>
+        <div style={{ fontSize:12, lineHeight:1.55, maxWidth:300 }}>This tracks daily views across TikTok &amp; Instagram. Keep syncing — as the days roll in, your trend line fills out.</div>
+      </div>
+    );
+  }
   const max = Math.max(...allVals, 1);
   const toY = v => H-BPAD-((v/max)*(H-BPAD-8));
   const ttPts = ttData.map((d,i)=>[PAD+(i/(ttData.length-1||1))*(W-PAD*2), toY(d.value||0)]);
@@ -656,22 +666,36 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
   React.useEffect(()=>{ if(allViewsDisplay>0) saveJSON("km_last_seen", { at:Date.now(), totalViews:allViewsDisplay }); },[allViewsDisplay]);
   const sinceDelta = (prevSeen && prevSeen.totalViews>0 && allViewsDisplay>prevSeen.totalViews && (Date.now()-prevSeen.at)>6*3600*1000)
     ? allViewsDisplay - prevSeen.totalViews : null;
-  // Build chart data from videos
+  // Record a daily snapshot of total views per platform, so the weekly chart can
+  // plot REAL views-gained-per-day (meaningful for any creator) instead of "views
+  // of content posted that day" (which is 0 unless you posted this week).
+  const _ttTotal = (videos||[]).filter(v=>v.platform!=="instagram").reduce((s,v)=>s+(v.views||0),0) || ttViewsDisplay || 0;
+  const _igTotal = (videos||[]).filter(v=>v.platform==="instagram").reduce((s,v)=>s+(v.views||0),0);
+  useEffect(()=>{
+    if(!_ttTotal && !_igTotal) return;
+    try {
+      const snaps = loadJSON("krapmaps_v1_viewsnap", {});
+      const today = new Date().toISOString().slice(0,10);
+      snaps[today] = { tt:_ttTotal, ig:_igTotal };
+      const keys = Object.keys(snaps).sort();
+      while(keys.length>45){ delete snaps[keys.shift()]; }   // keep ~6 weeks
+      saveJSON("krapmaps_v1_viewsnap", snaps);
+    } catch {}
+  },[_ttTotal,_igTotal]);
+  const _snaps = loadJSON("krapmaps_v1_viewsnap", {});
+  const _dayDelta = (d, plat) => {
+    const key = d.toISOString().slice(0,10);
+    const pv = new Date(d); pv.setDate(pv.getDate()-1);
+    const cur = _snaps[key]?.[plat], prev = _snaps[pv.toISOString().slice(0,10)]?.[plat];
+    return (cur!=null && prev!=null) ? Math.max(0, cur-prev) : 0;
+  };
   const last7 = [...Array(7)].map((_,i) => {
     const d = new Date(); d.setDate(d.getDate()-6+i);
-    const label = d.toLocaleDateString("en-GB",{weekday:"short"});
-    const dayVids = (videos||[]).filter(v => v.platform!=="instagram" && v.created_at && new Date(v.created_at).toDateString()===d.toDateString());
-    const value = dayVids.reduce((s,v)=>s+(v.views||0),0);
-    return {label, value};
+    return { label:d.toLocaleDateString("en-GB",{weekday:"short"}), value:_dayDelta(d,"tt") };
   });
   const igLast7 = [...Array(7)].map((_,i) => {
     const d = new Date(); d.setDate(d.getDate()-6+i);
-    const label = d.toLocaleDateString("en-GB",{weekday:"short"});
-    // Only show views for reels actually posted in the last 7 days
-    const igVids = (videos||[]).filter(v=>v.platform==="instagram");
-    const dayVids = igVids.filter(v=>v.created_at && new Date(v.created_at).toDateString()===d.toDateString());
-    const value = dayVids.reduce((s,v)=>s+(v.views||0),0);
-    return {label, value};
+    return { label:d.toLocaleDateString("en-GB",{weekday:"short"}), value:_dayDelta(d,"ig") };
   });
   const hookChartData = (() => {
     const map = {};
