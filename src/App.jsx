@@ -93,9 +93,24 @@ const C = _isThiernoClient ? {
   cardSolid:"#0C0A1A", cardAlt:"rgba(255,255,255,0.025)",
   border:"rgba(255,255,255,0.08)", borderMed:"rgba(255,255,255,0.11)",
   dim:"rgba(255,255,255,0.45)", text:"#F8EEFF", textMed:"#C8A8E0",
-  fontHead:"'Lilita One', 'Arial Black', 'Helvetica Neue', system-ui, sans-serif",
+  fontHead:"'Space Grotesk', 'Inter', system-ui, sans-serif",
   fontBody:"'Inter', system-ui, sans-serif",
   fontMono:"'SF Mono','Fira Code',monospace",
+};
+
+// ── DESIGN TOKENS ─────────────────────────────────────────────────
+// Single source of truth for radius / spacing / elevation so the whole app
+// snaps to one scale. Adopt gradually — purely additive, changes nothing until
+// a component references it.
+const DS = {
+  r:  { xs:8, sm:10, md:12, lg:16, xl:20, pill:999 },
+  sp: { xs:6, sm:10, md:14, lg:20, xl:28, xxl:40 },
+  shadow: {
+    sm:"0 2px 8px rgba(0,0,0,0.25)",
+    md:"0 8px 28px rgba(0,0,0,0.35)",
+    lg:"0 24px 60px rgba(0,0,0,0.5)",
+  },
+  t: { h1:34, h2:26, h3:20, h4:16, body:14, sm:13, xs:12, eyebrow:11 },
 };
 
 const fmt = n => n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n||0);
