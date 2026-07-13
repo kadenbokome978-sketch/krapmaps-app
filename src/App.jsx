@@ -7819,15 +7819,18 @@ Return ONLY JSON:
       </div>
 
       {report && (
-        <div id="prospect-report" style={{ ...card, padding:isMobile?"22px 18px":"32px 30px", background:"linear-gradient(160deg,rgba(0,229,255,0.05),rgba(10,6,20,0.6))" }}>
+        <div id="prospect-report" style={{ ...card, padding:isMobile?"22px 18px":"32px 30px", background:"linear-gradient(160deg,rgba(0,229,255,0.06),rgba(10,6,20,0.72))", position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.cyan},${C.pink},${C.purple})` }}/>
+          <div style={{ position:"absolute", top:-90, right:-70, width:280, height:280, borderRadius:"50%", background:`radial-gradient(circle,${C.cyan}12,transparent 70%)`, pointerEvents:"none" }}/>
           {/* Header */}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:14, flexWrap:"wrap", marginBottom:20 }}>
-            <div>
-              <div style={{ fontSize:isMobile?24:30, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1 }}>@{report.h}</div>
-              {report.nick && <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:4 }}>{report.nick}</div>}
+            <div style={{ position:"relative" }}>
+              <div style={{ fontSize:11, letterSpacing:"0.18em", color:C.cyan, fontWeight:700, marginBottom:6 }}>CONTENT AUDIT</div>
+              <div style={{ fontSize:isMobile?27:34, fontWeight:700, fontFamily:C.fontHead, color:"#fff", lineHeight:1, letterSpacing:"-0.02em" }}>@{report.h}</div>
+              {report.nick && <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:5 }}>{report.nick}</div>}
             </div>
             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8 }}>
-              <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.cyan, fontWeight:700, textAlign:"right" }}>CONTENT AUDIT<br/><span style={{ color:"rgba(255,255,255,0.4)", letterSpacing:"0.04em" }}>by {report.app}</span></div>
+              <div style={{ fontSize:12, letterSpacing:"0.04em", color:"rgba(255,255,255,0.5)", fontWeight:600, textAlign:"right" }}>by <span style={{ color:"#fff", fontWeight:700, fontFamily:C.fontHead }}>{report.app}</span></div>
               <div style={{ display:"flex", gap:8 }}>
                 <button onClick={saveImage} disabled={saving} style={{ padding:"6px 12px", borderRadius:10, border:`1px solid ${C.cyan}40`, background:`${C.cyan}12`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:saving?"wait":"pointer", whiteSpace:"nowrap", opacity:saving?0.6:1 }}>{saving?"MAKING…":"SHARE IMAGE"}</button>
                 <button onClick={copyReport} style={{ padding:"6px 12px", borderRadius:10, border:`1px solid ${copied?C.green:"rgba(255,255,255,0.15)"}`, background:copied?`${C.green}18`:"rgba(255,255,255,0.05)", color:copied?C.green:"rgba(255,255,255,0.75)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", whiteSpace:"nowrap" }}>{copied?"COPIED":"COPY AS TEXT"}</button>
@@ -7837,9 +7840,9 @@ Return ONLY JSON:
           {/* Stats */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))", gap:10, marginBottom:22 }}>
             {[{l:"FOLLOWERS",v:fmtN(report.followers),c:C.pink},{l:"TYPICAL VIEWS",v:fmtN(report.median),c:C.cyan},{l:"BEST VIDEO",v:fmtN(report.ceiling),c:C.purple},{l:"ENGAGEMENT",v:report.engRate.toFixed(1)+"%",c:C.green}].map((s,i)=>(
-              <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:`1px solid ${s.c}22`, borderRadius:12, padding:"14px 16px" }}>
-                <div style={{ fontSize:10, letterSpacing:"0.1em", color:"rgba(255,255,255,0.4)", fontWeight:700, marginBottom:6 }}>{s.l}</div>
-                <div style={{ fontSize:isMobile?20:24, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+              <div key={i} style={{ background:`linear-gradient(160deg,${s.c}0e,rgba(255,255,255,0.02))`, border:`1px solid ${s.c}28`, borderRadius:12, padding:"15px 16px" }}>
+                <div style={{ fontSize:10, letterSpacing:"0.12em", color:"rgba(255,255,255,0.45)", fontWeight:700, marginBottom:8, textTransform:"uppercase" }}>{s.l}</div>
+                <div style={{ fontSize:isMobile?23:28, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1, letterSpacing:"-0.02em", textShadow:`0 0 18px ${s.c}45` }}>{s.v}</div>
               </div>
             ))}
           </div>
