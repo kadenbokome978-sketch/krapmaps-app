@@ -11718,6 +11718,9 @@ export default function App() {
       if(!ig) return;
       const msgs = { connected:"Instagram connected ✓", denied:"Instagram connection cancelled", unconfigured:"Instagram isn't set up yet — add IG_APP_ID / IG_APP_SECRET.", exchangefail:"Instagram rejected the login — try again.", savefail:"Connected, but saving failed — retry.", nocode:"Instagram login didn't complete.", error:"Instagram connection error — try again." };
       reportHealth("instagram", ig==="connected"?"ok":"error", msgs[ig]||"Instagram: "+ig);
+      // Belt-and-braces: right after a connect, ask the server to upgrade the
+      // token to long-lived in case the callback's exchange attempt failed.
+      if(ig==="connected") fetch(`/api/ig?action=refresh&state=${encodeURIComponent(WS())}`).catch(()=>{});
       p.delete("ig");
       const qs = p.toString();
       window.history.replaceState({}, "", window.location.pathname + (qs?"?"+qs:""));

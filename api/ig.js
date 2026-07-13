@@ -58,10 +58,22 @@ async function handleCallback(req, res) {
     const shortData = await shortRes.json().catch(() => ({}));
     if (!shortRes.ok || !shortData.access_token) { console.warn("[ig] short-token exchange failed:", shortRes.status, shortData); return bounce("exchangefail"); }
 
+    // Upgrade to a long-lived (60-day) token. This was silently failing and we
+    // stored the 1-hour short token — the root cause of the constant expiries.
+    // Now: retry up to 3×, and record the exact exchange error for diagnostics.
     const longUrl = `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${encodeURIComponent(APP_SECRET)}&access_token=${encodeURIComponent(shortData.access_token)}`;
-    const longData = await (await fetch(longUrl)).json().catch(() => ({}));
+    let longData = {}, exchangeError = null;
+    for (let i = 0; i < 3; i++) {
+      try {
+        const lr = await fetch(longUrl);
+        longData = await lr.json().catch(() => ({}));
+        if (longData.access_token) { exchangeError = null; break; }
+        exchangeError = longData?.error?.message || `HTTP ${lr.status}`;
+      } catch (e) { exchangeError = e.message; }
+      await new Promise((r) => setTimeout(r, 1500));
+    }
     const token = longData.access_token || shortData.access_token;
-    const expiresIn = longData.expires_in || 60 * 24 * 3600;
+    const expiresIn = longData.access_token ? (longData.expires_in || 60 * 24 * 3600) : 3600;
 
     const up = await writeConfig(igRowIdFor(state), {
       ig: token,
@@ -69,6 +81,7 @@ async function handleCallback(req, res) {
       expiresAt: Date.now() + expiresIn * 1000,
       connectedAt: Date.now(),
       longLived: !!longData.access_token,
+      exchangeError,
     });
     if (!up.ok) { console.warn("[ig] token upsert failed:", up.status); return bounce("savefail"); }
     return bounce("connected");
@@ -82,9 +95,20 @@ async function handleRefresh(req, res) {
     const data = await readConfig(rowId);
     const token = data?.ig;
     if (!token) return res.status(200).json({ refreshed: false, reason: "no-token" });
+    // Rescue path: if we're still holding a short-lived token (the long exchange
+    // failed at connect time), upgrade it now — allowed while it's still valid.
+    if (data.longLived === false) {
+      const xr = await fetch(`https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${encodeURIComponent(APP_SECRET)}&access_token=${encodeURIComponent(token)}`);
+      const xd = await xr.json().catch(() => ({}));
+      if (xd.access_token) {
+        await writeConfig(rowId, { ...data, ig: xd.access_token, expiresAt: Date.now() + (xd.expires_in || 60 * 24 * 3600) * 1000, longLived: true, exchangeError: null, refreshedAt: Date.now() });
+        return res.status(200).json({ refreshed: true, upgraded: true, expiresIn: xd.expires_in });
+      }
+      return res.status(200).json({ refreshed: false, reason: "upgrade-failed: " + (xd?.error?.message || xr.status) });
+    }
     const rr = await fetch(`https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(token)}`);
     const rd = await rr.json().catch(() => ({}));
-    if (!rr.ok || !rd.access_token) return res.status(200).json({ refreshed: false, reason: "refresh-failed" });
+    if (!rr.ok || !rd.access_token) return res.status(200).json({ refreshed: false, reason: rd?.error?.message || "refresh-failed" });
     await writeConfig(rowId, { ...data, ig: rd.access_token, expiresAt: Date.now() + (rd.expires_in || 60 * 24 * 3600) * 1000, refreshedAt: Date.now() });
     return res.status(200).json({ refreshed: true, expiresIn: rd.expires_in });
   } catch (e) { return res.status(200).json({ refreshed: false, reason: e.message }); }
@@ -158,6 +182,7 @@ async function handleDebug(req, res) {
     out.tokenPrefix = data?.ig ? String(data.ig).slice(0, 6) + "…" : null;
     out.tokenLength = data?.ig ? String(data.ig).length : 0;
     out.longLived = data?.longLived ?? null;
+    out.exchangeError = data?.exchangeError ?? null;
     out.connectedAt = data?.connectedAt ? new Date(data.connectedAt).toISOString() : null;
     out.expiresAt = data?.expiresAt ? new Date(data.expiresAt).toISOString() : null;
     // Legacy location check
