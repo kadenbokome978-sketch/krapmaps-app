@@ -313,6 +313,16 @@ const SLabel = ({ children, color=C.dim, mb=10 }) => (
 const Row = ({ children, style={} }) => (
   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", ...style }}>{children}</div>
 );
+// One polished empty-state used across views — icon in a soft tinted disc, clear
+// title, guidance line, optional CTA. What new signups see first, so it matters.
+const EmptyState = ({ icon, title, sub, cta, onCta, color=C.pink, pad="56px 24px" }) => (
+  <div style={{ padding:pad, textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:14 }}>
+    {icon && <div style={{ width:56, height:56, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", background:`${color}12`, border:`1px solid ${color}22`, color, marginBottom:2 }}>{icon}</div>}
+    <div style={{ fontSize:17, fontWeight:700, color:"#fff", fontFamily:C.fontHead, letterSpacing:"-0.01em" }}>{title}</div>
+    {sub && <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.45)", fontFamily:C.fontBody, maxWidth:280, lineHeight:1.6 }}>{sub}</div>}
+    {cta && onCta && <button onClick={onCta} style={{ marginTop:6, padding:"11px 22px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${color},${color}bb)`, color:"#fff", fontSize:14, fontWeight:700, fontFamily:C.fontHead, cursor:"pointer", boxShadow:`0 8px 24px ${color}30` }}>{cta}</button>}
+  </div>
+);
 const Divider = ({ my=10 }) => <div style={{ height:1, background:C.border, margin:`${my}px 0` }} />;
 const SectionHead = ({ title, color=C.text, action, actionColor=C.pink }) => (
   <Row style={{ marginBottom:20 }}>
@@ -1410,11 +1420,14 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
         )}
         <div style={{ display:"grid", gridTemplateColumns:"1fr", gap:isMobile?24:18, alignItems:"start" }}>
           {displayIdeas.length===0
-            ? <div style={{ gridColumn:"1/-1", padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?22:12 }}>
-                <div style={{ display:"flex" }}>{I.vid(30,"rgba(255,255,255,0.5)")}</div>
-                <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>{ideas.length===0?"No ideas yet":"Nothing in this filter"}</div>
-                <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>{ideas.length===0?"Start building your content pipeline — add your first idea above":"Try a different filter — or score more ideas to fill this one"}</div>
-              </div>
+            ? <div style={{ gridColumn:"1/-1" }}><EmptyState
+                color={C.purple}
+                icon={I.idea(24,"currentColor")}
+                title={ideas.length===0?"No ideas yet":"Nothing in this filter"}
+                sub={ideas.length===0?"Drop a rough concept and the AI expands it into a full, scored video idea.":"Try a different filter — or score more ideas to fill this one."}
+                cta={ideas.length===0?"Add your first idea":undefined}
+                onCta={ideas.length===0?()=>openModal&&openModal("addIdea"):undefined}
+              /></div>
             : displayIdeas.map(idea=>{
               const scoreC = ic(idea.viral||0);
               const isExpanded = expanded===idea.id;
@@ -2305,11 +2318,12 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
             </div>
           )}
           {videos.length===0
-            ? <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?22:12 }}>
-                <div style={{ display:"flex" }}>{I.bar(30,"rgba(255,255,255,0.5)")}</div>
-                <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>No videos logged yet</div>
-                <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Log your TikTok videos to track performance and spot trends</div>
-              </div>
+            ? <EmptyState
+                color={C.cyan}
+                icon={I.bar(24,"currentColor")}
+                title="No videos logged yet"
+                sub="Sync your channel in Settings, or log videos manually, to track performance and spot what's working."
+              />
             : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:16 }}>
               {/* TikTok column */}
               <div style={{ display:"flex", flexDirection:"column", gap:isMobile?22:12 }}>
@@ -7556,11 +7570,14 @@ const DealsView = () => {
         </div>
       )}
       {deals.length===0 ? (
-        <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:isMobile?22:12 }}>
-          <div style={{ display:"flex" }}>{I.star(30,"rgba(255,255,255,0.5)")}</div>
-          <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>No deals yet</div>
-          <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Track brand deals, sponsorships and collaborations here</div>
-        </div>
+        <EmptyState
+          color={C.pink}
+          icon={I.star(24,"currentColor")}
+          title="No deals yet"
+          sub="Track brand deals, sponsorships and collaborations — value, status and deadlines in one place."
+          cta="Add your first deal"
+          onCta={()=>setShowForm(true)}
+        />
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:10 }}>
           {deals.map(deal=>{
