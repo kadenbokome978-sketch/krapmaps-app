@@ -559,7 +559,7 @@ const DualAreaChart = ({ ttData=[], igData=[], height=160 }) => {
   if(allVals.reduce((s,v)=>s+v,0) <= 0) {
     return (
       <div style={{ height, display:"flex", flexDirection:"column", gap:9, alignItems:"center", justifyContent:"center", color:"rgba(255,255,255,0.4)", textAlign:"center", padding:"0 24px" }}>
-        <div style={{ width:48, height:48, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)" }}>{I.trend(22,"rgba(255,255,255,0.4)")}</div>
+        <div style={{ width:48, height:48, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)" }}>{I.trend(22,"rgba(255,255,255,0.4)")}</div>
         <div style={{ fontSize:14, fontWeight:700, color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead }}>Your weekly trend builds here</div>
         <div style={{ fontSize:12, lineHeight:1.55, maxWidth:300 }}>This tracks daily views across TikTok &amp; Instagram. Keep syncing — as the days roll in, your trend line fills out.</div>
       </div>
@@ -898,7 +898,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         const pct = Math.round((doneN/gsSteps.length)*100);
         const R=20, CIRC=2*Math.PI*R;
         return (
-        <div data-card style={{ borderRadius:18, padding:isMobile?"22px 20px":"24px 28px", background:`linear-gradient(135deg,${C.cyan}12,${C.purple}0c 55%,rgba(10,6,20,0.9))`, border:`1px solid ${C.cyan}35`, position:"relative", overflow:"hidden" }}>
+        <div data-card style={{ borderRadius:20, padding:isMobile?"22px 20px":"24px 28px", background:`linear-gradient(135deg,${C.cyan}12,${C.purple}0c 55%,rgba(10,6,20,0.9))`, border:`1px solid ${C.cyan}35`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${C.cyan}90,transparent)` }}/>
           <div style={{ position:"absolute", top:-60, right:-40, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${C.cyan}14,transparent 65%)`, pointerEvents:"none" }}/>
           {/* Header with progress ring */}
@@ -922,7 +922,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             {gsSteps.map(st=>{
               const isNext = gsNext && st.n===gsNext.n;
               return (
-                <div key={st.n} onClick={()=>!st.done&&setNav&&setNav(st.nav)} style={{ display:"flex", alignItems:"center", gap:13, padding:isMobile?"14px 16px":"13px 16px", borderRadius:14, background:isNext?`linear-gradient(135deg,${C.cyan}18,${C.cyan}06)`:"rgba(255,255,255,0.02)", border:`1px solid ${isNext?C.cyan+"55":"rgba(255,255,255,0.06)"}`, boxShadow:isNext?`0 0 24px ${C.cyan}22`:"none", cursor:st.done?"default":"pointer", opacity:st.done?0.5:1, transition:"all 0.2s" }}>
+                <div key={st.n} onClick={()=>!st.done&&setNav&&setNav(st.nav)} style={{ display:"flex", alignItems:"center", gap:13, padding:isMobile?"14px 16px":"13px 16px", borderRadius:16, background:isNext?`linear-gradient(135deg,${C.cyan}18,${C.cyan}06)`:"rgba(255,255,255,0.02)", border:`1px solid ${isNext?C.cyan+"55":"rgba(255,255,255,0.06)"}`, boxShadow:isNext?`0 0 24px ${C.cyan}22`:"none", cursor:st.done?"default":"pointer", opacity:st.done?0.5:1, transition:"all 0.2s" }}>
                   <div style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:st.done?13:13, fontWeight:800, fontFamily:C.fontHead, background:st.done?`${C.green}18`:isNext?`linear-gradient(135deg,${C.cyan},${C.purple})`:"rgba(255,255,255,0.06)", border:`1px solid ${st.done?C.green+"50":isNext?"transparent":"rgba(255,255,255,0.1)"}`, color:st.done?C.green:isNext?"#fff":"rgba(255,255,255,0.4)", boxShadow:isNext?`0 4px 14px ${C.cyan}44`:"none" }}>{st.done?<span style={{display:"inline-flex"}}>{I.tick(13,C.green)}</span>:st.n}</div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
@@ -10574,7 +10574,7 @@ Return JSON:
         {/* Logo */}
         <div style={{ marginBottom:28, paddingLeft:4 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <div style={{ width:40, height:40, borderRadius:14, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:`0 0 20px ${WL.accentColor}40`, fontSize:19, fontWeight:700, color:"#fff", fontFamily:C.fontHead, letterSpacing:"-0.02em" }}>
+            <div style={{ width:40, height:40, borderRadius:12, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:`0 0 20px ${WL.accentColor}40`, fontSize:19, fontWeight:700, color:"#fff", fontFamily:C.fontHead, letterSpacing:"-0.02em" }}>
               {WL.appName[0]}
             </div>
             <div>
