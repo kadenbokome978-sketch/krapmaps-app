@@ -354,7 +354,7 @@ const bezier = (pts) => {
 
 // Futuristic area chart
 const GlowAreaChart = ({ data=[], color=C.pink, height=120, dataKey="value", xKey="label" }) => {
-  if(!data.length) return <div style={{height,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,color:"rgba(255,255,255,0.85)"}}>No data</div>;
+  if(!data.length) return <div style={{height,display:"flex",flexDirection:"column",gap:8,alignItems:"center",justifyContent:"center",color:"rgba(255,255,255,0.4)",textAlign:"center",padding:"0 20px"}}><div style={{opacity:0.5}}>{I.bar(26,"rgba(255,255,255,0.35)")}</div><div style={{fontSize:13,fontWeight:600,color:"rgba(255,255,255,0.6)"}}>No data yet</div><div style={{fontSize:11.5,lineHeight:1.5,maxWidth:220}}>Sync your channel or log a few posts and your trend line appears here.</div></div>;
   const W=500, H=height, PAD=30, BPAD=24;
   const vals = data.map(d=>d[dataKey]||0);
   const max = Math.max(...vals,1), min = Math.min(...vals,0);
@@ -446,7 +446,7 @@ const DualAreaChart = ({ ttData=[], igData=[], height=160 }) => {
 };
 
 const GlowBarChart = ({ data=[], color=C.pink, height=140, dataKey="value", xKey="label" }) => {
-  if(!data.length) return <div style={{height,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"rgba(255,255,255,0.45)"}}>No data yet</div>;
+  if(!data.length) return <div style={{height,display:"flex",flexDirection:"column",gap:6,alignItems:"center",justifyContent:"center",color:"rgba(255,255,255,0.4)",textAlign:"center"}}><div style={{opacity:0.5}}>{I.eye(22,"rgba(255,255,255,0.3)")}</div><div style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>No data yet</div></div>;
   const W=500, H=height, LPAD=40, RPAD=12, TPAD=12, BPAD=28;
   const chartW=W-LPAD-RPAD, chartH=H-TPAD-BPAD;
   const vals = data.map(d=>d[dataKey]||0);
@@ -11599,6 +11599,7 @@ function AuthGate({ onAuthed }) {
 
   return (
     <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center", padding:isMobile?"24px":"48px", background:"#07050F", fontFamily:"'Space Grotesk',system-ui,sans-serif" }}>
+      <style>{`@keyframes km-spin{to{transform:rotate(360deg)}}`}</style>
       <div style={{ position:"fixed", top:"-10%", left:"-8%", width:360, height:360, borderRadius:"50%", background:`radial-gradient(circle,${accent}18 0%,transparent 70%)`, pointerEvents:"none" }} />
       <div style={{ position:"fixed", bottom:"-10%", right:"-8%", width:320, height:320, borderRadius:"50%", background:`radial-gradient(circle,${accent2}14 0%,transparent 70%)`, pointerEvents:"none" }} />
       <div style={{ width:"100%", maxWidth:400, position:"relative", zIndex:1 }}>
@@ -11621,8 +11622,11 @@ function AuthGate({ onAuthed }) {
           {err && <div style={{ fontSize:13, color:"#FF5C7C", lineHeight:1.5 }}>{err}</div>}
           {info && <div style={{ fontSize:13, color:"#39FF14", lineHeight:1.5 }}>{info}</div>}
           <button onClick={submit} disabled={busy}
-            style={{ width:"100%", padding:"15px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${accent},${accent2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:busy?"default":"pointer", opacity:busy?0.6:1, marginTop:4 }}>
-            {busy ? "…" : mode==="signin" ? "Sign In" : mode==="reset" ? "Set New Password" : "Create Account"}
+            style={{ width:"100%", padding:"15px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${accent},${accent2})`, color:"#fff", fontWeight:700, fontSize:15, cursor:busy?"default":"pointer", opacity:busy?0.75:1, marginTop:4, display:"flex", alignItems:"center", justifyContent:"center", gap:10, transition:"transform 0.15s, box-shadow 0.2s", boxShadow:`0 8px 24px ${accent}30` }}
+            onMouseEnter={e=>{ if(!busy){ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow=`0 12px 30px ${accent}45`; } }}
+            onMouseLeave={e=>{ e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow=`0 8px 24px ${accent}30`; }}>
+            {busy && <span style={{ width:16, height:16, border:"2px solid rgba(255,255,255,0.4)", borderTopColor:"#fff", borderRadius:"50%", animation:"km-spin 0.7s linear infinite", display:"inline-block" }}/>}
+            {busy ? "Please wait" : mode==="signin" ? "Sign In" : mode==="reset" ? "Set New Password" : "Create Account"}
           </button>
         </div>
         {mode!=="reset" && (

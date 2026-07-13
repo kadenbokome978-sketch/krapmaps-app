@@ -106,6 +106,8 @@
     @keyframes sweepLine { 0%{left:-100%;opacity:1} 100%{left:100%;opacity:0} }
     .pulse-badge { animation:badgePulse 3s ease-in-out infinite; }
     @keyframes badgePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.025)} }
+    @keyframes km-spin { to { transform:rotate(360deg) } }
+    .km-spinner { display:inline-block; border-radius:50%; border-style:solid; animation:km-spin .7s linear infinite; }
 
     /* ── TYPE SYSTEM ── */
     /* Lilita One everywhere, Inter only for long-form reading text */
