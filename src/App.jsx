@@ -7333,6 +7333,60 @@ const sbLoadArray = async (table) => {
   return rows.map(r=>r.data).filter(Boolean);
 };
 
+// ── CROSS-CREATOR CORPUS ──────────────────────────────────────────
+// A shared, anonymised pool of real posted outcomes across ALL creators using
+// the app (backend/shared-Supabase mode). Every logged result contributes a
+// row with NO identifying info — just niche + hook type + how it performed
+// relative to that channel's average. Scoring reads aggregate base rates from
+// it, so a brand-new user borrows intelligence from everyone. Network effect:
+// the more people use it, the smarter every score gets. Needs a global
+// `km_corpus` table (SQL provided in Settings → data setup).
+// Columns: id text PK, niche text, hook text, type text, platform text,
+//          score int, views int8, mult float8, ts timestamptz.
+const CORPUS_TABLE = "km_corpus";
+const corpusWrite = async (rec) => {
+  try {
+    if(!rec || rec.mult==null || !isFinite(rec.mult)) return;   // mult is the signal — skip rows we can't normalise
+    const row = {
+      id: `c_${Date.now()}_${Math.random().toString(36).slice(2,9)}`,   // global, not workspace-scoped, anonymous
+      niche: String(rec.niche||"general").toLowerCase().slice(0,40),
+      hook: String(rec.hook||"unknown").toLowerCase().slice(0,40),
+      type: String(rec.type||"unknown").toLowerCase().slice(0,40),
+      platform: rec.platform || "tiktok",
+      score: (typeof rec.score==="number") ? Math.round(rec.score) : null,
+      views: (typeof rec.views==="number") ? Math.round(rec.views) : null,
+      mult: Math.round(rec.mult*100)/100,
+      ts: new Date().toISOString(),
+    };
+    await sbUpsert(CORPUS_TABLE, [row]);
+  } catch { /* corpus is best-effort — never blocks the outcome flow */ }
+};
+// Aggregate the corpus for a niche into a compact base-rate block for scoring.
+// Cached ~6h so it doesn't refetch on every score.
+const corpusPriors = async (niche) => {
+  const nk = String(niche||"general").toLowerCase().slice(0,40);
+  try {
+    const cached = loadJSON("km_corpus_priors", null);
+    if(cached && cached.niche===nk && (Date.now()-cached.ts) < 6*3600*1000) return cached.block;
+    const rows = await sbFetch(CORPUS_TABLE, `select=hook,mult&niche=eq.${encodeURIComponent(nk)}`);
+    let block = "";
+    if(rows && rows.length >= 8){
+      const byHook = {};
+      rows.forEach(r=>{ if(r.hook==null||r.mult==null) return; (byHook[r.hook] = byHook[r.hook]||[]).push(r.mult); });
+      const lines = Object.entries(byHook)
+        .filter(([,v])=>v.length>=3)
+        .map(([h,v])=>({ h, avg:v.reduce((s,x)=>s+x,0)/v.length, n:v.length }))
+        .sort((a,b)=>b.avg-a.avg).slice(0,6)
+        .map(x=>`${x.h} → ${x.avg.toFixed(1)}× channel-avg (n=${x.n})`);
+      if(lines.length){
+        block = `Real cross-creator base rates in this niche (${rows.length} logged posts across creators) — by hook type: ${lines.join(" · ")}. Use these as evidence-backed priors when the creator's OWN data is thin; a strong own-channel signal still overrides them.`;
+      }
+    }
+    saveJSON("km_corpus_priors", { niche:nk, block, ts:Date.now() });
+    return block;
+  } catch { return ""; }
+};
+
 // ── SUPABASE AUTH ─────────────────────────────────────────────────
 // Dependency-free email/password auth over Supabase's REST auth API. When
 // VITE_REQUIRE_AUTH="true", the app requires a signed-in session and routes all
@@ -9981,6 +10035,8 @@ function Dashboard({ keys, onEditKeys }) {
             const avgV = organicV.length ? Math.round(organicV.reduce((s,v)=>s+(v.views||0),0)/organicV.length) : 0;
             const multiple = avgV > 0 ? `${(actualViews/avgV).toFixed(1)}x channel avg (${avgV>0?fmt(avgV):"unknown"} avg)` : "";
             const performance = avgV > 0 ? (actualViews > avgV*2 ? "OVERPERFORMED" : actualViews > avgV*0.5 ? "MET EXPECTATIONS" : "UNDERPERFORMED") : "POSTED";
+            // Contribute an anonymised row to the shared cross-creator corpus (no handle/title — just niche + hook + relative performance).
+            if(avgV > 0) corpusWrite({ niche: loadWL().niche, hook: idea.hook, type: idea.type||pillar, score, views: actualViews, mult: actualViews/avgV, platform: idea.platform||"tiktok" });
             const channelTheory = loadJSON(CHANNEL_THEORY_KEY,"");
 
             const d = await anthropicMessages({model:"claude-haiku-4-5-20251001",max_tokens:350,messages:[{role:"user",content:`A ${WL.handle} TikTok/Reels video was posted.
@@ -10180,6 +10236,7 @@ LEARNING: [one sentence]`}]}, key);
       const currentTrendsForScore = loadJSON(CUR_TRENDS_KEY,"");
       ensureVoiceProfile(organicVids.length?organicVids:videos, ideas, wl); // keep distilled voice profile warm
       const voiceBlk = voiceBlock(organicVids.length?organicVids:videos, ideas);
+      const corpusBlock = await corpusPriors(wl.niche);
       const _scorePrompt = `You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
 
 ${channelTheory ? `━━ CHANNEL VIRAL THEORY (why this channel specifically goes viral — anchor ALL scoring to this) ━━\n${channelTheory}\n` : ""}
@@ -10208,6 +10265,7 @@ ${seriesMomentum ? `\n${seriesMomentum}` : ""}
 ${pillarGapLine ? `\n${pillarGapLine}` : ""}
 
 ━━ NICHE INTELLIGENCE (what's working for competitors RIGHT NOW) ━━
+${corpusBlock ? `CROSS-CREATOR CORPUS (real outcomes pooled across creators in this niche — evidence-backed, use especially when own-channel data is thin): ${corpusBlock}\n` : ""}
 ${stolenHooks ? `Proven hooks from similar creators to adapt:\n${stolenHooks}` : "Run a competitor scan in settings to unlock niche benchmarks."}
 ${compOpportunities ? `Active content gaps competitors aren't covering: ${compOpportunities}` : ""}
 ${currentTrendsForScore ? `\nCURRENT TRENDS (June 2026):\n${currentTrendsForScore}` : "NOTE: It is June 2026 — use current platform behaviour, not 2024 data."}
