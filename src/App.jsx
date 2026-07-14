@@ -2760,13 +2760,15 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 </>
               ),
             }] : []),
-          ].map(card=>(
+          ].map(card=>{
+            const _ic = ({whatsWorking:I.search,nextVids:I.target,weekly:I.write,trends:I.trend,visualDNA:I.eye})[card.key] || I.zap;
+            return (
             <div key={card.key} data-card style={{ borderRadius:16, background:"rgba(255,255,255,0.025)", border:`1px solid ${card.color}22`, position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.4, background:`linear-gradient(90deg,${card.color},${card.color}00)` }}/>
               {/* Card header */}
-              <div style={{ display:"flex", alignItems:"center", gap:8, padding:"16px 18px", borderBottom:hiddenInsights[card.key]?"none":`1px solid rgba(255,255,255,0.05)` }}>
-                <span style={{ width:8, height:8, borderRadius:"50%", background:card.dot, display:"inline-block", flexShrink:0 }}/>
-                <span style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.04em", flex:1 }}>{card.label}</span>
+              <div style={{ display:"flex", alignItems:"center", gap:11, padding:"15px 18px", borderBottom:hiddenInsights[card.key]?"none":`1px solid rgba(255,255,255,0.05)`, background:`linear-gradient(135deg,${card.color}0e,transparent 60%)` }}>
+                <div style={{ width:34, height:34, borderRadius:10, background:`${card.color}18`, border:`1px solid ${card.color}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{_ic(16,card.color)}</div>
+                <span style={{ fontSize:15, fontWeight:800, fontFamily:C.fontHead, color:"#fff", letterSpacing:"0.01em", flex:1 }}>{card.label}</span>
                 {card.badge && <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)" }}>{card.badge}</span>}
                 <div style={{ display:"flex", gap:6 }}>
                   {card.runKey && (
@@ -2809,7 +2811,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 </div>
               )}
             </div>
-          ))}
+          )})}
         </div>
       )}
     </div>
