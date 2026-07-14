@@ -10212,6 +10212,16 @@ ${stolenHooks ? `Proven hooks from similar creators to adapt:\n${stolenHooks}` :
 ${compOpportunities ? `Active content gaps competitors aren't covering: ${compOpportunities}` : ""}
 ${currentTrendsForScore ? `\nCURRENT TRENDS (June 2026):\n${currentTrendsForScore}` : "NOTE: It is June 2026 — use current platform behaviour, not 2024 data."}
 
+━━ TIMELESS VIRALITY PRIORS (base rates — lean on these HARD when channel data is thin; let real channel data above override them when it exists) ━━
+• The first frame decides 60%+ of reach: motion, a face mid-expression, or an unresolved visual beat scroll-stop static/context shots.
+• Specificity outperforms generality — "I mapped every bin in Chiang Mai in a day" beats "finding bins is hard." Numbers, places and stakes in the hook lift retention.
+• Only SHARES break the reach ceiling; likes/comments don't. If there's no reason a viewer would send this to a specific person, cap the share score low no matter how polished it is.
+• Open loops (a question the title raises but doesn't answer) are the single most reliable retention device — reward a clear one, penalise its absence.
+• Native > produced: raw POV, real reactions and authentic mistakes outperform scripted/polished in-2026 feeds. Penalise "talking to camera explaining."
+• Emotional swing (setup→tension→payoff) predicts watch-through; flat-affect or front-loaded payoffs lose viewers by ~40%.
+• Relatability + identity ("POV: you're the person who…") drives shares because the viewer sees themselves; generic third-person framing doesn't.
+Treat these as the floor of judgement, not a ceiling — a specific channel signal above always outranks a generic prior.
+
 ━━ IDEA TO SCORE ━━
 Title: "${idea.title}" | Type: ${idea.type||"unknown"} | Hook: ${idea.hook||"not specified"} | Thumbnail style: ${idea.thumbnail||"not specified"}
 
