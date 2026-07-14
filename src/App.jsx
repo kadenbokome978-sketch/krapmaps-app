@@ -10780,17 +10780,31 @@ Return JSON:
                 </div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.38)", lineHeight:1.5 }}>
                   {nav==="home"&&`${WL.handle} · ${WL.platforms.split(",").map(p=>p[0].toUpperCase()+p.slice(1)).join(" & ")}`}
-                  {nav==="content"&&"All your TikTok and Instagram content in one view"}
-                  {nav==="analytics"&&"Deep performance data across all your content"}
-                  {nav==="tasks"&&`Keep ${WL.creator1}${WL.creator2?` and ${WL.creator2}`:""} aligned on what to do next`}
-                  {nav==="growth"&&`TikTok, Instagram and ${WL.appName} app metrics`}
-                  {nav==="deals"&&"Track sponsorships, collabs and brand partnerships"}
-                  {nav==="settings"&&"API keys, creator config and sync controls"}
-                  {nav==="ai"&&"Add tasks, ideas and get content advice"}
+                  {nav==="content"&&"Every idea, script and post — in one place."}
+                  {nav==="analytics"&&"See exactly what's working, and what's not."}
+                  {nav==="tasks"&&"Everything to do next, in one list."}
+                  {nav==="growth"&&"Watch your followers and views climb."}
+                  {nav==="deals"&&"Track every partnership, rate and payment."}
+                  {nav==="settings"&&"Keys, sync and workspace controls."}
+                  {nav==="ai"&&"Ask anything — get instant content advice."}
                 </div>
               </div>
               <div style={{ height:1, flex:1, margin:"0 32px 4px", background:"linear-gradient(90deg,rgba(255,255,255,0.06),transparent)" }} />
             </div>}
+
+            {/* Mobile section subtitle — one punchy line per tab (not home) */}
+            {isMobile && nav!=="home" && (
+              <div style={{ marginBottom:16, marginTop:2, fontSize:13.5, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody, lineHeight:1.5 }}>
+                {nav==="content"&&"Every idea, script and post — in one place."}
+                {nav==="analytics"&&"See exactly what's working, and what's not."}
+                {nav==="tasks"&&"Everything to do next, in one list."}
+                {nav==="growth"&&"Watch your followers and views climb."}
+                {nav==="deals"&&"Track every partnership, rate and payment."}
+                {nav==="settings"&&"Keys, sync and workspace controls."}
+                {nav==="ai"&&"Ask anything — get instant content advice."}
+                {nav==="audit"&&"Your free channel breakdown."}
+              </div>
+            )}
 
         {/* VIEWS — keyed wrapper fades each view in on nav change (pure opacity+lift, no layout impact) */}
         <div key={nav} className="viewEnter">
