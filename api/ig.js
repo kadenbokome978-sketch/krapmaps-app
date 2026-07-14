@@ -167,12 +167,10 @@ async function handleSync(req, res) {
       // summed as views — treat them as 0 so the total reflects reel plays.
       const isVideo = m.media_product_type === "REELS" || m.media_type === "VIDEO";
       if (!isVideo) return { ...m, views: 0 };
-      // Prefer the TOTAL plays metric (incl. boosts/replays) so IG matches TikTok's
-      // public total count, not organic-only reach — the two platforms must measure
-      // the same thing. Falls through gracefully to the unified `views` metric, then
-      // legacy `plays`, if a total metric isn't available for this account/media.
-      let views = await readInsight(m.id, "ig_reels_video_view_total_count");
-      if (views == null) views = await readInsight(m.id, "views");
+      // ORGANIC reach — the official API's `views` metric is organic (excludes paid
+      // boosts). We report organic on purpose: it reflects content quality, and for
+      // unboosted posts it equals total — matching TikTok's public count.
+      let views = await readInsight(m.id, "views");
       if (views == null) views = await readInsight(m.id, "plays");
       return { ...m, views: views || 0 };
     }));
