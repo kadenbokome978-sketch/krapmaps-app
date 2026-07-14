@@ -7697,7 +7697,7 @@ async function callAI(prompt, maxTokens=2000) {
 // Model resilience for EVERY Anthropic call (chat, visual DNA, channel theory,
 // post-mortems, scoring): if the preferred model is retired (the way
 // gemini-1.5-pro 404'd), fall through the chain; 429/529 get one retried call.
-const CLAUDE_MODELS = ["claude-sonnet-4-6","claude-sonnet-5","claude-haiku-4-5-20251001"];
+const CLAUDE_MODELS = ["claude-opus-4-8","claude-sonnet-4-6","claude-sonnet-5","claude-haiku-4-5-20251001"];
 async function _anthropicFetch(apiKey, payload) {
   const preferred = payload.model ? [payload.model, ...CLAUDE_MODELS.filter(m=>m!==payload.model)] : CLAUDE_MODELS;
   let lastErr = null;
