@@ -1889,23 +1889,24 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 
                     {/* Primary CTA: score or re-score — solid gradient, most weight */}
                     <button onClick={()=>scoreIdea&&scoreIdea(idea, {reveal:true})} disabled={!!isScoring}
-                      style={{ padding:isMobile?"12px 18px":"8px 16px", borderRadius:10, border:"none", fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:isScoring?"wait":"pointer", letterSpacing:"0.06em", flexShrink:0, transition:"opacity 0.15s",
+                      style={{ padding:isMobile?"13px 18px":"8px 16px", borderRadius:10, border:"none", fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:isScoring?"wait":"pointer", letterSpacing:"0.06em", transition:"opacity 0.15s",
+                        flexBasis:isMobile?"100%":"auto", flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center", gap:7,
                         background: isScoring ? "rgba(197,102,255,0.2)" : hasScore ? `linear-gradient(135deg,${C.purple}cc,${C.pink}99)` : `linear-gradient(135deg,${C.purple},${C.pink})`,
                         color: isScoring ? C.purple : "#fff",
                         boxShadow: isScoring||hasScore ? "none" : `0 4px 16px ${C.purple}40`,
                         opacity: isScoring ? 0.7 : 1,
                       }}>
-                      {isScoring ? <span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={12}/> SCORING</span> : hasScore ? "RE-SCORE" : "SCORE IT"}
+                      {isScoring ? <><Spin s={12}/> SCORING</> : hasScore ? "RE-SCORE" : "SCORE IT"}
                     </button>
 
-                    {/* Secondary: caption + script — outlined */}
+                    {/* Secondary: caption + script — outlined, share a row on mobile */}
                     <button onClick={()=>genCaption&&genCaption(idea)}
-                      style={{ padding:"8px 12px", borderRadius:10, border:`1px solid ${C.pink}35`, background:"transparent", color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer" }}>
+                      style={{ padding:isMobile?"11px 12px":"8px 12px", borderRadius:10, border:`1px solid ${C.pink}35`, background:"transparent", color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", flex:isMobile?1:"0 0 auto" }}>
                       CAPTION
                     </button>
                     {onBuildScript && (
                       <button onClick={()=>onBuildScript(idea)}
-                        style={{ padding:"8px 12px", borderRadius:10, border:`1px solid ${C.cyan}35`, background:"transparent", color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer" }}>
+                        style={{ padding:isMobile?"11px 12px":"8px 12px", borderRadius:10, border:`1px solid ${C.cyan}35`, background:"transparent", color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", flex:isMobile?1:"0 0 auto" }}>
                         SCRIPT
                       </button>
                     )}
@@ -2849,7 +2850,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?16:24 }}>
       {/* Tab bar */}
       <div style={{ display:"flex", gap:8 }}>
-        {["TO DO","APP IDEAS"].map(t=>(
+        {["TO DO",...(_activeCfg.clientId==="krapmaps"?["APP IDEAS"]:[])].map(t=>(
           <button key={t} onClick={()=>setSub(t)} style={{ padding:isMobile?"10px 14px":"10px 22px", borderRadius:12, border:`1px solid ${sub===t?C.pink:"rgba(255,255,255,0.08)"}`, background:sub===t?`${C.pink}15`:"transparent", color:sub===t?C.pink:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", letterSpacing:"0.06em" }}>
             {t}{t==="TO DO"&&` (${pending.length})`}{t==="APP IDEAS"&&` (${appIdeas.length})`}
           </button>
