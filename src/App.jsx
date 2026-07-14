@@ -2453,26 +2453,15 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                   <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:2 }}>{WL.handle} · {plt.count}</div>
                 </div>
               </div>
-              {/* Stats — full width rows on mobile, 4-col grid on desktop */}
-              {isMobile ? (
-                <div style={{ padding:"0 20px 24px", display:"flex", flexDirection:"column", gap:0 }}>
-                  {plt.stats.map((s,i)=>(
-                    <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:isMobile?"14px 0":"16px 0", borderBottom:i<plt.stats.length-1?`1px solid rgba(255,255,255,0.06)`:"none" }}>
-                      <div style={{ fontSize:14, color:"rgba(255,255,255,0.55)", fontWeight:600 }}>{s.l}</div>
-                      <div style={{ fontSize:32, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, padding:"0 22px 20px" }}>
-                  {plt.stats.map((s,i)=>(
-                    <div key={i} style={{ padding:isMobile?"12px 14px":"14px 16px", borderRadius:16, background:`${s.c}10`, border:`1px solid ${s.c}20` }}>
-                      <div style={{ fontSize:isMobile?12:10, color:"rgba(255,255,255,0.45)", letterSpacing:"0.08em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>{s.l}</div>
-                      <div style={{ fontSize:isMobile?24:36, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Stats — tiled grid (2 cols mobile, 4 cols desktop) */}
+              <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:isMobile?10:12, padding:isMobile?"0 20px 20px":"0 22px 20px" }}>
+                {plt.stats.map((s,i)=>(
+                  <div key={i} style={{ padding:isMobile?"14px 14px":"14px 16px", borderRadius:14, background:`linear-gradient(150deg,${s.c}14,${s.c}05)`, border:`1px solid ${s.c}22` }}>
+                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", letterSpacing:"0.08em", textTransform:"uppercase", fontWeight:700, marginBottom:isMobile?7:8 }}>{s.l}</div>
+                    <div style={{ fontSize:isMobile?24:36, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1, textShadow:`0 0 20px ${s.c}30` }}>{s.v}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
 
