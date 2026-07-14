@@ -1175,7 +1175,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         const noIdeas = (ideas||[]).length === 0;
 
         let action = null;
-        if(noVideos && noIdeas) action = { msg:"Start by logging your first video and adding your first idea.", cta:"Log a Video", color:C.pink, fn:()=>openModal&&openModal("addVideo") };
+        if(noVideos && noIdeas) action = { msg:"Connect your channel in Settings — your videos sync automatically and calibrate the AI.", cta:"Connect Channel", color:C.pink, fn:()=>setNav&&setNav("settings") };
         else if(noIdeas) action = { msg:"You have videos but no ideas. Add content ideas to start scoring them.", cta:"Add Idea", color:C.purple, fn:()=>{ setNav&&setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); } };
         else if(unscoredIdeas.length>0) action = { msg:`${unscoredIdeas.length} idea${unscoredIdeas.length>1?"s":""} haven't been scored yet. Score them to see which ones are worth filming.`, cta:"Go to Ideas", color:C.purple, fn:()=>setNav&&setNav("content") };
         else if(filmingNow.length>0) action = { msg:`"${filmingNow[0].title?.slice(0,40)}" is marked as filming. Log it as posted once it's live.`, cta:"Mark Posted", color:C.orange, fn:()=>setNav&&setNav("content") };
@@ -1343,8 +1343,8 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:isMobile?12:16 }}>AI Strategy</div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:10 }}>
           {[
-            { ic:I.search, l:"WHAT'S WORKING",  desc:"Analyse top content", c:C.cyan,   m:"analysis" },
-            { ic:I.target, l:"NEXT VIDEOS",      desc:"AI recommendations", c:C.green,  m:"nextVids" },
+            { ic:I.search, l:"WHAT'S WORKING",  desc:"Analyse top content", c:C.cyan,   m:"analysis", fn:()=>{ runAI&&runAI("analysis"); setNav&&setNav("analytics"); } },
+            { ic:I.target, l:"NEXT VIDEOS",      desc:"AI recommendations", c:C.green,  m:"nextVids", fn:()=>{ runAI&&runAI("nextVids"); setNav&&setNav("analytics"); } },
             { ic:I.idea,   l:"ADD IDEA",         desc:"Brainstorm content",  c:C.purple, fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); } },
             { ic:I.cal,    l:"SCHEDULE",         desc:"Plan your calendar",  c:C.pink,   fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addCal"),50); } },
           ].map((a,i)=>(
@@ -2670,7 +2670,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
             },
             {
               key:"weekly",
-              label:`${WL.creator2||"Weekly"} Brief`,
+              label:"Filming Brief",
               dot:C.yellow,
               color:C.yellow,
               runKey:"weekly",
@@ -10551,7 +10551,7 @@ Return JSON:
     return (
       <ModalBase onClose={()=>closeModal("editStats")}>
         <div style={{ fontSize:22,fontWeight:700,color:C.text,marginBottom:24 }}>Update Stats</div>
-        {[["TT Followers","tt_followers","Your TikTok follower count"],["TT Total Views","tt_views","All-time TikTok views"],["TT Total Likes","tt_likes","All-time TikTok likes"],[WL.statLabels?.custom1Label||"Custom Stat 1",WL.statLabels?.custom1Key||"custom1",""],[WL.statLabels?.custom2Label||"Custom Stat 2",WL.statLabels?.custom2Key||"custom2",""],["IG Followers","ig_followers","Enter manually from Instagram app"],["Spotify Monthly Listeners","monthly_listeners","From Spotify for Artists"]].filter(([l,k])=>k).map(([l,k])=>(
+        {[["TT Followers","tt_followers","Your TikTok follower count"],["TT Total Views","tt_views","All-time TikTok views"],["TT Total Likes","tt_likes","All-time TikTok likes"],[WL.statLabels?.custom1Label||"Custom Stat 1",WL.statLabels?.custom1Key||"custom1",""],[WL.statLabels?.custom2Label||"Custom Stat 2",WL.statLabels?.custom2Key||"custom2",""],["IG Followers","ig_followers","Enter manually from Instagram app"]].filter(([l,k])=>k).map(([l,k])=>(
           <div key={k}><MLabel>{l}</MLabel><MInput value={form[k]||""} onChange={set(k)} placeholder="0" type="number" /></div>
         ))}
         <MBtn onClick={()=>{ saveManual(form); closeModal("editStats"); }}>Save Stats</MBtn>
