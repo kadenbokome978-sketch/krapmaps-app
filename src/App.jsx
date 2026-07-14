@@ -2912,9 +2912,9 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                       {pm && <span style={{ fontSize:isMobile?11:9, fontWeight:800, letterSpacing:"0.1em", color:pm.c, background:`${pm.c}18`, border:`1px solid ${pm.c}45`, borderRadius:5, padding:"2px 7px", marginRight:9, verticalAlign:"middle" }}>{pm.label}</span>}
                       <span style={{ fontSize:14, color:"#fff", fontWeight:500, lineHeight:1.5 }}>{t.text}</span>
                     </div>
-                    <div style={{ width:32, height:32, borderRadius:10, background:`${ac(t.assignee)}20`, border:`1px solid ${ac(t.assignee)}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:ac(t.assignee), flexShrink:0 }}>
+                    {!isMobile && <div style={{ width:32, height:32, borderRadius:10, background:`${ac(t.assignee)}20`, border:`1px solid ${ac(t.assignee)}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:ac(t.assignee), flexShrink:0 }}>
                       {acLabel(t.assignee)}
-                    </div>
+                    </div>}
                     <button onClick={()=>setTasks(ts=>ts.filter(x=>x.id!==t.id))} aria-label="Delete task" style={{ width:isMobile?40:28, height:isMobile?40:28, borderRadius:8, border:"1px solid rgba(255,45,120,0.2)", background:"rgba(255,45,120,0.08)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                       {I.trash(12,C.pink)}
                     </button>
@@ -8202,7 +8202,7 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-  const chatH = isMobile ? `${Math.max(300, viewH - 170)}px` : 'calc(100dvh - 160px)';
+  const chatH = isMobile ? `${Math.max(440, viewH - 120)}px` : 'calc(100dvh - 160px)';
   const CHAT_KEY = "krapmaps_v1_chat";
   const [msgs, setMsgs] = useState(()=>{
     const saved = loadJSON(CHAT_KEY, null);
@@ -8759,7 +8759,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
   const creator1Init = (WL.creator1||"U").slice(0,2).toUpperCase();
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", height:chatH, minHeight:isMobile?280:480 }}>
+    <div style={{ display:"flex", flexDirection:"column", height:chatH, minHeight:isMobile?440:480 }}>
 
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?16:16, flexShrink:0 }}>
