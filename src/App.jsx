@@ -8743,7 +8743,8 @@ Be specific with timestamps. Harsh but constructive. No generic advice.`;
   const send = async () => {
     const text = input.trim();
     if(!text || loading) return;
-    if(!anthropicKey && !USE_BACKEND) { setMsgs(m=>[...m,{role:"assistant",content:"No Anthropic API key set. Go to Settings to add one."}]); return; }
+    const _ck = loadJSON(KEYS_KEY,{})?.keys || {};
+    if(!anthropicKey && !USE_BACKEND && !_ck.gpt4o && !_ck.gemini) { setMsgs(m=>[...m,{role:"assistant",content:"No AI key set. Add Anthropic, GPT-4o or Gemini in Settings — you only need one."}]); return; }
 
     const userMsg = { role:"user", content:text };
     const newMsgs = [...msgs, userMsg];
@@ -8831,28 +8832,35 @@ ${memCtx ? `━━ CHANNEL MEMORY ━━\n${memCtx}` : ""}`;
 
 
       let conversationMsgs = newMsgs.slice(1); // skip the initial assistant greeting
-      let data = await anthropicMessages({ model:"claude-sonnet-4-6", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:conversationMsgs }, anthropicKey);
-      let assistantContent = data.content;
-      let allMsgs = [...conversationMsgs, { role:"assistant", content:assistantContent }];
-
-      // Handle tool use in a loop
-      while(data.stop_reason === "tool_use") {
-        const toolUses = assistantContent.filter(b=>b.type==="tool_use");
-        const toolResults = toolUses.map(tu => ({
-          type:"tool_result",
-          tool_use_id: tu.id,
-          content: executeTool(tu.name, tu.input)
-        }));
-
-        allMsgs = [...allMsgs, { role:"user", content:toolResults }];
-
-        data = await anthropicMessages({ model:"claude-sonnet-4-6", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:allMsgs }, anthropicKey);
-        assistantContent = data.content;
-        allMsgs = [...allMsgs, { role:"assistant", content:assistantContent }];
+      const hasClaude = !!anthropicKey || USE_BACKEND;
+      if(hasClaude){
+        // Full tool-enabled chat (Claude's tool-calling — can add tasks, pull stats, etc.)
+        let data = await anthropicMessages({ model:"claude-sonnet-4-6", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:conversationMsgs }, anthropicKey);
+        let assistantContent = data.content;
+        let allMsgs = [...conversationMsgs, { role:"assistant", content:assistantContent }];
+        // Handle tool use in a loop
+        while(data.stop_reason === "tool_use") {
+          const toolUses = assistantContent.filter(b=>b.type==="tool_use");
+          const toolResults = toolUses.map(tu => ({
+            type:"tool_result",
+            tool_use_id: tu.id,
+            content: executeTool(tu.name, tu.input)
+          }));
+          allMsgs = [...allMsgs, { role:"user", content:toolResults }];
+          data = await anthropicMessages({ model:"claude-sonnet-4-6", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:allMsgs }, anthropicKey);
+          assistantContent = data.content;
+          allMsgs = [...allMsgs, { role:"assistant", content:assistantContent }];
+        }
+        const textContent = assistantContent.filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+        setMsgs(m=>[...m, { role:"assistant", content:textContent||"Done!" }]);
+      } else {
+        // Text-only fallback for GPT-4o / Gemini users (no tool execution — different
+        // providers, different tool formats — but the tab still fully works for advice).
+        const convo = conversationMsgs.slice(-8).map(m=>`${m.role==="user"?"User":"Assistant"}: ${msgText(m)}`).join("\n");
+        const fbPrompt = `${systemPrompt}\n\n━━ CONVERSATION ━━\n${convo}\n\nReply to the latest user message as the assistant — concise, specific, actionable. (Auto-actions like adding tasks aren't available in this mode; if they ask for one, tell them the exact step to do it.) Return ONLY JSON: {"reply":"your reply as plain text"}`;
+        const j = await callAI(fbPrompt, 1200);
+        setMsgs(m=>[...m, { role:"assistant", content:(j&&(j.reply||j.message||j.text))||"I couldn't generate a reply — try rephrasing." }]);
       }
-
-      const textContent = assistantContent.filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
-      setMsgs(m=>[...m, { role:"assistant", content:textContent||"Done!" }]);
     } catch(e) {
       setMsgs(m=>[...m, { role:"assistant", content:`Error: ${e.message}` }]);
     } finally {
@@ -9026,7 +9034,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
           </div>
           <div>
             <div style={{ fontSize:isMobile?14:16, fontWeight:700, color:"#fff", lineHeight:1.1 }}>{WL.appName} AI</div>
-            <div style={{ fontSize:10, color:C.purple, marginTop:2, letterSpacing:"0.02em" }}>Powered by Claude</div>
+            <div style={{ fontSize:10, color:C.purple, marginTop:2, letterSpacing:"0.02em" }}>{(()=>{ const k=loadJSON(KEYS_KEY,{})?.keys||{}; return (anthropicKey||USE_BACKEND)?"Powered by Claude":k.gpt4o?"Powered by GPT-4o":k.gemini?"Powered by Gemini":"Powered by AI"; })()}</div>
           </div>
         </div>
         {msgs.length > 1 && (
