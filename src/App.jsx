@@ -8772,17 +8772,17 @@ Be extremely specific with timestamps. This is for someone who is not confident 
 
       {/* Quick-action chips — only on fresh session */}
       {msgs.length <= 1 && (
-        <div style={{ marginBottom:isMobile?16:16, flexShrink:0 }}>
-          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:6 }}>
+        <div style={{ marginBottom:12, flexShrink:0 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
             {[
               { label:"My stats", icon:I.bar, color:C.cyan },
-              { label:"What to post next?", icon:I.zap, color:C.yellow },
+              { label:"What to post?", icon:I.zap, color:C.yellow },
               { label:"Add task", icon:I.check, color:C.green },
-              { label:"New video idea", icon:I.idea, color:C.purple },
+              { label:"New idea", icon:I.idea, color:C.purple },
             ].map(s=>(
               <button key={s.label} onClick={()=>{ setInput(s.label); setTimeout(()=>inputRef.current?.focus(),50); }}
-                style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, padding:isMobile?"13px 16px":"10px 12px", borderRadius:12, border:`1px solid ${s.color}30`, background:`${s.color}08`, color:"rgba(255,255,255,0.8)", cursor:"pointer", fontFamily:C.fontHead, textAlign:"left" }}>
-                {s.icon(12,s.color)}<span style={{ flex:1 }}>{s.label}</span>
+                style={{ display:"flex", alignItems:"center", gap:7, fontSize:12, padding:"10px 12px", borderRadius:12, border:`1px solid ${s.color}30`, background:`${s.color}08`, color:"rgba(255,255,255,0.8)", cursor:"pointer", fontFamily:C.fontHead, textAlign:"left", whiteSpace:"nowrap", overflow:"hidden" }}>
+                {s.icon(12,s.color)}<span style={{ flex:1, overflow:"hidden", textOverflow:"ellipsis" }}>{s.label}</span>
               </button>
             ))}
           </div>
