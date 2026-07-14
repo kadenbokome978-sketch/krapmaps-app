@@ -2042,7 +2042,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                   <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                     <Tag color={C.cyan} sm>{c.date?.slice(5)||"TBD"}</Tag>
                     <Tag color={C.purple} sm>{(c.platform||"").toUpperCase()}</Tag>
-                    <div style={{ padding:"3px 10px", borderRadius:6, background:`${c.statusColor||C.dim}15`, border:`1px solid ${c.statusColor||C.dim}30`, fontSize:11, fontWeight:700, color:c.statusColor||"rgba(255,255,255,0.5)", letterSpacing:"0.08em" }}>{c.status}</div>
+                    <div style={{ padding:"3px 10px", borderRadius:6, background:`${c.statusColor||C.dim}15`, border:`1px solid ${c.statusColor||C.dim}30`, fontSize:11, fontWeight:700, color:c.statusColor||"rgba(255,255,255,0.5)", letterSpacing:"0.08em", textTransform:"uppercase" }}>{c.status}</div>
                   </div>
                 </div>
               ))}
@@ -2057,7 +2057,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
           {/* Idea picker — horizontal scroll row */}
           <div style={{ overflowX:"auto", paddingBottom:4 }}>
             <div style={{ display:"flex", gap:8, minWidth:"max-content" }}>
-              {ideas.slice(0,10).map(idea=>(
+              {ideas.slice(0,40).map(idea=>(
                 <button key={idea.id} onClick={()=>genCaption&&genCaption(idea)}
                   style={{ padding:"10px 16px", borderRadius:12, border:`1px solid ${captionIdea?.id===idea.id?C.pink:"rgba(255,255,255,0.08)"}`, background:captionIdea?.id===idea.id?`${C.pink}18`:"rgba(255,255,255,0.025)", color:captionIdea?.id===idea.id?"#fff":"rgba(255,255,255,0.85)", fontFamily:C.fontHead, fontWeight:600, fontSize:13, cursor:"pointer", whiteSpace:"nowrap", transition:"all 0.15s", textAlign:"left" }}>
                   <div style={{ marginBottom:3 }}>{idea.title?.slice(0,35)}{(idea.title?.length||0)>35?"…":""}</div>
@@ -2288,12 +2288,6 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                         </div>
                       )}
                       {/* Stats grid */}
-                      {(() => {
-                        const watchProxy = v.views48h&&v.views48h>0&&v.likes>0 ? parseFloat(((v.likes/v.views48h)*100).toFixed(1)) : null;
-                        const avgLikeRate = videos.filter(x=>x.views>0).reduce((s,x)=>s+(x.likes/x.views*100),0)/(videos.filter(x=>x.views>0).length||1);
-                        const watchLabel = watchProxy!==null ? (watchProxy>avgLikeRate*1.3?"STRONG":watchProxy<avgLikeRate*0.7?"WEAK":"AVG") : null;
-                        return null;
-                      })()}
                       <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:6 }}>
                         {[
                           {l:"VIEWS", v:fmt(v.views||0), c:C.cyan},
@@ -4479,15 +4473,15 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
       {card(
         <>
           {sectionHead("Performance Overview", C.cyan)}
-          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr 1fr":"repeat(5,1fr)", gap:0 }}>
+          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(5,1fr)", gap:isMobile?10:0 }}>
             {[
               { l:"IDEAS SCORED", v:scoredIdeas.length || "--", c:C.cyan },
               { l:"IDEAS POSTED", v:postedIdeas.length || "--", c:C.purple },
               { l:"AVG AI SCORE", v:avgAIScore ? `${avgAIScore}/100` : "--", c:C.yellow },
               { l:"AVG VIEWS", v:avgPostedViews ? fmt(avgPostedViews) : "--", c:C.green },
-              { l:"AI ACCURACY", v:accuracy != null ? `${accuracy}%` : "—", c:accuracy!=null ? C.orange : "rgba(255,255,255,0.35)" },
+              { l:"BEST VIDEO", v:top5Videos[0]?.views ? fmt(top5Videos[0].views) : "—", c:C.orange },
             ].map((s,si,arr)=>(
-              <div key={si} style={{ padding:isMobile?"16px 14px":"18px 20px", borderRight:si<arr.length-1?`1px solid ${C.border}`:"none", borderBottom:"none" }}>
+              <div key={si} style={{ padding:isMobile?"14px 14px":"18px 20px", borderRadius:isMobile?12:0, ...(isMobile ? { background:"rgba(255,255,255,0.025)", border:`1px solid ${s.c}22` } : { borderRight:si<arr.length-1?`1px solid ${C.border}`:"none" }) }}>
                 <div style={{ fontSize:isMobile?9:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.10em", textTransform:"uppercase", fontWeight:700, marginBottom:6 }}>{s.l}</div>
                 <div style={{ fontSize:isMobile?18:24, fontWeight:600, fontFamily:C.fontHead, color:s.c, lineHeight:1.1 }}>{s.v}</div>
               </div>
@@ -4714,8 +4708,8 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
                           </div>
                         )}
                       </div>
-                      {v.hookType && (
-                        <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.08em", color:C.purple, background:`${C.purple}15`, padding:"3px 10px", borderRadius:20, border:`1px solid ${C.purple}40` }}>{v.hookType}</span>
+                      {v.hook && (
+                        <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.08em", color:C.purple, background:`${C.purple}15`, padding:"3px 10px", borderRadius:20, border:`1px solid ${C.purple}40` }}>{v.hook}</span>
                       )}
                     </div>
                   </div>
@@ -10366,7 +10360,7 @@ Return JSON:
     if(!v) return null;
     return (
       <ModalBase onClose={()=>closeModal("updateVideo")}>
-        <div style={{ fontSize:20,fontWeight:700,color:C.text,marginBottom:4 }}>Update Stats</div>
+        <div style={{ fontSize:20,fontWeight:700,color:C.text,marginBottom:4 }}>Update Video Stats</div>
         <div style={{ color:C.dim,fontSize:isMobile?14:17,marginBottom:16,lineHeight:1.4 }}>{v.title?.slice(0,50)}</div>
         <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8 }}>
           {[["Views","views"],["Likes","likes"],["Comments","comments"],["Shares","shares"]].map(([l,k])=>(
@@ -10550,7 +10544,7 @@ Return JSON:
     const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
     return (
       <ModalBase onClose={()=>closeModal("editStats")}>
-        <div style={{ fontSize:22,fontWeight:700,color:C.text,marginBottom:24 }}>Update Stats</div>
+        <div style={{ fontSize:22,fontWeight:700,color:C.text,marginBottom:24 }}>Update Channel Stats</div>
         {[["TT Followers","tt_followers","Your TikTok follower count"],["TT Total Views","tt_views","All-time TikTok views"],["TT Total Likes","tt_likes","All-time TikTok likes"],[WL.statLabels?.custom1Label||"Custom Stat 1",WL.statLabels?.custom1Key||"custom1",""],[WL.statLabels?.custom2Label||"Custom Stat 2",WL.statLabels?.custom2Key||"custom2",""],["IG Followers","ig_followers","Enter manually from Instagram app"]].filter(([l,k])=>k).map(([l,k])=>(
           <div key={k}><MLabel>{l}</MLabel><MInput value={form[k]||""} onChange={set(k)} placeholder="0" type="number" /></div>
         ))}
