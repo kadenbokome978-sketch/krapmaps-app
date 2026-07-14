@@ -1158,8 +1158,6 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         {[
           { icon:I.idea, label:"Add Idea",     desc:"Brainstorm content", color:C.purple, fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); } },
           { icon:I.cal,  label:"Schedule",     desc:"Plan your calendar",  color:C.cyan,   fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addCal"),50); } },
-          { icon:I.vid,  label:"Log Video",    desc:"Track performance",   color:C.pink,   fn:()=>openModal&&openModal("addVideo") },
-          { icon:I.bar,  label:"Update Stats", desc:"Manual stat entry",   color:C.yellow, fn:()=>openModal&&openModal("editStats") },
         ].map((a,i)=>(
           <button data-btn key={i} onClick={a.fn} style={{ display:"flex", flexDirection:"row", alignItems:"center", gap:13, padding:isMobile?"14px 14px":"16px 18px", minHeight:44, borderRadius:14, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.08)", cursor:"pointer", fontFamily:C.fontHead, transition:"all 0.18s", position:"relative", overflow:"hidden", textAlign:"left" }}>
             <div style={{ width:42, height:42, borderRadius:12, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:`${a.color}16`, border:`1px solid ${a.color}2e` }}>{a.icon(21,a.color)}</div>
@@ -2189,6 +2187,7 @@ const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hook
   const [vidAnalysis, setVidAnalysis] = useState({});
   const [vidLoading, setVidLoading]   = useState({});
   const [vidErr, setVidErr]           = useState(null);
+  const [openVid, setOpenVid]         = useState(null);   // mobile: collapse each video to a tappable row
   const cfg = loadJSON(KEYS_KEY,{});
   const hasAnthrop = !!(USE_BACKEND || cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY);
 
@@ -2246,14 +2245,16 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 const sc = videoScores?.[v.id];
                 const perfC = sc ? sc.color : perfColor(0);
                 const projection = projectFinalViews(v, velocityModel);
+                const open = !isMobile || openVid===(v.id||i);   // desktop always expanded; mobile collapses
                 return (
                   <div key={v.id||i} style={{ borderRadius:16, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", overflow:"hidden", position:"relative" }}>
                     {sc && <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${sc.color},${sc.color}00)` }}/>}
                     <div style={{ padding:"16px 18px" }}>
-                      {/* Title row */}
-                      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10, marginBottom:isMobile?10:12 }}>
+                      {/* Title row (tap to expand on mobile) */}
+                      <div onClick={isMobile?()=>setOpenVid(o=>o===(v.id||i)?null:(v.id||i)):undefined} style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10, marginBottom:(open?(isMobile?10:12):0), cursor:isMobile?"pointer":"default" }}>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ fontSize:15, fontWeight:600, color:"#fff", lineHeight:1.3 }}>{v.title?.slice(0,60)||"Untitled"}</div>
+                          {isMobile && !open && <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", marginTop:5, fontFamily:C.fontBody, display:"flex", gap:10 }}><span style={{color:C.cyan,fontWeight:700}}>{fmt(v.views||0)} views</span><span>·</span><span style={{color:C.pink,fontWeight:700}}>{fmt(v.likes||0)} likes</span></div>}
                           {(() => {
                             const d = v.created_at ? new Date(v.created_at) : null;
                             if(!d || isNaN(d)) return <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:4, fontFamily:C.fontBody }}>Date unknown</div>;
@@ -2267,8 +2268,10 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                             <ScoreDial score={sc.score} size={isMobile?52:58} />
                           </div>
                         )}
+                        {isMobile && <div style={{ flexShrink:0, fontSize:16, color:"rgba(255,255,255,0.4)", transition:"transform 0.2s", transform:open?"rotate(180deg)":"none", alignSelf:"center" }}>▾</div>}
                       </div>
                       {/* /Title row */}
+                      {open && (<>
                       {/* Tags */}
                       <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:isMobile?10:12 }}>
                         {v.type && <Tag color={C.pink} sm>{v.type}</Tag>}
@@ -2305,8 +2308,10 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                           </div>
                         ))}
                       </div>
+                      </>)}
                     </div>
                     {/* Actions */}
+                    {open && (<>
                     <div style={{ padding:"10px 18px", borderTop:"1px solid rgba(255,255,255,0.05)", display:"flex", gap:8, alignItems:"center" }}>
                       <button onClick={()=>{ setUpdateTarget&&setUpdateTarget(v); openModal&&openModal("updateVideo"); }} style={{ padding:"6px 14px", borderRadius:10, border:`1px solid ${C.cyan}30`, background:`${C.cyan}10`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>UPDATE</button>
                       <button onClick={()=>analyseVideo&&analyseVideo(v)} style={{ padding:"6px 14px", borderRadius:10, border:`1px solid ${C.purple}30`, background:vidAnalysis?.[v.id]?`${C.purple}25`:vidLoading?.[v.id]?`${C.purple}20`:`${C.purple}10`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:vidLoading?.[v.id]?"wait":"pointer", opacity:vidLoading?.[v.id]?0.7:1, transition:"all 0.2s" }}>
@@ -2344,6 +2349,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                         </div>
                       );
                     })()}
+                    </>)}
                   </div>
                 );
   };
