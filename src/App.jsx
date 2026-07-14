@@ -4995,6 +4995,20 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:24 }}>
 
+      {/* Account — sign out, always reachable (esp. on mobile, where the top bar is hidden) */}
+      {(REQUIRE_AUTH || USE_BACKEND) && (
+        <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"18px 24px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.08)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:14, flexWrap:"wrap" }}>
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontSize:11, letterSpacing:"0.12em", color:"rgba(255,255,255,0.45)", fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Account</div>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", lineHeight:1.5 }}>Signed in{plan?.tier?` · ${_tierLabel}`:""}. Sign out to switch accounts.</div>
+          </div>
+          <button onClick={()=>{ if(typeof window!=="undefined" && window.confirm("Sign out of this account?")) _signalSignedOut(); }}
+            style={{ padding:isMobile?"12px 20px":"10px 20px", borderRadius:12, border:`1px solid ${C.pink}40`, background:`${C.pink}12`, color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", letterSpacing:"0.04em", whiteSpace:"nowrap", display:"inline-flex", alignItems:"center", gap:8 }}>
+            {I.logout ? I.logout(14,"currentColor") : null} Sign out
+          </button>
+        </div>
+      )}
+
       {/* Plan card — only for accounts actually on a paid/comped plan. There's no
           "Free" plan inside the app (free users live on the audit screen), so we
           never show a Free/usage card here. */}
@@ -10700,8 +10714,8 @@ Return JSON:
                     );
                   })}
                 </div>
-                {REQUIRE_AUTH && <div style={{ padding:"16px 16px 0" }}>
-                  <button onClick={()=>{setDrawerOpen(false);_signalSignedOut();}} style={{ width:"100%", padding:"14px 18px", borderRadius:12, border:"1px solid rgba(255,255,255,0.08)", background:"rgba(255,255,255,0.03)", color:"rgba(255,255,255,0.45)", fontSize:14, fontWeight:600, cursor:"pointer" }}>Sign out</button>
+                {(REQUIRE_AUTH || USE_BACKEND) && <div style={{ padding:"16px 16px 0" }}>
+                  <button onClick={()=>{setDrawerOpen(false);_signalSignedOut();}} style={{ width:"100%", padding:"14px 18px", borderRadius:12, border:`1px solid ${C.pink}30`, background:`${C.pink}10`, color:C.pink, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:C.fontHead, letterSpacing:"0.04em" }}>Sign out</button>
                 </div>}
               </div>
             </div>
