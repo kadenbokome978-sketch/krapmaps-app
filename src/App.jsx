@@ -1301,6 +1301,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
 
       {/* ══ BEST POSTING DAY ═══════════════════════════════════════ */}
       {(()=>{
+        if(isMobile) return null;   // analytics widget — lives in Analytics tab; declutter mobile dashboard
         const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
         const map = {};
         DAYS.forEach(d=>{ map[d]=[]; });
@@ -1371,6 +1372,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
 
       {/* Pillar Health */}
       {(() => {
+        if(isMobile) return null;   // dense analytics block — hidden on mobile to declutter; full view in Analytics
         const PILLARS = WL.pillars || ["Local Connection","Location Contrast","Mission Reveal","App In Action","Travel Utility"];
         const PILLAR_COLORS = {
           "Local Connection": C.green,
