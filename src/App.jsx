@@ -2175,6 +2175,7 @@ const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hook
   const [sub, setSub] = useState("OVERVIEW");
   const [vidSort, setVidSort] = useState("recent"); // recent | score
   const [vidSearch, setVidSearch] = useState("");
+  const [vidPlat, setVidPlat] = useState("tiktok"); // mobile only: which platform's list to show
   const [vidAnalysis, setVidAnalysis] = useState({});
   const [vidLoading, setVidLoading]   = useState({});
   const [vidErr, setVidErr]           = useState(null);
@@ -2533,6 +2534,15 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
               })}
             </div>
           )}
+          {/* Mobile-only platform switcher — jump straight to TikTok or Instagram without scrolling */}
+          {isMobile && videos.length>0 && (
+            <div style={{ display:"flex", gap:8 }}>
+              {[{id:"tiktok",label:"TikTok",ic:I.tt,c:C.pink,n:videos.filter(v=>v.platform!=="instagram").length},{id:"instagram",label:"Instagram",ic:I.ig,c:C.purple,n:videos.filter(v=>v.platform==="instagram").length}].map(p=>{
+                const active=vidPlat===p.id;
+                return <button key={p.id} onClick={()=>setVidPlat(p.id)} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:7, padding:"11px 8px", borderRadius:12, border:`1px solid ${active?p.c:"rgba(255,255,255,0.1)"}`, background:active?`${p.c}15`:"transparent", color:active?p.c:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>{p.ic(14,active?p.c:"rgba(255,255,255,0.5)")}{p.label} <span style={{opacity:0.7}}>({p.n})</span></button>;
+              })}
+            </div>
+          )}
           {videos.length===0
             ? <EmptyState
                 color={C.cyan}
@@ -2542,16 +2552,16 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
               />
             : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:16 }}>
               {/* TikTok column */}
-              <div style={{ display:"flex", flexDirection:"column", gap:isMobile?12:12 }}>
+              {(!isMobile || vidPlat==="tiktok") && <div style={{ display:"flex", flexDirection:"column", gap:isMobile?12:12 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, padding:isMobile?"14px 18px":"12px 16px", borderRadius:16, background:`${C.pink}10`, border:`1px solid ${C.pink}25` }}>
                   <div style={{ width:28, height:28, borderRadius:10, background:`${C.pink}20`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.tt(14,C.pink)}</div>
                   <span style={{ fontSize:15, fontWeight:700, color:C.pink, letterSpacing:"0.05em" }}>TIKTOK</span>
                   <span style={{ marginLeft:"auto", fontSize:12, color:`${C.pink}aa`, fontWeight:700 }}>{prep(videos.filter(v=>v.platform!=="instagram")).length} VIDEOS</span>
                 </div>
                 {prep(videos.filter(v=>v.platform!=="instagram")).map((v,i)=>renderVidCard(v,i))}
-              </div>
+              </div>}
               {/* Instagram column */}
-              <div style={{ display:"flex", flexDirection:"column", gap:isMobile?12:12 }}>
+              {(!isMobile || vidPlat==="instagram") && <div style={{ display:"flex", flexDirection:"column", gap:isMobile?12:12 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, padding:isMobile?"14px 18px":"12px 16px", borderRadius:16, background:`${C.purple}10`, border:`1px solid ${C.purple}25` }}>
                   <div style={{ width:28, height:28, borderRadius:10, background:`${C.purple}20`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.ig(14,C.purple)}</div>
                   <span style={{ fontSize:15, fontWeight:700, color:C.purple, letterSpacing:"0.05em" }}>INSTAGRAM</span>
@@ -2565,7 +2575,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                   </div>
                 )}
                 {prep(videos.filter(v=>v.platform==="instagram")).map((v,i)=>renderVidCard(v,i))}
-              </div>
+              </div>}
             </div>
           }
 
