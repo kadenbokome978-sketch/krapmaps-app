@@ -1055,7 +1055,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           { label:"TT Followers", value:m?.tt_followers>=1e3?(m.tt_followers/1e3).toFixed(1)+"K":String(m?.tt_followers||0), color:C.pink, icon:I.tt },
           { label:"TT Views", value:ttViewsDisplay>=1e6?(ttViewsDisplay/1e6).toFixed(1)+"M":ttViewsDisplay>=1e3?(ttViewsDisplay/1e3).toFixed(1)+"K":String(ttViewsDisplay||0), color:C.cyan, icon:I.eye },
           { label:"IG Followers", value:(()=>{ const f=igData?.profile?.followers_count||m?.ig_followers||0; return f>=1e3?(f/1e3).toFixed(1)+"K":f?String(f):"--"; })(), color:C.yellow, icon:I.ig },
-          { label:"IG Organic", value:(()=>{ const t=videos.filter(v=>v.platform==="instagram").reduce((s,v)=>s+(v.views||0),0); return t>=1e6?(t/1e6).toFixed(1)+"M":t>=1e3?(t/1e3).toFixed(1)+"K":String(t||0); })(), color:C.purple, icon:I.ig },
+          { label:"IG Views", value:(()=>{ const t=videos.filter(v=>v.platform==="instagram").reduce((s,v)=>s+(v.views||0),0); return t>=1e6?(t/1e6).toFixed(1)+"M":t>=1e3?(t/1e3).toFixed(1)+"K":String(t||0); })(), color:C.purple, icon:I.ig },
         ].map((s,i)=>(
           <div key={i} data-card style={{ borderRadius:20, padding:isMobile?"20px 16px 16px":"26px 26px 22px", background:`linear-gradient(145deg,${s.color}16 0%,rgba(8,5,18,0.95) 70%)`, border:`1px solid ${s.color}30`, position:"relative", overflow:"hidden", boxShadow:`0 8px 32px ${s.color}08` }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${s.color},${s.color}00)`, borderRadius:"28px 28px 0 0" }}/>
