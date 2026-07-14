@@ -160,7 +160,11 @@
 
     /* Mobile content padding — applies up to 899px (portrait + landscape iPhones) */
     /* padding-top:0 so sticky mobile-header starts at viewport top */
-    .web-inner { padding:0 22px calc(48px + env(safe-area-inset-bottom)) !important; }
+    .web-inner { padding:0 16px calc(40px + env(safe-area-inset-bottom)) !important; }
+    /* Tighten vertical rhythm on mobile so the dashboard doesn't feel zoomed-in /
+       endlessly scrolling. Inline card gaps that were larger on mobile than desktop
+       are capped here without touching every component. */
+    .km-stagger { gap:18px !important; }
 
     /* Small phones */
     @media(max-width:374px) {
