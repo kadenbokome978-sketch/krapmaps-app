@@ -10676,13 +10676,14 @@ Return JSON:
               <div onClick={()=>setDrawerOpen(false)} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.6)", backdropFilter:"blur(6px)" }} />
               {/* Drawer panel */}
               <div style={{ position:"absolute", top:0, right:0, bottom:0, width:"72vw", maxWidth:300, background:"rgba(10,6,22,0.98)", borderLeft:"1px solid rgba(255,255,255,0.08)", display:"flex", flexDirection:"column", padding:"0 0 40px" }}>
-                {/* Drawer header */}
-                <div style={{ padding:"20px 24px 16px", borderBottom:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                  <div>
-                    <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" }}>{WL.appName}</div>
-                    <div style={{ fontSize:14, color:"rgba(255,255,255,0.6)", marginTop:2 }}>{WL.creator1}</div>
+                {/* Drawer header — account card */}
+                <div style={{ padding:"22px 18px 18px", borderBottom:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", gap:12, background:`linear-gradient(135deg,${WL.accentColor}12,transparent 70%)` }}>
+                  <div style={{ width:44, height:44, borderRadius:14, background:`linear-gradient(135deg,${WL.accentColor},${WL.accentColor2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:900, color:"#fff", flexShrink:0, boxShadow:`0 6px 18px ${WL.accentColor}45` }}>{(WL.creator1||"K")[0]}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:16, fontWeight:800, color:"#fff", fontFamily:C.fontHead, letterSpacing:"0.01em", lineHeight:1.15, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{WL.creator1}</div>
+                    <div style={{ fontSize:10.5, color:WL.accentColor, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", marginTop:3 }}>{WL.appName}</div>
                   </div>
-                  <button onClick={()=>setDrawerOpen(false)} aria-label="Close menu" style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:18, color:"rgba(255,255,255,0.7)" }}>×</button>
+                  <button onClick={()=>setDrawerOpen(false)} aria-label="Close menu" style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:18, color:"rgba(255,255,255,0.7)", flexShrink:0 }}>×</button>
                 </div>
                 {/* Nav items */}
                 <div style={{ flex:1, overflowY:"auto", padding:"16px 16px" }}>
