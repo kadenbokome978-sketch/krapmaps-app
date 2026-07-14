@@ -151,6 +151,7 @@
 
     /* ══ WEB LAYOUT — MOBILE FIRST (< 900px) ══ */
     .web-sidebar   { display:none; }
+    .web-topbar    { display:none !important; }  /* desktop breadcrumb bar — hidden on mobile (mobile-header replaces it) */
     .mobile-header { display:flex; }
     .mobile-nav    { display:none; }
 
@@ -186,6 +187,7 @@
     /* Desktop (900px+) — show sidebar */
     @media(min-width:900px) {
       body { overflow-x:hidden; }
+      .web-topbar { display:flex !important; }  /* restore desktop breadcrumb bar */
       .web-sidebar {
         display:flex !important; position:fixed;
         top:0; left:0; bottom:0; width:240px;
