@@ -2164,7 +2164,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={}, commentInsights=null, visualDNA=null, setIdeas }) => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [sentIdeas, setSentIdeas] = useState({});
-  const [hiddenInsights, setHiddenInsights] = useState({});
+  const [hiddenInsights, setHiddenInsights] = useState({ whatsWorking:true, nextVids:true, weekly:true, trends:true, visualDNA:true }); // collapsed by default
   const toggleHide = (key) => setHiddenInsights(h=>({...h,[key]:!h[key]}));
   const sendVidToIdeas = (v, key) => {
     if(!setIdeas || sentIdeas[key]) return;
