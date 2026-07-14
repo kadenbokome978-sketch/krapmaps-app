@@ -12098,10 +12098,10 @@ function FreeAuditApp({ onActivate }){
     <div style={{ minHeight:"100vh", background:"#07050F", color:"#fff" }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:isMobile?"14px 16px":"18px 32px", borderBottom:"1px solid rgba(255,255,255,0.07)", gap:12, flexWrap:"wrap" }}>
         <div style={{ fontFamily:C.fontHead, fontWeight:800, fontSize:18 }}>{wl.appName||"CreatorOS"}</div>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", justifyContent:"flex-end" }}>
           {!paid && <button onClick={()=>setShowPricing(true)} style={btn(`linear-gradient(135deg,${C.pink},${C.purple})`,"#fff")}>Upgrade to Pro</button>}
           <button onClick={onActivate} style={btn("rgba(255,255,255,0.06)","rgba(255,255,255,0.85)","1px solid rgba(255,255,255,0.12)")}>I have a code</button>
-          <button onClick={_signalSignedOut} style={btn("transparent","rgba(255,255,255,0.4)","1px solid rgba(255,255,255,0.08)")}>Sign out</button>
+          <button onClick={_signalSignedOut} style={btn(`${C.pink}12`,C.pink,`1px solid ${C.pink}40`)}>Sign out</button>
         </div>
       </div>
       {paid && (
