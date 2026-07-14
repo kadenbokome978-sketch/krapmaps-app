@@ -7849,9 +7849,10 @@ const DealsView = () => {
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?18:28 }}>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(150px,100%),1fr))", gap:12 }}>
         {[{l:"TOTAL EARNED",v:`£${totalEarned.toLocaleString()}`,c:C.green},{l:"IN PIPELINE",v:`£${pipeline.toLocaleString()}`,c:C.yellow},{l:"ACTIVE DEALS",v:deals.filter(d=>!["Paid","Declined"].includes(d.status)).length,c:C.cyan},{l:"ALL DEALS",v:deals.length,c:C.purple}].map((s,i)=>(
-          <div key={i} data-card style={{ borderRadius:16, padding:isMobile?"20px 18px":"18px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${s.c}25` }}>
+          <div key={i} data-card style={{ borderRadius:16, padding:isMobile?"18px 16px":"18px 20px", background:`linear-gradient(150deg,${s.c}14,rgba(8,5,18,0.9) 75%)`, border:`1px solid ${s.c}2a`, position:"relative", overflow:"hidden" }}>
+            <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${s.c},transparent)` }}/>
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700, marginBottom:8, fontFamily:C.fontHead }}>{s.l}</div>
-            <div style={{ fontSize:isMobile?24:28, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+            <div style={{ fontSize:isMobile?24:28, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1, textShadow:`0 0 20px ${s.c}30` }}>{s.v}</div>
           </div>
         ))}
       </div>
