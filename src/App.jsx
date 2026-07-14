@@ -7994,13 +7994,15 @@ Write today's briefing. Return ONLY JSON: {"headline":"one punchy line summarisi
     return r || {};
   };
 
-  const run = async (count=4) => {
+  const run = async (pool=7) => {
     if(loading) return;
     setLoading(true); setErr(null); setAddedAll(false); setAddedIds({}); setPhase("scan");
     try {
       const ctx = await buildCtx();
       setPhase("ideas");
-      const raw = await genIdeas(ctx, count);
+      // Generate a POOL of candidates, score them all, and keep only the winners —
+      // Autopilot's job is to hand you the best ideas, not list mediocre ones.
+      const raw = await genIdeas(ctx, pool);
       if(!raw.length) throw new Error("Autopilot couldn't generate ideas — try again.");
       setPhase("scoring"); setScoreProg([0, raw.length]);
       const scored = [];
@@ -8010,10 +8012,13 @@ Write today's briefing. Return ONLY JSON: {"headline":"one punchy line summarisi
         setScoreProg([i+1, raw.length]);
       }
       scored.sort((a,b)=>(b.score||0)-(a.score||0));
+      // Keep only strong ideas (>=72); always keep the top 3 so there's a plan even on a lean day.
+      const strong = scored.filter(s=>(s.score||0)>=72);
+      const kept = (strong.length>=3 ? strong : scored).slice(0,3);
       setPhase("planning");
-      const top = scored[0];
-      const plan = await makePlan(top, scored, ctx);
-      const out = { ...plan, ideas:scored, todaysMove:{ title: top.title, why: plan.why, trendWindow: plan.trendWindow }, topScript: plan.script, generatedAt: Date.now() };
+      const top = kept[0];
+      const plan = await makePlan(top, kept, ctx);
+      const out = { ...plan, ideas:kept, poolSize: raw.length, todaysMove:{ title: top.title, why: plan.why, trendWindow: plan.trendWindow }, topScript: plan.script, generatedAt: Date.now() };
       setBrief(out); saveJSON(AUTOPILOT_KEY, out);
     } catch(e){ setErr(e.message||"Autopilot run failed."); }
     setPhase(null); setLoading(false);
@@ -8121,7 +8126,7 @@ Write today's briefing. Return ONLY JSON: {"headline":"one punchy line summarisi
           )}
 
           <div style={{ display:"flex", gap:10, marginTop:16, flexWrap:"wrap", alignItems:"center" }}>
-            <button onClick={()=>run(4)} disabled={loading||!enoughData}
+            <button onClick={()=>run(7)} disabled={loading||!enoughData}
               style={{ padding:isMobile?"13px 20px":"12px 22px", borderRadius:12, border:"none", background:loading||!enoughData?"rgba(255,255,255,0.08)":`linear-gradient(135deg,${C.purple},${C.pink})`, color:loading||!enoughData?"rgba(255,255,255,0.4)":"#fff", fontFamily:C.fontHead, fontWeight:800, fontSize:14, cursor:loading||!enoughData?"default":"pointer", letterSpacing:"0.03em", boxShadow:loading||!enoughData?"none":`0 8px 24px ${C.purple}40`, display:"inline-flex", alignItems:"center", gap:8 }}>
               {loading ? <><Spin s={13} c="#fff"/> WORKING…</> : brief ? <>{I.zap(14,"currentColor")} RE-RUN AUTOPILOT</> : <>{I.zap(14,"currentColor")} RUN AUTOPILOT</>}
             </button>
@@ -8135,7 +8140,7 @@ Write today's briefing. Return ONLY JSON: {"headline":"one punchy line summarisi
         {/* Ideas — truly scored */}
         <div>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12, gap:12, flexWrap:"wrap" }}>
-            <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700 }}>Scored ideas · engine-scored, in your voice</div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700 }}>Your winners{brief.poolSize?` · best ${brief.ideas.length} of ${brief.poolSize} scored`:""}</div>
             <button onClick={addAll} disabled={addedAll} style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${addedAll?C.green:C.purple}45`, background:addedAll?`${C.green}12`:`${C.purple}12`, color:addedAll?C.green:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:addedAll?"default":"pointer", display:"inline-flex", alignItems:"center", gap:6 }}>
               {addedAll ? <>{I.tick(13,"currentColor")} ADDED</> : "+ ADD ALL TO CONTENT"}
             </button>
