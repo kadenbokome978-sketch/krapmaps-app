@@ -2375,6 +2375,39 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
         return (<>
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?14:16 }}>
 
+          {/* ── HERO — total reach + TikTok vs Instagram head-to-head ── */}
+          {(() => {
+            const combined = ttTotal + igTotal;
+            const ttPct = combined>0 ? (ttTotal/combined)*100 : 50;
+            const igPct = 100 - ttPct;
+            return (
+              <div style={{ borderRadius:20, overflow:"hidden", position:"relative", background:"linear-gradient(135deg,#0A0614 0%,#130a22 55%,#0A0614 100%)", border:"1px solid rgba(255,255,255,0.07)", padding:isMobile?"22px 20px":"30px 32px" }}>
+                <div style={{ position:"absolute", top:-90, left:-70, width:340, height:340, borderRadius:"50%", background:`radial-gradient(circle,${C.pink}22,transparent 70%)`, pointerEvents:"none" }}/>
+                <div style={{ position:"absolute", bottom:-90, right:-70, width:320, height:320, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}1e,transparent 70%)`, pointerEvents:"none" }}/>
+                <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${C.pink}70 40%,${C.purple}70 70%,transparent)` }}/>
+                <div style={{ position:"relative" }}>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.2em", textTransform:"uppercase", fontWeight:700, marginBottom:isMobile?10:14 }}>Total Reach · All Time</div>
+                  <HeroCount value={combined} style={{ fontSize:isMobile?46:76, fontWeight:700, lineHeight:0.9, fontFamily:C.fontHead, color:"#fff", letterSpacing:"-0.03em", textShadow:`0 0 90px ${C.pink}30`, display:"block" }} />
+                  {/* head-to-head bar */}
+                  <div style={{ marginTop:isMobile?20:24 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:9 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:7 }}>{I.tt(13,C.pink)}<span style={{ fontSize:13, fontWeight:700, color:"#fff", fontFamily:C.fontHead }}>{fmt(ttTotal)}</span><span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>· {Math.round(ttPct)}%</span></div>
+                      <div style={{ display:"flex", alignItems:"center", gap:7 }}><span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>{Math.round(igPct)}% ·</span><span style={{ fontSize:13, fontWeight:700, color:"#fff", fontFamily:C.fontHead }}>{fmt(igTotal)}</span>{I.ig(13,C.purple)}</div>
+                    </div>
+                    <div style={{ display:"flex", height:14, borderRadius:8, overflow:"hidden", background:"rgba(255,255,255,0.05)" }}>
+                      <div style={{ width:`${ttPct}%`, background:`linear-gradient(90deg,${C.pink},${C.pink}aa)`, transition:"width 0.9s cubic-bezier(.2,.8,.2,1)", boxShadow:`0 0 12px ${C.pink}60` }}/>
+                      <div style={{ width:`${igPct}%`, background:`linear-gradient(90deg,${C.purple}aa,${C.purple})`, transition:"width 0.9s cubic-bezier(.2,.8,.2,1)", boxShadow:`0 0 12px ${C.purple}60` }}/>
+                    </div>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}>
+                      <span style={{ fontSize:10, color:C.pink, fontWeight:700, letterSpacing:"0.1em" }}>TIKTOK</span>
+                      <span style={{ fontSize:10, color:C.purple, fontWeight:700, letterSpacing:"0.1em" }}>INSTAGRAM</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* ── MOBILE: big hero stat cards (full width, one per row) ── */}
           {[
             { platform:"TikTok", icon:I.tt, accent:C.pink, count:`${ttVids.length} videos`,
