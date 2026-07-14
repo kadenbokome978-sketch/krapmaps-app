@@ -2375,34 +2375,52 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
         return (<>
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?14:16 }}>
 
-          {/* ── HERO — total reach + TikTok vs Instagram head-to-head ── */}
+          {/* ── HERO — animated reach-growth curve ── */}
           {(() => {
             const combined = ttTotal + igTotal;
-            const ttPct = combined>0 ? (ttTotal/combined)*100 : 50;
-            const igPct = 100 - ttPct;
+            const ttPct = combined>0 ? Math.round((ttTotal/combined)*100) : 50;
+            const timeline = [...videos].filter(v=>v.created_at && !isNaN(new Date(v.created_at).getTime())).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+            let cum=0; const pts = timeline.map(v=>{ cum+=(v.views||0); return cum; });
+            const W=1000, H=220, max=Math.max(...pts,1);
+            const step = pts.length>1 ? W/(pts.length-1) : W;
+            const coords = pts.map((p,i)=>[i*step, H-(p/max)*(H-16)-8]);
+            const line = coords.map((c,i)=>`${i===0?"M":"L"}${c[0].toFixed(1)},${c[1].toFixed(1)}`).join(" ");
+            const area = coords.length>1 ? `${line} L${W},${H} L0,${H} Z` : "";
             return (
-              <div style={{ borderRadius:20, overflow:"hidden", position:"relative", background:"linear-gradient(135deg,#0A0614 0%,#130a22 55%,#0A0614 100%)", border:"1px solid rgba(255,255,255,0.07)", padding:isMobile?"22px 20px":"30px 32px" }}>
+              <div style={{ borderRadius:20, overflow:"hidden", position:"relative", background:"linear-gradient(135deg,#0A0614 0%,#130a22 55%,#0A0614 100%)", border:"1px solid rgba(255,255,255,0.07)", padding:isMobile?"22px 20px 8px":"28px 30px 10px" }}>
                 <div style={{ position:"absolute", top:-90, left:-70, width:340, height:340, borderRadius:"50%", background:`radial-gradient(circle,${C.pink}22,transparent 70%)`, pointerEvents:"none" }}/>
-                <div style={{ position:"absolute", bottom:-90, right:-70, width:320, height:320, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}1e,transparent 70%)`, pointerEvents:"none" }}/>
+                <div style={{ position:"absolute", bottom:-110, right:-70, width:340, height:340, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}1e,transparent 70%)`, pointerEvents:"none" }}/>
                 <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${C.pink}70 40%,${C.purple}70 70%,transparent)` }}/>
                 <div style={{ position:"relative" }}>
-                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.2em", textTransform:"uppercase", fontWeight:700, marginBottom:isMobile?10:14 }}>Total Reach · All Time</div>
-                  <HeroCount value={combined} style={{ fontSize:isMobile?46:76, fontWeight:700, lineHeight:0.9, fontFamily:C.fontHead, color:"#fff", letterSpacing:"-0.03em", textShadow:`0 0 90px ${C.pink}30`, display:"block" }} />
-                  {/* head-to-head bar */}
-                  <div style={{ marginTop:isMobile?20:24 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:9 }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:7 }}>{I.tt(13,C.pink)}<span style={{ fontSize:13, fontWeight:700, color:"#fff", fontFamily:C.fontHead }}>{fmt(ttTotal)}</span><span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>· {Math.round(ttPct)}%</span></div>
-                      <div style={{ display:"flex", alignItems:"center", gap:7 }}><span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>{Math.round(igPct)}% ·</span><span style={{ fontSize:13, fontWeight:700, color:"#fff", fontFamily:C.fontHead }}>{fmt(igTotal)}</span>{I.ig(13,C.purple)}</div>
+                  <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12 }}>
+                    <div>
+                      <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.2em", textTransform:"uppercase", fontWeight:700, marginBottom:isMobile?8:12 }}>Reach Growth · All Time</div>
+                      <HeroCount value={combined} style={{ fontSize:isMobile?42:72, fontWeight:700, lineHeight:0.9, fontFamily:C.fontHead, color:"#fff", letterSpacing:"-0.03em", textShadow:`0 0 90px ${C.pink}30`, display:"block" }} />
                     </div>
-                    <div style={{ display:"flex", height:14, borderRadius:8, overflow:"hidden", background:"rgba(255,255,255,0.05)" }}>
-                      <div style={{ width:`${ttPct}%`, background:`linear-gradient(90deg,${C.pink},${C.pink}aa)`, transition:"width 0.9s cubic-bezier(.2,.8,.2,1)", boxShadow:`0 0 12px ${C.pink}60` }}/>
-                      <div style={{ width:`${igPct}%`, background:`linear-gradient(90deg,${C.purple}aa,${C.purple})`, transition:"width 0.9s cubic-bezier(.2,.8,.2,1)", boxShadow:`0 0 12px ${C.purple}60` }}/>
-                    </div>
-                    <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}>
-                      <span style={{ fontSize:10, color:C.pink, fontWeight:700, letterSpacing:"0.1em" }}>TIKTOK</span>
-                      <span style={{ fontSize:10, color:C.purple, fontWeight:700, letterSpacing:"0.1em" }}>INSTAGRAM</span>
+                    {/* platform split — compact accent */}
+                    <div style={{ display:"flex", flexDirection:"column", gap:8, flexShrink:0, alignItems:"flex-end" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}><span style={{ fontSize:13, fontWeight:700, color:C.pink, fontFamily:C.fontHead }}>{ttPct}%</span>{I.tt(13,C.pink)}</div>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}><span style={{ fontSize:13, fontWeight:700, color:C.purple, fontFamily:C.fontHead }}>{100-ttPct}%</span>{I.ig(13,C.purple)}</div>
                     </div>
                   </div>
+                  {/* animated growth curve */}
+                  {coords.length>1 ? (
+                    <div style={{ marginTop:isMobile?14:18, marginLeft:isMobile?-20:-30, marginRight:isMobile?-20:-30 }}>
+                      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" width="100%" height={isMobile?110:150} style={{ display:"block" }}>
+                        <defs>
+                          <linearGradient id="ovreach" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={C.pink} stopOpacity="0.35"/>
+                            <stop offset="100%" stopColor={C.pink} stopOpacity="0"/>
+                          </linearGradient>
+                        </defs>
+                        <path d={area} fill="url(#ovreach)" style={{ animation:"km-fadein 1.2s ease" }}/>
+                        <path d={line} fill="none" stroke={C.pink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" style={{ strokeDasharray:4000, strokeDashoffset:4000, animation:"ovdraw 1.5s cubic-bezier(.4,0,.2,1) forwards", filter:`drop-shadow(0 0 6px ${C.pink}66)` }}/>
+                      </svg>
+                      <style>{`@keyframes ovdraw{to{stroke-dashoffset:0}}`}</style>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop:16, marginBottom:14, fontSize:13, color:"rgba(255,255,255,0.4)", fontFamily:C.fontBody }}>Your reach curve builds here as you log videos.</div>
+                  )}
                 </div>
               </div>
             );
