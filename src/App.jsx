@@ -10346,7 +10346,7 @@ Return JSON:
             <MLabel>TikTok URL</MLabel>
             <MInput value={form.url} onChange={set("url")} placeholder="https://tiktok.com/..." />
             <div style={{ color:C.dim,fontSize:isMobile?14:17,marginBottom:16,lineHeight:1.6 }}>Paste a TikTok URL and we'll log it. Stats auto-sync every 12hrs via TIKWM.</div>
-            <MBtn onClick={()=>addVideo({ title:form.url.split("/").pop()||"TikTok video",type:"facecam",hook:"achievement",views:0,likes:0,url:form.url,date:form.posted||today(),created_at:new Date(form.posted||today()).toISOString() })}>Log URL</MBtn>
+            <MBtn onClick={()=>addVideo({ title:(form.title&&form.title.trim())||"Pending sync…",type:form.type||"facecam",hook:form.hook||"achievement",views:0,likes:0,url:form.url,date:form.posted||today(),created_at:new Date(form.posted||today()).toISOString() })}>Log URL</MBtn>
           </div>
         )}
       </ModalBase>
