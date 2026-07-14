@@ -2768,7 +2768,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
               {/* Card header */}
               <div style={{ display:"flex", alignItems:"center", gap:11, padding:"15px 18px", borderBottom:hiddenInsights[card.key]?"none":`1px solid rgba(255,255,255,0.05)`, background:`linear-gradient(135deg,${card.color}0e,transparent 60%)` }}>
                 <div style={{ width:34, height:34, borderRadius:10, background:`${card.color}18`, border:`1px solid ${card.color}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{_ic(16,card.color)}</div>
-                <span style={{ fontSize:15, fontWeight:800, fontFamily:C.fontHead, color:"#fff", letterSpacing:"0.01em", flex:1 }}>{card.label}</span>
+                <span style={{ fontSize:14, fontWeight:800, fontFamily:C.fontHead, color:"#fff", letterSpacing:"0.1em", textTransform:"uppercase", flex:1 }}>{card.label}</span>
                 {card.badge && <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)" }}>{card.badge}</span>}
                 <div style={{ display:"flex", gap:6 }}>
                   {card.runKey && (
