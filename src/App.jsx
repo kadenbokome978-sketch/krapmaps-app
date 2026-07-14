@@ -993,6 +993,105 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         </div>
       ))}
 
+      {/* ══ HERO BANNER ══════════════════════════════════════════ */}
+      <div style={{ borderRadius:20, overflow:"hidden", position:"relative", background:"linear-gradient(135deg,#0A0614 0%,#120820 50%,#0A0614 100%)", border:"1px solid rgba(255,255,255,0.06)" }}>
+        {/* Ambient orbs */}
+        <div style={{ position:"absolute", top:-100, left:-80, width:400, height:400, borderRadius:"50%", background:`radial-gradient(circle,${C.pink}25 0%,transparent 70%)`, pointerEvents:"none" }}/>
+        <div style={{ position:"absolute", bottom:-100, right:-80, width:350, height:350, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}20 0%,transparent 70%)`, pointerEvents:"none" }}/>
+        <div style={{ position:"absolute", top:"30%", left:"40%", width:250, height:250, borderRadius:"50%", background:`radial-gradient(circle,#3B1FFF18 0%,transparent 70%)`, pointerEvents:"none" }}/>
+        {/* Top shimmer */}
+        <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent 0%,${C.pink}60 30%,${C.purple}60 70%,transparent 100%)` }}/>
+        <div style={{ position:"relative", padding:isMobile?"22px 18px":"44px 48px", display:"flex", alignItems:"stretch", gap:isMobile?20:48 }}>
+          {/* Left: main stat */}
+          <div style={{ flex:1 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:isMobile?12:16 }}>
+              <div style={{ width:32, height:32, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.eye(14,"#fff")}</div>
+              <span style={{ fontSize:14, color:"rgba(255,255,255,0.85)", letterSpacing:"0.2em", textTransform:"uppercase", fontWeight:700 }}>Total Views All Time</span>
+            </div>
+            <HeroCount value={allViewsDisplay} style={{ fontSize:isMobile?44:88, fontWeight:700, lineHeight:0.85, fontFamily:C.fontHead, color:"#fff", letterSpacing:"-0.03em", textShadow:`0 0 100px ${C.pink}35`, display:"block" }} />
+            {sinceDelta && (
+              <div style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:12, padding:isMobile?"6px 12px":"6px 14px", borderRadius:20, background:`${C.green}14`, border:`1px solid ${C.green}35` }}>
+                <span style={{ fontSize:11, color:C.green }}>▲</span>
+                <span style={{ fontSize:isMobile?12:13, fontWeight:700, color:C.green }}>+{fmt(sinceDelta)} since your last visit</span>
+              </div>
+            )}
+            <div style={{ marginTop:16, display:"flex", flexWrap:"wrap", alignItems:"center", gap:isMobile?12:24 }}>
+              {!isMobile && <div style={{ height:40, width:1, background:"rgba(255,255,255,0.08)" }}/>}
+              {[
+                {l:WL.statLabels?.followers||"Followers",v:m?.tt_followers||0,c:C.pink},
+                {l:WL.statLabels?.custom1Label||"Stat",v:m?.[WL.statLabels?.custom1Key||"bins"]||0,c:C.yellow},
+              ].map((s,i)=>(
+                <div key={i}>
+                  <div style={{ fontSize:isMobile?10:14, color:"rgba(255,255,255,0.6)", letterSpacing:"0.14em", textTransform:"uppercase" }}>{s.l}</div>
+                  <div style={{ fontSize:isMobile?22:28, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1.1, textShadow:`0 0 16px ${s.c}50` }}>{s.v.toLocaleString()}</div>
+                </div>
+              ))}
+              {!isMobile && <div style={{ height:40, width:1, background:"rgba(255,255,255,0.08)" }}/>}
+              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                <div style={{ width:7, height:7, borderRadius:"50%", background:scrapedStats?.scraped_at?C.green:"rgba(255,255,255,0.4)", boxShadow:scrapedStats?.scraped_at?`0 0 8px ${C.green}`:""  }}/>
+                <span style={{ fontSize:isMobile?12:17, color:"rgba(255,255,255,0.7)", letterSpacing:"0.08em" }}>{scrapedStats?.scraped_at?"SYNCED":"NOT SYNCED"}</span>
+              </div>
+            </div>
+          </div>
+          {/* Right: sparkline */}
+          <div style={{ width:isMobile?90:220, display:isMobile?"none":"flex", flexDirection:"column", justifyContent:"flex-end", paddingBottom:8, opacity:0.75 }}>
+            <Sparkline data={[0.25,0.4,0.35,0.6,0.55,0.8,1].map(f=>Math.round((ttViewsDisplay||500)*f))} color={C.pink} height={70}/>
+          </div>
+        </div>
+      </div>
+
+      {/* ══ STAT CARDS ════════════════════════════════════════════ */}
+      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fit,minmax(200px,1fr))", gap:isMobile?12:14, marginBottom:isMobile?28:32 }}>
+        {[
+          { label:"TT Followers", value:m?.tt_followers>=1e3?(m.tt_followers/1e3).toFixed(1)+"K":String(m?.tt_followers||0), color:C.pink, icon:I.tt },
+          { label:"TT Views", value:ttViewsDisplay>=1e6?(ttViewsDisplay/1e6).toFixed(1)+"M":ttViewsDisplay>=1e3?(ttViewsDisplay/1e3).toFixed(1)+"K":String(ttViewsDisplay||0), color:C.cyan, icon:I.eye },
+          { label:"IG Followers", value:(()=>{ const f=igData?.profile?.followers_count||m?.ig_followers||0; return f>=1e3?(f/1e3).toFixed(1)+"K":f?String(f):"--"; })(), color:C.yellow, icon:I.ig },
+          { label:"IG Organic", value:(()=>{ const t=videos.filter(v=>v.platform==="instagram").reduce((s,v)=>s+(v.views||0),0); return t>=1e6?(t/1e6).toFixed(1)+"M":t>=1e3?(t/1e3).toFixed(1)+"K":String(t||0); })(), color:C.purple, icon:I.ig },
+        ].map((s,i)=>(
+          <div key={i} data-card style={{ borderRadius:20, padding:isMobile?"20px 16px 16px":"26px 26px 22px", background:`linear-gradient(145deg,${s.color}16 0%,rgba(8,5,18,0.95) 70%)`, border:`1px solid ${s.color}30`, position:"relative", overflow:"hidden", boxShadow:`0 8px 32px ${s.color}08` }}>
+            <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${s.color},${s.color}00)`, borderRadius:"28px 28px 0 0" }}/>
+            <div style={{ position:"absolute", bottom:-40, right:-40, width:130, height:130, borderRadius:"50%", background:`${s.color}12`, filter:"blur(40px)", pointerEvents:"none" }}/>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+              <div style={{ width:42, height:42, borderRadius:12, background:`linear-gradient(135deg,${s.color}25,${s.color}0a)`, border:`1px solid ${s.color}30`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 4px 16px ${s.color}18` }}>{s.icon(18,s.color)}</div>
+              <div style={{ width:28, height:28, borderRadius:8, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                {I.trend(12,s.color)}
+              </div>
+            </div>
+            <div style={{ fontSize:isMobile?24:44, fontWeight:700, fontFamily:C.fontHead, color:"#fff", lineHeight:1, letterSpacing:"-0.01em", marginBottom:10, textShadow:`0 0 30px ${s.color}30` }}>{s.value}</div>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.35)", letterSpacing:"0.12em", textTransform:"uppercase" }}>{s.label}</div>
+              <div style={{ width:40, height:2, borderRadius:1, background:`linear-gradient(90deg,${s.color}80,${s.color}10)` }}/>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ══ AI STRATEGY ════════════════════════════════════════════ */}
+      <div style={{ borderRadius:16, padding:isMobile?"18px 16px":"22px 24px", background:"linear-gradient(145deg,rgba(255,255,255,0.02),rgba(10,6,20,0.8))", border:"1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:isMobile?12:16 }}>AI Strategy</div>
+        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:isMobile?8:10 }}>
+          {[
+            { ic:I.search, l:"WHAT'S WORKING",  desc:"Analyse top content", c:C.cyan,   m:"analysis" },
+            { ic:I.target, l:"NEXT VIDEOS",      desc:"AI recommendations", c:C.green,  m:"nextVids" },
+            { ic:I.idea,   l:"ADD IDEA",         desc:"Brainstorm content",  c:C.purple, fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); } },
+            { ic:I.cal,    l:"SCHEDULE",         desc:"Plan your calendar",  c:C.pink,   fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addCal"),50); } },
+          ].map((a,i)=>(
+            <button data-btn key={i} onClick={a.fn || (()=>runAI&&runAI(a.m))} disabled={a.m&&aiLoad&&aiLoad[a.m]} className={a.m&&aiLoad&&aiLoad[a.m]?"km-shimmer-wrap":undefined}
+              style={{ display:"flex", flexDirection:isMobile?"column":"row", alignItems:isMobile?"flex-start":"center", gap:isMobile?10:14, padding:isMobile?"14px 14px":"16px 18px", borderRadius:16, background:`linear-gradient(135deg,${a.c}0c,rgba(10,6,20,0.6))`, border:`1px solid ${aiLoad&&aiLoad[a.m]?a.c+"55":a.c+"1e"}`, cursor:"pointer", fontFamily:C.fontHead, opacity:aiLoad&&aiLoad[a.m]?0.85:1, transition:"all 0.2s", textAlign:"left", position:"relative", overflow:"hidden" }}>
+              <div style={{ position:"absolute", top:0, left:0, bottom:0, width:2, background:`linear-gradient(180deg,${a.c},${a.c}00)`, borderRadius:"14px 0 0 14px" }}/>
+              <div style={{ width:isMobile?40:46, height:isMobile?40:46, borderRadius:12, background:`linear-gradient(135deg,${a.c}18,${a.c}06)`, border:`1px solid ${a.c}25`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{aiLoad&&aiLoad[a.m]?<Spin s={20} c={a.c}/>:a.ic(isMobile?20:22,a.c)}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:isMobile?13.5:16, fontWeight:700, color:"#fff", letterSpacing:"0.03em", marginBottom:3 }}>{a.l}</div>
+                {aiLoad&&aiLoad[a.m]
+                  ? <span key="w" style={{ fontSize:12, color:a.c, fontWeight:600, animation:"km-fadein 0.4s ease" }}>Working…</span>
+                  : <div style={{ fontSize:isMobile?11:13, color:"rgba(255,255,255,0.65)" }}>{a.desc}</div>}
+              </div>
+              {!isMobile && <div style={{ fontSize:16, color:`${a.c}60` }}>›</div>}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ══ RETENTION BAR — streak, XP, intelligence ══════════════ */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(160px,100%),1fr))", gap:10 }}>
         {/* Daily Streak */}
@@ -1046,105 +1145,6 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             </div>
           );
         })()}
-      </div>
-
-      {/* ══ HERO BANNER ══════════════════════════════════════════ */}
-      <div style={{ borderRadius:20, overflow:"hidden", position:"relative", background:"linear-gradient(135deg,#0A0614 0%,#120820 50%,#0A0614 100%)", border:"1px solid rgba(255,255,255,0.06)" }}>
-        {/* Ambient orbs */}
-        <div style={{ position:"absolute", top:-100, left:-80, width:400, height:400, borderRadius:"50%", background:`radial-gradient(circle,${C.pink}25 0%,transparent 70%)`, pointerEvents:"none" }}/>
-        <div style={{ position:"absolute", bottom:-100, right:-80, width:350, height:350, borderRadius:"50%", background:`radial-gradient(circle,${C.purple}20 0%,transparent 70%)`, pointerEvents:"none" }}/>
-        <div style={{ position:"absolute", top:"30%", left:"40%", width:250, height:250, borderRadius:"50%", background:`radial-gradient(circle,#3B1FFF18 0%,transparent 70%)`, pointerEvents:"none" }}/>
-        {/* Top shimmer */}
-        <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent 0%,${C.pink}60 30%,${C.purple}60 70%,transparent 100%)` }}/>
-        <div style={{ position:"relative", padding:isMobile?"22px 18px":"44px 48px", display:"flex", alignItems:"stretch", gap:isMobile?20:48 }}>
-          {/* Left: main stat */}
-          <div style={{ flex:1 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:isMobile?12:16 }}>
-              <div style={{ width:32, height:32, borderRadius:10, background:`linear-gradient(135deg,${C.pink},${C.purple})`, display:"flex", alignItems:"center", justifyContent:"center" }}>{I.eye(14,"#fff")}</div>
-              <span style={{ fontSize:14, color:"rgba(255,255,255,0.85)", letterSpacing:"0.2em", textTransform:"uppercase", fontWeight:700 }}>Total Views All Time</span>
-            </div>
-            <HeroCount value={allViewsDisplay} style={{ fontSize:isMobile?44:88, fontWeight:700, lineHeight:0.85, fontFamily:C.fontHead, color:"#fff", letterSpacing:"-0.03em", textShadow:`0 0 100px ${C.pink}35`, display:"block" }} />
-            {sinceDelta && (
-              <div style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:12, padding:isMobile?"6px 12px":"6px 14px", borderRadius:20, background:`${C.green}14`, border:`1px solid ${C.green}35` }}>
-                <span style={{ fontSize:11, color:C.green }}>▲</span>
-                <span style={{ fontSize:isMobile?12:13, fontWeight:700, color:C.green }}>+{fmt(sinceDelta)} since your last visit</span>
-              </div>
-            )}
-            <div style={{ marginTop:16, display:"flex", flexWrap:"wrap", alignItems:"center", gap:isMobile?12:24 }}>
-              {!isMobile && <div style={{ height:40, width:1, background:"rgba(255,255,255,0.08)" }}/>}
-              {[
-                {l:WL.statLabels?.followers||"Followers",v:m?.tt_followers||0,c:C.pink},
-                {l:WL.statLabels?.custom1Label||"Stat",v:m?.[WL.statLabels?.custom1Key||"bins"]||0,c:C.yellow},
-              ].map((s,i)=>(
-                <div key={i}>
-                  <div style={{ fontSize:isMobile?10:14, color:"rgba(255,255,255,0.6)", letterSpacing:"0.14em", textTransform:"uppercase" }}>{s.l}</div>
-                  <div style={{ fontSize:isMobile?22:28, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1.1, textShadow:`0 0 16px ${s.c}50` }}>{s.v.toLocaleString()}</div>
-                </div>
-              ))}
-              {!isMobile && <div style={{ height:40, width:1, background:"rgba(255,255,255,0.08)" }}/>}
-              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                <div style={{ width:7, height:7, borderRadius:"50%", background:scrapedStats?.scraped_at?C.green:"rgba(255,255,255,0.4)", boxShadow:scrapedStats?.scraped_at?`0 0 8px ${C.green}`:""  }}/>
-                <span style={{ fontSize:isMobile?12:17, color:"rgba(255,255,255,0.7)", letterSpacing:"0.08em" }}>{scrapedStats?.scraped_at?"SYNCED":"NOT SYNCED"}</span>
-              </div>
-            </div>
-          </div>
-          {/* Right: sparkline */}
-          <div style={{ width:isMobile?90:220, display:isMobile?"none":"flex", flexDirection:"column", justifyContent:"flex-end", paddingBottom:8, opacity:0.75 }}>
-            <Sparkline data={[0.25,0.4,0.35,0.6,0.55,0.8,1].map(f=>Math.round((ttViewsDisplay||500)*f))} color={C.pink} height={70}/>
-          </div>
-        </div>
-      </div>
-
-      {/* ══ AI STRATEGY ════════════════════════════════════════════ */}
-      <div style={{ borderRadius:16, padding:isMobile?"18px 16px":"22px 24px", background:"linear-gradient(145deg,rgba(255,255,255,0.02),rgba(10,6,20,0.8))", border:"1px solid rgba(255,255,255,0.06)" }}>
-        <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:isMobile?12:16 }}>AI Strategy</div>
-        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:isMobile?8:10 }}>
-          {[
-            { ic:I.search, l:"WHAT'S WORKING",  desc:"Analyse top content", c:C.cyan,   m:"analysis" },
-            { ic:I.target, l:"NEXT VIDEOS",      desc:"AI recommendations", c:C.green,  m:"nextVids" },
-            { ic:I.idea,   l:"ADD IDEA",         desc:"Brainstorm content",  c:C.purple, fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); } },
-            { ic:I.cal,    l:"SCHEDULE",         desc:"Plan your calendar",  c:C.pink,   fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addCal"),50); } },
-          ].map((a,i)=>(
-            <button data-btn key={i} onClick={a.fn || (()=>runAI&&runAI(a.m))} disabled={a.m&&aiLoad&&aiLoad[a.m]} className={a.m&&aiLoad&&aiLoad[a.m]?"km-shimmer-wrap":undefined}
-              style={{ display:"flex", flexDirection:isMobile?"column":"row", alignItems:isMobile?"flex-start":"center", gap:isMobile?10:14, padding:isMobile?"14px 14px":"16px 18px", borderRadius:16, background:`linear-gradient(135deg,${a.c}0c,rgba(10,6,20,0.6))`, border:`1px solid ${aiLoad&&aiLoad[a.m]?a.c+"55":a.c+"1e"}`, cursor:"pointer", fontFamily:C.fontHead, opacity:aiLoad&&aiLoad[a.m]?0.85:1, transition:"all 0.2s", textAlign:"left", position:"relative", overflow:"hidden" }}>
-              <div style={{ position:"absolute", top:0, left:0, bottom:0, width:2, background:`linear-gradient(180deg,${a.c},${a.c}00)`, borderRadius:"14px 0 0 14px" }}/>
-              <div style={{ width:isMobile?40:46, height:isMobile?40:46, borderRadius:12, background:`linear-gradient(135deg,${a.c}18,${a.c}06)`, border:`1px solid ${a.c}25`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{aiLoad&&aiLoad[a.m]?<Spin s={20} c={a.c}/>:a.ic(isMobile?20:22,a.c)}</div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:isMobile?13.5:16, fontWeight:700, color:"#fff", letterSpacing:"0.03em", marginBottom:3 }}>{a.l}</div>
-                {aiLoad&&aiLoad[a.m]
-                  ? <span key="w" style={{ fontSize:12, color:a.c, fontWeight:600, animation:"km-fadein 0.4s ease" }}>Working…</span>
-                  : <div style={{ fontSize:isMobile?11:13, color:"rgba(255,255,255,0.65)" }}>{a.desc}</div>}
-              </div>
-              {!isMobile && <div style={{ fontSize:16, color:`${a.c}60` }}>›</div>}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ══ STAT CARDS ════════════════════════════════════════════ */}
-      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fit,minmax(200px,1fr))", gap:isMobile?12:14, marginBottom:isMobile?28:32 }}>
-        {[
-          { label:"TT Followers", value:m?.tt_followers>=1e3?(m.tt_followers/1e3).toFixed(1)+"K":String(m?.tt_followers||0), color:C.pink, icon:I.tt },
-          { label:"TT Views", value:ttViewsDisplay>=1e6?(ttViewsDisplay/1e6).toFixed(1)+"M":ttViewsDisplay>=1e3?(ttViewsDisplay/1e3).toFixed(1)+"K":String(ttViewsDisplay||0), color:C.cyan, icon:I.eye },
-          { label:"IG Followers", value:(()=>{ const f=igData?.profile?.followers_count||m?.ig_followers||0; return f>=1e3?(f/1e3).toFixed(1)+"K":f?String(f):"--"; })(), color:C.yellow, icon:I.ig },
-          { label:"IG Organic", value:(()=>{ const t=videos.filter(v=>v.platform==="instagram").reduce((s,v)=>s+(v.views||0),0); return t>=1e6?(t/1e6).toFixed(1)+"M":t>=1e3?(t/1e3).toFixed(1)+"K":String(t||0); })(), color:C.purple, icon:I.ig },
-        ].map((s,i)=>(
-          <div key={i} data-card style={{ borderRadius:20, padding:isMobile?"20px 16px 16px":"26px 26px 22px", background:`linear-gradient(145deg,${s.color}16 0%,rgba(8,5,18,0.95) 70%)`, border:`1px solid ${s.color}30`, position:"relative", overflow:"hidden", boxShadow:`0 8px 32px ${s.color}08` }}>
-            <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${s.color},${s.color}00)`, borderRadius:"28px 28px 0 0" }}/>
-            <div style={{ position:"absolute", bottom:-40, right:-40, width:130, height:130, borderRadius:"50%", background:`${s.color}12`, filter:"blur(40px)", pointerEvents:"none" }}/>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
-              <div style={{ width:42, height:42, borderRadius:12, background:`linear-gradient(135deg,${s.color}25,${s.color}0a)`, border:`1px solid ${s.color}30`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 4px 16px ${s.color}18` }}>{s.icon(18,s.color)}</div>
-              <div style={{ width:28, height:28, borderRadius:8, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                {I.trend(12,s.color)}
-              </div>
-            </div>
-            <div style={{ fontSize:isMobile?24:44, fontWeight:700, fontFamily:C.fontHead, color:"#fff", lineHeight:1, letterSpacing:"-0.01em", marginBottom:10, textShadow:`0 0 30px ${s.color}30` }}>{s.value}</div>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-              <div style={{ fontSize:12, color:"rgba(255,255,255,0.35)", letterSpacing:"0.12em", textTransform:"uppercase" }}>{s.label}</div>
-              <div style={{ width:40, height:2, borderRadius:1, background:`linear-gradient(90deg,${s.color}80,${s.color}10)` }}/>
-            </div>
-          </div>
-        ))}
       </div>
 
       {/* ══ PERFORMANCE CHART ══════════════════════════════════════ */}
