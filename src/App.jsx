@@ -2465,31 +2465,6 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
             </div>
           ))}
 
-          {/* Side by side charts */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:14 }}>
-            {/* TikTok top videos */}
-            <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"24px 26px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.pink}20`, position:"relative", overflow:"hidden" }}>
-              <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?12:16 }}>
-                <div style={{ fontSize:isMobile?15:14, fontWeight:700, color:"#fff", letterSpacing:"0.06em" }}>TikTok Top Videos</div>
-                <span style={{ fontSize:20, fontWeight:700, fontFamily:C.fontHead, color:C.pink }}>{fmt(ttBarData[0]?.value||0)}</span>
-              </div>
-              {ttBarData.length>0 ? <GlowBarChart data={ttBarData} color={C.pink} height={160} dataKey="value" xKey="label"/>
-                : <div style={{height:160,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"rgba(255,255,255,0.45)",fontStyle:"italic"}}>No TikTok videos yet</div>}
-            </div>
-
-            {/* Instagram top reels */}
-            <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"24px 26px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.purple}20`, position:"relative", overflow:"hidden" }}>
-              <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.purple},${C.purple}00)` }}/>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:isMobile?12:16 }}>
-                <div style={{ fontSize:isMobile?15:14, fontWeight:700, color:"#fff", letterSpacing:"0.06em" }}>Instagram Top Reels</div>
-                <span style={{ fontSize:20, fontWeight:700, fontFamily:C.fontHead, color:C.purple }}>{fmt(igBarData[0]?.value||0)}</span>
-              </div>
-              {igBarData.length>0 ? <GlowBarChart data={igBarData} color={C.purple} height={160} dataKey="value" xKey="label"/>
-                : <div style={{height:160,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"rgba(255,255,255,0.45)",fontStyle:"italic"}}>Sync IG reels via Settings</div>}
-            </div>
-          </div>
-
           {/* Like ratio comparison + hook performance */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(200px,100%),1fr))", gap:14 }}>
             {/* Ratio comparison */}
@@ -2506,10 +2481,6 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                   </div>
                 </div>
               ))}
-              <div style={{ marginTop:20, paddingTop:16, borderTop:"1px solid rgba(255,255,255,0.06)" }}>
-                <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:8 }}>Platform Split</div>
-                <GlowDonut data={[{name:"TikTok",value:ttTotal||1,color:C.pink},{name:"Instagram",value:igTotal||1,color:C.purple}]} size={80} innerRadius={22} outerRadius={36}/>
-              </div>
             </div>
 
             {/* Hook performance */}
