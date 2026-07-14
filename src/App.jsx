@@ -1055,7 +1055,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           { label:"TT Followers", value:m?.tt_followers>=1e3?(m.tt_followers/1e3).toFixed(1)+"K":String(m?.tt_followers||0), color:C.pink, icon:I.tt },
           { label:"TT Views", value:ttViewsDisplay>=1e6?(ttViewsDisplay/1e6).toFixed(1)+"M":ttViewsDisplay>=1e3?(ttViewsDisplay/1e3).toFixed(1)+"K":String(ttViewsDisplay||0), color:C.cyan, icon:I.eye },
           { label:"IG Followers", value:(()=>{ const f=igData?.profile?.followers_count||m?.ig_followers||0; return f>=1e3?(f/1e3).toFixed(1)+"K":f?String(f):"--"; })(), color:C.yellow, icon:I.ig },
-          { label:"IG Organic", value:(()=>{ const t=videos.filter(v=>v.platform==="instagram").reduce((s,v)=>s+(v.views||0),0); return t>=1e6?(t/1e6).toFixed(1)+"M":t>=1e3?(t/1e3).toFixed(1)+"K":String(t||0); })(), color:C.purple, icon:I.ig },
+          { label:"IG Views", value:(()=>{ const t=videos.filter(v=>v.platform==="instagram").reduce((s,v)=>s+(v.views||0),0); return t>=1e6?(t/1e6).toFixed(1)+"M":t>=1e3?(t/1e3).toFixed(1)+"K":String(t||0); })(), color:C.purple, icon:I.ig },
         ].map((s,i)=>(
           <div key={i} data-card style={{ borderRadius:20, padding:isMobile?"20px 16px 16px":"26px 26px 22px", background:`linear-gradient(145deg,${s.color}16 0%,rgba(8,5,18,0.95) 70%)`, border:`1px solid ${s.color}30`, position:"relative", overflow:"hidden", boxShadow:`0 8px 32px ${s.color}08` }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${s.color},${s.color}00)`, borderRadius:"28px 28px 0 0" }}/>
@@ -7107,6 +7107,41 @@ async function callGeminiVideo(videoUrl, prompt) {
   }
 }
 
+// Upload a raw video FILE to Gemini, wait for it to process, and run a prompt
+// against it. Returns the model's text. Used by the Pre-Post Check (vision on an
+// unposted clip). onStatus(msg) surfaces progress to the UI.
+async function geminiUploadAnalyse(file, prompt, onStatus=()=>{}) {
+  const cfg = loadJSON(KEYS_KEY, {});
+  const geminiKey = cfg?.keys?.gemini || BAKED_GEMINI_KEY;
+  if(!geminiKey) throw new Error("No Gemini key — add one in Settings (vision needs Gemini).");
+  const mimeType = file.type === "video/quicktime" ? "video/mov" : (file.type || "video/mp4");
+  onStatus("Uploading your clip…");
+  const boundary = "GeminiBound" + String(file.size||0) + (file.lastModified||0);
+  const enc = new TextEncoder();
+  const metaBytes = enc.encode(`--${boundary}\r\nContent-Type: application/json\r\n\r\n` + JSON.stringify({ file:{ display_name:file.name } }) + `\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`);
+  const tailBytes = enc.encode(`\r\n--${boundary}--`);
+  const body = new Blob([metaBytes, file, tailBytes]);
+  const uploadRes = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}&uploadType=multipart`, { method:"POST", headers:{ "Content-Type":`multipart/related; boundary=${boundary}` }, body });
+  if(!uploadRes.ok) { const e = await uploadRes.json().catch(()=>({})); throw new Error(`Upload failed (${uploadRes.status}) ${e?.error?.message||""}`); }
+  const uploadData = await uploadRes.json();
+  const fileUri = uploadData?.file?.uri;
+  if(!fileUri) throw new Error("No file URI from Gemini");
+  onStatus("Watching your video…");
+  const fileId = fileUri.split("/files/")[1] || fileUri.split("/").pop();
+  let ready = false;
+  for(let i=0;i<40;i++){
+    await new Promise(r=>setTimeout(r,3000));
+    const s = await fetch(`https://generativelanguage.googleapis.com/v1beta/files/${fileId}?key=${geminiKey}`);
+    if(s.ok){ const sd = await s.json(); if(sd.state==="ACTIVE"){ ready=true; break; } if(sd.state==="FAILED") throw new Error("Gemini couldn't process that file — export as MP4 and retry."); }
+  }
+  if(!ready) throw new Error("Processing timed out — try a shorter clip.");
+  onStatus("Scoring it…");
+  const genRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ contents:[{ parts:[{ file_data:{ mime_type:mimeType, file_uri:fileUri } }, { text:prompt }] }], generationConfig:{ responseMimeType:"application/json", maxOutputTokens:1800 } }) });
+  if(!genRes.ok){ const e = await genRes.json().catch(()=>({})); throw new Error(`Gemini error ${genRes.status} ${e?.error?.message||""}`); }
+  const genData = await genRes.json();
+  return genData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+}
+
 // Multi-model consensus — run same prompt through Claude + GPT4o, merge insights
 // ── GEMINI — text JSON scoring (3rd ensemble model, optional) ──
 async function callGeminiText(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.", maxTokens=2000) {
@@ -8229,9 +8264,136 @@ Write today's briefing. Return ONLY JSON: {"headline":"one punchy line summarisi
   );
 }
 
+// ── PRE-POST CHECK ────────────────────────────────────────────────
+// The standout: upload your FINISHED (unposted) video, the AI watches it and
+// gives a GO / RISKY / NO verdict + predicted views + a retention heatmap +
+// timestamped fixes. The "don't post until you've checked it" habit.
+function PrePostCheck({ videos=[], WL={} }) {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const [file, setFile] = useState(null);
+  const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [res, setRes] = useState(null);
+  const [err, setErr] = useState(null);
+  const fileRef = useRef();
+  const hasGemini = !!((loadJSON(KEYS_KEY,{})?.keys?.gemini) || BAKED_GEMINI_KEY);
+
+  const run = async (f) => {
+    if(!f) return;
+    setLoading(true); setErr(null); setRes(null); setFile(f); setStatus("Preparing…");
+    try {
+      const wl = loadWL();
+      const organic = videos.filter(v=>!v.boosted);
+      const avgV = organic.length ? Math.round(organic.reduce((s,v)=>s+(v.views||0),0)/organic.length) : 0;
+      const prompt = `You are the harshest, most accurate PRE-PUBLISH reviewer for ${wl.handle||"a creator"} (${wl.niche||"TikTok/Reels creator"}). WATCH this unposted video and decide whether they should post it. Channel average: ${avgV?fmt(avgV)+" views":"unknown"}. Be brutally honest — most videos deserve RISKY or NO; reserve GO for genuinely strong ones.
+Judge the REAL video: the first frame + first 3 seconds (does it stop the scroll?), pacing, energy, visual clarity, audio, retention risk across the video, and whether there's a genuine share trigger. Reference specific timestamps.
+Return ONLY JSON: {"verdict":"GO|RISKY|NO","score":0-100,"predictedViews":"realistic range e.g. 8K-20K","hookRating":0-100,"hookNote":"what happens in the first 3 seconds and whether it earns the scroll-stop","retention":[{"seg":"0-3s","risk":"low|med|high","note":"why viewers stay or leave here"},{"seg":"3-10s","risk":"low|med|high","note":"..."},{"seg":"10s+","risk":"low|med|high","note":"..."}],"fixes":[{"at":"timestamp e.g. 0:01","fix":"specific change"}],"strongest":"one line — the best thing about it","weakest":"one line — the biggest problem","action":"the single highest-impact change, doable without a full reshoot if possible"}`;
+      const text = await geminiUploadAnalyse(f, prompt, setStatus);
+      const parsed = _extractJSON(text);
+      if(!parsed || !parsed.verdict) throw new Error("Couldn't read the analysis — try a shorter MP4.");
+      setRes(parsed);
+    } catch(e){ setErr(e.message||"Check failed."); }
+    setLoading(false); setStatus("");
+  };
+
+  const vC = res ? (res.verdict==="GO"?C.green:res.verdict==="RISKY"?C.yellow:C.pink) : C.purple;
+  const riskC = (r)=> r==="low"?C.green:r==="med"?C.yellow:C.pink;
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?16:20 }}>
+      {!res && !loading && (
+        <div style={{ borderRadius:20, overflow:"hidden", position:"relative", background:"linear-gradient(135deg,#0A0614 0%,#160a26 55%,#0A0614 100%)", border:`1px solid ${C.purple}30`, padding:isMobile?"26px 20px":"40px 34px", textAlign:"center" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${C.purple}80 40%,${C.pink}80 70%,transparent)` }}/>
+          <div style={{ width:52, height:52, borderRadius:16, background:`linear-gradient(135deg,${C.purple},${C.pink})`, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", boxShadow:`0 8px 24px ${C.purple}45` }}>{I.eye(24,"#fff")}</div>
+          <div style={{ fontSize:isMobile?22:28, fontWeight:800, color:"#fff", marginBottom:8, fontFamily:C.fontHead, letterSpacing:"-0.02em" }}>Check it before you post</div>
+          <div style={{ fontSize:14, color:"rgba(255,255,255,0.55)", lineHeight:1.6, maxWidth:440, margin:"0 auto 22px" }}>Upload your finished video. The AI watches it and gives you a straight <span style={{color:C.green,fontWeight:700}}>GO</span> / <span style={{color:C.yellow,fontWeight:700}}>RISKY</span> / <span style={{color:C.pink,fontWeight:700}}>NO</span> — predicted views, a retention heatmap, and the exact fixes.</div>
+          <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e=>{ if(e.target.files[0]) run(e.target.files[0]); }} />
+          <button onClick={()=>hasGemini?fileRef.current?.click():null} disabled={!hasGemini}
+            style={{ padding:isMobile?"14px 24px":"14px 30px", borderRadius:14, border:"none", background:hasGemini?`linear-gradient(135deg,${C.purple},${C.pink})`:"rgba(255,255,255,0.08)", color:hasGemini?"#fff":"rgba(255,255,255,0.4)", fontFamily:C.fontHead, fontWeight:800, fontSize:15, cursor:hasGemini?"pointer":"default", letterSpacing:"0.02em", boxShadow:hasGemini?`0 10px 30px ${C.purple}40`:"none", display:"inline-flex", alignItems:"center", gap:9 }}>
+            {I.eye(17,"currentColor")} UPLOAD & CHECK
+          </button>
+          {!hasGemini && <div style={{ marginTop:14, fontSize:12.5, color:C.yellow }}>Vision needs a Gemini key — add one in Settings (free tier works).</div>}
+          {err && <div style={{ marginTop:14, fontSize:13, color:C.pink }}>{err}</div>}
+        </div>
+      )}
+
+      {loading && (
+        <div className="km-shimmer-wrap" style={{ borderRadius:20, background:"linear-gradient(135deg,#0A0614,#160a26 55%,#0A0614)", border:`1px solid ${C.purple}30`, padding:isMobile?"30px 22px":"44px 34px", textAlign:"center" }}>
+          <div style={{ display:"inline-flex", alignItems:"center", gap:11 }}><Spin s={18} c={C.purple}/><span style={{ fontSize:16, fontWeight:700, color:"#fff", fontFamily:C.fontHead }}>{status||"Analysing…"}</span></div>
+          <div style={{ marginTop:10, fontSize:12.5, color:"rgba(255,255,255,0.4)" }}>Gemini is watching your video frame by frame — this takes ~20–40s.</div>
+        </div>
+      )}
+
+      {res && !loading && (<>
+        {/* Verdict hero */}
+        <div style={{ borderRadius:20, overflow:"hidden", position:"relative", background:`linear-gradient(135deg,${vC}14,rgba(10,6,20,0.95) 65%)`, border:`1px solid ${vC}40`, padding:isMobile?"22px 20px":"28px 30px" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${vC},transparent)` }}/>
+          <div style={{ display:"flex", alignItems:isMobile?"flex-start":"center", gap:isMobile?16:24, flexDirection:isMobile?"column":"row" }}>
+            <div style={{ flexShrink:0 }}>
+              <div style={{ fontSize:isMobile?44:60, fontWeight:800, color:vC, lineHeight:1, fontFamily:C.fontHead, letterSpacing:"-0.02em", textShadow:`0 0 40px ${vC}55` }}>{res.verdict}</div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.14em", fontWeight:700, marginTop:4 }}>{res.verdict==="GO"?"POST IT":res.verdict==="RISKY"?"FIX FIRST":"DON'T POST YET"}</div>
+            </div>
+            <div style={{ flex:1, display:"flex", gap:isMobile?14:24, flexWrap:"wrap" }}>
+              {[{l:"SCORE",v:`${res.score||0}`,c:vC},{l:"PREDICTED VIEWS",v:res.predictedViews||"—",c:C.cyan},{l:"HOOK",v:`${res.hookRating||0}/100`,c:res.hookRating>=70?C.green:res.hookRating>=50?C.yellow:C.pink}].map((s,i)=>(
+                <div key={i}>
+                  <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700, marginBottom:5 }}>{s.l}</div>
+                  <div style={{ fontSize:isMobile?20:26, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {res.action && <div style={{ marginTop:18, padding:"13px 16px", borderRadius:12, background:"rgba(255,255,255,0.04)", border:`1px solid ${vC}30` }}><span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.1em", color:vC }}>DO THIS →</span> <span style={{ fontSize:14, color:"#fff", fontWeight:600 }}>{res.action}</span></div>}
+        </div>
+
+        {/* Retention heatmap (#3) */}
+        {Array.isArray(res.retention) && res.retention.length>0 && (
+          <div data-card style={{ borderRadius:16, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.08)", padding:isMobile?"18px 18px":"20px 22px" }}>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:14 }}>Retention heatmap · where they'll drop</div>
+            <div style={{ display:"flex", gap:5, marginBottom:12 }}>
+              {res.retention.map((r,i)=>(<div key={i} style={{ flex:1, height:10, borderRadius:4, background:riskC(r.risk), opacity:0.85, boxShadow:`0 0 10px ${riskC(r.risk)}55` }}/>))}
+            </div>
+            {res.retention.map((r,i)=>(
+              <div key={i} style={{ display:"flex", gap:11, alignItems:"flex-start", padding:"8px 0", borderTop:i>0?"1px solid rgba(255,255,255,0.05)":"none" }}>
+                <div style={{ fontSize:11, fontWeight:800, color:riskC(r.risk), fontFamily:C.fontHead, width:52, flexShrink:0 }}>{r.seg}</div>
+                <div style={{ fontSize:9, fontWeight:800, color:riskC(r.risk), textTransform:"uppercase", letterSpacing:"0.08em", width:44, flexShrink:0, paddingTop:1 }}>{r.risk}</div>
+                <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", lineHeight:1.5, flex:1, fontFamily:C.fontBody }}>{r.note}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Hook + strongest/weakest */}
+        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:12 }}>
+          {res.hookNote && <div data-card style={{ borderRadius:16, background:"rgba(255,255,255,0.025)", border:`1px solid ${C.pink}22`, padding:isMobile?"16px 16px":"18px 20px" }}><div style={{ fontSize:10, color:C.pink, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>THE HOOK · 0–3s</div><div style={{ fontSize:13.5, color:"rgba(255,255,255,0.8)", lineHeight:1.55, fontFamily:C.fontBody }}>{res.hookNote}</div></div>}
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            {res.strongest && <div style={{ borderRadius:12, background:`${C.green}0c`, border:`1px solid ${C.green}25`, padding:"12px 14px" }}><span style={{ fontSize:9, fontWeight:800, color:C.green, letterSpacing:"0.1em" }}>STRONGEST</span> <div style={{ fontSize:13, color:"#fff", marginTop:3, lineHeight:1.45 }}>{res.strongest}</div></div>}
+            {res.weakest && <div style={{ borderRadius:12, background:`${C.pink}0c`, border:`1px solid ${C.pink}25`, padding:"12px 14px" }}><span style={{ fontSize:9, fontWeight:800, color:C.pink, letterSpacing:"0.1em" }}>WEAKEST</span> <div style={{ fontSize:13, color:"#fff", marginTop:3, lineHeight:1.45 }}>{res.weakest}</div></div>}
+          </div>
+        </div>
+
+        {/* Timestamped fixes */}
+        {Array.isArray(res.fixes) && res.fixes.length>0 && (
+          <div data-card style={{ borderRadius:16, background:"rgba(255,255,255,0.025)", border:`1px solid ${C.cyan}22`, padding:isMobile?"18px 18px":"20px 22px" }}>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:14 }}>Exact fixes</div>
+            {res.fixes.map((f,i)=>(
+              <div key={i} style={{ display:"flex", gap:11, alignItems:"flex-start", padding:"9px 0", borderTop:i>0?"1px solid rgba(255,255,255,0.05)":"none" }}>
+                <div style={{ fontSize:11, fontWeight:800, color:C.cyan, fontFamily:C.fontHead, background:`${C.cyan}14`, border:`1px solid ${C.cyan}30`, borderRadius:6, padding:"3px 8px", flexShrink:0 }}>{f.at}</div>
+                <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.8)", lineHeight:1.55, flex:1, fontFamily:C.fontBody }}>{f.fix}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button onClick={()=>{ setRes(null); setFile(null); setErr(null); }} style={{ alignSelf:"flex-start", padding:"11px 20px", borderRadius:12, border:`1px solid ${C.purple}45`, background:`${C.purple}12`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:8 }}>{I.eye(14,"currentColor")} Check another video</button>
+      </>)}
+    </div>
+  );
+}
+
 const NAV = [
   { id:"home",      label:"HOME",      ic:I.home      },
   { id:"autopilot", label:"AUTOPILOT", ic:I.zap       },
+  { id:"check",     label:"CHECK",     ic:I.eye       },
   { id:"content",   label:"CONTENT",   ic:I.write     },
   { id:"analytics", label:"ANALYTICS", ic:I.bar       },
   { id:"tasks",     label:"TASKS",     ic:I.check     },
@@ -11143,11 +11305,12 @@ Return JSON:
             {!isMobile && <div style={{ marginBottom:40, display:"flex", alignItems:"flex-end", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:600, marginBottom:6 }}>
-                  {nav==="home"?"Dashboard":nav==="autopilot"?"Autopilot":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":nav==="audit"?"Prospecting":"Settings"}
+                  {nav==="home"?"Dashboard":nav==="autopilot"?"Autopilot":nav==="check"?"Pre-Post Check":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":nav==="audit"?"Prospecting":"Settings"}
                 </div>
                 <div style={{ fontSize:34, fontWeight:700, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:6, letterSpacing:"-0.025em" }}>
                   {nav==="home" && <span><span style={{color:WL.accentColor}}>{WL.appName.slice(0,-2)||"Content"}</span>{WL.appName.slice(-2)||" OS"}</span>}
                   {nav==="autopilot" && <span><span style={{color:C.purple}}>Auto</span>pilot</span>}
+                  {nav==="check" && <span>Pre-Post <span style={{color:C.green}}>Check</span></span>}
                   {nav==="content" && <span>Manage <span style={{color:C.cyan}}>Content</span></span>}
                   {nav==="analytics" && <span>Track <span style={{color:C.yellow}}>Performance</span></span>}
                   {nav==="tasks" && <span>Your <span style={{color:C.green}}>Workflow</span></span>}
@@ -11160,6 +11323,7 @@ Return JSON:
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.38)", lineHeight:1.5 }}>
                   {nav==="home"&&`${WL.handle} · ${WL.platforms.split(",").map(p=>p[0].toUpperCase()+p.slice(1)).join(" & ")}`}
                   {nav==="autopilot"&&"Your AI strategist plans the day — you just film it."}
+                  {nav==="check"&&"Upload your video — get a GO / RISKY / NO before you post."}
                   {nav==="content"&&"Every idea, script and post — in one place."}
                   {nav==="analytics"&&"See exactly what's working, and what's not."}
                   {nav==="tasks"&&"Everything to do next, in one list."}
@@ -11176,6 +11340,7 @@ Return JSON:
             {isMobile && nav!=="home" && (
               <div style={{ marginBottom:16, marginTop:2, fontSize:13.5, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody, lineHeight:1.5 }}>
                 {nav==="autopilot"&&"Your AI strategist plans the day — you just film it."}
+                {nav==="check"&&"Upload your video — get a GO / RISKY / NO before you post."}
                 {nav==="content"&&"Every idea, script and post — in one place."}
                 {nav==="analytics"&&"See exactly what's working, and what's not."}
                 {nav==="tasks"&&"Everything to do next, in one list."}
@@ -11193,6 +11358,7 @@ Return JSON:
         {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} markPosted={markPosted} />}
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} setIdeas={setIdeas} />}
         {nav==="autopilot" && <AutopilotView videos={videos} ideas={ideas} setIdeas={setIdeas} WL={WL} setNav={id=>{ setNav(id); setSub(null); }} copyText={copyText} copied={copied} />}
+        {nav==="check"     && <PrePostCheck videos={videos} WL={WL} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
         {nav==="audit"     && <ProspectAuditView WL={activeWL} />}
