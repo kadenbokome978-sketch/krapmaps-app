@@ -1095,6 +1095,32 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         </div>
       </div>
 
+      {/* ══ AI STRATEGY ════════════════════════════════════════════ */}
+      <div style={{ borderRadius:16, padding:isMobile?"18px 16px":"22px 24px", background:"linear-gradient(145deg,rgba(255,255,255,0.02),rgba(10,6,20,0.8))", border:"1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:isMobile?12:16 }}>AI Strategy</div>
+        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:isMobile?8:10 }}>
+          {[
+            { ic:I.search, l:"WHAT'S WORKING",  desc:"Analyse top content", c:C.cyan,   m:"analysis" },
+            { ic:I.target, l:"NEXT VIDEOS",      desc:"AI recommendations", c:C.green,  m:"nextVids" },
+            { ic:I.idea,   l:"ADD IDEA",         desc:"Brainstorm content",  c:C.purple, fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); } },
+            { ic:I.cal,    l:"SCHEDULE",         desc:"Plan your calendar",  c:C.pink,   fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addCal"),50); } },
+          ].map((a,i)=>(
+            <button data-btn key={i} onClick={a.fn || (()=>runAI&&runAI(a.m))} disabled={a.m&&aiLoad&&aiLoad[a.m]} className={a.m&&aiLoad&&aiLoad[a.m]?"km-shimmer-wrap":undefined}
+              style={{ display:"flex", flexDirection:isMobile?"column":"row", alignItems:isMobile?"flex-start":"center", gap:isMobile?10:14, padding:isMobile?"14px 14px":"16px 18px", borderRadius:16, background:`linear-gradient(135deg,${a.c}0c,rgba(10,6,20,0.6))`, border:`1px solid ${aiLoad&&aiLoad[a.m]?a.c+"55":a.c+"1e"}`, cursor:"pointer", fontFamily:C.fontHead, opacity:aiLoad&&aiLoad[a.m]?0.85:1, transition:"all 0.2s", textAlign:"left", position:"relative", overflow:"hidden" }}>
+              <div style={{ position:"absolute", top:0, left:0, bottom:0, width:2, background:`linear-gradient(180deg,${a.c},${a.c}00)`, borderRadius:"14px 0 0 14px" }}/>
+              <div style={{ width:isMobile?40:46, height:isMobile?40:46, borderRadius:12, background:`linear-gradient(135deg,${a.c}18,${a.c}06)`, border:`1px solid ${a.c}25`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{aiLoad&&aiLoad[a.m]?<Spin s={20} c={a.c}/>:a.ic(isMobile?20:22,a.c)}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:isMobile?13.5:16, fontWeight:700, color:"#fff", letterSpacing:"0.03em", marginBottom:3 }}>{a.l}</div>
+                {aiLoad&&aiLoad[a.m]
+                  ? <span key="w" style={{ fontSize:12, color:a.c, fontWeight:600, animation:"km-fadein 0.4s ease" }}>Working…</span>
+                  : <div style={{ fontSize:isMobile?11:13, color:"rgba(255,255,255,0.65)" }}>{a.desc}</div>}
+              </div>
+              {!isMobile && <div style={{ fontSize:16, color:`${a.c}60` }}>›</div>}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ══ STAT CARDS ════════════════════════════════════════════ */}
       <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fit,minmax(200px,1fr))", gap:isMobile?12:14, marginBottom:isMobile?28:32 }}>
         {[
@@ -1324,31 +1350,6 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         ) : null;
       })()}
 
-      {/* ══ AI STRATEGY ════════════════════════════════════════════ */}
-      <div style={{ borderRadius:16, padding:isMobile?"18px 16px":"22px 24px", background:"linear-gradient(145deg,rgba(255,255,255,0.02),rgba(10,6,20,0.8))", border:"1px solid rgba(255,255,255,0.06)" }}>
-        <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:isMobile?12:16 }}>AI Strategy</div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:10 }}>
-          {[
-            { ic:I.search, l:"WHAT'S WORKING",  desc:"Analyse top content", c:C.cyan,   m:"analysis" },
-            { ic:I.target, l:"NEXT VIDEOS",      desc:"AI recommendations", c:C.green,  m:"nextVids" },
-            { ic:I.idea,   l:"ADD IDEA",         desc:"Brainstorm content",  c:C.purple, fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); } },
-            { ic:I.cal,    l:"SCHEDULE",         desc:"Plan your calendar",  c:C.pink,   fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addCal"),50); } },
-          ].map((a,i)=>(
-            <button data-btn key={i} onClick={a.fn || (()=>runAI&&runAI(a.m))} disabled={a.m&&aiLoad&&aiLoad[a.m]} className={a.m&&aiLoad&&aiLoad[a.m]?"km-shimmer-wrap":undefined}
-              style={{ display:"flex", alignItems:"center", gap:14, padding:"16px 18px", borderRadius:16, background:`linear-gradient(135deg,${a.c}0c,rgba(10,6,20,0.6))`, border:`1px solid ${aiLoad&&aiLoad[a.m]?a.c+"55":a.c+"1e"}`, cursor:"pointer", fontFamily:C.fontHead, opacity:aiLoad&&aiLoad[a.m]?0.85:1, transition:"all 0.2s", textAlign:"left", position:"relative", overflow:"hidden" }}>
-              <div style={{ position:"absolute", top:0, left:0, bottom:0, width:2, background:`linear-gradient(180deg,${a.c},${a.c}00)`, borderRadius:"14px 0 0 14px" }}/>
-              <div style={{ width:46, height:46, borderRadius:12, background:`linear-gradient(135deg,${a.c}18,${a.c}06)`, border:`1px solid ${a.c}25`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{aiLoad&&aiLoad[a.m]?<Spin s={20} c={a.c}/>:a.ic(22,a.c)}</div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.04em", marginBottom:3 }}>{a.l}</div>
-                {aiLoad&&aiLoad[a.m]
-                  ? <span key="w" style={{ fontSize:13, color:a.c, fontWeight:600, animation:"km-fadein 0.4s ease" }}>Working…</span>
-                  : <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)" }}>{a.desc}</div>}
-              </div>
-              <div style={{ fontSize:16, color:`${a.c}60` }}>›</div>
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Pillar Health */}
       {(() => {
