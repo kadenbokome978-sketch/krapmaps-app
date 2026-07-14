@@ -1153,22 +1153,6 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         </div>
       </div>
 
-      {/* ══ QUICK ACTIONS ══════════════════════════════════════════ */}
-      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(auto-fit,minmax(min(160px,100%),1fr))", gap:isMobile?10:12 }}>
-        {[
-          { icon:I.idea, label:"Add Idea",     desc:"Brainstorm content", color:C.purple, fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); } },
-          { icon:I.cal,  label:"Schedule",     desc:"Plan your calendar",  color:C.cyan,   fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addCal"),50); } },
-        ].map((a,i)=>(
-          <button data-btn key={i} onClick={a.fn} style={{ display:"flex", flexDirection:"row", alignItems:"center", gap:13, padding:isMobile?"14px 14px":"16px 18px", minHeight:44, borderRadius:14, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.08)", cursor:"pointer", fontFamily:C.fontHead, transition:"all 0.18s", position:"relative", overflow:"hidden", textAlign:"left" }}>
-            <div style={{ width:42, height:42, borderRadius:12, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:`${a.color}16`, border:`1px solid ${a.color}2e` }}>{a.icon(21,a.color)}</div>
-            <div style={{ minWidth:0, flex:1 }}>
-              <div style={{ fontSize:14.5, fontWeight:700, color:"#fff", letterSpacing:"0.01em", marginBottom:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{a.label}</div>
-              <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.4)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{a.desc}</div>
-            </div>
-          </button>
-        ))}
-      </div>
-
       {/* ══ NEXT BEST ACTION ══════════════════════════════════════ */}
       {(() => {
         const unscoredIdeas = (ideas||[]).filter(i=>!(i.viral>0)&&i.status!=="posted");
@@ -1347,10 +1331,10 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           {[
             { ic:I.search, l:"WHAT'S WORKING",  desc:"Analyse top content", c:C.cyan,   m:"analysis" },
             { ic:I.target, l:"NEXT VIDEOS",      desc:"AI recommendations", c:C.green,  m:"nextVids" },
-            { ic:I.write,  l:`${(WL.creator2||"WEEKLY").toUpperCase()} BRIEF`, desc:"Weekly filming brief", c:C.yellow, m:"weekly"   },
-            { ic:I.trend,  l:"TRENDS",           desc:"What's hot now", c:C.orange, m:"trends"   },
+            { ic:I.idea,   l:"ADD IDEA",         desc:"Brainstorm content",  c:C.purple, fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addIdea"),50); } },
+            { ic:I.cal,    l:"SCHEDULE",         desc:"Plan your calendar",  c:C.pink,   fn:()=>{ setNav("content"); if(openModal) setTimeout(()=>openModal("addCal"),50); } },
           ].map((a,i)=>(
-            <button data-btn key={i} onClick={()=>runAI&&runAI(a.m)} disabled={aiLoad&&aiLoad[a.m]} className={aiLoad&&aiLoad[a.m]?"km-shimmer-wrap":undefined}
+            <button data-btn key={i} onClick={a.fn || (()=>runAI&&runAI(a.m))} disabled={a.m&&aiLoad&&aiLoad[a.m]} className={a.m&&aiLoad&&aiLoad[a.m]?"km-shimmer-wrap":undefined}
               style={{ display:"flex", alignItems:"center", gap:14, padding:"16px 18px", borderRadius:16, background:`linear-gradient(135deg,${a.c}0c,rgba(10,6,20,0.6))`, border:`1px solid ${aiLoad&&aiLoad[a.m]?a.c+"55":a.c+"1e"}`, cursor:"pointer", fontFamily:C.fontHead, opacity:aiLoad&&aiLoad[a.m]?0.85:1, transition:"all 0.2s", textAlign:"left", position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, left:0, bottom:0, width:2, background:`linear-gradient(180deg,${a.c},${a.c}00)`, borderRadius:"14px 0 0 14px" }}/>
               <div style={{ width:46, height:46, borderRadius:12, background:`linear-gradient(135deg,${a.c}18,${a.c}06)`, border:`1px solid ${a.c}25`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{aiLoad&&aiLoad[a.m]?<Spin s={20} c={a.c}/>:a.ic(22,a.c)}</div>
