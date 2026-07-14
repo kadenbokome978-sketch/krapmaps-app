@@ -922,7 +922,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             {gsSteps.map(st=>{
               const isNext = gsNext && st.n===gsNext.n;
               return (
-                <div key={st.n} onClick={()=>!st.done&&setNav&&setNav(st.nav)} style={{ display:"flex", alignItems:"center", gap:13, padding:isMobile?"14px 16px":"13px 16px", borderRadius:16, background:isNext?`linear-gradient(135deg,${C.cyan}18,${C.cyan}06)`:"rgba(255,255,255,0.02)", border:`1px solid ${isNext?C.cyan+"55":"rgba(255,255,255,0.06)"}`, boxShadow:isNext?`0 0 24px ${C.cyan}22`:"none", cursor:st.done?"default":"pointer", opacity:st.done?0.5:1, transition:"all 0.2s" }}>
+                <div key={st.n} onClick={()=>!st.done&&setNav&&setNav(st.nav)} style={{ display:"flex", alignItems:"center", gap:13, minHeight:isMobile?52:0, padding:isMobile?"14px 16px":"13px 16px", borderRadius:16, background:isNext?`linear-gradient(135deg,${C.cyan}18,${C.cyan}06)`:"rgba(255,255,255,0.02)", border:`1px solid ${isNext?C.cyan+"55":"rgba(255,255,255,0.06)"}`, boxShadow:isNext?`0 0 24px ${C.cyan}22`:"none", cursor:st.done?"default":"pointer", opacity:st.done?0.5:1, transition:"all 0.2s" }}>
                   <div style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:st.done?13:13, fontWeight:800, fontFamily:C.fontHead, background:st.done?`${C.green}18`:isNext?`linear-gradient(135deg,${C.cyan},${C.purple})`:"rgba(255,255,255,0.06)", border:`1px solid ${st.done?C.green+"50":isNext?"transparent":"rgba(255,255,255,0.1)"}`, color:st.done?C.green:isNext?"#fff":"rgba(255,255,255,0.4)", boxShadow:isNext?`0 4px 14px ${C.cyan}44`:"none" }}>{st.done?<span style={{display:"inline-flex"}}>{I.tick(13,C.green)}</span>:st.n}</div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
@@ -1018,7 +1018,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         <div data-card style={{ borderRadius:16, padding:"16px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${C.cyan}25` }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:8 }}>
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:isMobile?"0.04em":"0.1em", fontWeight:700, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{isMobile?"AI LEVEL":"AI INTELLIGENCE"}</div>
-            <div style={{ fontSize:isMobile?9:11, fontWeight:700, color:C.cyan, background:`${C.cyan}12`, border:`1px solid ${C.cyan}25`, borderRadius:6, padding:isMobile?"3px 6px":"2px 8px", flexShrink:0, whiteSpace:"nowrap", letterSpacing:"0.04em" }}>{intelLevel<30?"LEARNING":intelLevel<60?"BUILDING":intelLevel<80?"SHARP":"ELITE"}</div>
+            <div style={{ fontSize:11, fontWeight:700, color:C.cyan, background:`${C.cyan}12`, border:`1px solid ${C.cyan}25`, borderRadius:6, padding:isMobile?"3px 6px":"2px 8px", flexShrink:0, whiteSpace:"nowrap", letterSpacing:"0.04em" }}>{intelLevel<30?"LEARNING":intelLevel<60?"BUILDING":intelLevel<80?"SHARP":"ELITE"}</div>
           </div>
           <div style={{ fontSize:22, fontWeight:700, fontFamily:C.fontHead, color:C.cyan, lineHeight:1, marginBottom:8 }}>{intelLevel}<span style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginLeft:2 }}>/100</span></div>
           <div style={{ height:4, borderRadius:2, background:"rgba(255,255,255,0.06)" }}>
@@ -2906,16 +2906,16 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                     <button
                       onClick={()=>setTasks(ts=>ts.map(x=>x.id===t.id?{...x,done:true}:x))}
                       aria-label="Mark done"
-                      style={{ width:24, height:24, borderRadius:8, border:`2px solid ${ac(t.assignee)}`, background:"transparent", cursor:"pointer", flexShrink:0, transition:"all 0.2s" }}
+                      style={{ width:isMobile?34:24, height:isMobile?34:24, borderRadius:8, border:`2px solid ${ac(t.assignee)}`, background:"transparent", cursor:"pointer", flexShrink:0, transition:"all 0.2s" }}
                     />
                     <div style={{ flex:1, minWidth:0 }}>
-                      {pm && <span style={{ fontSize:9, fontWeight:800, letterSpacing:"0.1em", color:pm.c, background:`${pm.c}18`, border:`1px solid ${pm.c}45`, borderRadius:5, padding:"2px 7px", marginRight:9, verticalAlign:"middle" }}>{pm.label}</span>}
+                      {pm && <span style={{ fontSize:isMobile?11:9, fontWeight:800, letterSpacing:"0.1em", color:pm.c, background:`${pm.c}18`, border:`1px solid ${pm.c}45`, borderRadius:5, padding:"2px 7px", marginRight:9, verticalAlign:"middle" }}>{pm.label}</span>}
                       <span style={{ fontSize:14, color:"#fff", fontWeight:500, lineHeight:1.5 }}>{t.text}</span>
                     </div>
                     <div style={{ width:32, height:32, borderRadius:10, background:`${ac(t.assignee)}20`, border:`1px solid ${ac(t.assignee)}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:ac(t.assignee), flexShrink:0 }}>
                       {acLabel(t.assignee)}
                     </div>
-                    <button onClick={()=>setTasks(ts=>ts.filter(x=>x.id!==t.id))} aria-label="Delete task" style={{ width:28, height:28, borderRadius:8, border:"1px solid rgba(255,45,120,0.2)", background:"rgba(255,45,120,0.08)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <button onClick={()=>setTasks(ts=>ts.filter(x=>x.id!==t.id))} aria-label="Delete task" style={{ width:isMobile?40:28, height:isMobile?40:28, borderRadius:8, border:"1px solid rgba(255,45,120,0.2)", background:"rgba(255,45,120,0.08)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                       {I.trash(12,C.pink)}
                     </button>
                   </div>
@@ -4994,6 +4994,20 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
   const _scoreUsed = plan?.usage?.scores || 0;
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?28:24 }}>
+
+      {/* Account — sign out, always reachable (esp. on mobile, where the top bar is hidden) */}
+      {(REQUIRE_AUTH || USE_BACKEND) && (
+        <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"18px 24px", background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.08)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:14, flexWrap:"wrap" }}>
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontSize:11, letterSpacing:"0.12em", color:"rgba(255,255,255,0.45)", fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Account</div>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", lineHeight:1.5 }}>Signed in{plan?.tier?` · ${_tierLabel}`:""}. Sign out to switch accounts.</div>
+          </div>
+          <button onClick={()=>{ if(typeof window!=="undefined" && window.confirm("Sign out of this account?")) _signalSignedOut(); }}
+            style={{ padding:isMobile?"12px 20px":"10px 20px", borderRadius:12, border:`1px solid ${C.pink}40`, background:`${C.pink}12`, color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", letterSpacing:"0.04em", whiteSpace:"nowrap", display:"inline-flex", alignItems:"center", gap:8 }}>
+            {I.logout ? I.logout(14,"currentColor") : null} Sign out
+          </button>
+        </div>
+      )}
 
       {/* Plan card — only for accounts actually on a paid/comped plan. There's no
           "Free" plan inside the app (free users live on the audit screen), so we
@@ -8043,8 +8057,8 @@ Return ONLY JSON:
             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8 }}>
               <div style={{ fontSize:12, letterSpacing:"0.04em", color:"rgba(255,255,255,0.5)", fontWeight:600, textAlign:"right" }}>by <span style={{ color:"#fff", fontWeight:700, fontFamily:C.fontHead }}>{report.app}</span></div>
               <div style={{ display:"flex", gap:8 }}>
-                <button onClick={saveImage} disabled={saving} style={{ padding:"6px 12px", borderRadius:10, border:`1px solid ${C.cyan}40`, background:`${C.cyan}12`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:saving?"wait":"pointer", whiteSpace:"nowrap", opacity:saving?0.6:1 }}>{saving?"MAKING…":"SHARE IMAGE"}</button>
-                <button onClick={copyReport} style={{ padding:"6px 12px", borderRadius:10, border:`1px solid ${copied?C.green:"rgba(255,255,255,0.15)"}`, background:copied?`${C.green}18`:"rgba(255,255,255,0.05)", color:copied?C.green:"rgba(255,255,255,0.75)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", whiteSpace:"nowrap" }}>{copied?"COPIED":"COPY AS TEXT"}</button>
+                <button onClick={saveImage} disabled={saving} style={{ padding:isMobile?"10px 16px":"6px 12px", borderRadius:10, border:`1px solid ${C.cyan}40`, background:`${C.cyan}12`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:saving?"wait":"pointer", whiteSpace:"nowrap", opacity:saving?0.6:1 }}>{saving?"MAKING…":"SHARE IMAGE"}</button>
+                <button onClick={copyReport} style={{ padding:isMobile?"10px 16px":"6px 12px", borderRadius:10, border:`1px solid ${copied?C.green:"rgba(255,255,255,0.15)"}`, background:copied?`${C.green}18`:"rgba(255,255,255,0.05)", color:copied?C.green:"rgba(255,255,255,0.75)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", whiteSpace:"nowrap" }}>{copied?"COPIED":"COPY AS TEXT"}</button>
               </div>
             </div>
           </div>
@@ -8138,7 +8152,7 @@ function PricingModal({ tier="free", reason, onClose }){
             <div style={{ fontSize:isMobile?23:28, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1.1 }}>Choose your plan</div>
             <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:5 }}>Cancel anytime. No key setup — scoring just works.</div>
           </div>
-          <button onClick={onClose} aria-label="Close" style={{ background:"rgba(255,255,255,0.06)", border:"none", borderRadius:10, width:34, height:34, color:"#fff", fontSize:18, cursor:"pointer", flexShrink:0 }}>{I.x?I.x(14,"currentColor"):"✕"}</button>
+          <button onClick={onClose} aria-label="Close" style={{ background:"rgba(255,255,255,0.06)", border:"none", borderRadius:10, width:isMobile?44:34, height:isMobile?44:34, color:"#fff", fontSize:18, cursor:"pointer", flexShrink:0 }}>{I.x?I.x(14,"currentColor"):"✕"}</button>
         </div>
         {reason && <div style={{ fontSize:13.5, color:C.yellow, background:`${C.yellow}0e`, border:`1px solid ${C.yellow}28`, borderRadius:10, padding:"10px 13px", marginBottom:18, lineHeight:1.5 }}>{reason}</div>}
         <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(2,1fr)", gap:14, maxWidth:620, margin:"0 auto" }}>
@@ -8854,7 +8868,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
       <div style={{ display:"flex", gap:8, padding:isMobile?"13px 16px":"10px 12px", background:"rgba(255,255,255,0.05)", borderRadius:16, border:`1px solid rgba(255,255,255,0.1)`, marginTop:10, alignItems:"center", flexShrink:0 }}>
         <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e=>{ if(e.target.files[0]) setVideoFile(e.target.files[0]); }} />
         <button onClick={()=>fileRef.current?.click()} title="Upload video clip"
-          style={{ width:34, height:34, borderRadius:10, border:`1px solid rgba(255,255,255,0.1)`, background:"rgba(255,255,255,0.05)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+          style={{ width:isMobile?40:34, height:isMobile?40:34, borderRadius:10, border:`1px solid rgba(255,255,255,0.1)`, background:"rgba(255,255,255,0.05)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
           {I.vid(14,"rgba(255,255,255,0.6)")}
         </button>
         <input
@@ -10700,8 +10714,8 @@ Return JSON:
                     );
                   })}
                 </div>
-                {REQUIRE_AUTH && <div style={{ padding:"16px 16px 0" }}>
-                  <button onClick={()=>{setDrawerOpen(false);_signalSignedOut();}} style={{ width:"100%", padding:"14px 18px", borderRadius:12, border:"1px solid rgba(255,255,255,0.08)", background:"rgba(255,255,255,0.03)", color:"rgba(255,255,255,0.45)", fontSize:14, fontWeight:600, cursor:"pointer" }}>Sign out</button>
+                {(REQUIRE_AUTH || USE_BACKEND) && <div style={{ padding:"16px 16px 0" }}>
+                  <button onClick={()=>{setDrawerOpen(false);_signalSignedOut();}} style={{ width:"100%", padding:"14px 18px", borderRadius:12, border:`1px solid ${C.pink}30`, background:`${C.pink}10`, color:C.pink, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:C.fontHead, letterSpacing:"0.04em" }}>Sign out</button>
                 </div>}
               </div>
             </div>
@@ -10880,6 +10894,9 @@ function OnboardingPage({ onComplete }) {
 
   // Slide content keyed by client
   const isBraz = WL.clientId === "thierno";
+  // Known-brand builds (hand-made) show the editorial brand overview; generic
+  // self-serve creators get the product tour instead.
+  const showBrief = isBraz || WL.clientId === "krapmaps";
   const ac1 = WL.accentColor || "#FF2D78";
   const ac2wl = WL.accentColor2 || "#00E5FF";
 
@@ -11046,10 +11063,10 @@ function OnboardingPage({ onComplete }) {
   },[step]);
 
   useEffect(()=>{
-    if(step!==1 || isBraz) return;
+    if(step!==1) return;
     const t = setInterval(()=>setTourIdx(p=>(p+1)%3), 4200);
     return ()=>clearInterval(t);
-  },[step, isBraz]);
+  },[step]);
 
   const submitCode = async () => {
     const entered = codeInput.trim().toUpperCase();
@@ -11224,8 +11241,8 @@ function OnboardingPage({ onComplete }) {
           )}
 
           {/* Step 1 — Welcome (bespoke editorial brief — hand-made client builds only) */}
-          {step === 1 && isBraz && (
-            <div style={{ position:"fixed", inset:0, display:"flex", overflow:"hidden", flexDirection:isMobile?"column":"row" }}>
+          {step === 3 && (
+            <div style={{ position:"fixed", inset:0, display:"flex", overflow:isMobile?"auto":"hidden", flexDirection:isMobile?"column":"row" }}>
 
               <style>{`
                 @keyframes slideInRight{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:translateX(0)}}
@@ -11734,7 +11751,7 @@ function OnboardingPage({ onComplete }) {
           )}
 
           {/* Step 1 — Universal product tour (self-serve builds) */}
-          {step === 1 && !isBraz && (()=>{
+          {step === 1 && (()=>{
             const F = "'Space Grotesk',system-ui,sans-serif";
             const app = WL.appName || "CreatorOS";
             const TOUR = [
@@ -11801,11 +11818,11 @@ function OnboardingPage({ onComplete }) {
                 </div>
 
                 {/* CTA */}
-                <button onClick={()=>{ if(tourIdx<2) setTourIdx(tourIdx+1); else setStep(2); }}
+                <button onClick={()=>{ if(tourIdx<2) setTourIdx(tourIdx+1); else setStep(showBrief?3:2); }}
                   style={{ width:"100%", maxWidth:340, padding:"16px 0", border:"none", borderRadius:16, background:"linear-gradient(135deg,#FF2D78,#C566FF)", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", fontFamily:F, boxShadow:"0 10px 30px rgba(255,45,120,0.3)", transition:"transform 0.15s, box-shadow 0.2s" }}
                   onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 14px 38px rgba(255,45,120,0.42)"; }}
                   onMouseLeave={e=>{ e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="0 10px 30px rgba(255,45,120,0.3)"; }}
-                >{tourIdx<2 ? "Continue →" : "Set up my channel →"}</button>
+                >{tourIdx<2 ? "Continue →" : showBrief ? "See your brand overview →" : "Set up my channel →"}</button>
                 <button onClick={()=>finish("")} style={{ marginTop:14, background:"none", border:"none", color:"rgba(255,255,255,0.4)", fontSize:13, cursor:"pointer", fontFamily:F, fontWeight:600, padding:4 }}>Skip tour</button>
               </div>
 
