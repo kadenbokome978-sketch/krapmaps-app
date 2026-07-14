@@ -8393,7 +8393,7 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","score":0-100,"predictedViews":"reali
 const NAV = [
   { id:"home",      label:"HOME",      ic:I.home      },
   { id:"autopilot", label:"AUTOPILOT", ic:I.zap       },
-  { id:"check",     label:"CHECK",     ic:I.eye       },
+  { id:"check",     label:"CHECKER",   ic:I.eye       },
   { id:"content",   label:"CONTENT",   ic:I.write     },
   { id:"analytics", label:"ANALYTICS", ic:I.bar       },
   { id:"tasks",     label:"TASKS",     ic:I.check     },
@@ -11305,12 +11305,12 @@ Return JSON:
             {!isMobile && <div style={{ marginBottom:40, display:"flex", alignItems:"flex-end", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:13, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:600, marginBottom:6 }}>
-                  {nav==="home"?"Dashboard":nav==="autopilot"?"Autopilot":nav==="check"?"Pre-Post Check":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":nav==="audit"?"Prospecting":"Settings"}
+                  {nav==="home"?"Dashboard":nav==="autopilot"?"Autopilot":nav==="check"?"Video Checker":nav==="content"?"Content":nav==="analytics"?"Analytics":nav==="tasks"?"Tasks":nav==="deals"?"Deals":nav==="growth"?"Growth":nav==="audit"?"Prospecting":"Settings"}
                 </div>
                 <div style={{ fontSize:34, fontWeight:700, color:"#fff", fontFamily:C.fontHead, lineHeight:1.1, marginBottom:6, letterSpacing:"-0.025em" }}>
                   {nav==="home" && <span><span style={{color:WL.accentColor}}>{WL.appName.slice(0,-2)||"Content"}</span>{WL.appName.slice(-2)||" OS"}</span>}
                   {nav==="autopilot" && <span><span style={{color:C.purple}}>Auto</span>pilot</span>}
-                  {nav==="check" && <span>Pre-Post <span style={{color:C.green}}>Check</span></span>}
+                  {nav==="check" && <span>Video <span style={{color:C.green}}>Checker</span></span>}
                   {nav==="content" && <span>Manage <span style={{color:C.cyan}}>Content</span></span>}
                   {nav==="analytics" && <span>Track <span style={{color:C.yellow}}>Performance</span></span>}
                   {nav==="tasks" && <span>Your <span style={{color:C.green}}>Workflow</span></span>}
