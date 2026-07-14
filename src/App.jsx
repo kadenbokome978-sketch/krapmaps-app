@@ -1567,9 +1567,9 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?16:20 }}>
       {/* Tabs + Add button — stacks on mobile so all tabs stay readable */}
       <div style={{ display:"flex", alignItems:isMobile?"stretch":"center", justifyContent:"space-between", gap:isMobile?8:8, flexDirection:isMobile?"column":"row" }}>
-        <div style={{ display:"flex", gap:isMobile?6:8, flex:1, overflowX:"auto" }}>
+        <div style={{ display:"flex", gap:isMobile?6:8, flex:1 }}>
           {["IDEAS","CALENDAR","CAPTIONS"].map(t=>(
-            <button key={t} onClick={()=>setSub(t)} style={{ padding:isMobile?"12px 14px":"10px 20px", borderRadius:10, border:`1px solid ${sub===t?C.pink:"rgba(255,255,255,0.08)"}`, background:sub===t?`${C.pink}15`:"transparent", color:sub===t?C.pink:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?13:14, cursor:"pointer", letterSpacing:"0.04em", whiteSpace:"nowrap", flexShrink:0 }}>
+            <button key={t} onClick={()=>setSub(t)} style={{ flex:isMobile?1:"none", textAlign:"center", padding:isMobile?"11px 6px":"10px 20px", borderRadius:10, border:`1px solid ${sub===t?C.pink:"rgba(255,255,255,0.08)"}`, background:sub===t?`${C.pink}15`:"transparent", color:sub===t?C.pink:"rgba(255,255,255,0.5)", fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?13:14, cursor:"pointer", letterSpacing:"0.02em", whiteSpace:"nowrap" }}>
               {t}{t==="IDEAS"&&` (${ideas.length})`}{t==="CALENDAR"&&` (${calItems.length})`}
             </button>
           ))}
