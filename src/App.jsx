@@ -1041,7 +1041,9 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
       </div>
 
       {/* ══ STAT CARDS ════════════════════════════════════════════ */}
-      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fit,minmax(200px,1fr))", gap:isMobile?12:14, marginBottom:isMobile?28:32 }}>
+      <div>
+        <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:12 }}>Your Numbers</div>
+        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fit,minmax(200px,1fr))", gap:isMobile?12:14 }}>
         {[
           { label:"TT Followers", value:m?.tt_followers>=1e3?(m.tt_followers/1e3).toFixed(1)+"K":String(m?.tt_followers||0), color:C.pink, icon:I.tt },
           { label:"TT Views", value:ttViewsDisplay>=1e6?(ttViewsDisplay/1e6).toFixed(1)+"M":ttViewsDisplay>=1e3?(ttViewsDisplay/1e3).toFixed(1)+"K":String(ttViewsDisplay||0), color:C.cyan, icon:I.eye },
@@ -1064,10 +1066,13 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             </div>
           </div>
         ))}
+        </div>
       </div>
 
       {/* ══ RETENTION BAR — streak, XP, intelligence (2x2 on mobile) ══════════════ */}
-      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fit,minmax(min(160px,100%),1fr))", gap:isMobile?10:10 }}>
+      <div>
+        <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:12 }}>Progress</div>
+        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fit,minmax(min(160px,100%),1fr))", gap:isMobile?10:10 }}>
         {/* Daily Streak */}
         <div data-card style={{ borderRadius:16, padding:"16px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${streak.count>=7?C.orange:"rgba(255,255,255,0.08)"}`, display:"flex", alignItems:"center", gap:14 }}>
           <div style={{ display:"flex" }}>{streak.count>=7?I.fire(26,C.orange):streak.count>=3?I.zap(26,C.yellow):I.cal(24,"rgba(255,255,255,0.6)")}</div>
@@ -1119,6 +1124,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
             </div>
           );
         })()}
+        </div>
       </div>
 
       {/* ══ PERFORMANCE CHART ══════════════════════════════════════ */}
