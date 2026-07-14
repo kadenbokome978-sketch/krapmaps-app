@@ -11063,10 +11063,10 @@ function OnboardingPage({ onComplete }) {
   },[step]);
 
   useEffect(()=>{
-    if(step!==1 || isBraz) return;
+    if(step!==1) return;
     const t = setInterval(()=>setTourIdx(p=>(p+1)%3), 4200);
     return ()=>clearInterval(t);
-  },[step, isBraz]);
+  },[step]);
 
   const submitCode = async () => {
     const entered = codeInput.trim().toUpperCase();
@@ -11241,7 +11241,7 @@ function OnboardingPage({ onComplete }) {
           )}
 
           {/* Step 1 — Welcome (bespoke editorial brief — hand-made client builds only) */}
-          {step === 1 && showBrief && (
+          {step === 3 && (
             <div style={{ position:"fixed", inset:0, display:"flex", overflow:isMobile?"auto":"hidden", flexDirection:isMobile?"column":"row" }}>
 
               <style>{`
@@ -11751,7 +11751,7 @@ function OnboardingPage({ onComplete }) {
           )}
 
           {/* Step 1 — Universal product tour (self-serve builds) */}
-          {step === 1 && !showBrief && (()=>{
+          {step === 1 && (()=>{
             const F = "'Space Grotesk',system-ui,sans-serif";
             const app = WL.appName || "CreatorOS";
             const TOUR = [
@@ -11818,11 +11818,11 @@ function OnboardingPage({ onComplete }) {
                 </div>
 
                 {/* CTA */}
-                <button onClick={()=>{ if(tourIdx<2) setTourIdx(tourIdx+1); else setStep(2); }}
+                <button onClick={()=>{ if(tourIdx<2) setTourIdx(tourIdx+1); else setStep(showBrief?3:2); }}
                   style={{ width:"100%", maxWidth:340, padding:"16px 0", border:"none", borderRadius:16, background:"linear-gradient(135deg,#FF2D78,#C566FF)", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", fontFamily:F, boxShadow:"0 10px 30px rgba(255,45,120,0.3)", transition:"transform 0.15s, box-shadow 0.2s" }}
                   onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 14px 38px rgba(255,45,120,0.42)"; }}
                   onMouseLeave={e=>{ e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="0 10px 30px rgba(255,45,120,0.3)"; }}
-                >{tourIdx<2 ? "Continue →" : "Set up my channel →"}</button>
+                >{tourIdx<2 ? "Continue →" : showBrief ? "See your brand overview →" : "Set up my channel →"}</button>
                 <button onClick={()=>finish("")} style={{ marginTop:14, background:"none", border:"none", color:"rgba(255,255,255,0.4)", fontSize:13, cursor:"pointer", fontFamily:F, fontWeight:600, padding:4 }}>Skip tour</button>
               </div>
 
