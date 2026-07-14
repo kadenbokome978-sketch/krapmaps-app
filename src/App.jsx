@@ -7933,68 +7933,146 @@ function AutopilotView({ videos=[], ideas=[], setIdeas, WL={}, setNav, copyText,
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [brief, setBrief] = useState(()=>loadJSON(AUTOPILOT_KEY, null));
   const [loading, setLoading] = useState(false);
+  const [phase, setPhase] = useState(null);          // scan | ideas | scoring | planning
+  const [scoreProg, setScoreProg] = useState([0,0]); // [done, total]
   const [err, setErr] = useState(null);
-  const [added, setAdded] = useState(false);
+  const [addedAll, setAddedAll] = useState(false);
+  const [addedIds, setAddedIds] = useState({});
+  const [regenI, setRegenI] = useState(-1);
+  const [moreLoading, setMoreLoading] = useState(false);
 
   const enoughData = (videos.length + ideas.length) >= 1;
+  const band = (s)=> s>=85?C.green:s>=70?C.yellow:s>=50?C.cyan:C.pink;
 
-  const run = async () => {
-    if(loading) return;
-    setLoading(true); setErr(null); setAdded(false);
-    try {
-      const wl = loadWL();
-      const voice = loadJSON(VOICE_KEY, "");
-      const trends = loadJSON(CUR_TRENDS_KEY, "");
-      const theory = loadJSON(CHANNEL_THEORY_KEY, "");
-      const topV = [...videos].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,6)
-        .map(v=>`"${(v.title||"").slice(0,44)}" — ${fmt(v.views||0)} views · hook:${v.hook||"?"} · type:${v.type||"?"}`);
-      const posted = ideas.filter(i=>i.status==="posted"&&i.postedViews>0).slice(0,5)
-        .map(i=>`"${(i.title||"").slice(0,40)}" scored ${i.viral||"?"}/100 → ${fmt(i.postedViews)} real views`);
-      const pillars = (wl.pillars||[]).join(", ");
-      const prompt = `You are the autonomous content strategist for ${wl.appName||"this creator"} (${wl.handle||"a TikTok/Instagram creator"}).${wl.niche?` Niche: ${wl.niche}.`:""} Produce TODAY'S content briefing — like a chief-of-staff handing them a ready-made plan the moment they wake up. Be specific, punchy and in THEIR voice, not generic.
-
-CHANNEL CONTEXT
-- Top performing videos: ${topV.length?topV.join(" | "):"none yet"}
-- Real posted outcomes: ${posted.length?posted.join(" | "):"none logged yet"}
-- Content pillars: ${pillars||"unknown"}
-${voice?`- Voice DNA (write hooks in exactly this voice): ${String(voice).slice(0,600)}`:""}
-${trends?`- Current trends: ${String(trends).slice(0,400)}`:""}
-${theory?`- What makes this channel work: ${String(theory).slice(0,400)}`:""}
-
-Return ONLY valid JSON:
-{"headline":"one punchy line summarising today's #1 move, e.g. 'Ride the bin-hunt trend before it peaks Thursday'","todaysMove":{"title":"the exact video to film first — a real hook/concept in their voice under 14 words","why":"2 sentences: why THIS, why NOW, grounded in the context above","trendWindow":"e.g. '~2 day window' or null if not trend-driven"},"ideas":[{"title":"fresh video concept in their voice under 14 words","score":0-100,"hook":"the opening line under 12 words","why":"one line why it'll work for THEM specifically","pillar":"which content pillar","bestSlot":"best day+time to post e.g. 'Thursday 6-9pm'"}],"topScript":{"hook":"the opening 3 seconds, in their voice","beats":["beat 1 — what happens next","beat 2","beat 3"],"cta":"the closing call to action"},"weekPlan":[{"day":"Mon","action":"short concrete action"},{"day":"Wed","action":"..."},{"day":"Fri","action":"..."}],"focusThisWeek":"one strategic focus line for the week"}
-
-Generate exactly 3 ideas in the "ideas" array, each a DISTINCT angle. Make the topScript match todaysMove. Ground scores in the real outcomes above where possible.`;
-      const r = await callAI(prompt, 1800);
-      if(!r || !r.todaysMove) throw new Error("Autopilot got an incomplete plan — try again.");
-      const out = { ...r, generatedAt: Date.now() };
-      setBrief(out); saveJSON(AUTOPILOT_KEY, out);
-    } catch(e) { setErr(e.message || "Autopilot run failed."); }
-    setLoading(false);
+  // ── shared channel context (built once per run) ──
+  const buildCtx = async () => {
+    const wl = loadWL();
+    const voice = String(loadJSON(VOICE_KEY,"")||"").slice(0,600);
+    const trends = String(loadJSON(CUR_TRENDS_KEY,"")||"").slice(0,400);
+    const theory = String(loadJSON(CHANNEL_THEORY_KEY,"")||"").slice(0,400);
+    const organic = videos.filter(v=>!v.boosted);
+    const avgV = organic.length ? Math.round(organic.reduce((s,v)=>s+(v.views||0),0)/organic.length) : 0;
+    const topV = [...videos].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,6)
+      .map(v=>`"${(v.title||"").slice(0,44)}" — ${fmt(v.views||0)} views · hook:${v.hook||"?"} · type:${v.type||"?"}`);
+    const posted = ideas.filter(i=>i.status==="posted"&&i.postedViews>0).slice(0,5)
+      .map(i=>`"${(i.title||"").slice(0,40)}" scored ${i.viral||"?"}/100 → ${fmt(i.postedViews)} real views`);
+    const corpus = await corpusPriors(wl.niche);
+    const ctxBlock = `CHANNEL: ${wl.appName||""} (${wl.handle||"creator"})${wl.niche?` · niche: ${wl.niche}`:""}. Channel avg: ${avgV?fmt(avgV)+" views":"unknown"}.
+Top videos: ${topV.length?topV.join(" | "):"none yet"}
+Real posted outcomes: ${posted.length?posted.join(" | "):"none logged yet"}
+Content pillars: ${(wl.pillars||[]).join(", ")||"unknown"}
+${voice?`Voice DNA (write hooks EXACTLY in this voice): ${voice}`:""}
+${trends?`Current trends: ${trends}`:""}
+${theory?`Why this channel works: ${theory}`:""}
+${corpus?`Cross-creator base rates: ${corpus}`:""}`;
+    return { wl, ctxBlock, avgV };
   };
 
-  // Auto-run when opening with a stale/absent briefing and enough data.
-  useEffect(()=>{
-    const stale = !brief || (Date.now() - (brief.generatedAt||0) > 20*3600*1000);
-    if(stale && enoughData && !loading) run();
-    // eslint-disable-next-line
-  },[]);
+  const genIdeas = async (ctx, count) => {
+    const r = await callAI(`You are the autonomous content strategist for ${ctx.wl.handle||"a creator"}. Generate ${count} DISTINCT, fresh viral video concepts — in their voice, on-trend, each a different angle/trigger.
+${ctx.ctxBlock}
+Return ONLY JSON: {"ideas":[{"title":"concept under 14 words in their voice","hook":"opening line under 12 words","angle":"one line: why this angle is distinct","pillar":"which content pillar"}]}
+Exactly ${count} ideas, all genuinely different.`, 1200);
+    return (r&&r.ideas)||[];
+  };
 
-  const addIdeas = () => {
+  const scoreOne = async (idea, ctx) => {
+    const r = await callAI(`Score this video idea 0-100 for ${ctx.wl.handle||"this creator"}. Be a brutally honest viral strategist — most content genuinely lands 50-70; reserve 85+ for ideas with a strong hook AND a clear share trigger.
+${ctx.ctxBlock}
+IDEA — Title: "${idea.title}" | Hook: "${idea.hook}" | Pillar: ${idea.pillar||"?"}
+Ground the score in the base rates and real outcomes above. Return ONLY JSON: {"score":0-100,"verdict":"2 sentences naming the strongest and weakest factor","hookFeedback":"what works/fails in the first 3 seconds","estViews":"realistic range e.g. 20K-45K","bestSlot":"best day+time to post e.g. Thursday 6-9pm"}`, 900);
+    return r || {};
+  };
+
+  const makePlan = async (top, scored, ctx) => {
+    const list = scored.map((s,i)=>`${i+1}. "${s.title}" (${s.score||0}/100)`).join(" | ");
+    const r = await callAI(`You are the content strategist for ${ctx.wl.handle||"a creator"}. Today's top-scored idea is "${top.title}" (${top.score}/100, hook: "${top.hook}"). All scored ideas: ${list}.
+${ctx.ctxBlock}
+Write today's briefing. Return ONLY JSON: {"headline":"one punchy line summarising today's #1 move","why":"2 sentences: why film THIS, why NOW","trendWindow":"e.g. '~2 day window' or null","script":{"hook":"opening 3 seconds in their voice","beats":["beat 1","beat 2","beat 3"],"cta":"closing call to action"},"weekPlan":[{"day":"Mon","action":"short concrete action"},{"day":"Wed","action":"..."},{"day":"Fri","action":"..."}],"focus":"one strategic focus line for the week"}`, 1400);
+    return r || {};
+  };
+
+  const run = async (count=4) => {
+    if(loading) return;
+    setLoading(true); setErr(null); setAddedAll(false); setAddedIds({}); setPhase("scan");
+    try {
+      const ctx = await buildCtx();
+      setPhase("ideas");
+      const raw = await genIdeas(ctx, count);
+      if(!raw.length) throw new Error("Autopilot couldn't generate ideas — try again.");
+      setPhase("scoring"); setScoreProg([0, raw.length]);
+      const scored = [];
+      for(let i=0;i<raw.length;i++){
+        const s = await scoreOne(raw[i], ctx);
+        scored.push({ ...raw[i], ...s, score: Math.round(Number(s.score)||0) });
+        setScoreProg([i+1, raw.length]);
+      }
+      scored.sort((a,b)=>(b.score||0)-(a.score||0));
+      setPhase("planning");
+      const top = scored[0];
+      const plan = await makePlan(top, scored, ctx);
+      const out = { ...plan, ideas:scored, todaysMove:{ title: top.title, why: plan.why, trendWindow: plan.trendWindow }, topScript: plan.script, generatedAt: Date.now() };
+      setBrief(out); saveJSON(AUTOPILOT_KEY, out);
+    } catch(e){ setErr(e.message||"Autopilot run failed."); }
+    setPhase(null); setLoading(false);
+  };
+
+  const genMore = async () => {
+    if(moreLoading||loading||!brief) return;
+    setMoreLoading(true);
+    try {
+      const ctx = await buildCtx();
+      const raw = await genIdeas(ctx, 2);
+      const add = [];
+      for(const r of raw){ const s = await scoreOne(r, ctx); add.push({ ...r, ...s, score:Math.round(Number(s.score)||0) }); }
+      const merged = [...brief.ideas, ...add].sort((a,b)=>(b.score||0)-(a.score||0));
+      const out = { ...brief, ideas:merged };
+      setBrief(out); saveJSON(AUTOPILOT_KEY, out);
+    } catch(e){ setErr(e.message); }
+    setMoreLoading(false);
+  };
+
+  const regen = async (i) => {
+    if(regenI>=0||loading||!brief) return;
+    setRegenI(i);
+    try {
+      const ctx = await buildCtx();
+      const raw = await genIdeas(ctx, 1);
+      if(raw[0]){ const s = await scoreOne(raw[0], ctx); const nid = { ...raw[0], ...s, score:Math.round(Number(s.score)||0) };
+        const arr = brief.ideas.slice(); arr[i] = nid; const out = { ...brief, ideas: arr.sort((a,b)=>(b.score||0)-(a.score||0)) };
+        setBrief(out); saveJSON(AUTOPILOT_KEY, out);
+      }
+    } catch(e){ setErr(e.message); }
+    setRegenI(-1);
+  };
+
+  const addOne = (a, i) => {
+    if(!setIdeas || addedIds[i]) return;
+    setIdeas(is=>[{ id:Date.now(), title:a.title, hook:a.hook, type:"", viral:a.score||0, verdict:a.verdict||"", aiScore:{ contentPillar:a.pillar, estimated_views:a.estViews }, optimalPostSlot:a.bestSlot, hookFeedback:a.hookFeedback, status:"idea", createdAt:new Date().toISOString(), _autopilot:true }, ...is]);
+    setAddedIds(m=>({ ...m, [i]:true }));
+  };
+  const addAll = () => {
     if(!brief?.ideas?.length || !setIdeas) return;
     const now = Date.now();
-    const mapped = brief.ideas.map((a,i)=>({
-      id: now+i, title:a.title, hook:a.hook, type:"", viral:a.score||0,
-      verdict:a.why||"", aiScore:{ contentPillar:a.pillar }, optimalPostSlot:a.bestSlot,
-      status:"idea", createdAt:new Date().toISOString(), _autopilot:true,
-    }));
-    setIdeas(is=>[...mapped, ...is]);
-    setAdded(true);
+    setIdeas(is=>[...brief.ideas.map((a,i)=>({ id:now+i, title:a.title, hook:a.hook, type:"", viral:a.score||0, verdict:a.verdict||"", aiScore:{ contentPillar:a.pillar, estimated_views:a.estViews }, optimalPostSlot:a.bestSlot, hookFeedback:a.hookFeedback, status:"idea", createdAt:new Date().toISOString(), _autopilot:true })), ...is]);
+    setAddedAll(true); setAddedIds(brief.ideas.reduce((m,_,i)=>(m[i]=true,m),{}));
   };
 
   const scriptText = brief?.topScript ? `HOOK: ${brief.topScript.hook}\n\n${(brief.topScript.beats||[]).map((b,i)=>`${i+1}. ${b}`).join("\n")}\n\nCTA: ${brief.topScript.cta}` : "";
 
-  const band = (s)=> s>=85?C.green:s>=70?C.yellow:s>=50?C.cyan:C.pink;
+  // ── agentic progress panel ──
+  const PHASES = [
+    { id:"scan",     label:"Scanning your channel" },
+    { id:"ideas",    label:"Writing ideas in your voice" },
+    { id:"scoring",  label: phase==="scoring" ? `Scoring ideas · ${scoreProg[0]}/${scoreProg[1]}` : "Scoring each idea" },
+    { id:"planning", label:"Building today's plan" },
+  ];
+  const phaseState = (id) => {
+    const order = ["scan","ideas","scoring","planning"];
+    if(!phase) return "pending";
+    const cur = order.indexOf(phase), me = order.indexOf(id);
+    return me<cur ? "done" : me===cur ? "active" : "pending";
+  };
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?16:20 }}>
@@ -8008,9 +8086,17 @@ Generate exactly 3 ideas in the "ideas" array, each a DISTINCT angle. Make the t
             <div style={{ width:34, height:34, borderRadius:10, background:`linear-gradient(135deg,${C.purple},${C.pink})`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 6px 18px ${C.purple}50` }}>{I.zap(17,"#fff")}</div>
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.2em", textTransform:"uppercase", fontWeight:700 }}>Autopilot · Today's Briefing</div>
           </div>
+
           {loading ? (
-            <div className="km-shimmer-wrap" style={{ padding:"18px 0 8px" }}>
-              <AiThinking preset="generic" color={C.purple} msgs={["Scanning your channel…","Reading the trends…","Writing ideas in your voice…","Scoring and picking today's move…"]} size={15} />
+            <div style={{ padding:"6px 0 2px" }}>
+              {PHASES.map(p=>{ const st=phaseState(p.id); return (
+                <div key={p.id} style={{ display:"flex", alignItems:"center", gap:11, padding:"7px 0", opacity:st==="pending"?0.4:1 }}>
+                  <div style={{ width:20, display:"flex", justifyContent:"center", flexShrink:0 }}>
+                    {st==="done" ? I.tick(15,C.green) : st==="active" ? <Spin s={14} c={C.purple}/> : <span style={{ width:6, height:6, borderRadius:"50%", background:"rgba(255,255,255,0.25)" }}/>}
+                  </div>
+                  <span style={{ fontSize:14, color:st==="active"?"#fff":st==="done"?"rgba(255,255,255,0.7)":"rgba(255,255,255,0.5)", fontWeight:st==="active"?700:500, fontFamily:st==="active"?C.fontHead:C.fontBody }}>{p.label}</span>
+                </div>
+              );})}
             </div>
           ) : brief ? (
             <>
@@ -8018,6 +8104,7 @@ Generate exactly 3 ideas in the "ideas" array, each a DISTINCT angle. Make the t
               <div style={{ borderRadius:14, background:"rgba(255,255,255,0.04)", border:`1px solid ${C.pink}30`, padding:isMobile?"16px 16px":"18px 20px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" }}>
                   <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.12em", color:C.pink, background:`${C.pink}18`, border:`1px solid ${C.pink}45`, borderRadius:20, padding:"3px 10px" }}>FILM THIS FIRST</span>
+                  {brief.ideas?.[0]?.score!=null && <span style={{ fontSize:10, fontWeight:800, color:band(brief.ideas[0].score) }}>{brief.ideas[0].score}/100</span>}
                   {brief.todaysMove?.trendWindow && <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.08em", color:C.yellow, display:"inline-flex", alignItems:"center", gap:5 }}>{I.clock(11,C.yellow)} {brief.todaysMove.trendWindow}</span>}
                 </div>
                 <div style={{ fontSize:isMobile?16:18, fontWeight:700, color:"#fff", lineHeight:1.35, marginBottom:8, fontFamily:C.fontHead }}>{brief.todaysMove?.title}</div>
@@ -8027,51 +8114,60 @@ Generate exactly 3 ideas in the "ideas" array, each a DISTINCT angle. Make the t
           ) : (
             <div style={{ padding:"6px 0 4px" }}>
               <div style={{ fontSize:isMobile?20:26, fontWeight:800, color:"#fff", lineHeight:1.2, marginBottom:8, fontFamily:C.fontHead }}>Your AI content strategist</div>
-              <div style={{ fontSize:14, color:"rgba(255,255,255,0.55)", lineHeight:1.6, maxWidth:460, marginBottom:18 }}>{enoughData ? "Generate today's plan — fresh ideas in your voice, scored, with the exact one to film first and when to post it." : "Sync your channel or add a few ideas first, then Autopilot can build your daily plan."}</div>
+              <div style={{ fontSize:14, color:"rgba(255,255,255,0.55)", lineHeight:1.6, maxWidth:480, marginBottom:18 }}>{enoughData ? "Run it and watch it work — generates fresh ideas in your voice, scores each one with the real engine, picks today's move, and writes the script." : "Sync your channel or add a few ideas first, then Autopilot can build your daily plan."}</div>
             </div>
           )}
-          <div style={{ display:"flex", gap:10, marginTop:16, flexWrap:"wrap" }}>
-            <button onClick={run} disabled={loading||!enoughData}
+
+          <div style={{ display:"flex", gap:10, marginTop:16, flexWrap:"wrap", alignItems:"center" }}>
+            <button onClick={()=>run(4)} disabled={loading||!enoughData}
               style={{ padding:isMobile?"13px 20px":"12px 22px", borderRadius:12, border:"none", background:loading||!enoughData?"rgba(255,255,255,0.08)":`linear-gradient(135deg,${C.purple},${C.pink})`, color:loading||!enoughData?"rgba(255,255,255,0.4)":"#fff", fontFamily:C.fontHead, fontWeight:800, fontSize:14, cursor:loading||!enoughData?"default":"pointer", letterSpacing:"0.03em", boxShadow:loading||!enoughData?"none":`0 8px 24px ${C.purple}40`, display:"inline-flex", alignItems:"center", gap:8 }}>
-              {loading ? <><Spin s={13} c="#fff"/> RUNNING</> : brief ? <>{I.zap(14,"currentColor")} RE-RUN AUTOPILOT</> : <>{I.zap(14,"currentColor")} RUN AUTOPILOT</>}
+              {loading ? <><Spin s={13} c="#fff"/> WORKING…</> : brief ? <>{I.zap(14,"currentColor")} RE-RUN AUTOPILOT</> : <>{I.zap(14,"currentColor")} RUN AUTOPILOT</>}
             </button>
-            {brief?.generatedAt && !loading && <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", alignSelf:"center" }}>Updated {new Date(brief.generatedAt).toLocaleString()}</div>}
+            {brief?.generatedAt && !loading && <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)" }}>Updated {new Date(brief.generatedAt).toLocaleString()}</div>}
           </div>
           {err && <div style={{ marginTop:12, fontSize:13, color:C.pink }}>{err}</div>}
         </div>
       </div>
 
       {brief && !loading && (<>
-        {/* Ideas */}
+        {/* Ideas — truly scored */}
         <div>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12, gap:12, flexWrap:"wrap" }}>
-            <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700 }}>Scored ideas · in your voice</div>
-            <button onClick={addIdeas} disabled={added} style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${added?C.green:C.purple}45`, background:added?`${C.green}12`:`${C.purple}12`, color:added?C.green:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:added?"default":"pointer", display:"inline-flex", alignItems:"center", gap:6 }}>
-              {added ? <>{I.tick(13,"currentColor")} ADDED TO CONTENT</> : "+ ADD ALL TO CONTENT"}
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700 }}>Scored ideas · engine-scored, in your voice</div>
+            <button onClick={addAll} disabled={addedAll} style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${addedAll?C.green:C.purple}45`, background:addedAll?`${C.green}12`:`${C.purple}12`, color:addedAll?C.green:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:addedAll?"default":"pointer", display:"inline-flex", alignItems:"center", gap:6 }}>
+              {addedAll ? <>{I.tick(13,"currentColor")} ADDED</> : "+ ADD ALL TO CONTENT"}
             </button>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(auto-fit,minmax(min(280px,100%),1fr))", gap:12 }}>
+          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(auto-fit,minmax(min(300px,100%),1fr))", gap:12 }}>
             {(brief.ideas||[]).map((a,i)=>(
-              <div key={i} data-card style={{ borderRadius:16, background:"rgba(255,255,255,0.025)", border:`1px solid ${band(a.score||0)}25`, padding:isMobile?"16px 16px":"18px 18px", position:"relative", overflow:"hidden" }}>
+              <div key={i} data-card style={{ borderRadius:16, background:"rgba(255,255,255,0.025)", border:`1px solid ${band(a.score||0)}25`, padding:isMobile?"16px 16px":"18px 18px", position:"relative", overflow:"hidden", opacity:regenI===i?0.5:1, transition:"opacity 0.2s" }}>
                 <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${band(a.score||0)},transparent)` }}/>
                 <div style={{ display:"flex", alignItems:"flex-start", gap:12, marginBottom:10 }}>
                   <div style={{ flex:1, minWidth:0 }}>
+                    {i===0 && <span style={{ fontSize:8, fontWeight:800, letterSpacing:"0.12em", color:C.pink, background:`${C.pink}18`, border:`1px solid ${C.pink}40`, borderRadius:20, padding:"2px 8px", marginBottom:6, display:"inline-block" }}>TOP PICK</span>}
                     <div style={{ fontSize:14.5, fontWeight:700, color:"#fff", lineHeight:1.35, marginBottom:6 }}>{a.title}</div>
                     <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)", fontStyle:"italic", lineHeight:1.5 }}>"{a.hook}"</div>
                   </div>
                   <div style={{ textAlign:"center", flexShrink:0 }}>
-                    <div style={{ fontSize:isMobile?24:30, fontWeight:700, fontFamily:C.fontHead, color:band(a.score||0), lineHeight:1, textShadow:`0 0 16px ${band(a.score||0)}50` }}>{a.score||0}</div>
-                    <div style={{ fontSize:8, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700 }}>SCORE</div>
+                    {regenI===i ? <Spin s={20} c={C.purple}/> : <><div style={{ fontSize:isMobile?24:30, fontWeight:700, fontFamily:C.fontHead, color:band(a.score||0), lineHeight:1, textShadow:`0 0 16px ${band(a.score||0)}50` }}>{a.score||0}</div><div style={{ fontSize:8, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700 }}>SCORE</div></>}
                   </div>
                 </div>
-                <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.6)", lineHeight:1.55, marginBottom:10, fontFamily:C.fontBody }}>{a.why}</div>
-                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                  {a.pillar && <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.06em", color:C.purple, background:`${C.purple}14`, border:`1px solid ${C.purple}30`, borderRadius:6, padding:"3px 8px" }}>{a.pillar}</span>}
-                  {a.bestSlot && <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.06em", color:C.cyan, background:`${C.cyan}12`, border:`1px solid ${C.cyan}30`, borderRadius:6, padding:"3px 8px", display:"inline-flex", alignItems:"center", gap:4 }}>{I.clock(9,C.cyan)} {a.bestSlot}</span>}
+                {a.verdict && <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.6)", lineHeight:1.55, marginBottom:10, fontFamily:C.fontBody }}>{a.verdict}</div>}
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12 }}>
+                  {a.estViews && <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.05em", color:C.green, background:`${C.green}12`, border:`1px solid ${C.green}30`, borderRadius:6, padding:"3px 8px" }}>~{a.estViews}</span>}
+                  {a.pillar && <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.05em", color:C.purple, background:`${C.purple}14`, border:`1px solid ${C.purple}30`, borderRadius:6, padding:"3px 8px" }}>{a.pillar}</span>}
+                  {a.bestSlot && <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.05em", color:C.cyan, background:`${C.cyan}12`, border:`1px solid ${C.cyan}30`, borderRadius:6, padding:"3px 8px", display:"inline-flex", alignItems:"center", gap:4 }}>{I.clock(9,C.cyan)} {a.bestSlot}</span>}
+                </div>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={()=>addOne(a,i)} disabled={addedIds[i]} style={{ flex:1, padding:"9px 10px", borderRadius:10, border:`1px solid ${addedIds[i]?C.green:C.purple}40`, background:addedIds[i]?`${C.green}12`:`${C.purple}10`, color:addedIds[i]?C.green:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:addedIds[i]?"default":"pointer", display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6 }}>{addedIds[i]?<>{I.tick(12,"currentColor")} Added</>:"+ Add"}</button>
+                  <button onClick={()=>regen(i)} disabled={regenI>=0} title="Regenerate this idea" style={{ padding:"9px 12px", borderRadius:10, border:"1px solid rgba(255,255,255,0.12)", background:"rgba(255,255,255,0.04)", color:"rgba(255,255,255,0.6)", cursor:regenI>=0?"default":"pointer", fontSize:13, fontFamily:C.fontHead, fontWeight:700 }}>↻</button>
                 </div>
               </div>
             ))}
           </div>
+          <button onClick={genMore} disabled={moreLoading} style={{ marginTop:12, padding:"10px 18px", borderRadius:10, border:"1px solid rgba(255,255,255,0.12)", background:"rgba(255,255,255,0.03)", color:"rgba(255,255,255,0.7)", fontFamily:C.fontHead, fontWeight:700, fontSize:12.5, cursor:moreLoading?"default":"pointer", display:"inline-flex", alignItems:"center", gap:8 }}>
+            {moreLoading ? <><Spin s={12}/> Generating…</> : "+ Generate 2 more"}
+          </button>
         </div>
 
         {/* Top script */}
@@ -8114,10 +8210,10 @@ Generate exactly 3 ideas in the "ideas" array, each a DISTINCT angle. Make the t
               ))}
             </div>
           )}
-          {brief.focusThisWeek && (
+          {brief.focus && (
             <div style={{ borderRadius:16, background:`linear-gradient(145deg,${C.purple}14,rgba(10,6,20,0.9))`, border:`1px solid ${C.purple}30`, padding:isMobile?"18px 18px":"20px 22px", display:"flex", flexDirection:"column", justifyContent:"center" }}>
               <div style={{ fontSize:11, color:C.purple, letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:10 }}>Focus this week</div>
-              <div style={{ fontSize:isMobile?15:16, color:"#fff", lineHeight:1.5, fontWeight:600, fontFamily:C.fontHead }}>{brief.focusThisWeek}</div>
+              <div style={{ fontSize:isMobile?15:16, color:"#fff", lineHeight:1.5, fontWeight:600, fontFamily:C.fontHead }}>{brief.focus}</div>
             </div>
           )}
         </div>
