@@ -1033,10 +1033,17 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
               </div>
             </div>
           </div>
-          {/* Right: sparkline */}
-          <div style={{ width:isMobile?90:220, display:isMobile?"none":"flex", flexDirection:"column", justifyContent:"flex-end", paddingBottom:8, opacity:0.75 }}>
-            <Sparkline data={[0.25,0.4,0.35,0.6,0.55,0.8,1].map(f=>Math.round((ttViewsDisplay||500)*f))} color={C.pink} height={70}/>
-          </div>
+          {/* Right: sparkline — real daily views-gained over the last 7 days (hidden until there's data) */}
+          {(() => {
+            const series = last7.map((d,i)=>(d.value||0)+(igLast7[i]?.value||0));
+            if(isMobile || series.reduce((s,v)=>s+v,0)<=0) return null;
+            return (
+              <div style={{ width:220, display:"flex", flexDirection:"column", justifyContent:"flex-end", paddingBottom:8, opacity:0.85 }}>
+                <div style={{ fontSize:9, color:"rgba(255,255,255,0.35)", letterSpacing:"0.14em", textTransform:"uppercase", fontWeight:700, marginBottom:8, textAlign:"right" }}>Views · Last 7 Days</div>
+                <Sparkline data={series} color={C.pink} height={70}/>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -2838,7 +2845,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
   };
   const addIdea = () => {
     if(!ideaInput.trim()) return;
-    setAppIdeas(is=>[{id:Date.now(),text:ideaInput.trim(),score:Math.floor(Math.random()*30+65),verdict:"Added! Looks promising.",impact:"HIGH",effort:"MEDIUM"},...is]);
+    setAppIdeas(is=>[{id:Date.now(),text:ideaInput.trim(),impact:"HIGH",effort:"MEDIUM"},...is]);
     setIdeaInput("");
   };
 
@@ -3013,17 +3020,12 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                   <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:240, lineHeight:1.6 }}>Capture your best product ideas — add your first one above</div>
                 </div>
               : appIdeas.map(idea=>{
-                const sc = idea.score||0;
-                const sc_c = sc>=80?C.green:sc>=65?C.yellow:sc>=50?C.cyan:C.pink;
+                const sc_c = C.purple;
                 return (
                   <div key={idea.id} style={{ borderRadius:16, padding:isMobile?"18px 18px":"24px 26px", background:"rgba(255,255,255,0.025)", border:`1px solid ${sc_c}25`, position:"relative", overflow:"hidden" }}>
                     <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${sc_c},${sc_c}00)` }}/>
                     <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, marginBottom:isMobile?10:12 }}>
                       <div style={{ fontSize:14, color:"#fff", fontWeight:600, lineHeight:1.5, flex:1 }}>{idea.text}</div>
-                      <div style={{ textAlign:"center", flexShrink:0 }}>
-                        <div style={{ fontSize:isMobile?22:40, fontWeight:700, fontFamily:C.fontHead, color:sc_c, lineHeight:1, textShadow:`0 0 16px ${sc_c}50` }}>{sc}</div>
-                        <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700 }}>SCORE</div>
-                      </div>
                     </div>
                     {idea.verdict && (
                       <div style={{ padding:isMobile?"13px 16px":"10px 12px", background:`${C.cyan}08`, border:`1px solid ${C.cyan}18`, borderRadius:10, fontSize:13, color:"rgba(255,255,255,0.85)", lineHeight:1.55, fontFamily:C.fontBody, marginBottom:12 }}>{idea.verdict}</div>
@@ -5503,7 +5505,7 @@ const _titleSim = (a,b) => {
   return inter / Math.min(ta.size, tb.size); // overlap coefficient — robust to caption length
 };
 const autoMatchOutcomes = (ideas=[], videos=[]) => {
-  const ttVids = videos.filter(v => v.platform==="tiktok" && v.views>0 && (v._tikwmId||v.videoUrl));
+  const ttVids = videos.filter(v => (v.platform==="tiktok"||!v.platform) && v.views>0 && (v._tikwmId||v.videoUrl));
   if(!ttVids.length) return [];
   const out = [];
   ideas.filter(i => i.status==="posted" && !(i.postedViews>0) && i.title).forEach(i => {
@@ -7792,8 +7794,8 @@ const DealsView = () => {
     setShowForm(false); addXP(25);
   };
   const STATUS_C = { Enquiry:C.cyan, Negotiating:C.yellow, Signed:C.green, Live:C.pink, Delivered:C.purple, Paid:C.green, Declined:"rgba(255,255,255,0.3)" };
-  const totalEarned = deals.filter(d=>["Paid","Delivered","Live"].includes(d.status)).reduce((s,d)=>s+parseFloat(d.value||0),0);
-  const pipeline = deals.filter(d=>["Enquiry","Negotiating","Signed"].includes(d.status)).reduce((s,d)=>s+parseFloat(d.value||0),0);
+  const totalEarned = deals.filter(d=>d.status==="Paid").reduce((s,d)=>s+parseFloat(d.value||0),0);
+  const pipeline = deals.filter(d=>["Enquiry","Negotiating","Signed","Live","Delivered"].includes(d.status)).reduce((s,d)=>s+parseFloat(d.value||0),0);
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?18:28 }}>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(150px,100%),1fr))", gap:12 }}>
@@ -7842,7 +7844,7 @@ const DealsView = () => {
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?10:10 }}>
           {deals.map(deal=>{
             const sc = STATUS_C[deal.status]||C.dim;
-            const isMoney = ["Paid","Delivered","Live"].includes(deal.status);
+            const isMoney = deal.status==="Paid";
             return (
             <div key={deal.id} data-card style={{ borderRadius:16, padding:isMobile?"20px 20px":"18px 22px 18px 20px", background:`linear-gradient(90deg,${sc}0c,rgba(255,255,255,0.02) 40%)`, border:"1px solid rgba(255,255,255,0.08)", borderLeft:`3px solid ${sc}`, display:"flex", flexDirection:isMobile?"column":"row", alignItems:isMobile?"stretch":"center", gap:isMobile?18:20, flexWrap:"wrap" }}>
               <div style={{ flex:1, minWidth:isMobile?0:160 }}>
@@ -8289,7 +8291,7 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
       return `Video idea added: "${inp.title}" for ${inp.platform}`;
     }
     if(name === "get_stats") {
-      const ttVids = videos.filter(v=>v.platform==="tiktok");
+      const ttVids = videos.filter(v=>v.platform==="tiktok"||!v.platform);
       const igVids = videos.filter(v=>v.platform==="instagram");
       const totalViews = videos.reduce((s,v)=>s+(v.views||0),0);
       const topVideo = [...videos].sort((a,b)=>(b.views||0)-(a.views||0))[0];
@@ -9401,7 +9403,7 @@ function Dashboard({ keys, onEditKeys }) {
     const aiKey = cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
     if((!rapidKey || !aiKey) && !USE_BACKEND) return;
     if(Date.now() - loadJSON("krapmaps_v1_comments_last", 0) < 3*24*60*60*1000) return; // every 3 days
-    const top = [...videos].filter(v=>v.platform==="tiktok"&&v.views>0&&(v._tikwmId||v.url)).sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
+    const top = [...videos].filter(v=>(v.platform==="tiktok"||!v.platform)&&v.views>0&&(v._tikwmId||v.url)).sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
     if(top.length < 2) return;
     try {
       let pool = [];
