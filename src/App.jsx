@@ -10894,6 +10894,9 @@ function OnboardingPage({ onComplete }) {
 
   // Slide content keyed by client
   const isBraz = WL.clientId === "thierno";
+  // Known-brand builds (hand-made) show the editorial brand overview; generic
+  // self-serve creators get the product tour instead.
+  const showBrief = isBraz || WL.clientId === "krapmaps";
   const ac1 = WL.accentColor || "#FF2D78";
   const ac2wl = WL.accentColor2 || "#00E5FF";
 
@@ -11238,7 +11241,7 @@ function OnboardingPage({ onComplete }) {
           )}
 
           {/* Step 1 — Welcome (bespoke editorial brief — hand-made client builds only) */}
-          {step === 1 && isBraz && (
+          {step === 1 && showBrief && (
             <div style={{ position:"fixed", inset:0, display:"flex", overflow:isMobile?"auto":"hidden", flexDirection:isMobile?"column":"row" }}>
 
               <style>{`
@@ -11748,7 +11751,7 @@ function OnboardingPage({ onComplete }) {
           )}
 
           {/* Step 1 — Universal product tour (self-serve builds) */}
-          {step === 1 && !isBraz && (()=>{
+          {step === 1 && !showBrief && (()=>{
             const F = "'Space Grotesk',system-ui,sans-serif";
             const app = WL.appName || "CreatorOS";
             const TOUR = [
