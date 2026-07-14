@@ -2589,22 +2589,6 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
       {sub==="AI INSIGHTS" && (
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?18:28 }}>
 
-          {/* Run buttons */}
-          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:10 }}>
-            {[
-              {l:"What's Working", c:C.cyan,   m:"analysis", load:aiLoad.analysis},
-              {l:"Next Videos",    c:C.green,  m:"nextVids", load:aiLoad.nextVids},
-              {l:`${(WL.creator2||"Weekly").slice(0,8)} Brief`, c:C.yellow, m:"weekly", load:aiLoad.weekly},
-              {l:"Trends",         c:C.orange, m:"trends",   load:aiLoad.trends},
-            ].map((a,i)=>(
-              <button key={i} onClick={()=>runAI&&runAI(a.m)} disabled={a.load}
-                style={{ padding:"14px 10px", borderRadius:16, border:`1px solid ${a.c}30`, background:`linear-gradient(135deg,${a.c}15,${a.c}05)`, color:a.c, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", opacity:a.load?0.5:1, letterSpacing:"0.06em", position:"relative", overflow:"hidden" }}>
-                <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${a.c},${a.c}00)` }}/>
-                {a.load?"Running...":a.l}
-              </button>
-            ))}
-          </div>
-
           {/* InsightCard helper */}
           {[
             {
