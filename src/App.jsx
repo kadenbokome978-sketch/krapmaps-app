@@ -11251,7 +11251,7 @@ Return JSON:
                         <div>
                           <div style={{ fontSize:15, fontWeight:700, color:active?"#fff":"rgba(255,255,255,0.65)", fontFamily:C.fontHead, letterSpacing:"0.03em" }}>{n.label}</div>
                           <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:2 }}>
-                            {n.id==="home"?"Dashboard overview":n.id==="content"?"Ideas & calendar":n.id==="analytics"?"Stats & insights":n.id==="tasks"?"To-do & ideas":n.id==="deals"?"Brand partnerships":n.id==="ai"?"AI assistant":n.id==="growth"?"Growth metrics":"Workspace config"}
+                            {n.id==="home"?"Dashboard overview":n.id==="autopilot"?"Your AI daily plan":n.id==="check"?"Score a video before posting":n.id==="content"?"Ideas & calendar":n.id==="analytics"?"Stats & insights":n.id==="tasks"?"To-do & ideas":n.id==="deals"?"Brand partnerships":n.id==="ai"?"AI assistant":n.id==="growth"?"Growth metrics":n.id==="audit"?"Free channel audit":"Workspace config"}
                           </div>
                         </div>
                         {active && <div style={{ marginLeft:"auto", width:6, height:6, borderRadius:"50%", background:WL.accentColor, boxShadow:`0 0 8px ${WL.accentColor}` }} />}
