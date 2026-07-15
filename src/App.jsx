@@ -4863,6 +4863,41 @@ IDEA — Title: "${c.title}" | Hook: "${c.hook}"`;
   return out;
 }
 
+// Global "report anything" widget — a small always-present button on every screen. Captures
+// the current screen automatically so a user can flag anything that looks wrong or confusing.
+function GlobalReport({ screen }){
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const [sent, setSent] = useState(false);
+  const submit = () => { if(!note.trim()) return; reportIssue(screen, note.trim()); setSent(true); setNote(""); setTimeout(()=>{ setSent(false); setOpen(false); }, 1600); };
+  return (
+    <>
+      <button onClick={()=>setOpen(o=>!o)} aria-label="Report an issue"
+        style={{ position:"fixed", left:isMobile?12:16, bottom:isMobile?12:16, zIndex:600, padding:isMobile?"9px 13px":"9px 14px", borderRadius:12, border:`1px solid ${C.pink}40`, background:"rgba(12,8,22,0.9)", backdropFilter:"blur(10px)", color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 6px 20px rgba(0,0,0,0.4)" }}>
+        ⚑ Report
+      </button>
+      {open && (
+        <div onClick={()=>!sent&&setOpen(false)} style={{ position:"fixed", inset:0, zIndex:601, background:"rgba(0,0,0,0.55)", backdropFilter:"blur(4px)", display:"flex", alignItems:"flex-end", justifyContent:"flex-start", padding:isMobile?14:20 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ width:"100%", maxWidth:420, background:"rgba(14,9,24,0.98)", border:`1px solid ${C.pink}30`, borderRadius:16, padding:18, boxShadow:"0 16px 50px rgba(0,0,0,0.6)" }}>
+            {sent ? (
+              <div style={{ fontSize:14, color:C.green, fontWeight:700, padding:"8px 2px" }}>✓ Thanks — logged. We'll take a look.</div>
+            ) : (<>
+              <div style={{ fontSize:15, fontWeight:800, color:"#fff", fontFamily:C.fontHead, marginBottom:4 }}>Report an issue</div>
+              <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.55)", marginBottom:12, lineHeight:1.5 }}>On <span style={{color:C.pink,fontWeight:700}}>{screen||"this screen"}</span> — what looks wrong, confusing, or doesn't make sense?</div>
+              <textarea value={note} onChange={e=>setNote(e.target.value)} autoFocus rows={3} placeholder="Describe what's off — a wrong number, a broken button, something that doesn't make sense…" style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:10, color:"#fff", padding:"10px 12px", fontSize:14, outline:"none", boxSizing:"border-box", fontFamily:C.fontBody, resize:"vertical", marginBottom:12 }}/>
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={submit} disabled={!note.trim()} style={{ padding:"10px 18px", borderRadius:10, border:"none", background:note.trim()?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.08)", color:note.trim()?"#fff":"rgba(255,255,255,0.4)", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:note.trim()?"pointer":"default" }}>Send report</button>
+                <button onClick={()=>setOpen(false)} style={{ padding:"10px 16px", borderRadius:10, border:"1px solid rgba(255,255,255,0.15)", background:"transparent", color:"rgba(255,255,255,0.6)", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>Cancel</button>
+              </div>
+            </>)}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function AiSelfTest(){
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [running, setRunning] = useState(false);
@@ -5748,6 +5783,19 @@ const reportBadCall = (subject, reason, meta={}) => {
     reports.unshift(entry);
     saveJSON("km_reports", reports.slice(0,80));
     sbUpsert("km_reports", [{ id: wsId("report_"+Date.now()), data: entry, updated_at:new Date().toISOString() }]).catch(()=>{});
+  } catch {}
+};
+// General "this doesn't make sense" report from anywhere in the app. Just logs to the review
+// queue with the screen it happened on — no guardrail side-effect (it's a UI/logic issue, not
+// a content-judgment call). Best-effort sync so reports survive across devices.
+const reportIssue = (screen, note, extra={}) => {
+  try {
+    const entry = { type:"issue", screen:String(screen||"app"), subject:String(note||"").slice(0,200), handle:(loadWL().handle||""), ...extra, at:new Date().toISOString() };
+    const reports = loadJSON("km_reports", []);
+    reports.unshift(entry);
+    saveJSON("km_reports", reports.slice(0,80));
+    try { window.dispatchEvent(new Event("km-eval")); } catch {}
+    sbUpsert("km_reports", [{ id: wsId("issue_"+Date.now()), data: entry, updated_at:new Date().toISOString() }]).catch(()=>{});
   } catch {}
 };
 const BRAND_FIT_RULE = `BRAND FIT (critical): judge whether this belongs on THIS account given what it's about. Content can be well-made and still be WRONG for the page (e.g. an off-topic meme on a music artist's page). Off-brand content must NOT get a high score or a "post it" — mark it down and say plainly why it doesn't fit the page.`;
@@ -11477,6 +11525,9 @@ Return JSON:
               </div>
             </div>
           </div>
+
+          {/* Global report-an-issue button — present on every screen */}
+          <GlobalReport screen={NAV.find(n=>n.id===nav)?.label || nav} />
 
           {/* PAGE CONTENT */}
           <div className="web-page-content" style={{ padding:isMobile?"24px 0 0":"32px 44px 60px" }}>
