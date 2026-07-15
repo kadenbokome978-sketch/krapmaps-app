@@ -4916,6 +4916,19 @@ function AiSelfTest(){
           </div>
         </div>
       )}
+      {(()=>{ const reports = loadJSON("km_reports", []); if(!reports.length) return null; return (
+        <div style={{ marginTop:18, paddingTop:16, borderTop:"1px solid rgba(255,255,255,0.08)" }}>
+          <div style={{ fontSize:12.5, fontWeight:700, color:C.pink, letterSpacing:"0.06em", marginBottom:10 }}>REPORTED BY USERS ({reports.length}) — review & fix</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+            {reports.slice(0,6).map((r,i)=>(
+              <div key={i} style={{ fontSize:12.5, color:"rgba(255,255,255,0.75)", lineHeight:1.5, background:"rgba(255,255,255,0.03)", borderRadius:8, padding:"8px 11px" }}>
+                <span style={{ color:C.pink, fontWeight:700 }}>{r.type||"report"}</span> · "{r.subject}"{r.verdict?` (said ${r.verdict})`:""}{r.niche?` · ${r.niche}`:""}
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", marginTop:8, lineHeight:1.5 }}>Each report is already added as a per-page guardrail so it stops recurring. This list is your queue for a proper prompt fix.</div>
+        </div>
+      ); })()}
     </div>
   );
 }
@@ -5714,7 +5727,28 @@ const brandContext = (wl) => {
   if(wl.appDescription) bits.push(`About: ${wl.appDescription}`);
   if(wl.targetAudience) bits.push(`Audience: ${wl.targetAudience}`);
   if(wl.brandValues)    bits.push(`Brand values: ${wl.brandValues}`);
+  // Learned guardrail: things the creator has flagged as WRONG for their page. This is how
+  // a reported mistake (e.g. the chicken-mayo call) stops recurring — the AI is reminded of it.
+  if(Array.isArray(wl.flaggedOffBrand) && wl.flaggedOffBrand.length)
+    bits.push(`ALREADY FLAGGED AS OFF-BRAND FOR THIS PAGE (never greenlight anything like these): ${wl.flaggedOffBrand.slice(-12).map(s=>`"${s}"`).join(", ")}`);
   return bits.join("\n");
+};
+// Record a user-reported bad AI call: remembers it as a per-creator off-brand example
+// (feeds brandContext above) and logs it to the review queue. Safe — it edits DATA, never code.
+const reportBadCall = (subject, reason, meta={}) => {
+  try {
+    const s = String(subject||"").trim().slice(0,120);
+    if(s){
+      const wl = loadWL();
+      const flags = Array.isArray(wl.flaggedOffBrand) ? wl.flaggedOffBrand : [];
+      if(!flags.some(f=>f.toLowerCase()===s.toLowerCase())){ flags.push(s); saveWL({ ...wl, flaggedOffBrand: flags.slice(-20) }); }
+    }
+    const reports = loadJSON("km_reports", []);
+    const entry = { subject:s, reason:String(reason||"").slice(0,300), ...meta, at:new Date().toISOString() };
+    reports.unshift(entry);
+    saveJSON("km_reports", reports.slice(0,80));
+    sbUpsert("km_reports", [{ id: wsId("report_"+Date.now()), data: entry, updated_at:new Date().toISOString() }]).catch(()=>{});
+  } catch {}
 };
 const BRAND_FIT_RULE = `BRAND FIT (critical): judge whether this belongs on THIS account given what it's about. Content can be well-made and still be WRONG for the page (e.g. an off-topic meme on a music artist's page). Off-brand content must NOT get a high score or a "post it" — mark it down and say plainly why it doesn't fit the page.`;
 // True only when the workspace has real synced view history to ground a prediction in.
@@ -8422,12 +8456,16 @@ function PrePostCheck({ videos=[], WL={} }) {
   const [loading, setLoading] = useState(false);
   const [res, setRes] = useState(null);
   const [err, setErr] = useState(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportText, setReportText] = useState("");
+  const [reportDone, setReportDone] = useState(false);
   const fileRef = useRef();
   const hasGemini = !!((loadJSON(KEYS_KEY,{})?.keys?.gemini) || BAKED_GEMINI_KEY || USE_BACKEND);
 
   const run = async (f) => {
     if(!f) return;
     setLoading(true); setErr(null); setRes(null); setFile(f); setStatus("Preparing…");
+    setReportOpen(false); setReportDone(false); setReportText("");
     try {
       const wl = loadWL();
       const organic = videos.filter(v=>!v.boosted);
@@ -8558,7 +8596,21 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
           </div>
         )}
 
-        <button onClick={()=>{ setRes(null); setFile(null); setErr(null); }} style={{ alignSelf:"flex-start", padding:"11px 20px", borderRadius:12, border:`1px solid ${C.purple}45`, background:`${C.purple}12`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:8 }}>{I.eye(14,"currentColor")} Check another video</button>
+        {/* Report a wrong call — teaches the AI a per-page guardrail so it stops recurring */}
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+            <button onClick={()=>{ setRes(null); setFile(null); setErr(null); }} style={{ padding:"11px 20px", borderRadius:12, border:`1px solid ${C.purple}45`, background:`${C.purple}12`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:8 }}>{I.eye(14,"currentColor")} Check another video</button>
+            {!reportDone && <button onClick={()=>setReportOpen(o=>!o)} style={{ padding:"11px 18px", borderRadius:12, border:`1px solid ${C.pink}35`, background:reportOpen?`${C.pink}18`:"transparent", color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>⚑ Wrong call? Report it</button>}
+            {reportDone && <span style={{ padding:"11px 4px", fontSize:13, color:C.green, fontWeight:700 }}>✓ Logged — the AI will avoid this on your page</span>}
+          </div>
+          {reportOpen && !reportDone && (
+            <div style={{ borderRadius:12, background:"rgba(255,255,255,0.03)", border:`1px solid ${C.pink}25`, padding:14 }}>
+              <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.6)", marginBottom:8, lineHeight:1.5 }}>In a few words: what was this video, and why was the call wrong for your page? (e.g. "meme about a mate — off-brand for a music page")</div>
+              <textarea value={reportText} onChange={e=>setReportText(e.target.value)} rows={2} placeholder="What it was + why it's wrong for your page…" style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:10, color:"#fff", padding:"10px 12px", fontSize:14, outline:"none", boxSizing:"border-box", fontFamily:C.fontBody, resize:"vertical", marginBottom:10 }}/>
+              <button onClick={()=>{ if(!reportText.trim()) return; reportBadCall(reportText.trim(), `Checker said ${res?.verdict||"?"} but user flagged it`, { type:"checker", verdict:res?.verdict, niche:(WL&&WL.niche)||loadWL().niche }); setReportDone(true); setReportOpen(false); }} disabled={!reportText.trim()} style={{ padding:"10px 18px", borderRadius:10, border:"none", background:reportText.trim()?`linear-gradient(135deg,${C.pink},${C.purple})`:"rgba(255,255,255,0.08)", color:reportText.trim()?"#fff":"rgba(255,255,255,0.4)", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:reportText.trim()?"pointer":"default" }}>Submit report</button>
+            </div>
+          )}
+        </div>
       </>)}
     </div>
   );
