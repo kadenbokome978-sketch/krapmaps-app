@@ -4818,6 +4818,90 @@ function CollapsibleCard({ title, subtitle, accent="#8B5CF6", actions, children,
   );
 }
 
+// ── AI SELF-TEST (owner-only eval) ───────────────────────────────
+// A report card for the AI's JUDGMENT. Each case is a trick question with a known
+// right answer (off-brand → must reject, empty account → must not invent a number, etc).
+// Run it after any prompt change to catch reasoning regressions (like the chicken-mayo GO)
+// without having to spot them by eye.
+const AI_EVAL_CASES = [
+  { id:"ob-meme",   label:"Off-brand meme on a music page", niche:"music artist / rapper",        title:"My mate turned into a chicken mayo wrap 😭", hook:"BREAKING NEWS: local lad becomes a chicken mayo", expect:"reject" },
+  { id:"ob-dance",  label:"Random dance on a finance page", niche:"personal finance educator",     title:"trying the viral griddy dance lol",         hook:"watch me hit the griddy",                          expect:"reject" },
+  { id:"ob-mukbang",label:"Mukbang on a fitness-coach page",niche:"fitness coach for busy men",    title:"eating 10,000 calories of McDonald's",      hook:"can I finish 30 cheeseburgers?",                   expect:"reject" },
+  { id:"on-fin",    label:"On-brand finance tip",           niche:"personal finance educator",     title:"3 money mistakes keeping you broke at 25",  hook:"you're still broke because of these 3 habits",     expect:"pass" },
+  { id:"on-music",  label:"On-brand music teaser",          niche:"music artist / rapper",         title:"snippet of my unreleased track — out Friday",hook:"should I actually drop this Friday?",              expect:"pass" },
+  { id:"on-fit",    label:"On-brand fitness tip",           niche:"fitness coach for busy men",     title:"the only 3 exercises busy dads need",       hook:"no time to train? just do these 3",                expect:"pass" },
+  { id:"weak",      label:"Bland generic vlog (not a GO)",  niche:"fitness coach for busy men",     title:"just a normal day in my life",              hook:"good morning everyone welcome back",               expect:"weak" },
+  { id:"nofab",     label:"No fake views on empty account", niche:"personal finance educator",     title:"5 side hustles that actually pay in 2026",  hook:"quit your 9-5 with these 5 hustles",               expect:"nonumber" },
+];
+
+function AiSelfTest(){
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const [running, setRunning] = useState(false);
+  const [results, setResults] = useState(null);
+  const [done, setDone] = useState(0);
+
+  const gradeCase = (c, r) => {
+    const bf = String(r?.brandFit||"").toLowerCase();
+    const verdict = String(r?.verdict||"").toUpperCase();
+    const score = Number(r?.score);
+    const est = showEst(r?.estViews);
+    if(c.expect==="reject")   return bf==="off-brand" || verdict==="NO" || (Number.isFinite(score) && score < 45);
+    if(c.expect==="pass")     return bf!=="off-brand" && verdict!=="NO";
+    if(c.expect==="weak")     return verdict!=="GO";              // mediocre must not get a green light
+    if(c.expect==="nonumber") return !est;                        // empty account must not show an invented number
+    return false;
+  };
+
+  const run = async () => {
+    setRunning(true); setResults(null); setDone(0);
+    const out = [];
+    for(const c of AI_EVAL_CASES){
+      const prompt = `${brandContext({ handle:"@testcreator", niche:c.niche })}
+${BRAND_FIT_RULE}
+This account has NO posted view history, so do NOT invent a view number — return estViews as "—".
+Judge this video idea for the account above. Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand","score":0-100,"estViews":"— or a range","reason":"one short line"}
+IDEA — Title: "${c.title}" | Hook: "${c.hook}"`;
+      let r=null, err=null;
+      try { r = await callAI(prompt, 400); } catch(e){ err = e.message||"failed"; }
+      const pass = !err && gradeCase(c, r);
+      out.push({ ...c, r, err, pass });
+      setDone(d=>d+1);
+    }
+    setResults(out);
+    setRunning(false);
+  };
+
+  const passed = results ? results.filter(r=>r.pass).length : 0;
+  const total = AI_EVAL_CASES.length;
+  const allPass = results && passed===total;
+
+  return (
+    <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"22px 24px", background:"linear-gradient(145deg,rgba(0,229,255,0.06),rgba(10,6,20,0.95))", border:`1px solid ${C.cyan}25`, position:"relative", overflow:"hidden" }}>
+      <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:5 }}>AI Self-Test</div>
+      <div style={{ fontSize:13, color:"rgba(255,255,255,0.55)", lineHeight:1.55, marginBottom:16 }}>Runs {total} trick cases with known-correct answers through the live AI — off-brand ideas must be rejected, empty accounts must not show invented numbers. Run it after any prompt change to catch reasoning slips like the chicken-mayo GO.</div>
+      <button onClick={run} disabled={running} style={{ padding:"11px 20px", borderRadius:12, border:"none", background:running?"rgba(255,255,255,0.1)":`linear-gradient(135deg,${C.cyan},${C.purple})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:running?"wait":"pointer", letterSpacing:"0.04em", display:"inline-flex", alignItems:"center", gap:8 }}>
+        {running ? <><Spin s={13}/> Testing… {done}/{total}</> : "Run AI self-test"}
+      </button>
+      {results && (
+        <div style={{ marginTop:16 }}>
+          <div style={{ fontSize:15, fontWeight:800, fontFamily:C.fontHead, color:allPass?C.green:C.yellow, marginBottom:12 }}>{passed}/{total} passed {allPass?"✓ AI judgment looks healthy":"— review the failures below"}</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {results.map(res=>(
+              <div key={res.id} style={{ borderRadius:10, padding:"11px 13px", background:res.pass?`${C.green}0c`:`${C.pink}12`, border:`1px solid ${res.pass?C.green:C.pink}30` }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:res.pass?0:5 }}>
+                  <span style={{ fontSize:13, fontWeight:800, color:res.pass?C.green:C.pink }}>{res.pass?"PASS":"FAIL"}</span>
+                  <span style={{ fontSize:13, color:"rgba(255,255,255,0.85)", fontWeight:600 }}>{res.label}</span>
+                </div>
+                {!res.pass && <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", lineHeight:1.5 }}>{res.err ? `Error: ${res.err}` : `AI said: ${String(res.r?.verdict||"?")} · fit=${String(res.r?.brandFit||"?")} · score=${res.r?.score??"?"} · est=${String(res.r?.estViews||"—")} — ${res.r?.reason||""}`}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const SettingsView = ({ plan, onManagePlan, keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[], onBulkImport }) => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [editing, setEditing] = useState(null);
@@ -5122,6 +5206,9 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             ▶ REPLAY ONBOARDING
           </button>
         </div>}
+
+        {/* KrapMaps-only — AI judgment self-test (eval) */}
+        {_activeCfg.clientId==="krapmaps" && <AiSelfTest />}
 
         {/* RIGHT — Status + Creator Config */}
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
