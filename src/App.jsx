@@ -4987,7 +4987,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
     { label:"Instagram", value:_ig.value, color:_ig.color, id:"igscraper", detail:_ig.detail },
     { label:"Anthropic AI", value:keys?.anthropic?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.anthropic||USE_BACKEND)?C.green:C.pink, id:"anthropic" },
     { label:"Perplexity", value:keys?.perplexity?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.perplexity||USE_BACKEND)?C.green:C.yellow, id:"perplexity" },
-    { label:"Gemini Video", value:keys?.gemini?"KEY SET":"NEEDS KEY (VIDEO)", color:keys?.gemini?C.green:C.yellow, id:"gemini", detail:keys?.gemini?null:"The Video Checker uploads a file, so it needs your own Gemini key here — the shared server can't do video." },
+    { label:"Gemini Video", value:keys?.gemini?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.gemini||USE_BACKEND)?C.green:C.yellow, id:"gemini" },
   ];
 
   const _tierLabel = TIER_LABELS[plan?.tier] || plan?.tier || "Free";
@@ -7112,46 +7112,33 @@ async function callGeminiVideo(videoUrl, prompt) {
 // unposted clip). onStatus(msg) surfaces progress to the UI.
 async function geminiUploadAnalyse(file, prompt, onStatus=()=>{}) {
   const cfg = loadJSON(KEYS_KEY, {});
-  const geminiKey = cfg?.keys?.gemini || BAKED_GEMINI_KEY;
-  if(!geminiKey) throw new Error("No Gemini key — add one in Settings (vision needs Gemini).");
+  const geminiKey = cfg?.keys?.gemini || BAKED_GEMINI_KEY;   // optional browser BYO key
+  // If there's no browser key we rely on the SERVER's GEMINI_KEY (customers never set
+  // their own key) — the whole flow runs through /api/gemini-upload and no key ever
+  // touches the browser. A BYO key, if present, is forwarded to override the server key.
   const mimeType = file.type === "video/quicktime" ? "video/mov" : (file.type || "video/mp4");
+  const keyHeader = geminiKey ? { "X-Gemini-Key":geminiKey } : {};
+
   onStatus("Uploading your clip…");
-  // Upload via our serverless proxy FIRST — the browser's direct multipart upload to
-  // Google's Files API is blocked by CORS in many browsers, which is the usual reason
-  // the check "won't work" even with a valid key. The proxy (api/gemini-upload.js) does
-  // the same upload server-side. Fall back to the direct browser upload if the proxy
-  // isn't deployed (e.g. local/static hosting).
-  let fileUri = null;
-  try {
-    const proxyRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/octet-stream", "X-Gemini-Key":geminiKey, "X-File-Name":file.name||"clip.mp4", "X-Mime-Type":mimeType }, body:file });
-    if(proxyRes.ok){ const pd = await proxyRes.json(); fileUri = pd?.fileUri || null; }
-  } catch { /* proxy unavailable — fall through to direct upload */ }
-  if(!fileUri) {
-    const boundary = "GeminiBound" + String(file.size||0) + (file.lastModified||0);
-    const enc = new TextEncoder();
-    const metaBytes = enc.encode(`--${boundary}\r\nContent-Type: application/json\r\n\r\n` + JSON.stringify({ file:{ display_name:file.name } }) + `\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`);
-    const tailBytes = enc.encode(`\r\n--${boundary}--`);
-    const body = new Blob([metaBytes, file, tailBytes]);
-    const uploadRes = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}&uploadType=multipart`, { method:"POST", headers:{ "Content-Type":`multipart/related; boundary=${boundary}` }, body });
-    if(!uploadRes.ok) { const e = await uploadRes.json().catch(()=>({})); throw new Error(`Upload failed (${uploadRes.status}) ${e?.error?.message||""}`); }
-    const uploadData = await uploadRes.json();
-    fileUri = uploadData?.file?.uri;
-  }
+  // Step 1 — upload the raw video through the proxy (uses server key, bypasses CORS).
+  let fileUri = null, upMime = mimeType;
+  const proxyRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/octet-stream", ...keyHeader, "X-File-Name":file.name||"clip.mp4", "X-Mime-Type":mimeType }, body:file });
+  if(proxyRes.ok){ const pd = await proxyRes.json().catch(()=>({})); fileUri = pd?.fileUri || null; upMime = pd?.mimeType || mimeType; }
+  else { const e = await proxyRes.json().catch(()=>({})); throw new Error(`Upload failed (${proxyRes.status}) ${e?.error||""}`); }
   if(!fileUri) throw new Error("No file URI from Gemini");
+
+  // Step 2 — analyse through the proxy. It polls Gemini + runs generateContent server-side
+  // with the server key. Each call is short; if Gemini is still processing we retry.
   onStatus("Watching your video…");
-  const fileId = fileUri.split("/files/")[1] || fileUri.split("/").pop();
-  let ready = false;
-  for(let i=0;i<40;i++){
-    await new Promise(r=>setTimeout(r,3000));
-    const s = await fetch(`https://generativelanguage.googleapis.com/v1beta/files/${fileId}?key=${geminiKey}`);
-    if(s.ok){ const sd = await s.json(); if(sd.state==="ACTIVE"){ ready=true; break; } if(sd.state==="FAILED") throw new Error("Gemini couldn't process that file — export as MP4 and retry."); }
+  for(let i=0;i<12;i++){
+    const anRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/json", ...keyHeader }, body: JSON.stringify({ fileUri, mimeType:upMime, prompt }) });
+    if(!anRes.ok){ const e = await anRes.json().catch(()=>({})); throw new Error(`Gemini error ${anRes.status} ${e?.error||""}`); }
+    const ad = await anRes.json();
+    if(ad.done) { onStatus("Scoring it…"); return ad.text || ""; }
+    if(ad.pending){ onStatus("Still watching your video…"); await new Promise(r=>setTimeout(r,3000)); continue; }
+    throw new Error("Unexpected response from vision service.");
   }
-  if(!ready) throw new Error("Processing timed out — try a shorter clip.");
-  onStatus("Scoring it…");
-  const genRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ contents:[{ parts:[{ file_data:{ mime_type:mimeType, file_uri:fileUri } }, { text:prompt }] }], generationConfig:{ responseMimeType:"application/json", maxOutputTokens:1800 } }) });
-  if(!genRes.ok){ const e = await genRes.json().catch(()=>({})); throw new Error(`Gemini error ${genRes.status} ${e?.error?.message||""}`); }
-  const genData = await genRes.json();
-  return genData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  throw new Error("Processing timed out — try a shorter clip.");
 }
 
 // Multi-model consensus — run same prompt through Claude + GPT4o, merge insights
@@ -8288,7 +8275,7 @@ function PrePostCheck({ videos=[], WL={} }) {
   const [res, setRes] = useState(null);
   const [err, setErr] = useState(null);
   const fileRef = useRef();
-  const hasGemini = !!((loadJSON(KEYS_KEY,{})?.keys?.gemini) || BAKED_GEMINI_KEY);
+  const hasGemini = !!((loadJSON(KEYS_KEY,{})?.keys?.gemini) || BAKED_GEMINI_KEY || USE_BACKEND);
 
   const run = async (f) => {
     if(!f) return;
@@ -8320,7 +8307,7 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","score":0-100,"predictedViews":"reali
           <div style={{ fontSize:isMobile?22:28, fontWeight:800, color:"#fff", marginBottom:8, fontFamily:C.fontHead, letterSpacing:"-0.02em" }}>Check it before you post</div>
           <div style={{ fontSize:14, color:"rgba(255,255,255,0.55)", lineHeight:1.6, maxWidth:440, margin:"0 auto 22px" }}>Upload your finished video. The AI watches it and gives you a straight <span style={{color:C.green,fontWeight:700}}>GO</span> / <span style={{color:C.yellow,fontWeight:700}}>RISKY</span> / <span style={{color:C.pink,fontWeight:700}}>NO</span> — predicted views, a retention heatmap, and the exact fixes.</div>
           <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e=>{ if(e.target.files[0]) run(e.target.files[0]); }} />
-          <button onClick={()=>{ const liveKey = (loadJSON(KEYS_KEY,{})?.keys?.gemini)||BAKED_GEMINI_KEY; if(!liveKey){ setErr("No Gemini key found. Go to Settings → AI Keys → Gemini, paste your key and press save — then come back."); return; } setErr(null); fileRef.current?.click(); }}
+          <button onClick={()=>{ const liveKey = (loadJSON(KEYS_KEY,{})?.keys?.gemini)||BAKED_GEMINI_KEY||USE_BACKEND; if(!liveKey){ setErr("No Gemini key found. Go to Settings → AI Keys → Gemini, paste your key and press save — then come back."); return; } setErr(null); fileRef.current?.click(); }}
             style={{ padding:isMobile?"14px 24px":"14px 30px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:800, fontSize:15, cursor:"pointer", letterSpacing:"0.02em", boxShadow:`0 10px 30px ${C.purple}40`, display:"inline-flex", alignItems:"center", gap:9 }}>
             {I.eye(17,"currentColor")} UPLOAD & CHECK
           </button>
