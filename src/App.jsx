@@ -4834,54 +4834,72 @@ const AI_EVAL_CASES = [
   { id:"nofab",     label:"No fake views on empty account", niche:"personal finance educator",     title:"5 side hustles that actually pay in 2026",  hook:"quit your 9-5 with these 5 hustles",               expect:"nonumber" },
 ];
 
+const EVAL_LAST_KEY = "km_eval_last";
+const _gradeEvalCase = (c, r) => {
+  const bf = String(r?.brandFit||"").toLowerCase();
+  const verdict = String(r?.verdict||"").toUpperCase();
+  const score = Number(r?.score);
+  const est = showEst(r?.estViews);
+  if(c.expect==="reject")   return bf==="off-brand" || verdict==="NO" || (Number.isFinite(score) && score < 45);
+  if(c.expect==="pass")     return bf!=="off-brand" && verdict!=="NO";
+  if(c.expect==="weak")     return verdict!=="GO";              // mediocre must not get a green light
+  if(c.expect==="nonumber") return !est;                        // empty account must not show an invented number
+  return false;
+};
+// Run the whole eval once; onProgress(doneCount) is optional. Returns the result array.
+async function runAiEval(onProgress){
+  const out = [];
+  for(const c of AI_EVAL_CASES){
+    const prompt = `${brandContext({ handle:"@testcreator", niche:c.niche })}
+${BRAND_FIT_RULE}
+This account has NO posted view history, so do NOT invent a view number — return estViews as "—".
+Judge this video idea for the account above. Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand","score":0-100,"estViews":"— or a range","reason":"one short line"}
+IDEA — Title: "${c.title}" | Hook: "${c.hook}"`;
+    let r=null, err=null;
+    try { r = await callAI(prompt, 400); } catch(e){ err = e.message||"failed"; }
+    out.push({ id:c.id, label:c.label, expect:c.expect, r, err, pass: !err && _gradeEvalCase(c, r) });
+    onProgress && onProgress(out.length);
+  }
+  return out;
+}
+
 function AiSelfTest(){
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [running, setRunning] = useState(false);
   const [results, setResults] = useState(null);
   const [done, setDone] = useState(0);
+  const [lastMeta, setLastMeta] = useState(()=>loadJSON(EVAL_LAST_KEY, null));
 
-  const gradeCase = (c, r) => {
-    const bf = String(r?.brandFit||"").toLowerCase();
-    const verdict = String(r?.verdict||"").toUpperCase();
-    const score = Number(r?.score);
-    const est = showEst(r?.estViews);
-    if(c.expect==="reject")   return bf==="off-brand" || verdict==="NO" || (Number.isFinite(score) && score < 45);
-    if(c.expect==="pass")     return bf!=="off-brand" && verdict!=="NO";
-    if(c.expect==="weak")     return verdict!=="GO";              // mediocre must not get a green light
-    if(c.expect==="nonumber") return !est;                        // empty account must not show an invented number
-    return false;
-  };
+  // Reflect the daily auto-run result if it lands while this card is open.
+  useEffect(()=>{ const onE=()=>setLastMeta(loadJSON(EVAL_LAST_KEY,null)); window.addEventListener("km-eval",onE); return ()=>window.removeEventListener("km-eval",onE); },[]);
 
   const run = async () => {
     setRunning(true); setResults(null); setDone(0);
-    const out = [];
-    for(const c of AI_EVAL_CASES){
-      const prompt = `${brandContext({ handle:"@testcreator", niche:c.niche })}
-${BRAND_FIT_RULE}
-This account has NO posted view history, so do NOT invent a view number — return estViews as "—".
-Judge this video idea for the account above. Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand","score":0-100,"estViews":"— or a range","reason":"one short line"}
-IDEA — Title: "${c.title}" | Hook: "${c.hook}"`;
-      let r=null, err=null;
-      try { r = await callAI(prompt, 400); } catch(e){ err = e.message||"failed"; }
-      const pass = !err && gradeCase(c, r);
-      out.push({ ...c, r, err, pass });
-      setDone(d=>d+1);
-    }
+    const out = await runAiEval(n=>setDone(n));
     setResults(out);
+    const meta = { ts:Date.now(), passed:out.filter(r=>r.pass).length, total:out.length, fails:out.filter(r=>!r.pass).map(r=>r.label) };
+    saveJSON(EVAL_LAST_KEY, meta); setLastMeta(meta);
     setRunning(false);
   };
 
   const passed = results ? results.filter(r=>r.pass).length : 0;
   const total = AI_EVAL_CASES.length;
   const allPass = results && passed===total;
+  const _agoTxt = (ts)=>{ if(!ts) return ""; const h=Math.floor((Date.now()-ts)/3600000); return h<1?"just now":h<24?`${h}h ago`:`${Math.floor(h/24)}d ago`; };
 
   return (
     <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"22px 24px", background:"linear-gradient(145deg,rgba(0,229,255,0.06),rgba(10,6,20,0.95))", border:`1px solid ${C.cyan}25`, position:"relative", overflow:"hidden" }}>
       <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:5 }}>AI Self-Test</div>
       <div style={{ fontSize:13, color:"rgba(255,255,255,0.55)", lineHeight:1.55, marginBottom:16 }}>Runs {total} trick cases with known-correct answers through the live AI — off-brand ideas must be rejected, empty accounts must not show invented numbers. Run it after any prompt change to catch reasoning slips like the chicken-mayo GO.</div>
+      {lastMeta && !results && (
+        <div style={{ marginBottom:14, fontSize:13, fontWeight:700, color:lastMeta.passed===lastMeta.total?C.green:C.pink }}>
+          Last auto-run ({_agoTxt(lastMeta.ts)}): {lastMeta.passed}/{lastMeta.total} passed{lastMeta.passed!==lastMeta.total?` — failing: ${lastMeta.fails.join(", ")}`:" ✓"}
+        </div>
+      )}
       <button onClick={run} disabled={running} style={{ padding:"11px 20px", borderRadius:12, border:"none", background:running?"rgba(255,255,255,0.1)":`linear-gradient(135deg,${C.cyan},${C.purple})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:running?"wait":"pointer", letterSpacing:"0.04em", display:"inline-flex", alignItems:"center", gap:8 }}>
-        {running ? <><Spin s={13}/> Testing… {done}/{total}</> : "Run AI self-test"}
+        {running ? <><Spin s={13}/> Testing… {done}/{total}</> : "Run AI self-test now"}
       </button>
+      <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.35)", marginTop:10 }}>Runs automatically once a day when you open the app.</div>
       {results && (
         <div style={{ marginTop:16 }}>
           <div style={{ fontSize:15, fontWeight:800, fontFamily:C.fontHead, color:allPass?C.green:C.yellow, marginBottom:12 }}>{passed}/{total} passed {allPass?"✓ AI judgment looks healthy":"— review the failures below"}</div>
@@ -12886,6 +12904,28 @@ export default function App() {
       if(cfg?.keys?.ig && exp && (exp - Date.now()) < 10*24*3600*1000) {
         fetch(`/api/ig?action=refresh&state=${encodeURIComponent(WS())}`).catch(()=>{});
       }
+    } catch {}
+  },[]);
+
+  // Daily AI self-test — owner build only. If it hasn't run in 24h, run it quietly in the
+  // background on app open and store the result, so reasoning regressions surface without
+  // anyone having to remember to click. Only fires with an AI backend/key available.
+  useEffect(()=>{
+    try {
+      if(_activeCfg?.clientId !== "krapmaps") return;
+      const last = loadJSON(EVAL_LAST_KEY, null);
+      if(last?.ts && (Date.now()-last.ts) < 24*3600*1000) return;   // ran within the day
+      const _k = loadJSON(KEYS_KEY,{})?.keys||{};
+      if(!(USE_BACKEND || _k.anthropic || _k.gpt4o || _k.gemini || BAKED_ANTHROPIC_KEY)) return; // no AI available
+      const t = setTimeout(()=>{
+        runAiEval().then(out=>{
+          const meta = { ts:Date.now(), passed:out.filter(r=>r.pass).length, total:out.length, fails:out.filter(r=>!r.pass).map(r=>r.label) };
+          saveJSON(EVAL_LAST_KEY, meta);
+          try { window.dispatchEvent(new Event("km-eval")); } catch {}
+          if(meta.passed!==meta.total) console.warn("[AI self-test] "+meta.passed+"/"+meta.total+" passed. Failing:", meta.fails.join(", "));
+        }).catch(()=>{});
+      }, 8000); // delay so it never competes with initial load
+      return ()=>clearTimeout(t);
     } catch {}
   },[]);
 
