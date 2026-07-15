@@ -4987,7 +4987,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
     { label:"Instagram", value:_ig.value, color:_ig.color, id:"igscraper", detail:_ig.detail },
     { label:"Anthropic AI", value:keys?.anthropic?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.anthropic||USE_BACKEND)?C.green:C.pink, id:"anthropic" },
     { label:"Perplexity", value:keys?.perplexity?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.perplexity||USE_BACKEND)?C.green:C.yellow, id:"perplexity" },
-    { label:"Gemini Video", value:keys?.gemini?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.gemini||USE_BACKEND)?C.green:C.yellow, id:"gemini" },
+    { label:"Gemini Video", value:keys?.gemini?"KEY SET":"NEEDS KEY (VIDEO)", color:keys?.gemini?C.green:C.yellow, id:"gemini", detail:keys?.gemini?null:"The Video Checker uploads a file, so it needs your own Gemini key here — the shared server can't do video." },
   ];
 
   const _tierLabel = TIER_LABELS[plan?.tier] || plan?.tier || "Free";
@@ -7116,15 +7116,27 @@ async function geminiUploadAnalyse(file, prompt, onStatus=()=>{}) {
   if(!geminiKey) throw new Error("No Gemini key — add one in Settings (vision needs Gemini).");
   const mimeType = file.type === "video/quicktime" ? "video/mov" : (file.type || "video/mp4");
   onStatus("Uploading your clip…");
-  const boundary = "GeminiBound" + String(file.size||0) + (file.lastModified||0);
-  const enc = new TextEncoder();
-  const metaBytes = enc.encode(`--${boundary}\r\nContent-Type: application/json\r\n\r\n` + JSON.stringify({ file:{ display_name:file.name } }) + `\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`);
-  const tailBytes = enc.encode(`\r\n--${boundary}--`);
-  const body = new Blob([metaBytes, file, tailBytes]);
-  const uploadRes = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}&uploadType=multipart`, { method:"POST", headers:{ "Content-Type":`multipart/related; boundary=${boundary}` }, body });
-  if(!uploadRes.ok) { const e = await uploadRes.json().catch(()=>({})); throw new Error(`Upload failed (${uploadRes.status}) ${e?.error?.message||""}`); }
-  const uploadData = await uploadRes.json();
-  const fileUri = uploadData?.file?.uri;
+  // Upload via our serverless proxy FIRST — the browser's direct multipart upload to
+  // Google's Files API is blocked by CORS in many browsers, which is the usual reason
+  // the check "won't work" even with a valid key. The proxy (api/gemini-upload.js) does
+  // the same upload server-side. Fall back to the direct browser upload if the proxy
+  // isn't deployed (e.g. local/static hosting).
+  let fileUri = null;
+  try {
+    const proxyRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/octet-stream", "X-Gemini-Key":geminiKey, "X-File-Name":file.name||"clip.mp4", "X-Mime-Type":mimeType }, body:file });
+    if(proxyRes.ok){ const pd = await proxyRes.json(); fileUri = pd?.fileUri || null; }
+  } catch { /* proxy unavailable — fall through to direct upload */ }
+  if(!fileUri) {
+    const boundary = "GeminiBound" + String(file.size||0) + (file.lastModified||0);
+    const enc = new TextEncoder();
+    const metaBytes = enc.encode(`--${boundary}\r\nContent-Type: application/json\r\n\r\n` + JSON.stringify({ file:{ display_name:file.name } }) + `\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`);
+    const tailBytes = enc.encode(`\r\n--${boundary}--`);
+    const body = new Blob([metaBytes, file, tailBytes]);
+    const uploadRes = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}&uploadType=multipart`, { method:"POST", headers:{ "Content-Type":`multipart/related; boundary=${boundary}` }, body });
+    if(!uploadRes.ok) { const e = await uploadRes.json().catch(()=>({})); throw new Error(`Upload failed (${uploadRes.status}) ${e?.error?.message||""}`); }
+    const uploadData = await uploadRes.json();
+    fileUri = uploadData?.file?.uri;
+  }
   if(!fileUri) throw new Error("No file URI from Gemini");
   onStatus("Watching your video…");
   const fileId = fileUri.split("/files/")[1] || fileUri.split("/").pop();
