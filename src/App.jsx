@@ -1367,14 +1367,10 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
       {/* Pillar Health */}
       {(() => {
         if(isMobile) return null;   // dense analytics block — hidden on mobile to declutter; full view in Analytics
-        const PILLARS = WL.pillars || ["Local Connection","Location Contrast","Mission Reveal","App In Action","Travel Utility"];
-        const PILLAR_COLORS = {
-          "Local Connection": C.green,
-          "Location Contrast": C.cyan,
-          "Mission Reveal": C.purple,
-          "App In Action": C.yellow,
-          "Travel Utility": C.orange,
-        };
+        const PILLARS = (WL.pillars && WL.pillars.length) ? WL.pillars : [];
+        if(!PILLARS.length) return null;   // no hardcoded pillars — don't leak another brand's pillars onto a new account
+        const _palette = [C.green, C.cyan, C.purple, C.yellow, C.orange, C.pink];
+        const PILLAR_COLORS = Object.fromEntries(PILLARS.map((p,i)=>[p, _palette[i%_palette.length]]));
         const today = new Date();
         const posted = (ideas||[]).filter(i=>i.status==="posted"&&i.postedDate);
         const lastByPillar = {};
@@ -2374,6 +2370,14 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
         const igFollowers = igData?.profile?.followers_count || m?.ig_followers || 0;
         const ttBarData = [...ttVids].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,8).map(v=>({label:(v.title||"").slice(0,7),value:v.views||0}));
         const igBarData = [...igVids].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,8).map(v=>({label:(v.title||"").slice(0,7),value:v.views||0}));
+        // No real data yet → show an honest empty state instead of a wall of zeros + a fake 50/50 split.
+        const _hasReach = (ttTotal + igTotal) > 0;
+        if(!_hasReach) return (
+          <div style={{ borderRadius:20, background:"linear-gradient(135deg,#0A0614 0%,#130a22 55%,#0A0614 100%)", border:"1px solid rgba(255,255,255,0.07)", padding:isMobile?"40px 24px":"56px 40px", textAlign:"center" }}>
+            <div style={{ fontSize:isMobile?18:22, fontWeight:800, color:"#fff", fontFamily:C.fontHead, marginBottom:8 }}>No performance data yet</div>
+            <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", lineHeight:1.6, maxWidth:400, margin:"0 auto" }}>Sync your TikTok/Instagram in Settings, or post and log a few videos — your reach, top formats and platform breakdown appear here once there's real data.</div>
+          </div>
+        );
         return (<>
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?14:16 }}>
 
@@ -3387,11 +3391,12 @@ ${pats ? "CHANNEL PATTERNS: best day="+pats.dayPerf[0]?.day+", best type="+pats.
 ${memCtx}
 ${compCtx}
 
+IMPORTANT: ${hasViewHistory() ? "Ground every strength/weakness in the REAL numbers above." : "This account has NO posted view history. Do NOT invent strengths, weaknesses or predicted views. Set channel_diagnosis strengths/weaknesses to empty arrays, biggest_opportunity to 'Post and log a few videos so I can analyse what actually works for you', and omit predicted_views. Base the 4-week plan on the niche and best practices only, framed as a starting hypothesis — not as data-backed findings."}
 Step 1 — Think through what patterns you see in the data. What is genuinely working? What is failing and why?
 Step 2 — Identify the 3 biggest opportunities this channel is missing based on trends vs their current content.
 Step 3 — Build a 4-week content plan that doubles down on what works AND exploits the missing opportunities.
 
-Return JSON: { 
+Return JSON: {
   channel_diagnosis: { strengths:[string], weaknesses:[string], biggest_opportunity:string },
   weeks:[{week:number, theme:string, focus:string, videos:[{title,hook,type,platform,why_it_works,predicted_views:"low|medium|high|viral"}]}],
   kpis:[{metric,current,target,how}],
@@ -9031,7 +9036,7 @@ Analyse this clip with full virality science:
 
 ━━ 6. VERDICT ━━
 - Post as-is / quick edit needed / reshoot — and exactly why
-- Virality ceiling estimate: X-Xk views organic — reasoning
+- ${hasViewHistory() ? "Virality ceiling estimate: X-Xk views organic — reasoning" : "Do NOT give a view-count estimate — this account has no view history to base one on. Skip the ceiling number entirely."}
 - ONE sentence a non-editor could act on immediately
 
 Be specific with timestamps. Harsh but constructive. No generic advice.`;
@@ -10311,7 +10316,7 @@ function Dashboard({ keys, onEditKeys }) {
       const richCtx = (richTheory ? `CHANNEL VIRAL THEORY:\n${richTheory}\n\n` : "") + richInsightsBlock + "\n" + richEngBlock + "\n" + richComboBlock + "\n" + richAuditBlock + "\n" + channelCtx;
 
       const prompts = {
-        analysis: richCtx+liveCtx+"\nAnalyse these videos. Use real numbers from the channel statistics above. Return JSON: {whatIsWorking:[{insight,evidence,impact:'high|medium'}],whatIsNotWorking:[{insight,evidence,fix}],topFormat,bestHook,channel_diagnosis,engagement_insight}. Videos: "+JSON.stringify(vSummary),
+        analysis: richCtx+liveCtx+"\nAnalyse these videos. Use ONLY real numbers from the channel statistics above — if there are no posted videos with real views, do NOT invent insights or evidence: return empty arrays and set engagement_insight to 'Not enough posted data yet — sync or post videos to unlock analysis.' Return JSON: {whatIsWorking:[{insight,evidence,impact:'high|medium'}],whatIsNotWorking:[{insight,evidence,fix}],topFormat,bestHook,channel_diagnosis,engagement_insight}. Videos: "+JSON.stringify(vSummary),
         nextVids:  richCtx+liveCtx+"\nSuggest next 5 videos, all ON-BRAND for this account. Use winning hook+type combos and engagement signals from the data above. Be specific. "+noFabRule()+" Return JSON: {tiktok:[{title,type,hook,thumbnail_style,whyItWillWork,openingLine,priority:'HIGH|MEDIUM',estimated_views,winning_combo_used}],instagram:[{concept,contentType,whyItWillWork}]}. Videos: "+JSON.stringify(vSummary),
         weekly:    channelCtx+"\nWrite a filming brief for "+(wl.creator2||wl.creator1||"this creator")+". Return JSON: {brief:'2-3 sentences',priorities:[{task,why,how_to_shoot}],rawSummaryText:'WhatsApp-ready message'}. Videos: "+JSON.stringify(vSummary),
         trends:    channelCtx+liveCtx+"\nBest trending angles for "+wl.appName+" RIGHT NOW that fit this channel style. Return JSON: {trends:[{trend,urgency:'POST NOW|THIS WEEK|THIS MONTH',tiktokAngle,hook,why_fits_channel,instagramAngle}]}",
@@ -10461,7 +10466,7 @@ LEARNING: [one sentence]`}]}, key);
 
       // Pillar gap boost — if a pillar hasn't been posted in X days, ideas in that pillar get a strategic bonus
       const pillarGapBoost = (() => {
-        const PILLARS = WL.pillars || ["Local Connection","Location Contrast","Mission Reveal","App In Action","Travel Utility"];
+        const PILLARS = (WL.pillars && WL.pillars.length) ? WL.pillars : [];
         const posted = ideas.filter(i=>i.status==="posted"&&i.postedDate&&i.aiScore?.contentPillar);
         const lastByPillar = {};
         posted.forEach(i=>{ const p=i.aiScore.contentPillar; const d=new Date(i.postedDate); if(!lastByPillar[p]||d>lastByPillar[p]) lastByPillar[p]=d; });
@@ -10628,14 +10633,14 @@ Score each factor with this rigour:
 
 5. NICHE FIT (${weights.niche}%) — Score against ${wl.appName}'s content pillars based on: ${wl.contentStyle||wl.niche}. Core formula: ${wl.bestFormula}. If this idea doesn't clearly fit the niche and formula, score low. If it sits at the intersection of the best-performing content types, score high.
 
-ESTIMATED VIEWS — MANDATORY CALIBRATION PROTOCOL:
+${hasViewHistory() ? `ESTIMATED VIEWS — MANDATORY CALIBRATION PROTOCOL:
 Step 0 (STRONGEST EVIDENCE): If NEAREST ANALOGS are shown above, start from their similarity-weighted expectation — those are the creator's OWN most-similar posts and what they really did. Only move off that anchor if this idea has a clearly stronger hook/share trigger than the analogs.
 Step 1: Otherwise start with your raw estimate based on hook+share trigger strength.
 Step 2: Apply the OUTCOME LEARNING multipliers above (if this idea's hook/type has a ratio of 1.5x, multiply by 1.5; if 0.7x, reduce by 30%).
 Step 3: Apply PREDICTION ACCURACY bias correction (if AI has historically over/underestimated by X%, correct your output accordingly).
 Step 4: Anchor to the CALIBRATION percentiles above — score 85+ ideas should target top 10%, score 70-84 top 25%.
 Step 5: Express as a RANGE as wide as the prediction error σ stated above (e.g. if σ is ±40%, a 40K estimate becomes 24K-56K). A single number is statistically dishonest.
-Your estimated_views must reflect all 5 steps. Do not output a raw uncorrected estimate.
+Your estimated_views must reflect all 5 steps. Do not output a raw uncorrected estimate.` : `ESTIMATED VIEWS: This account has NO posted view history to calibrate against, so do NOT invent a number. Return estimated_views as "—". Likewise return optimalPostSlot as null and omit predictedLift percentages (describe hook variants qualitatively instead) — you have no timing or outcome data to ground them.`}
 
 ${COACH_PRINCIPLES}
 
@@ -10800,7 +10805,9 @@ Return ONLY valid JSON:
     setCaptionIdea(idea);
     setCaptionResult(null);
     try {
-      const r = await callAI(`Write captions for ${wl.handle} TikTok and Instagram for this idea: "${idea.title||idea.text}".
+      const r = await callAI(`${brandContext(wl)}
+
+Write captions for ${wl.handle} TikTok and Instagram for this idea: "${idea.title||idea.text}". Captions and hashtags MUST fit the account's brand/topic above — no off-brand tone or hashtags.
 
 ${voiceBlock(videos, ideas)}
 
@@ -11504,6 +11511,7 @@ function OnboardingPage({ onComplete }) {
   const _initStep = _pendingStep || 0;
   const [step, setStep] = useState(_initStep);
   const [handle, setHandle] = useState(WL.handle || "");
+  const [niche, setNiche] = useState((WL.niche && WL.niche!=="content creator") ? WL.niche : "");
   const [apiKey, setApiKey] = useState("");
   const [codeInput, setCodeInput] = useState(()=>{ try { return localStorage.getItem("krapmaps_pending_code")||""; } catch { return ""; } });
   const [codeError, setCodeError] = useState(false);
@@ -11758,11 +11766,12 @@ function OnboardingPage({ onComplete }) {
 
   const finish = (key) => {
     const h = handle.trim();
-    if(h) {
+    const nch = niche.trim();
+    if(h || nch) {
       const cfg = loadJSON(KEYS_KEY,{});
-      saveJSON(KEYS_KEY,{ ...cfg, handle: h });
+      saveJSON(KEYS_KEY,{ ...cfg, ...(h?{handle:h}:{}) });
       const wlSaved = loadJSON(WL_KEY, {});
-      saveWL({ ...wlSaved, handle: h });
+      saveWL({ ...wlSaved, ...(h?{handle:h}:{}), ...(nch?{niche:nch}:{}) });
     }
     if(key && key.trim()) {
       const cfg = loadJSON(KEYS_KEY,{});
@@ -12496,8 +12505,19 @@ function OnboardingPage({ onComplete }) {
                 onKeyDown={e=>e.key==="Enter"&&finish("")}
                 placeholder="@yourchannel"
                 autoFocus
-                style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1.5px solid ${handle?"#FF2D78":"rgba(255,255,255,0.12)"}`, borderRadius:16, color:"#fff", padding:"15px 18px", fontSize:17, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s, box-shadow 0.2s", fontFamily:F, fontWeight:600, caretColor:"#FF2D78", marginBottom:32, boxShadow:handle?"0 0 26px rgba(255,45,120,0.18)":"none" }}
+                style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1.5px solid ${handle?"#FF2D78":"rgba(255,255,255,0.12)"}`, borderRadius:16, color:"#fff", padding:"15px 18px", fontSize:17, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s, box-shadow 0.2s", fontFamily:F, fontWeight:600, caretColor:"#FF2D78", marginBottom:20, boxShadow:handle?"0 0 26px rgba(255,45,120,0.18)":"none" }}
               />
+
+              {/* Niche input — without this the AI has no idea what the page is about and gives generic, off-brand advice */}
+              <label style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.1em", fontWeight:700, textTransform:"uppercase", marginBottom:9, display:"block" }}>What's your page about?</label>
+              <input
+                value={niche}
+                onChange={e=>setNiche(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&finish("")}
+                placeholder="e.g. music artist, personal finance, fitness…"
+                style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1.5px solid ${niche?"#00E5FF":"rgba(255,255,255,0.12)"}`, borderRadius:16, color:"#fff", padding:"15px 18px", fontSize:17, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s, box-shadow 0.2s", fontFamily:F, fontWeight:600, caretColor:"#00E5FF", marginBottom:10, boxShadow:niche?"0 0 26px rgba(0,229,255,0.16)":"none" }}
+              />
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", lineHeight:1.5, marginBottom:32 }}>This is what keeps every score and idea on-brand — an off-topic video won't get a green light on the wrong page.</div>
 
               {/* How it works */}
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.1em", fontWeight:700, textTransform:"uppercase", marginBottom:14 }}>How it works</div>
