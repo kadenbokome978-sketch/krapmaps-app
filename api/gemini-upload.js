@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     if (isJson) {
       let payload = {};
       try { payload = JSON.parse(raw.toString('utf8') || '{}'); } catch { return res.status(400).json({ error: 'Bad JSON' }); }
-      const { fileUri, mimeType = 'video/mp4', prompt } = payload;
+      const { fileUri, mimeType = 'video/mp4', prompt, json = true, maxTokens = 1800 } = payload;
       if (!fileUri || !prompt) return res.status(400).json({ error: 'Missing fileUri or prompt' });
 
       const fileId = fileUri.split('/files/')[1] || fileUri.split('/').pop();
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
       for (const model of GEN_MODELS) {
         const genRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ file_data: { mime_type: mimeType, file_uri: fileUri } }, { text: prompt }] }], generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 1800 } }),
+          body: JSON.stringify({ contents: [{ parts: [{ file_data: { mime_type: mimeType, file_uri: fileUri } }, { text: prompt }] }], generationConfig: { ...(json ? { responseMimeType: 'application/json' } : {}), maxOutputTokens: maxTokens } }),
         });
         if (genRes.ok) { const gd = await genRes.json(); const text = gd?.candidates?.[0]?.content?.parts?.[0]?.text || ''; return res.json({ text, done: true }); }
         lastErr = `${genRes.status} ${(await genRes.text()).slice(0, 200)}`;

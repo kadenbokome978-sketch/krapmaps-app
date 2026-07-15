@@ -2049,7 +2049,14 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
       )}
 
       {/* ── CAPTIONS ──────────────────────────────────────────── */}
-      {sub==="CAPTIONS" && (
+      {sub==="CAPTIONS" && ideas.length===0 && (
+        <div style={{ borderRadius:16, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", padding:isMobile?"36px 22px":"52px 40px", textAlign:"center" }}>
+          <div style={{ display:"flex", justifyContent:"center", marginBottom:14 }}>{I.write(28,C.pink)}</div>
+          <div style={{ fontSize:isMobile?17:20, fontWeight:800, color:"#fff", fontFamily:C.fontHead, marginBottom:8 }}>No ideas to caption yet</div>
+          <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", lineHeight:1.6, maxWidth:380, margin:"0 auto" }}>Add or score an idea in the Ideas tab first — then come back here and the AI writes platform-ready captions for it.</div>
+        </div>
+      )}
+      {sub==="CAPTIONS" && ideas.length>0 && (
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?18:28 }}>
           {/* Idea picker — horizontal scroll row */}
           <div style={{ overflowX:"auto", paddingBottom:4 }}>
@@ -7142,7 +7149,8 @@ async function callGeminiVideo(videoUrl, prompt) {
 // Upload a raw video FILE to Gemini, wait for it to process, and run a prompt
 // against it. Returns the model's text. Used by the Pre-Post Check (vision on an
 // unposted clip). onStatus(msg) surfaces progress to the UI.
-async function geminiUploadAnalyse(file, prompt, onStatus=()=>{}) {
+async function geminiUploadAnalyse(file, prompt, onStatus=()=>{}, opts={}) {
+  const { json=true, maxTokens=1800, onFileUri=null } = opts;
   const cfg = loadJSON(KEYS_KEY, {});
   const geminiKey = cfg?.keys?.gemini || BAKED_GEMINI_KEY;   // optional browser BYO key
   // If there's no browser key we rely on the SERVER's GEMINI_KEY (customers never set
@@ -7158,12 +7166,13 @@ async function geminiUploadAnalyse(file, prompt, onStatus=()=>{}) {
   if(proxyRes.ok){ const pd = await proxyRes.json().catch(()=>({})); fileUri = pd?.fileUri || null; upMime = pd?.mimeType || mimeType; }
   else { const e = await proxyRes.json().catch(()=>({})); throw new Error(`Upload failed (${proxyRes.status}) ${e?.error||""}`); }
   if(!fileUri) throw new Error("No file URI from Gemini");
+  if(onFileUri) onFileUri(fileUri, upMime);
 
   // Step 2 — analyse through the proxy. It polls Gemini + runs generateContent server-side
   // with the server key. Each call is short; if Gemini is still processing we retry.
   onStatus("Watching your video…");
   for(let i=0;i<12;i++){
-    const anRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/json", ...keyHeader }, body: JSON.stringify({ fileUri, mimeType:upMime, prompt }) });
+    const anRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/json", ...keyHeader }, body: JSON.stringify({ fileUri, mimeType:upMime, prompt, json, maxTokens }) });
     if(!anRes.ok){ const e = await anRes.json().catch(()=>({})); throw new Error(`Gemini error ${anRes.status} ${e?.error||""}`); }
     const ad = await anRes.json();
     if(ad.done) { onStatus("Scoring it…"); return ad.text || ""; }
@@ -8926,57 +8935,13 @@ function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, pr
   const analyseVideo = async (file) => {
     const cfg = loadJSON(KEYS_KEY, {});
     const geminiKey = cfg?.keys?.gemini || BAKED_GEMINI_KEY;
-    if(!geminiKey) { setMsgs(m=>[...m,{role:"assistant",content:"No Gemini API key set. Go to Settings to add one — video analysis uses Gemini."}]); return; }
+    if(!geminiKey && !USE_BACKEND) { setMsgs(m=>[...m,{role:"assistant",content:"No Gemini API key set. Go to Settings to add one — video analysis uses Gemini."}]); return; }
 
     setUploading(true);
     setMsgs(m=>[...m, { role:"user", content:file.name }, { role:"assistant", content:"Preparing your clip..." }]);
 
     try {
-      // Normalise mime type — Gemini accepts video/mov not video/quicktime
       const mimeType = file.type === "video/quicktime" ? "video/mov" : (file.type || "video/mp4");
-
-      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Uploading clip..." }]);
-
-      // Multipart upload directly to Gemini (same domain as generateContent — CORS works)
-      const boundary = "GeminiBound" + Date.now();
-      const enc = new TextEncoder();
-      const metaBytes = enc.encode(
-        `--${boundary}\r\nContent-Type: application/json\r\n\r\n` +
-        JSON.stringify({ file:{ display_name: file.name } }) +
-        `\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`
-      );
-      const tailBytes = enc.encode(`\r\n--${boundary}--`);
-      const body = new Blob([metaBytes, file, tailBytes]);
-
-      const uploadRes = await fetch(
-        `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}&uploadType=multipart`,
-        { method:"POST", headers:{ "Content-Type":`multipart/related; boundary=${boundary}` }, body }
-      );
-      if(!uploadRes.ok) {
-        const e = await uploadRes.json().catch(()=>({}));
-        throw new Error(`Upload failed: ${uploadRes.status} — ${e?.error?.message||""}`);
-      }
-      const uploadData = await uploadRes.json();
-      const fileUri = uploadData?.file?.uri;
-      if(!fileUri) throw new Error("No file URI from Gemini");
-
-      // Poll until ACTIVE
-      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Processing clip..." }]);
-      const fileId = fileUri.split("/files/")[1] || fileUri.split("/").pop();
-      let ready = false;
-      for(let i=0; i<40; i++) {
-        await new Promise(r=>setTimeout(r,3000));
-        const s = await fetch(`https://generativelanguage.googleapis.com/v1beta/files/${fileId}?key=${geminiKey}`);
-        if(s.ok) {
-          const sd = await s.json();
-          if(sd.state === "ACTIVE") { ready = true; break; }
-          if(sd.state === "FAILED") throw new Error("Gemini failed to process this video format. Try exporting as MP4.");
-        }
-      }
-      if(!ready) throw new Error("Processing timed out. Try a shorter clip.");
-
-      setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:"Analysing your clip..." }]);
-
       const organicForAnalysis = videos.filter(v=>!v.boosted);
       const avgViewsForAnalysis = organicForAnalysis.length ? Math.round(organicForAnalysis.reduce((s,v)=>s+(v.views||0),0)/organicForAnalysis.length) : 0;
       const channelInsightsForAnalysis = buildChannelInsights(organicForAnalysis.length?organicForAnalysis:videos);
@@ -9041,20 +9006,13 @@ Analyse this clip with full virality science:
 
 Be specific with timestamps. Harsh but constructive. No generic advice.`;
 
-      const genRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-        { method:"POST", headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ contents:[{ parts:[{ file_data:{ mime_type:mimeType, file_uri:fileUri } }, { text:prompt }] }] })
-        }
-      );
-      if(!genRes.ok) {
-        const errData = await genRes.json().catch(()=>({}));
-        throw new Error(`Gemini error: ${genRes.status} — ${errData?.error?.message||""}`);
-      }
-      const genData = await genRes.json();
-      const text = genData?.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis returned.";
-      setLastFileB64(fileUri); // store URI for CapCut plan
-      setLastFileMime(mimeType);
+      // Route upload + analysis through the shared proxy helper — uses the server's
+      // Gemini key on backend builds (so it works with no browser key) and bypasses CORS.
+      const text = (await geminiUploadAnalyse(
+        file, prompt,
+        (s)=>setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:s }]),
+        { json:false, maxTokens:2500, onFileUri:(uri)=>{ setLastFileB64(uri); setLastFileMime(mimeType); } }
+      )) || "No analysis returned.";
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:text, showCapcutBtn:true }]);
     } catch(e) {
       setMsgs(m=>[...m.slice(0,-1), { role:"assistant", content:`Error: ${e.message}` }]);
@@ -9626,7 +9584,7 @@ function Dashboard({ keys, onEditKeys }) {
   },[]);
 
   const handleBuildScript = (idea) => {
-    const msg = `Build me a full script for this idea:\n\nTitle: "${idea.title}"\nType: ${idea.type||"facecam"}\nHook: ${idea.hook||""}\n${idea.improvedHook?`Improved hook: "${idea.improvedHook}"\n`:""}\nInclude: opening hook (exact words to say), main body (what to show + say at each moment), and a closing CTA. Give timestamps and CapCut text overlay suggestions. Make it optimised for maximum virality. Write every line of spoken dialogue in MY voice (per the Creator Voice DNA) — it should sound like me talking, not a script an AI wrote.`;
+    const msg = `Build me a full script for this idea:\n\nTitle: "${idea.title||idea.text||"(untitled idea)"}"\nType: ${idea.type||"facecam"}\nHook: ${idea.hook||""}\n${idea.improvedHook?`Improved hook: "${idea.improvedHook}"\n`:""}\nInclude: opening hook (exact words to say), main body (what to show + say at each moment), and a closing CTA. Give timestamps and CapCut text overlay suggestions. Make it optimised for maximum virality. Write every line of spoken dialogue in MY voice (per the Creator Voice DNA) — it should sound like me talking, not a script an AI wrote.`;
     setAssistPreload({ text: msg, id: Date.now() });
     setNav("ai");
     setSub(null);
@@ -11663,14 +11621,14 @@ function OnboardingPage({ onComplete }) {
   };
 
   const BOOT_LINES = [
-    { text:"Verifying licence key...", delay:0 },
-    { text:"KEY ACCEPTED", delay:500, green:true },
+    { text:"Starting up...", delay:0 },
+    { text:"Loading your workspace", delay:500, green:true },
     { text:"Connecting to content intelligence...", delay:900 },
     { text:"Loading AI modules...", delay:1400 },
     { text:"Syncing channel config...", delay:1800 },
-    { text:"Calibrating virality engine...", delay:2200 },
+    { text:"Warming up the scoring engine...", delay:2200 },
     { text:"All systems ready", delay:2700, green:true },
-    { text:"ACCESS GRANTED — Welcome.", delay:3100, green:true, bold:true },
+    { text:"Welcome.", delay:3100, green:true, bold:true },
   ];
 
   const DEMO_CARDS = [
