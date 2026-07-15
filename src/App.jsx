@@ -8284,9 +8284,25 @@ function PrePostCheck({ videos=[], WL={} }) {
       const wl = loadWL();
       const organic = videos.filter(v=>!v.boosted);
       const avgV = organic.length ? Math.round(organic.reduce((s,v)=>s+(v.views||0),0)/organic.length) : 0;
-      const prompt = `You are the harshest, most accurate PRE-PUBLISH reviewer for ${wl.handle||"a creator"} (${wl.niche||"TikTok/Reels creator"}). WATCH this unposted video and decide whether they should post it. Channel average: ${avgV?fmt(avgV)+" views":"unknown"}. Be brutally honest — most videos deserve RISKY or NO; reserve GO for genuinely strong ones.
-Judge the REAL video: the first frame + first 3 seconds (does it stop the scroll?), pacing, energy, visual clarity, audio, retention risk across the video, and whether there's a genuine share trigger. Reference specific timestamps.
-Return ONLY JSON: {"verdict":"GO|RISKY|NO","score":0-100,"predictedViews":"realistic range e.g. 8K-20K","hookRating":0-100,"hookNote":"what happens in the first 3 seconds and whether it earns the scroll-stop","retention":[{"seg":"0-3s","risk":"low|med|high","note":"why viewers stay or leave here"},{"seg":"3-10s","risk":"low|med|high","note":"..."},{"seg":"10s+","risk":"low|med|high","note":"..."}],"fixes":[{"at":"timestamp e.g. 0:01","fix":"specific change"}],"strongest":"one line — the best thing about it","weakest":"one line — the biggest problem","action":"the single highest-impact change, doable without a full reshoot if possible"}`;
+      const niche = wl.niche || "";
+      const prompt = `You are the harshest, most accurate PRE-PUBLISH reviewer, deciding whether this video should be posted TO A SPECIFIC ACCOUNT — not in the abstract.
+
+THE ACCOUNT THIS WILL BE POSTED TO:
+- Handle: ${wl.handle||"(unknown)"}
+- What this account is / posts about: ${niche || "UNKNOWN — assume a focused personal brand, and be cautious about off-topic content"}
+- Channel average views: ${avgV?fmt(avgV)+" views":"unknown (no history)"}
+
+STEP 1 — BRAND FIT (this gates everything). WATCH the video, then ask: does this content actually belong on THIS account, given what it's about? A video can be genuinely funny, well-shot and engaging and STILL be wrong for the page (e.g. an inside-joke meme about a friend posted to a MUSIC artist's page). Off-brand content confuses the audience and the algorithm and damages the page.
+- If the video clearly fits the account's topic/brand → brandFit "fit".
+- If it's tangentially related or a risky stretch → brandFit "borderline".
+- If it does NOT belong on this account → brandFit "off-brand".
+HARD RULE: if brandFit is "off-brand", the verdict CANNOT be GO — it must be NO (or RISKY only if a small re-frame could make it fit). If "borderline", the best possible verdict is RISKY. Only content that genuinely fits can be GO. Explain the fit judgement plainly in fitNote, naming what the account is about vs what this video is.
+
+STEP 2 — only if it fits, judge the craft: first frame + first 3 seconds (scroll-stop?), pacing, energy, visual clarity, audio, retention risk, genuine share trigger. Reference specific timestamps. Be brutally honest — most videos deserve RISKY or NO; reserve GO for videos that both FIT the account AND are strong.
+
+PREDICTED VIEWS: ${avgV?`base the range on the channel average of ${fmt(avgV)} — realistic, not fantasy.`:`there is NO channel history, so do NOT invent a confident number. Return predictedViews as "—" and never fabricate a range.`}
+
+Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand","fitNote":"one or two sentences: what this account is about vs what this video is, and why it fits or doesn't","score":0-100,"predictedViews":"${avgV?"realistic range e.g. 8K-20K":"—"}","hookRating":0-100,"hookNote":"what happens in the first 3 seconds and whether it earns the scroll-stop","retention":[{"seg":"0-3s","risk":"low|med|high","note":"why viewers stay or leave here"},{"seg":"3-10s","risk":"low|med|high","note":"..."},{"seg":"10s+","risk":"low|med|high","note":"..."}],"fixes":[{"at":"timestamp e.g. 0:01","fix":"specific change"}],"strongest":"one line — the best thing about it","weakest":"one line — the biggest problem","action":"the single highest-impact change"}`;
       const text = await geminiUploadAnalyse(f, prompt, setStatus);
       const parsed = _extractJSON(text);
       if(!parsed || !parsed.verdict) throw new Error("Couldn't read the analysis — try a shorter MP4.");
@@ -8343,6 +8359,17 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","score":0-100,"predictedViews":"reali
           </div>
           {res.action && <div style={{ marginTop:18, padding:"13px 16px", borderRadius:12, background:"rgba(255,255,255,0.04)", border:`1px solid ${vC}30` }}><span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.1em", color:vC }}>DO THIS →</span> <span style={{ fontSize:14, color:"#fff", fontWeight:600 }}>{res.action}</span></div>}
         </div>
+
+        {/* Brand fit — gates the whole verdict. Off-brand/borderline shown as a loud warning. */}
+        {res.brandFit && (()=>{ const off=res.brandFit==="off-brand"; const bord=res.brandFit==="borderline"; const fc=off?C.pink:bord?C.yellow:C.green; return (
+          <div data-card style={{ borderRadius:16, background:`${fc}0c`, border:`1px solid ${fc}${off||bord?"45":"25"}`, padding:isMobile?"15px 16px":"16px 20px", display:"flex", gap:13, alignItems:"flex-start" }}>
+            <div style={{ fontSize:20, lineHeight:1, flexShrink:0, marginTop:1 }}>{off?"🚫":bord?"⚠️":"✓"}</div>
+            <div>
+              <div style={{ fontSize:11, fontWeight:800, letterSpacing:"0.1em", color:fc, marginBottom:5 }}>{off?"OFF-BRAND FOR THIS PAGE":bord?"BORDERLINE FIT":"FITS YOUR PAGE"}</div>
+              <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.82)", lineHeight:1.55, fontFamily:C.fontBody }}>{res.fitNote||(off?"This doesn't match what this account is about.":"")}</div>
+            </div>
+          </div>
+        ); })()}
 
         {/* Retention heatmap (#3) */}
         {Array.isArray(res.retention) && res.retention.length>0 && (
