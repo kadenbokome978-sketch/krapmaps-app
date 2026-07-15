@@ -1533,7 +1533,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
     try {
       // Uses callAI, which falls back to whichever LLM the user configured —
       // no single provider is required.
-      const result = await callAI(`Expand this rough content concept into a full video idea for ${WL.handle} (${WL.appName} — ${WL.niche}).\n\nConcept: "${quickExpand}"\n\nReturn ONLY valid JSON:\n{"title":"compelling title under 12 words","type":"facecam|broll|voiceover|collab","hook":"hook type: achievement|contrast|challenge|curiosity|emotion|location|local|story","hookLine":"exact opening line under 10 words","body":"2 sentences on what happens in the video","cta":"what to say at the end","viralityScore":0-100,"contentPillar":"niche-specific pillar name","estimated_views":"e.g. 20K-80K"}`, 800);
+      const result = await callAI(`Expand this rough content concept into a full video idea for ${WL.handle} (${WL.appName} — ${WL.niche}). It must fit this account's brand/topic. ${noFabRule()}\n\nConcept: "${quickExpand}"\n\nReturn ONLY valid JSON:\n{"title":"compelling title under 12 words","type":"facecam|broll|voiceover|collab","hook":"hook type: achievement|contrast|challenge|curiosity|emotion|location|local|story","hookLine":"exact opening line under 10 words","body":"2 sentences on what happens in the video","cta":"what to say at the end","viralityScore":0-100,"contentPillar":"niche-specific pillar name","estimated_views":"${hasViewHistory()?"e.g. 20K-80K":"—"}"}`, 800);
       const newIdea = {
         id: Date.now().toString(),
         title: result.title,
@@ -1869,16 +1869,16 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                   )}
 
                   {/* ── EST REACH + HOOK PREVIEW ── */}
-                  {(idea.aiScore?.estimated_views || idea.hook) && (
+                  {(showEst(idea.aiScore?.estimated_views) || idea.hook) && (
                     <div style={{ padding:"7px 18px", borderTop:"1px solid rgba(255,255,255,0.04)", display:"flex", alignItems:"center", gap:10 }}>
-                      {idea.aiScore?.estimated_views && (
+                      {showEst(idea.aiScore?.estimated_views) && (
                         <span style={{ display:"inline-flex", alignItems:"center", gap:6, minWidth:0 }}>
                           <span style={{ display:"inline-flex", opacity:0.5 }}>{I.eye(12,"rgba(255,255,255,0.5)")}</span>
                           <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.1em", color:"rgba(255,255,255,0.35)", textTransform:"uppercase" }}>Est</span>
-                          <span style={{ fontSize:12, fontWeight:700, color:C.cyan, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{idea.aiScore.estimated_views}</span>
+                          <span style={{ fontSize:12, fontWeight:700, color:C.cyan, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{showEst(idea.aiScore.estimated_views)}</span>
                         </span>
                       )}
-                      {idea.hook && !idea.aiScore?.estimated_views && (
+                      {idea.hook && !showEst(idea.aiScore?.estimated_views) && (
                         <span style={{ fontSize:11, color:"rgba(255,255,255,0.45)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>"{idea.hook}"</span>
                       )}
                     </div>
@@ -2337,7 +2337,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                           {ar.refilm_brief?.hook && (
                             <div style={{ padding:isMobile?"13px 16px":"10px 12px", background:`${C.purple}10`, border:`1px solid ${C.purple}25`, borderRadius:10, fontSize:14, color:"rgba(255,255,255,0.8)", fontStyle:"italic" }}>
                               "{ar.refilm_brief.hook}"
-                              {ar.refilm_brief.predicted_views && <span style={{ color:C.green, fontStyle:"normal", fontWeight:700, marginLeft:8 }}>→ {ar.refilm_brief.predicted_views}</span>}
+                              {showEst(ar.refilm_brief.predicted_views) && <span style={{ color:C.green, fontStyle:"normal", fontWeight:700, marginLeft:8 }}>→ {showEst(ar.refilm_brief.predicted_views)}</span>}
                             </div>
                           )}
                         </div>
@@ -2656,7 +2656,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                     )}
                     <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
                       {v.type && <span style={{ fontSize:10, fontWeight:700, color:C.pink, background:`${C.pink}10`, borderRadius:5, padding:"2px 8px" }}>{v.type}</span>}
-                      {v.estimated_views && <span style={{ fontSize:10, fontWeight:700, color:C.cyan, background:`${C.cyan}10`, borderRadius:5, padding:"2px 8px" }}>{v.estimated_views}</span>}
+                      {showEst(v.estimated_views) && <span style={{ fontSize:10, fontWeight:700, color:C.cyan, background:`${C.cyan}10`, borderRadius:5, padding:"2px 8px" }}>{showEst(v.estimated_views)}</span>}
                       <button onClick={()=>sendVidToIdeas(v,i)} disabled={!!sentIdeas[i]} style={{ marginLeft:"auto", fontSize:10, fontWeight:700, color:sentIdeas[i]?"rgba(255,255,255,0.4)":C.green, background:sentIdeas[i]?"rgba(255,255,255,0.04)":`${C.green}12`, border:`1px solid ${sentIdeas[i]?"rgba(255,255,255,0.08)":C.green+"30"}`, borderRadius:6, padding:"5px 12px", cursor:sentIdeas[i]?"default":"pointer" }}>{sentIdeas[i]?<span style={{display:"inline-flex",alignItems:"center",gap:4}}>{I.tick(10,"currentColor")} Added</span>:"+ Ideas"}</button>
                     </div>
                   </div>
@@ -3451,7 +3451,9 @@ Rules:
 - Each hook must be under 10 words, cause immediate scroll-stop
 - Every title and hook MUST be written in the creator's Voice DNA above — sound like them, not like AI
 - Be honest with scores — not everything is 90+
+- Every idea must be ON-BRAND for this account — do not suggest off-topic concepts that don't belong on this page
 - Explain specifically WHY this beats their ${ctx.stats.avgViews} view average
+- ${noFabRule()}
 
 Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,score,type,platform,cta,estimated_views,data_source:"live|channel_data|both"}] }`;
 
@@ -3541,7 +3543,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
                 <div style={{ fontSize:15, fontWeight:700, color:"#fff", marginBottom:4 }}>{trends.biggest_opportunity.suggested_video_title}</div>
                 <div style={{ fontSize:isMobile?14:17, color:C.cyan, fontStyle:"italic" }}>"{trends.biggest_opportunity.hook}"</div>
               </div>
-              {trends.biggest_opportunity.predicted_impact && <div style={{ fontSize:15, color:C.green, display:"flex", alignItems:"center", gap:6 }}>{I.trend(14,C.green)}<span>{trends.biggest_opportunity.predicted_impact}</span></div>}
+              {showEst(trends.biggest_opportunity.predicted_impact) && <div style={{ fontSize:15, color:C.green, display:"flex", alignItems:"center", gap:6 }}>{I.trend(14,C.green)}<span>{showEst(trends.biggest_opportunity.predicted_impact)}</span></div>}
             </div>
           )}
 
@@ -3680,7 +3682,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
                 <Tag color={C.yellow} sm>{idea.platform}</Tag>
                 <Tag color={C.cyan} sm>{idea.type}</Tag>
                 {idea.cta && <Tag color={C.purple} sm>CTA: {idea.cta}</Tag>}
-                {idea.estimated_views && <Tag color={C.green} sm>Est: {idea.estimated_views}</Tag>}
+                {showEst(idea.estimated_views) && <Tag color={C.green} sm>Est: {showEst(idea.estimated_views)}</Tag>}
               </div>
             </div>
           ))}
@@ -3718,7 +3720,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
             {/* Score overview */}
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(140px,100%),1fr))", gap:10, marginBottom:isMobile?12:16 }}>
               {[
-                {l:"PREDICTED VIEWS", v:`${(predictResult.predicted_views_low||0).toLocaleString()}–${(predictResult.predicted_views_high||0).toLocaleString()}`, c:predictResult.beat_average?C.green:C.yellow},
+                {l:"PREDICTED VIEWS", v:(hasViewHistory()&&(predictResult.predicted_views_high||0)>0)?`${(predictResult.predicted_views_low||0).toLocaleString()}–${(predictResult.predicted_views_high||0).toLocaleString()}`:"—", c:predictResult.beat_average?C.green:C.yellow},
                 {l:"OVERALL SCORE", v:`${predictResult.overall_score||0}/100`, c:predictResult.overall_score>=70?C.green:predictResult.overall_score>=50?C.yellow:C.pink},
                 {l:"CONFIDENCE", v:predictResult.confidence||"–", c:predictResult.confidence==="HIGH"?C.green:predictResult.confidence==="MEDIUM"?C.yellow:C.pink},
               ].map((s,i)=>(
@@ -4310,8 +4312,8 @@ Return ONLY JSON: {
               {result.refilm_brief.key_changes?.map((c,i)=>(
                 <div key={i} style={{ fontSize:14, color:"rgba(255,255,255,0.85)", marginBottom:3 }}>→ {c}</div>
               ))}
-              {result.refilm_brief.predicted_views && (
-                <div style={{ marginTop:8, fontSize:16, color:C.green, display:"flex", alignItems:"center", gap:6 }}>{I.trend(15,C.green)}<span>Predicted: {result.refilm_brief.predicted_views}</span></div>
+              {showEst(result.refilm_brief.predicted_views) && (
+                <div style={{ marginTop:8, fontSize:16, color:C.green, display:"flex", alignItems:"center", gap:6 }}>{I.trend(15,C.green)}<span>Predicted: {showEst(result.refilm_brief.predicted_views)}</span></div>
               )}
             </div>
           )}
@@ -5581,6 +5583,31 @@ const _CLIENT_OWNED = { aiGreeting: WL_DEFAULTS.aiGreeting, onboardingTagline: W
 const loadWL = () => { try { const s=JSON.parse(localStorage.getItem(WL_KEY)); return s?{...WL_DEFAULTS,...s,..._CLIENT_OWNED}:WL_DEFAULTS; } catch { return WL_DEFAULTS; } };
 const saveWL = (wl) => { try { localStorage.setItem(WL_KEY,JSON.stringify(wl)); } catch {} };
 const WL = loadWL();
+
+// ── SHARED AI GUARDRAILS ─────────────────────────────────────────
+// Two rules every content-judging / content-generating / estimating prompt must obey,
+// so the whole app behaves consistently: (1) content is judged FOR a specific account,
+// not in the abstract — off-brand content can't score well; (2) never fabricate numbers
+// when there's no real data behind them.
+const brandContext = (wl) => {
+  wl = wl || loadWL();
+  const bits = [`Account: ${wl.handle||"(unknown handle)"}`,
+    `What this account is / posts about: ${wl.niche || "UNKNOWN — assume a focused personal brand and be cautious about anything off-topic"}`];
+  if(wl.contentStyle)   bits.push(`Content style: ${wl.contentStyle}`);
+  if(wl.appDescription) bits.push(`About: ${wl.appDescription}`);
+  if(wl.targetAudience) bits.push(`Audience: ${wl.targetAudience}`);
+  if(wl.brandValues)    bits.push(`Brand values: ${wl.brandValues}`);
+  return bits.join("\n");
+};
+const BRAND_FIT_RULE = `BRAND FIT (critical): judge whether this belongs on THIS account given what it's about. Content can be well-made and still be WRONG for the page (e.g. an off-topic meme on a music artist's page). Off-brand content must NOT get a high score or a "post it" — mark it down and say plainly why it doesn't fit the page.`;
+// True only when the workspace has real synced view history to ground a prediction in.
+const hasViewHistory = () => { try { const v = loadJSON(VIDEOS_KEY, []); return Array.isArray(v) && v.some(x=>(x.views||0)>0); } catch { return false; } };
+// Append to any prompt that asks the model for an estimated/predicted view number.
+const noFabRule = () => hasViewHistory()
+  ? `Base any view estimate on the real channel numbers given — realistic, not fantasy.`
+  : `This account has NO view history, so do NOT invent a view number. Return any estimated/predicted views field as "—" and never fabricate a range.`;
+// Hide a fabricated-looking estimate in the UI: empty, "—", or "N/A" render as nothing.
+const showEst = (v) => { const s=(v==null?"":String(v)).trim(); return (!s || s==="—" || /^n\/?a$/i.test(s)) ? null : s; };
 
 // ── MEMORY SYSTEM ────────────────────────────────────────────────
 // Stores what AI recommended + what actually happened, compounds over time
@@ -7993,7 +8020,8 @@ function AutopilotView({ videos=[], ideas=[], setIdeas, WL={}, setNav, copyText,
     const posted = ideas.filter(i=>i.status==="posted"&&i.postedViews>0).slice(0,5)
       .map(i=>`"${(i.title||"").slice(0,40)}" scored ${i.viral||"?"}/100 → ${fmt(i.postedViews)} real views`);
     const corpus = await corpusPriors(wl.niche);
-    const ctxBlock = `CHANNEL: ${wl.appName||""} (${wl.handle||"creator"})${wl.niche?` · niche: ${wl.niche}`:""}. Channel avg: ${avgV?fmt(avgV)+" views":"unknown"}.
+    const ctxBlock = `${brandContext(wl)}
+Channel avg: ${avgV?fmt(avgV)+" views":"unknown"}.
 Top videos: ${topV.length?topV.join(" | "):"none yet"}
 Real posted outcomes: ${posted.length?posted.join(" | "):"none logged yet"}
 Content pillars: ${(wl.pillars||[]).join(", ")||"unknown"}
@@ -8005,18 +8033,19 @@ ${corpus?`Cross-creator base rates: ${corpus}`:""}`;
   };
 
   const genIdeas = async (ctx, count) => {
-    const r = await callAI(`You are the autonomous content strategist for ${ctx.wl.handle||"a creator"}. Generate ${count} DISTINCT, fresh viral video concepts — in their voice, on-trend, each a different angle/trigger.
+    const r = await callAI(`You are the autonomous content strategist for ${ctx.wl.handle||"a creator"}. Generate ${count} DISTINCT, fresh viral video concepts — in their voice, on-trend, each a different angle/trigger. Every idea MUST fit this specific account and what it's about — do NOT suggest off-brand concepts that don't belong on this page.
 ${ctx.ctxBlock}
 Return ONLY JSON: {"ideas":[{"title":"concept under 14 words in their voice","hook":"opening line under 12 words","angle":"one line: why this angle is distinct","pillar":"which content pillar"}]}
-Exactly ${count} ideas, all genuinely different.`, 1200);
+Exactly ${count} ideas, all genuinely different, all on-brand for this account.`, 1200);
     return (r&&r.ideas)||[];
   };
 
   const scoreOne = async (idea, ctx) => {
     const r = await callAI(`Score this video idea 0-100 for ${ctx.wl.handle||"this creator"}. Be a brutally honest viral strategist — most content genuinely lands 50-70; reserve 85+ for ideas with a strong hook AND a clear share trigger.
 ${ctx.ctxBlock}
+${BRAND_FIT_RULE}
 IDEA — Title: "${idea.title}" | Hook: "${idea.hook}" | Pillar: ${idea.pillar||"?"}
-Ground the score in the base rates and real outcomes above. Return ONLY JSON: {"score":0-100,"verdict":"2 sentences naming the strongest and weakest factor","hookFeedback":"what works/fails in the first 3 seconds","estViews":"realistic range e.g. 20K-45K","bestSlot":"best day+time to post e.g. Thursday 6-9pm"}`, 900);
+Ground the score in the base rates and real outcomes above. ${noFabRule()} Return ONLY JSON: {"score":0-100,"verdict":"2 sentences naming the strongest and weakest factor","hookFeedback":"what works/fails in the first 3 seconds","estViews":"${hasViewHistory()?"realistic range e.g. 20K-45K":"—"}","bestSlot":"best day+time to post e.g. Thursday 6-9pm"}`, 900);
     return r || {};
   };
 
@@ -8195,7 +8224,7 @@ Write today's briefing. Return ONLY JSON: {"headline":"one punchy line summarisi
                 </div>
                 {a.verdict && <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.6)", lineHeight:1.55, marginBottom:10, fontFamily:C.fontBody }}>{a.verdict}</div>}
                 <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12 }}>
-                  {a.estViews && <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.05em", color:C.green, background:`${C.green}12`, border:`1px solid ${C.green}30`, borderRadius:6, padding:"3px 8px" }}>~{a.estViews}</span>}
+                  {showEst(a.estViews) && <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.05em", color:C.green, background:`${C.green}12`, border:`1px solid ${C.green}30`, borderRadius:6, padding:"3px 8px" }}>~{showEst(a.estViews)}</span>}
                   {a.pillar && <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.05em", color:C.purple, background:`${C.purple}14`, border:`1px solid ${C.purple}30`, borderRadius:6, padding:"3px 8px" }}>{a.pillar}</span>}
                   {a.bestSlot && <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.05em", color:C.cyan, background:`${C.cyan}12`, border:`1px solid ${C.cyan}30`, borderRadius:6, padding:"3px 8px", display:"inline-flex", alignItems:"center", gap:4 }}>{I.clock(9,C.cyan)} {a.bestSlot}</span>}
                 </div>
@@ -10283,7 +10312,7 @@ function Dashboard({ keys, onEditKeys }) {
 
       const prompts = {
         analysis: richCtx+liveCtx+"\nAnalyse these videos. Use real numbers from the channel statistics above. Return JSON: {whatIsWorking:[{insight,evidence,impact:'high|medium'}],whatIsNotWorking:[{insight,evidence,fix}],topFormat,bestHook,channel_diagnosis,engagement_insight}. Videos: "+JSON.stringify(vSummary),
-        nextVids:  richCtx+liveCtx+"\nSuggest next 5 videos. Use winning hook+type combos and engagement signals from the data above. Be specific. Return JSON: {tiktok:[{title,type,hook,thumbnail_style,whyItWillWork,openingLine,priority:'HIGH|MEDIUM',estimated_views,winning_combo_used}],instagram:[{concept,contentType,whyItWillWork}]}. Videos: "+JSON.stringify(vSummary),
+        nextVids:  richCtx+liveCtx+"\nSuggest next 5 videos, all ON-BRAND for this account. Use winning hook+type combos and engagement signals from the data above. Be specific. "+noFabRule()+" Return JSON: {tiktok:[{title,type,hook,thumbnail_style,whyItWillWork,openingLine,priority:'HIGH|MEDIUM',estimated_views,winning_combo_used}],instagram:[{concept,contentType,whyItWillWork}]}. Videos: "+JSON.stringify(vSummary),
         weekly:    channelCtx+"\nWrite a filming brief for "+(wl.creator2||wl.creator1||"this creator")+". Return JSON: {brief:'2-3 sentences',priorities:[{task,why,how_to_shoot}],rawSummaryText:'WhatsApp-ready message'}. Videos: "+JSON.stringify(vSummary),
         trends:    channelCtx+liveCtx+"\nBest trending angles for "+wl.appName+" RIGHT NOW that fit this channel style. Return JSON: {trends:[{trend,urgency:'POST NOW|THIS WEEK|THIS MONTH',tiktokAngle,hook,why_fits_channel,instagramAngle}]}",
             };
@@ -10537,6 +10566,8 @@ LEARNING: [one sentence]`}]}, key);
       const voiceBlk = voiceBlock(organicVids.length?organicVids:videos, ideas);
       const corpusBlock = await corpusPriors(wl.niche);
       const _scorePrompt = `You are the world's best viral content strategist. Score this TikTok/Reels idea for ${wl.handle} (${wl.appName} — ${wl.niche}).
+
+${BRAND_FIT_RULE} ${noFabRule()}
 
 ${channelTheory ? `━━ CHANNEL VIRAL THEORY (why this channel specifically goes viral — anchor ALL scoring to this) ━━\n${channelTheory}\n` : ""}
 ━━ CHANNEL INTELLIGENCE (real data — treat as ground truth) ━━
@@ -10989,7 +11020,7 @@ Return JSON:
       if(loadingHooks||!title.trim()) return;
       setLoadingHooks(true);
       try {
-        const r = await callAI(`Give 3 alternative TikTok hook openings for this video idea: "${title}". Each hook should be a punchy opening line (under 12 words). Return JSON: {"hooks":[{"hook":"string","type":"pov|reaction|challenge|achievement|gamification","why":"one sentence why it works"}]}`, 700);
+        const r = await callAI(`${brandContext(WL)}\nGive 3 alternative TikTok hook openings for this video idea: "${title}". Each hook must fit the account above and be a punchy opening line (under 12 words). Return JSON: {"hooks":[{"hook":"string","type":"pov|reaction|challenge|achievement|gamification","why":"one sentence why it works"}]}`, 700);
         setAltHooks(r.hooks||[]);
       } catch(e) { setAiErr("Hook gen failed: "+e.message); }
       setLoadingHooks(false);
@@ -11009,7 +11040,7 @@ Return JSON:
       // Auto-rescore after saving
       setScoring(true);
       try {
-        const r = await callAI(`Score this ${WL.appName} TikTok idea. Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 1-2 sentence verdict","viralityReason":"string","hookFeedback":"string","improvedHook":"string under 12 words","recommendations":[{"action":"string","impact":"high|medium"}]}. Idea: "${title.trim()}" type:${type}`, 1000);
+        const r = await callAI(`${brandContext(WL)}\n${BRAND_FIT_RULE}\nScore this TikTok idea for the account above. Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 1-2 sentence verdict","viralityReason":"string","hookFeedback":"string","improvedHook":"string under 12 words","recommendations":[{"action":"string","impact":"high|medium"}]}. Idea: "${title.trim()}" type:${type}`, 1000);
         setIdeas(is=>is.map(i=>i.id===idea.id?{...i,viral:r.viralityScore,hookScore:r.hookScore,verdict:r.verdict,viralReason:r.viralityReason,hookFeedback:r.hookFeedback,improvedHook:r.improvedHook,recs:r.recommendations?.map(x=>({a:x.action,impact:x.impact?.toUpperCase()}))}:i));
       } catch(e) { setAiErr("Rescore failed: "+e.message); }
       setScoring(false);
