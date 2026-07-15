@@ -86,14 +86,15 @@ Then follow up **twice**, 3 days apart. Most sales are in the follow-up.
 I'm not giving you a menu. Build these **four**, in this order, because each one directly
 makes you money or keeps a client. Everything else on the idea lists waits.
 
-### BUILD #1 — The Free Audit → shareable PDF/link (THE growth engine) ⭐⭐
-Upgrade the existing audit into a **screenshot-worthy, watermarked, one-click PDF/share-link**:
-hook analysis, retention drop-off, their best/worst format, 3 specific fixes, predicted upside.
-This is your entire top-of-funnel. Every audit sent is an ad + a sales opener. **Highest ROI
-thing in the codebase.** Uses public/scraped data, so the organic-views issue never blocks it.
-→ **Priority: build first. This is what makes money.**
+### BUILD #1 — The Free Audit → shareable image ✅ ALREADY BUILT
+Status check: this is **done** (`ProspectAuditView`). It already scrapes any TikTok handle,
+runs the full scoring engine + Voice DNA, produces verdict / working / costing-views / 5 ideas
+in their voice, is **watermarked** ("by {AppName}"), and exports as a **share-image (PNG)** via
+the native share sheet + **copy-as-text** for DMs. Uses public data, so the organic-views issue
+never blocks it. → **Nothing to build. Just START SENDING IT.** The only "work" left here is the
+outreach message (below) — which is copywriting, not code.
 
-### BUILD #2 — The Proof Engine (F1) ⭐⭐
+### BUILD #2 — The Proof Engine (F1) ⭐⭐ ← the real first build
 Auto-log each video's *prediction* at post time; reconcile vs *actual* a week later; show a
 running "within X% on your last N videos" scorecard per creator.
 Why it matters: it's the **one moat Higgsfield can't copy** (they never see your outcomes), it
