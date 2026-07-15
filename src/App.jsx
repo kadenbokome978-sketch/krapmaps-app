@@ -8308,11 +8308,11 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","score":0-100,"predictedViews":"reali
           <div style={{ fontSize:isMobile?22:28, fontWeight:800, color:"#fff", marginBottom:8, fontFamily:C.fontHead, letterSpacing:"-0.02em" }}>Check it before you post</div>
           <div style={{ fontSize:14, color:"rgba(255,255,255,0.55)", lineHeight:1.6, maxWidth:440, margin:"0 auto 22px" }}>Upload your finished video. The AI watches it and gives you a straight <span style={{color:C.green,fontWeight:700}}>GO</span> / <span style={{color:C.yellow,fontWeight:700}}>RISKY</span> / <span style={{color:C.pink,fontWeight:700}}>NO</span> — predicted views, a retention heatmap, and the exact fixes.</div>
           <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e=>{ if(e.target.files[0]) run(e.target.files[0]); }} />
-          <button onClick={()=>hasGemini?fileRef.current?.click():null} disabled={!hasGemini}
-            style={{ padding:isMobile?"14px 24px":"14px 30px", borderRadius:14, border:"none", background:hasGemini?`linear-gradient(135deg,${C.purple},${C.pink})`:"rgba(255,255,255,0.08)", color:hasGemini?"#fff":"rgba(255,255,255,0.4)", fontFamily:C.fontHead, fontWeight:800, fontSize:15, cursor:hasGemini?"pointer":"default", letterSpacing:"0.02em", boxShadow:hasGemini?`0 10px 30px ${C.purple}40`:"none", display:"inline-flex", alignItems:"center", gap:9 }}>
+          <button onClick={()=>{ const liveKey = (loadJSON(KEYS_KEY,{})?.keys?.gemini)||BAKED_GEMINI_KEY; if(!liveKey){ setErr("No Gemini key found. Go to Settings → AI Keys → Gemini, paste your key and press save — then come back."); return; } setErr(null); fileRef.current?.click(); }}
+            style={{ padding:isMobile?"14px 24px":"14px 30px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:800, fontSize:15, cursor:"pointer", letterSpacing:"0.02em", boxShadow:`0 10px 30px ${C.purple}40`, display:"inline-flex", alignItems:"center", gap:9 }}>
             {I.eye(17,"currentColor")} UPLOAD & CHECK
           </button>
-          {!hasGemini && <div style={{ marginTop:14, fontSize:12.5, color:C.yellow }}>Vision needs a Gemini key — add one in Settings (free tier works).</div>}
+          {!hasGemini && <div style={{ marginTop:14, fontSize:12.5, color:C.yellow }}>Vision needs a Gemini key — add one in Settings (free tier works). If you just added it, refresh the page.</div>}
           {err && <div style={{ marginTop:14, fontSize:13, color:C.pink }}>{err}</div>}
         </div>
       )}
