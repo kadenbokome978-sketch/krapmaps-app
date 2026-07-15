@@ -11239,7 +11239,7 @@ Return JSON:
                   <button onClick={()=>setDrawerOpen(false)} aria-label="Close menu" style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:18, color:"rgba(255,255,255,0.7)", flexShrink:0 }}>×</button>
                 </div>
                 {/* Nav items */}
-                <div style={{ flex:1, overflowY:"auto", padding:"16px 16px" }}>
+                <div data-lenis-prevent style={{ flex:1, minHeight:0, overflowY:"auto", WebkitOverflowScrolling:"touch", overscrollBehavior:"contain", padding:"16px 16px" }}>
                   {NAV.map(n=>{
                     const active = nav===n.id;
                     return (
