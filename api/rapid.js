@@ -4,9 +4,8 @@
 import { cors, requireUser, resolveKey } from "./_lib.js";
 
 const ALLOWED_HOSTS = new Set([
-  "tiktok-scraper7.p.rapidapi.com",
+  "tiktok-api23.p.rapidapi.com",              // current TikTok scraper (tiktok-scraper7 was disabled by provider)
   "instagram-scraper-api2.p.rapidapi.com",
-  "www.tikwm.com",   // TIKWM free public API — no RapidAPI key needed (tiktok-scraper7 was disabled by provider)
 ]);
 
 export default async function handler(req, res) {
@@ -26,18 +25,14 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: "Host not allowed: " + parsed.hostname });
   }
 
-  // tikwm.com is a free public API — no RapidAPI key/headers. RapidAPI hosts still need the key.
-  const isTikwm = parsed.hostname === "www.tikwm.com";
-  const key = isTikwm ? "" : resolveKey(req, "RAPIDAPI_KEY");
-  if (!isTikwm && !key) return res.status(400).json({ error: "No RapidAPI key configured on server" });
+  const key = resolveKey(req, "RAPIDAPI_KEY");
+  if (!key) return res.status(400).json({ error: "No RapidAPI key configured on server" });
 
   try {
-    // NOTE: no Content-Type header — this is a GET with no body, and some gateways
-    // reject a body-implying Content-Type on GET with a 405.
+    // NOTE: no Content-Type header — GET with no body; some gateways reject a
+    // body-implying Content-Type on GET with a 405.
     const r = await fetch(parsed.toString(), {
-      headers: isTikwm
-        ? { "User-Agent": "Mozilla/5.0 (compatible; CreatorOS/1.0)" }
-        : { "x-rapidapi-host": parsed.hostname, "x-rapidapi-key": key },
+      headers: { "x-rapidapi-host": parsed.hostname, "x-rapidapi-key": key },
     });
     const text = await r.text();
     res.setHeader("Content-Type", r.headers.get("content-type") || "application/json");
