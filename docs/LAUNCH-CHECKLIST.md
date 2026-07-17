@@ -51,6 +51,32 @@
 
 ---
 
+---
+
+## Deep audit findings (by-hand, security + correctness)
+
+**Checked and SOUND:**
+- **Backend AI proxy auth** (`api/ai.js` + `api/_lib.js`): requires a valid Supabase session OR a
+  caller's own BYO key. You can't spend the *server* key with a fake BYO key (resolveKey uses the BYO
+  value when present, so a junk BYO key just fails). Solid.
+- **Free "score my video" path**: rate-limited to 3/hr per IP, 500-char input cap, 300-token output on
+  cheap Gemini Flash. Reasonable.
+- **No secrets in the browser bundle** — only the publishable Supabase key (safe by design).
+- **Workspace data isolation**: every cloud row is namespaced by activation code (`CODE:id`), codes
+  stripped to [A-Z0-9] so one can't be a LIKE-prefix of another. Well-designed.
+- **Crash boundary + defensive rendering**: AI-response arrays are guarded (`?.length>0 &&`, `?.map`),
+  so a malformed AI response won't white-screen the app.
+- **Stripe webhook verifies signatures** — no forging "payment succeeded" to self-grant a plan.
+
+**Real findings:**
+- **LOW — free-score rate limit is bypassable.** It keys off `x-forwarded-for`, which a caller can
+  spoof, so the 3/hr cap can be evaded. Impact is small (Gemini Flash, ~300 tokens = fractions of a
+  penny/call) — a determined abuser could run up a *minor* bill. Fine for launch; revisit if it's ever
+  actually abused. Fix later: verify a signed session/turnstile token, or key the limit off a
+  Vercel-trusted IP header.
+- **INFO — activation codes are effectively workspace passwords.** Anyone with KRAP-9341 / BRAZ-2025
+  can pull that workspace's data (on top of RLS). Keep them private; don't post them anywhere.
+
 ## Verdict
 **The software is launch-ready for your actual launch** (self-use, free audits, DFY clients), pending
 the 4 "must do" items above — 3 of which are your actions (fund the key, set niches, rotate the secret)
