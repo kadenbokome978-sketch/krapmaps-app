@@ -7770,7 +7770,15 @@ async function _postProxy(endpoint, body, byoKey) {
   if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e.error || ("Proxy error "+r.status)); }
   return r.json();
 }
-// GET proxy for RapidAPI scraper calls — returns the native RapidAPI response.
+// TikTok scraper endpoints. TIKWM's paid RapidAPI wrapper (tiktok-scraper7) was DISABLED by
+// the provider (returns 405 "provider has disabled access"), so we use TIKWM's FREE public API
+// at tikwm.com — identical JSON schema (data.videos, play_count, digg_count, followerCount…),
+// so all the parsing below is unchanged. Routed through /api/rapid to avoid browser CORS.
+const TT_HOST = "https://www.tikwm.com";
+const ttPostsUrl = (handle, cursor=0) => `${TT_HOST}/api/user/posts?unique_id=${encodeURIComponent(handle)}&count=35&cursor=${cursor}`;
+const ttInfoUrl  = (handle) => `${TT_HOST}/api/user/info?unique_id=${encodeURIComponent(handle)}`;
+
+// GET proxy for scraper calls — returns the native response.
 async function rapidFetch(targetUrl, byoKey) {
   if(!USE_BACKEND) return fetch(targetUrl, { headers:{ "x-rapidapi-host": new URL(targetUrl).hostname, "x-rapidapi-key": byoKey||"" } });
   const token = await getAccessToken();
@@ -7790,10 +7798,9 @@ async function scrapeProspectTikTok(handle){
   if(!clean) throw new Error("Enter a TikTok @handle first");
   const key = loadJSON(KEYS_KEY,{})?.keys?.tikwm;
   if(!key && !USE_BACKEND) throw new Error("Add your TikTok (RapidAPI) key in Settings first — that's what pulls their videos.");
-  const base = "https://tiktok-scraper7.p.rapidapi.com/user/posts?unique_id="+encodeURIComponent(clean)+"&count=35&sort_type=0&cursor=";
   const [r, rUser] = await Promise.all([
-    rapidFetch(base+"0", key),
-    rapidFetch("https://tiktok-scraper7.p.rapidapi.com/user/info?unique_id="+encodeURIComponent(clean), key),
+    rapidFetch(ttPostsUrl(clean, 0), key),
+    rapidFetch(ttInfoUrl(clean), key),
   ]);
   if(!r.ok) throw new Error(r.status===403?"RapidAPI key invalid or not subscribed to the TikTok scraper":r.status===429?"Rate limited — wait ~30s and retry":`Scraper error ${r.status}`);
   const data = await r.json();
@@ -7803,7 +7810,7 @@ async function scrapeProspectTikTok(handle){
   let vids=data.data.videos, cursor=data.data.cursor, more=!!data.data.hasMore, pages=1;
   while(more && cursor && pages<4){
     await new Promise(res=>setTimeout(res,500));
-    const r2=await rapidFetch(base+cursor, key);
+    const r2=await rapidFetch(ttPostsUrl(clean, cursor), key);
     if(!r2.ok) break;
     const d2=await r2.json();
     if(d2.code!==0 || !d2.data?.videos?.length) break;
@@ -10008,8 +10015,8 @@ function Dashboard({ keys, onEditKeys }) {
       
       // Fetch user info for followers in parallel with first page of videos
       const [r, rUser] = await Promise.all([
-        rapidFetch("https://tiktok-scraper7.p.rapidapi.com/user/posts?unique_id="+handle+"&count=35&cursor=0&sort_type=0", tikwmKey),
-        rapidFetch("https://tiktok-scraper7.p.rapidapi.com/user/info?unique_id="+handle, tikwmKey)
+        rapidFetch(ttPostsUrl(handle, 0), tikwmKey),
+        rapidFetch(ttInfoUrl(handle), tikwmKey)
       ]);
 
       // Auto-update TT followers from user info
@@ -10041,7 +10048,7 @@ function Dashboard({ keys, onEditKeys }) {
       let ttPages = 1;
       while(ttMore && ttCursor && ttPages < 10) {
         await new Promise(res => setTimeout(res, 600));
-        const r2 = await rapidFetch("https://tiktok-scraper7.p.rapidapi.com/user/posts?unique_id="+handle+"&count=35&cursor="+ttCursor+"&sort_type=0", tikwmKey);
+        const r2 = await rapidFetch(ttPostsUrl(handle, ttCursor), tikwmKey);
         if(!r2.ok) break;
         const d2 = await r2.json();
         if(d2.code !== 0 || !d2.data?.videos?.length) break;
