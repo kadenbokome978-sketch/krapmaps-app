@@ -958,7 +958,7 @@
   }
 
   function openModal(href){
-    if(authed){if(href)window.location.href=href;return;}
+    if(authed){window.location.href=href||'/dashboard';return;}
     pendingHref=href||null;
     modal.classList.add('open');
     document.body.style.overflow='hidden';
@@ -987,7 +987,7 @@
         if(r.error) throw r.error;
         if(r.data.session){
           showSignedIn(r.data.session); closeModal();
-          if(pendingHref)window.location.href=pendingHref;
+          window.location.href=pendingHref||'/dashboard';
         } else {
           showInfo('Check your email to confirm your account, then sign in.');
           setMode('signin');
@@ -996,7 +996,7 @@
         var r2=await sb.auth.signInWithPassword({email:email,password:pass});
         if(r2.error) throw r2.error;
         showSignedIn(r2.data.session); closeModal();
-        if(pendingHref)window.location.href=pendingHref;
+        window.location.href=pendingHref||'/dashboard';
       }
     }catch(e){showErr(e.message||'Something went wrong.');}
     submitBtn.disabled=false;
@@ -1007,7 +1007,7 @@
   // Google OAuth
   document.getElementById('authGoogle').addEventListener('click',async function(){
     clearMsg();
-    var dest=pendingHref||window.location.origin+'/';
+    var dest=pendingHref||window.location.origin+'/dashboard';
     var r=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:dest}});
     if(r.error) showErr(r.error.message);
   });
