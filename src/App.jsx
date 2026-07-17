@@ -7802,7 +7802,7 @@ async function scrapeProspectTikTok(handle){
     rapidFetch(ttPostsUrl(clean, 0), key),
     rapidFetch(ttInfoUrl(clean), key),
   ]);
-  if(!r.ok) throw new Error(r.status===403?"RapidAPI key invalid or not subscribed to the TikTok scraper":r.status===429?"Rate limited — wait ~30s and retry":`Scraper error ${r.status}`);
+  if(!r.ok) throw new Error(r.status===429?"Rate limited — wait ~30s and retry":r.status>=500?"Scraper temporarily down — try again shortly":`Scraper error ${r.status} — check the handle is exact`);
   const data = await r.json();
   if(data.code!==0 || !data.data?.videos?.length) throw new Error(`No public videos found for @${clean} — check the handle is exact (no spaces).`);
   let followers=0, nick="";
@@ -10036,7 +10036,7 @@ function Dashboard({ keys, onEditKeys }) {
         } catch(e) { console.warn("User info parse failed:", e.message); }
       }
 
-      if(!r.ok) { reportHealth("tiktok","error",`TikTok scraper HTTP ${r.status}${r.status===403?" — RapidAPI key invalid or not subscribed to tiktok-scraper7":r.status===405?" — the scraper API rejected the request. Check your RapidAPI subscription to 'tiktok-scraper7' is active":r.status===429?" — rate limited, retries automatically":""}`); return; }
+      if(!r.ok) { reportHealth("tiktok","error",`TikTok scraper HTTP ${r.status}${r.status===429?" — rate limited by tikwm, retries automatically":r.status>=500?" — tikwm scraper temporarily down, try again shortly":" — couldn't reach the scraper, check the handle in Settings"}`); return; }
       const data = await r.json();
       if(data.code !== 0 || !data.data?.videos) { reportHealth("tiktok","error","TikTok scraper returned no videos — check the handle in Settings ("+(wl.handle||"not set")+")"); return; }
       
