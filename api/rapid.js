@@ -29,8 +29,10 @@ export default async function handler(req, res) {
   if (!key) return res.status(400).json({ error: "No RapidAPI key configured on server" });
 
   try {
+    // NOTE: no Content-Type header — this is a GET with no body, and some RapidAPI
+    // gateways reject a body-implying Content-Type on GET with a 405.
     const r = await fetch(parsed.toString(), {
-      headers: { "x-rapidapi-host": parsed.hostname, "x-rapidapi-key": key, "Content-Type": "application/json" },
+      headers: { "x-rapidapi-host": parsed.hostname, "x-rapidapi-key": key },
     });
     const text = await r.text();
     res.setHeader("Content-Type", r.headers.get("content-type") || "application/json");
