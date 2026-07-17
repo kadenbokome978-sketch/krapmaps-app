@@ -1,4 +1,4 @@
-# CreatorOS (KrapMaps)
+# Greenlit (KrapMaps)
 
 A whitelabel AI content-strategy app for short-form creators (TikTok / Reels).
 Score video ideas before filming, auto-sync channel stats, learn from real

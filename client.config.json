@@ -1,8 +1,8 @@
 {
   "clientId": "krapmaps",
   "activationCode": "KRAP-9341",
-  "appName": "CreatorOS",
-  "appTagline": "Content OS",
+  "appName": "Greenlit",
+  "appTagline": "Greenlit",
   "handle": "@findkrap",
   "creator1": "Kaden",
   "creator2": "Harley",
@@ -22,7 +22,7 @@
   "accentColor2": "#00E5FF",
   "currency": "\u00a3",
   "onboardingTagline": "The content system serious creators actually use.\nScore ideas, track growth, close brand deals \u2014 all in one place.",
-  "aiGreeting": "Hey! I'm your CreatorOS AI. I can add tasks, create video ideas, answer questions about your content \u2014 or upload a clip and I'll analyse it.",
+  "aiGreeting": "Hey! I'm your Greenlit AI. I can add tasks, create video ideas, answer questions about your content \u2014 or upload a clip and I'll analyse it.",
   "statLabels": {
     "followers": "Followers",
     "views": "Total Views",

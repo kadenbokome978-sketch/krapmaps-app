@@ -1,4 +1,4 @@
-# CreatorOS / KrapMaps — Product Ideas & Strategy
+# Greenlit / KrapMaps — Product Ideas & Strategy
 
 > Living doc. Logged decisions and revolutionary ideas for the product.
 

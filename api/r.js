@@ -13,7 +13,7 @@ const num = (v) => (typeof v === "number" && isFinite(v) ? v : 0);
 function page(d) {
   const accent = hex(d.accent, "#FF2D78");
   const accent2 = hex(d.accent2, "#C566FF");
-  const app = esc(d.appName || "CreatorOS");
+  const app = esc(d.appName || "Greenlit");
   const handle = esc(d.handle || "@creator");
   const initial = esc((d.creator1 || d.handle || "C").replace(/^@/, "").charAt(0).toUpperCase());
   const stats = d.stats || {};
@@ -182,7 +182,7 @@ function page(d) {
     <p>Free AI virality scores, hook fixes and growth tracking for TikTok &amp; Reels.</p>
     <a class="btn" href="${esc(origin || "/")}">Try ${app} free
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12,5 19,12 12,19"/></svg></a>
-    <div class="powered">Powered by <b>CreatorOS</b></div>
+    <div class="powered">Powered by <b>Greenlit</b></div>
   </section>
 </div>
 </body></html>`;

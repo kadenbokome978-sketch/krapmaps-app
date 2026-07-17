@@ -26,7 +26,7 @@ export default async function handler(req) {
 
   const accent = hex(d?.accent, "#FF2D78");
   const accent2 = hex(d?.accent2, "#C566FF");
-  const app = d?.appName || "CreatorOS";
+  const app = d?.appName || "Greenlit";
   const handleLabel = d?.handle || (handle ? "@" + handle : "@creator");
   const hero = d?.hero || null;
   const stats = d?.stats || {};
@@ -71,7 +71,7 @@ export default async function handler(req) {
         stats.viewsTracked ? h("div", { style: { display: "flex", flexDirection: "column" } }, h("div", { style: { fontSize: 40, fontWeight: 800, color: "#00E5FF" } }, String(stats.viewsTracked)), h("div", { style: { fontSize: 20, color: "rgba(248,238,255,0.45)", fontWeight: 600 } }, "views tracked")) : h("div", {}),
         (stats.accuracy != null) ? h("div", { style: { display: "flex", flexDirection: "column" } }, h("div", { style: { fontSize: 40, fontWeight: 800, color: "#FFD50A" } }, String(stats.accuracy) + "%"), h("div", { style: { fontSize: 20, color: "rgba(248,238,255,0.45)", fontWeight: 600 } }, "AI accuracy")) : h("div", {}),
       ),
-      h("div", { style: { fontSize: 24, color: "rgba(248,238,255,0.6)", fontWeight: 700, display: "flex" } }, "Powered by CreatorOS"),
+      h("div", { style: { fontSize: 24, color: "rgba(248,238,255,0.6)", fontWeight: 700, display: "flex" } }, "Powered by Greenlit"),
     ),
   );
 
