@@ -8916,10 +8916,10 @@ Return ONLY JSON:
               </div>
             </div>
           )}
-          {/* CTA footer */}
+          {/* CTA footer — sells the OUTCOME and asks for the reply (this is the sales artifact) */}
           <div style={{ marginTop:22, paddingTop:18, borderTop:"1px solid rgba(255,255,255,0.08)", textAlign:"center" }}>
-            <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.55)", lineHeight:1.5 }}>This is a taste. The full system scores every idea before you film, tracks what actually hits, and learns your voice as you post.</div>
-            <div style={{ fontSize:15, color:"#fff", fontWeight:700, fontFamily:C.fontHead, marginTop:8 }}>Want your channel run through {report.app}?</div>
+            <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.55)", lineHeight:1.5 }}>This is just the surface read. The full version scores every idea <em>before</em> you film — so you stop wasting posts — then tracks what actually hits and doubles down on it.</div>
+            <div style={{ fontSize:16, color:"#fff", fontWeight:800, fontFamily:C.fontHead, marginTop:10, letterSpacing:"-0.01em" }}>Want me to run this for your page? Reply and let's talk 👇</div>
           </div>
         </div>
       )}
