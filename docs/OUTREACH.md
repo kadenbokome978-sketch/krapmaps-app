@@ -1,63 +1,63 @@
-# Outreach — send WITH the free audit
+# Outreach Playbook — LOCKED
 
-> The audit does the selling. Your job is to get them to open it. Short, specific, value-first.
-> Research: personalized value-first outreach gets ~10%+ reply vs ~1% generic; most sales are in
-> the follow-up (5 touches, spaced 2–5 days, lifts conversion ~49%). So: send, then follow up twice.
-
----
-
-## The rules (don't break these)
-1. **Lead with ONE specific thing you saw in THEIR content.** Never "I help creators grow."
-2. **Give the audit for free, no ask attached** on the first message. The audit is the value.
-3. **One soft question at the end**, not a pitch. You want a reply, not a close.
-4. **Follow up twice**, 3 days apart. Most replies come on message 2 or 3.
-5. **Same niche every day** so you get sharper and known ("the guy who does the finance audits").
+> Niche: **make-money online / personal finance / business creators** (TikTok, 10k–150k followers).
+> Send from: **Kaden's personal TikTok** (real human = clears the "scam" bar; the audit does the selling).
+> The audit is the credibility. Never claim clients/results you don't have yet.
 
 ---
 
-## Message 1 — the opener (DM or email)
+## The daily loop
+1. Find 8–10 creators in the niche.
+2. Run each handle through the app's **Audit** tab → save the share-image.
+3. DM the opener (below) with the audit.
+4. Follow up twice, 3 days apart.
+5. Log each in a simple sheet: handle · sent · replied? · FU1 · FU2 · call.
 
-> Hey [name] — I run content strategy stuff and pulled your last 30 TikToks through my system
-> for fun. Two things jumped out: your **[specific format, e.g. "3-step money breakdowns"]** do
-> ~[X]k while everything else sits around [Y]k — but you've only posted 2 of them. And ~60% of
-> your videos are losing people in the first 3 seconds.
->
-> Made you the full breakdown (your numbers, what's working, 5 video ideas in your voice) — want
-> me to send it over? No charge, just think you're sitting on something.
-
-*(Swap the bracketed bits with real details from their audit. The specificity is the whole trick.)*
-
-## Message 2 — follow-up (3 days later, if no reply)
-
-> Hey [name], don't want to be annoying — here's that breakdown anyway [attach the audit image].
-> The bit on your hooks is the one I'd act on first. Happy to talk through it if useful 👊
-
-## Message 3 — the soft close (3 days after that, if they engaged at all)
-
-> Glad it was useful! If you ever want someone to just *run* this for you — plan the posts, score
-> them before you film, track what actually hits — that's what I do for a couple of creators.
-> Want me to show you what that'd look like for your channel?
+Target: **~40 audits/week → ~2–3 paying clients in ~4 weeks.** It's a numbers game. Keep sending.
 
 ---
 
-## When they reply "how much?" → the DFY pitch
-> I run your whole content engine — I plan what to post, score every idea before you film so you
-> stop wasting posts, and track what actually works so we double down on it. It's £[750–1,500]/mo,
-> month-to-month, and the first 2 weeks are on me — if you don't see your typical views move, you
-> walk, no charge. Want to start Monday?
-
-**Notes:**
-- Start at **£750** for your first 2–3 clients (get the case studies), raise to £1,000–1,500 once
-  you have proof.
-- The **2-week risk-reversal** ("if it doesn't move, you walk") kills the main objection and costs
-  you nothing but effort you'd spend anyway.
-- **Under-promise on numbers.** Never guarantee a view count (you can't — AI predicts ranking, not
-  absolutes). Promise the *system and the effort*, not a specific result.
+## Find 20 targets in 20 minutes
+1. TikTok search: **"make money online"**, **"personal finance"**, **"side hustle"**, **"faceless finance"**, **"budgeting tips"**.
+2. Find one creator at **10k–150k** followers (big enough to afford £750/mo, small enough to need help).
+3. Open their profile → tap the **suggested-accounts arrow** → that rail is 20 more just like them.
+4. Save handles to notes. Aim for 20. Skip anyone clearly faking it or already huge.
 
 ---
 
-## Daily routine (the actual grind)
-- **30–40 audits/week** = ~6–8 a day. Pick creators from the "similar accounts" rail off the top 10
-  in your niche, niche hashtags, and comment sections.
-- Log each send in a simple sheet: handle · date sent · replied? · follow-up 1 · follow-up 2 · call.
-- Target: **150 audits → ~2–3 paying clients** over ~4 weeks. It's a numbers game. Keep sending.
+## Message 1 — the opener (send WITH the audit image)
+> Yo [name] — I run content-strategy stuff and pulled your last 30 videos through a system I use.
+> Two things stood out: your **[best format, e.g. "money-mistake breakdowns"]** pull ~[X]k while the
+> rest sit around [Y]k — but you've only done a couple. And ~60% of your videos are losing people in
+> the first 3 seconds. Made you the full breakdown (your numbers, what's working, what's costing you
+> views, 5 ideas in your voice). Sending it over — no charge 👇
+
+*(Fill the brackets from the real audit. Specificity is the whole trick — a generic DM dies.)*
+
+## Message 2 — follow-up (3 days later, no reply)
+> No stress if you're busy — here's that breakdown anyway [audit image]. The hook fix is the one I'd
+> act on first, reckon it'd move your average on its own.
+
+## Message 3 — soft close (3 days later, if they engaged)
+> Glad it was useful. If you ever want someone to just *run* this for you — plan the posts, score every
+> idea before you film so you stop wasting uploads, track what actually hits — that's what I do for a
+> couple of creators. Want me to show you what that'd look like for your page?
+
+---
+
+## When they ask "how much?"
+> I run your whole content engine — plan what to post, score every idea before you film so you stop
+> burning uploads, and track what actually works so we double down. £[750]/mo, month-to-month, and the
+> first 2 weeks are on me: if your typical views don't move, you walk, no charge. Want to start Monday?
+
+- Start at **£750** for the first 2–3 clients (get the case studies), raise to £1,000–1,500 with proof.
+- The **2-week risk-reversal** kills the main objection and costs you only effort you'd spend anyway.
+- **Never promise a view count.** Promise the system + the effort, not a number (you can't guarantee results).
+
+---
+
+## Rules
+- One niche only — focus compounds your reputation AND sharpens the audit + corpus.
+- The audit sells; your account just proves you're a real person.
+- No fake social proof. Land client #1 honestly → that becomes real proof that beats any flex.
+- Volume + follow-up. Most replies come on message 2 or 3, not 1.
