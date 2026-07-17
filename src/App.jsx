@@ -1196,7 +1196,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
       <div style={{ borderRadius:16, overflow:"hidden", border:"1px solid rgba(255,255,255,0.08)", background:"rgba(255,255,255,0.025)" }}>
         <div style={{ padding:isMobile?"16px 20px":"16px 22px", borderBottom:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div>
-            <div style={{ fontSize:13, fontWeight:700, background:`linear-gradient(120deg,#fff 52%,${C.purple})`, WebkitBackgroundClip:"text", backgroundClip:"text", color:"transparent", fontFamily:C.fontHead }}>Weekly Debrief</div>
+            <div style={{ fontSize:13, fontWeight:800, background:`linear-gradient(120deg,#fff 45%,${C.purple})`, WebkitBackgroundClip:"text", backgroundClip:"text", color:"transparent", fontFamily:C.fontHead, letterSpacing:"0.1em", textTransform:"uppercase" }}>Weekly Debrief</div>
             {weeklyDebrief?.generatedAt && <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, marginTop:2 }}>Generated {new Date(weeklyDebrief.generatedAt).toLocaleDateString()}</div>}
           </div>
           <button onClick={runDebrief} disabled={debriefLoading} style={{ padding:isMobile?"12px 18px":"8px 16px", borderRadius:10, border:`1px solid ${C.purple}40`, background:debriefLoading?`${C.purple}15`:`linear-gradient(135deg,${C.purple}30,${C.cyan}18)`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:debriefLoading?"wait":"pointer", opacity:debriefLoading?0.7:1 }}>
@@ -1267,13 +1267,13 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
           },
         ].map((section,si)=>(
           <div key={si} style={{ borderRadius:20, padding:isMobile?"20px 18px":"24px 26px", background:`linear-gradient(145deg,${section.color}0f,rgba(8,5,18,0.96))`, border:`1px solid ${section.color}20`, position:"relative", overflow:"hidden", boxShadow:`0 8px 40px rgba(0,0,0,0.3)` }}>
-            <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${section.color}dd,${C.cyan}66 45%,transparent 80%)` }}/>
+            <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.pink},${C.purple},${C.cyan},transparent)` }}/>
             <div style={{ position:"absolute", bottom:-40, right:-40, width:140, height:140, borderRadius:"50%", background:`${section.color}08`, filter:"blur(40px)" }}/>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 <div style={{ width:40, height:40, borderRadius:12, background:`linear-gradient(135deg,${section.color}22,${section.color}08)`, border:`1px solid ${section.color}28`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 4px 14px ${section.color}15` }}>{section.icon(18,section.color)}</div>
                 <div>
-                  <div style={{ fontSize:15, fontWeight:700, background:`linear-gradient(120deg,#fff 52%,${section.color})`, WebkitBackgroundClip:"text", backgroundClip:"text", color:"transparent", letterSpacing:"0.03em" }}>{section.title}</div>
+                  <div style={{ fontSize:14, fontWeight:800, background:`linear-gradient(120deg,#fff 45%,${section.color})`, WebkitBackgroundClip:"text", backgroundClip:"text", color:"transparent", letterSpacing:"0.1em", textTransform:"uppercase" }}>{section.title}</div>
                   <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", marginTop:2, letterSpacing:"0.06em" }}>{section.sub}</div>
                 </div>
               </div>
@@ -11497,8 +11497,9 @@ Return JSON:
                     const active = nav===n.id;
                     return (
                       <button key={n.id} onClick={()=>{ setNav(n.id); setSub(null); setDrawerOpen(false); if(tourStep===0 && n.id==="content") advanceTour(1); }}
-                        style={{ display:"flex", alignItems:"center", gap:16, width:"100%", padding:"16px 18px", borderRadius:16, border:`1px solid ${active?WL.accentColor+"40":"rgba(255,255,255,0.06)"}`, background:active?`linear-gradient(135deg,${WL.accentColor}20,${WL.accentColor2}10)`:"rgba(255,255,255,0.03)", marginBottom:8, cursor:"pointer", textAlign:"left" }}>
-                        <div style={{ width:38, height:38, borderRadius:12, background:active?`linear-gradient(135deg,${WL.accentColor}30,${WL.accentColor2}20)`:"rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        style={{ position:"relative", overflow:"hidden", display:"flex", alignItems:"center", gap:16, width:"100%", padding:"16px 18px", borderRadius:16, border:`1px solid ${active?C.pink+"40":"rgba(255,255,255,0.06)"}`, background:active?`linear-gradient(135deg,${C.pink}20,${C.purple}12,${C.cyan}10)`:"rgba(255,255,255,0.03)", marginBottom:8, cursor:"pointer", textAlign:"left" }}>
+                        <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.pink},${C.purple},${C.cyan},transparent)`, opacity:active?1:0.32 }}/>
+                        <div style={{ width:38, height:38, borderRadius:12, background:active?`linear-gradient(135deg,${C.pink}30,${C.cyan}20)`:"rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                           {n.ic(18, active?WL.accentColor:"rgba(255,255,255,0.5)")}
                         </div>
                         <div>
