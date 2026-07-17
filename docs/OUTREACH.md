@@ -1,8 +1,22 @@
 # Outreach Playbook — LOCKED
 
-> Niche: **make-money online / personal finance / business creators** (TikTok, 10k–150k followers).
+> Niche: **make-money online / personal finance / side-hustle creators** (NOT crypto/trading signals — those get suppressed).
 > Send from: **Kaden's personal TikTok** (real human = clears the "scam" bar; the audit does the selling).
 > The audit is the credibility. Never claim clients/results you don't have yet.
+
+## Who to actually target (this matters more than follower count)
+Follower count is just a proxy for "can they pay + will they see my DM." The real filter is two things:
+1. **They monetise** — a course, coaching, a product, a link in bio. Means they have money AND a reason to want more views.
+2. **They're stuck / plateaued** — flat views, or a few hits then a decline. That's the pain you solve.
+**Money + stuck = ripe.** Those two beat any follower number.
+
+Sweet spot for PAID targets: **~20k–100k followers.**
+- Under ~15k: usually can't comfortably afford £750/mo — skip for paid.
+- 20k–100k: earning something, still read their own DMs, no agency yet, flattered you reached out.
+- 150k+: often have management, more selective, ignore cold DMs — worse use of early energy.
+
+(You can send the FREE audit a bit wider — it's free and builds reputation — but spend your real
+follow-up energy on the 20k–100k + monetising + plateaued ones.)
 
 ---
 
