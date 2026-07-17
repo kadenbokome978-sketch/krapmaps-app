@@ -91,7 +91,7 @@ function page(d) {
 <meta name="twitter:image" content="${esc(origin)}api/og?u=${encodeURIComponent(d.hid||"")}"/>
 <style>
   :root{--ground:#07050F;--ink:#F8EEFF;--muted:rgba(248,238,255,.5);--faint:rgba(248,238,255,.32);
-    --accent:${accent};--accent2:${accent2};--cyan:#00E5FF;--green:#39FF14;--yellow:#FFD50A;--orange:#FF6B1A;--pink:#FF2D78;
+    --accent:${accent};--accent2:${accent2};--cyan:#00E5FF;--green:#39FF14;--yellow:#FFD50A;--orange:#FF6B1A;--pink:#22E06B;
     --card:rgba(255,255,255,.025);--line:rgba(255,255,255,.08);
     --head:"Helvetica Neue",-apple-system,system-ui,"Segoe UI",Arial,sans-serif;--body:-apple-system,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
   *{box-sizing:border-box;margin:0;padding:0}
