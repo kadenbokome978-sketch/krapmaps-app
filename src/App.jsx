@@ -4875,7 +4875,7 @@ function GlobalReport({ screen }){
     <>
       <button onClick={()=>setOpen(o=>!o)} aria-label="Report an issue"
         style={{ position:"fixed", left:isMobile?12:16, bottom:isMobile?12:16, zIndex:600, padding:isMobile?"9px 13px":"9px 14px", borderRadius:12, border:`1px solid ${C.pink}40`, background:"rgba(12,8,22,0.9)", backdropFilter:"blur(10px)", color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:12, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 6px 20px rgba(0,0,0,0.4)" }}>
-        ⚑ Report
+        ⚑ REPORT
       </button>
       {open && (
         <div onClick={()=>!sent&&setOpen(false)} style={{ position:"fixed", inset:0, zIndex:601, background:"rgba(0,0,0,0.55)", backdropFilter:"blur(4px)", display:"flex", alignItems:"flex-end", justifyContent:"flex-start", padding:isMobile?14:20 }}>
@@ -11513,7 +11513,7 @@ Return JSON:
                   })}
                 </div>
                 {(REQUIRE_AUTH || USE_BACKEND) && <div style={{ padding:"16px 16px 0" }}>
-                  <button onClick={()=>{setDrawerOpen(false);_signalSignedOut();}} style={{ width:"100%", padding:"14px 18px", borderRadius:12, border:`1px solid ${C.pink}30`, background:`${C.pink}10`, color:C.pink, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:C.fontHead, letterSpacing:"0.04em" }}>Sign out</button>
+                  <button onClick={()=>{setDrawerOpen(false);_signalSignedOut();}} style={{ width:"100%", padding:"14px 18px", borderRadius:12, border:`1px solid ${C.pink}30`, background:`${C.pink}10`, color:C.pink, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:C.fontHead, letterSpacing:"0.1em", textTransform:"uppercase" }}>Sign out</button>
                 </div>}
               </div>
             </div>
@@ -12600,13 +12600,13 @@ function OnboardingPage({ onComplete }) {
             const Mock = t.key==="score" ? OnbScoreMock : t.key==="ai" ? OnbAiMock : OnbGrowMock;
 
             return (
-            <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center", padding:isMobile?"28px 22px":"32px", overflowY:"auto" }}>
+            <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"flex-start", justifyContent:"center", padding:isMobile?"max(20px,env(safe-area-inset-top)) 22px calc(24px + env(safe-area-inset-bottom))":"32px", overflowY:"auto" }}>
               {/* Ambient glow follows the active accent */}
               <div style={{ position:"fixed", top:"12%", left:"50%", transform:"translateX(-50%)", width:520, height:520, borderRadius:"50%", background:`radial-gradient(circle,${t.accent}18 0%,transparent 65%)`, pointerEvents:"none", transition:"background 0.6s", zIndex:0 }}/>
               {/* Dot grid */}
               <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.035) 1px,transparent 1px)", backgroundSize:"32px 32px", pointerEvents:"none", zIndex:0 }}/>
 
-              <div style={{ width:"100%", maxWidth:420, position:"relative", zIndex:2, display:"flex", flexDirection:"column", alignItems:"center", fontFamily:F }}>
+              <div style={{ width:"100%", maxWidth:420, margin:"auto 0", position:"relative", zIndex:2, display:"flex", flexDirection:"column", alignItems:"center", fontFamily:F }}>
 
                 {/* Brand welcome header */}
                 <div style={{ textAlign:"center", marginBottom:22 }}>
@@ -12624,7 +12624,7 @@ function OnboardingPage({ onComplete }) {
                 </div>
 
                 {/* Mock card */}
-                <div key={t.key} style={{ width:"100%", height:isMobile?250:270, background:"rgba(9,9,11,0.9)", border:`1px solid ${t.accent}22`, borderRadius:20, padding:"20px 22px", boxShadow:`0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.04)`, marginBottom:26, animation:"tourPop 0.5s cubic-bezier(0.16,1,0.3,1)" }}>
+                <div key={t.key} style={{ width:"100%", height:isMobile?196:270, background:"rgba(9,9,11,0.9)", border:`1px solid ${t.accent}22`, borderRadius:20, padding:"20px 22px", boxShadow:`0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.04)`, marginBottom:26, animation:"tourPop 0.5s cubic-bezier(0.16,1,0.3,1)" }}>
                   <Mock accent={t.accent}/>
                 </div>
 
@@ -12644,7 +12644,7 @@ function OnboardingPage({ onComplete }) {
 
                 {/* CTA */}
                 <button onClick={()=>{ if(tourIdx<2) setTourIdx(tourIdx+1); else setStep(showBrief?3:2); }}
-                  style={{ width:"100%", maxWidth:340, padding:"16px 0", border:"none", borderRadius:16, background:"linear-gradient(135deg,#22E06B,#C566FF)", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", fontFamily:F, boxShadow:"0 10px 30px rgba(34,224,107,0.3)", transition:"transform 0.15s, box-shadow 0.2s" }}
+                  style={{ width:"100%", maxWidth:340, padding:"16px 0", border:"none", borderRadius:16, background:"linear-gradient(180deg,#22D866,#12B052)", color:"#05170C", fontWeight:800, fontSize:16, cursor:"pointer", fontFamily:F, boxShadow:"0 10px 30px rgba(34,224,107,0.3)", transition:"transform 0.15s, box-shadow 0.2s" }}
                   onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 14px 38px rgba(34,224,107,0.42)"; }}
                   onMouseLeave={e=>{ e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="0 10px 30px rgba(34,224,107,0.3)"; }}
                 >{tourIdx<2 ? "Continue →" : showBrief ? "See your brand overview →" : "Set up my channel →"}</button>
@@ -12932,12 +12932,12 @@ function FreeAuditApp({ onActivate }){
   const btn = (bg,col,bd) => ({ padding:isMobile?"9px 14px":"9px 16px", borderRadius:10, border:bd||"none", background:bg, color:col, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer", whiteSpace:"nowrap" });
   return (
     <div style={{ minHeight:"100vh", background:"#07050F", color:"#fff" }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:isMobile?"14px 16px":"18px 32px", borderBottom:"1px solid rgba(255,255,255,0.07)", gap:12, flexWrap:"wrap" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:isMobile?"14px 16px":"18px 32px", borderBottom:"1px solid rgba(255,255,255,0.07)", gap:12, flexWrap:isMobile?"wrap":"nowrap" }}>
         <div style={{ fontFamily:C.fontHead, fontWeight:800, fontSize:18 }}>{wl.appName||"Greenlit"}</div>
-        <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", justifyContent:"flex-end" }}>
-          {!paid && <button onClick={()=>setShowPricing(true)} style={btn(`linear-gradient(135deg,${C.pink},${C.purple})`,"#fff")}>Upgrade to Pro</button>}
-          <button onClick={onActivate} style={btn("rgba(255,255,255,0.06)","rgba(255,255,255,0.85)","1px solid rgba(255,255,255,0.12)")}>I have a code</button>
-          <button onClick={_signalSignedOut} style={btn(`${C.pink}12`,C.pink,`1px solid ${C.pink}40`)}>Sign out</button>
+        <div style={{ display:isMobile?"grid":"flex", gridTemplateColumns:isMobile?"1fr 1fr":undefined, alignItems:"center", gap:8, width:isMobile?"100%":"auto", justifyContent:"flex-end" }}>
+          {!paid && <button onClick={()=>setShowPricing(true)} style={{ ...btn("linear-gradient(180deg,#22D866,#12B052)","#05170C"), gridColumn:isMobile?"1 / -1":undefined }}>Upgrade to Pro</button>}
+          <button onClick={onActivate} style={btn("rgba(255,255,255,0.05)","rgba(255,255,255,0.85)","1px solid rgba(255,255,255,0.12)")}>I have a code</button>
+          <button onClick={_signalSignedOut} style={btn("rgba(255,77,77,0.08)","#FF6B7D","1px solid rgba(255,77,77,0.28)")}>Sign out</button>
         </div>
       </div>
       {paid && (
