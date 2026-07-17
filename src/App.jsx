@@ -8457,7 +8457,7 @@ Write today's briefing. Return ONLY JSON: {"headline":"one punchy line summarisi
             </button>
             {brief?.generatedAt && !loading && <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)" }}>Updated {new Date(brief.generatedAt).toLocaleString()}</div>}
           </div>
-          {err && <div style={{ marginTop:12, fontSize:13, color:C.pink }}>{err}</div>}
+          {err && <div style={{ marginTop:12, fontSize:13, color:C.pink }}>{(()=>{ const s = (err && typeof err==="object") ? (err.message || err.error) : err; return (typeof s==="string" && s && s!=="[object Object]") ? s : "Autopilot hit a snag — usually a missing or expired AI key. Check Settings → AI Keys, then try again."; })()}</div>}
         </div>
       </div>
 
