@@ -90,14 +90,16 @@
     .navlinks{gap:10px}
   }
   @media(max-width:600px){
-    .navlinks{position:fixed;top:0;right:-100%;width:302px;max-width:86vw;height:100vh;flex-direction:column;align-items:stretch;gap:0;background:linear-gradient(180deg,rgba(14,13,20,.99),rgba(9,8,13,.99));backdrop-filter:blur(32px) saturate(1.3);padding:92px 26px calc(34px + env(safe-area-inset-bottom));transition:right .34s cubic-bezier(.2,.8,.2,1);z-index:100;border-left:1px solid rgba(255,255,255,.08);box-shadow:-24px 0 60px rgba(0,0,0,.5)}
+    .navlinks{position:fixed;top:0;right:-100%;width:308px;max-width:87vw;height:100vh;flex-direction:column;align-items:stretch;gap:0;background:radial-gradient(130% 46% at 100% 0%,rgba(34,224,107,.10),transparent 58%),linear-gradient(180deg,rgba(15,14,21,.99),rgba(9,8,13,.99));backdrop-filter:blur(34px) saturate(1.3);padding:88px 22px calc(30px + env(safe-area-inset-bottom));transition:right .34s cubic-bezier(.2,.8,.2,1);z-index:100;border-left:1px solid rgba(255,255,255,.09);box-shadow:-24px 0 60px rgba(0,0,0,.55)}
     .navlinks.open{right:0}
     .navlinks .hidem{display:flex!important}
-    .navlinks a:not(.btn){align-items:center;padding:17px 2px;border-bottom:1px solid rgba(255,255,255,.05);font-size:16px;font-weight:600;letter-spacing:-.01em;color:var(--ink-2);width:100%;transition:color .16s}
-    .navlinks a:not(.btn):hover,.navlinks a:not(.btn):active{color:var(--ink)}
+    .navlinks a:not(.btn):not(.nav-user){display:flex;align-items:center;justify-content:space-between;padding:16px 4px;border-bottom:1px solid rgba(255,255,255,.05);font-size:16px;font-weight:600;letter-spacing:-.01em;color:var(--ink-2);width:100%;transition:color .16s}
+    .navlinks a:not(.btn):not(.nav-user)::after{content:"";width:7px;height:7px;border-right:1.5px solid var(--ink-3);border-bottom:1.5px solid var(--ink-3);transform:rotate(-45deg);transition:transform .18s,border-color .18s}
+    .navlinks a:not(.btn):not(.nav-user):hover,.navlinks a:not(.btn):not(.nav-user):active{color:var(--ink)}
+    .navlinks a:not(.btn):not(.nav-user):hover::after{border-color:var(--accent);transform:rotate(-45deg) translate(1.5px,-1.5px)}
     /* Signed-in account item: show the Sign out as a normal always-visible menu
        row instead of a desktop dropdown (which couldn't open inside the mobile menu). */
-    .nav-user{flex-wrap:wrap;align-items:center;gap:12px;padding:20px 2px 4px;margin-top:6px;border-top:1px solid rgba(255,255,255,.07);border-bottom:none;width:100%;font-size:16px;font-weight:600;color:var(--ink)}
+    .nav-user{flex-wrap:wrap;align-items:center;gap:12px;padding:16px 16px 16px;margin-top:20px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:linear-gradient(165deg,rgba(255,255,255,.045),rgba(255,255,255,.01));box-shadow:inset 0 1px 0 rgba(255,255,255,.05);width:100%;font-size:16px;font-weight:600;color:var(--ink)}
     .nav-avatar{width:38px;height:38px;border-width:1.5px}
     .nav-user-dropdown{display:block!important;position:static;top:auto;right:auto;background:none;border:none;box-shadow:none;padding:0;min-width:0;margin-top:4px;width:100%}
     .nav-user-dropdown button{width:100%;font-size:14.5px;font-weight:600;padding:13px 16px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.02);color:#FF6B7D;text-align:center;letter-spacing:.01em;transition:background .16s,border-color .16s}
@@ -1017,13 +1019,29 @@
   // Google OAuth
   document.getElementById('authGoogle').addEventListener('click',async function(){
     clearMsg();
-    var dest=pendingHref||window.location.origin+'/dashboard';
+    // Return to the LANDING page (where supabase-js completes the OAuth code
+    // exchange), carrying the intended destination in ?go — the load handler
+    // then writes the app session and forwards there. Redirecting straight to
+    // /dashboard would strand the login (app.html has no code-exchange).
+    var target=pendingHref||(window.location.origin+'/dashboard');
+    var dest=window.location.origin+'/?go='+encodeURIComponent(target);
     var r=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:dest}});
     if(r.error) showErr(r.error.message);
   });
 
   function showSignedIn(session){
     authed=true;
+    // Mirror the session into the key the app (app.html / App.jsx) reads, so
+    // clicking "Open app" carries the login across instead of bouncing to a
+    // second sign-in. Same origin => shared localStorage.
+    try{
+      localStorage.setItem('km_auth_session', JSON.stringify({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        expires_at: session.expires_at ? session.expires_at*1000 : (Date.now()+3600*1000),
+        user: session.user||null
+      }));
+    }catch(e){}
     var u=session.user, meta=u.user_metadata||{};
     var name=meta.full_name||meta.name||u.email||'';
     var pic=meta.avatar_url||meta.picture||'';
@@ -1045,7 +1063,12 @@
 
   // check if already logged in
   sb.auth.getSession().then(function(r){
-    if(r.data.session){showSignedIn(r.data.session);}
+    if(r.data.session){
+      showSignedIn(r.data.session);
+      // Returned from Google OAuth with a destination? Forward into the app now.
+      var go=new URLSearchParams(window.location.search).get('go');
+      if(go){ history.replaceState({},'',window.location.pathname); window.location.href=go; }
+    }
     else{setTimeout(function(){openModal();},2500);}
   });
 
