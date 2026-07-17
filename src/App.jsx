@@ -8822,6 +8822,15 @@ function ProspectAuditView({ WL }){
       const engBlock = engSignals ? formatEngagementSignals(engSignals) : "";
       // Score every video with the engine (median-benchmarked) to find genuine hits vs typical.
       const scored = withV.map(v=>({ v, s:calcVideoScore(v, withV) })).filter(x=>x.s);
+      // ── DATA FARM ── Feed anonymised niche performance into the cross-creator corpus, FREE, off
+      // the scrape we already ran. Every audit fattens the data moat → sharper predictions over time.
+      try {
+        const _median = medianViews(videos) || 0;
+        const _niche = (WL?.niche || loadWL().niche || "").trim();
+        if(_niche && _median > 0){
+          scored.forEach(x=>{ if((x.v.views||0) > 0) corpusWrite({ niche:_niche, hook:x.v.hook||"unknown", type:x.v.type||"unknown", score:x.s.score, views:x.v.views, mult:+(x.v.views/_median).toFixed(2), platform:"tiktok" }); });
+        }
+      } catch {}
       const engineTop = [...scored].sort((a,b)=>(b.s.score||0)-(a.s.score||0)).slice(0,5);
       const engineFlop = [...scored].sort((a,b)=>(a.s.score||0)-(b.s.score||0)).slice(0,3);
       const cap = v => (v.title||"(no caption)").replace(/\s+/g," ").slice(0,70);
