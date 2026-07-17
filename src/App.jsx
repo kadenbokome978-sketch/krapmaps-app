@@ -7797,12 +7797,15 @@ const ttNormalize  = (v) => {
   const s = v.stats || v.statistics || v.statsV2 || {};
   let vid = String(_pick(v.post_id, v.id, v.video_id, v.aweme_id, v.itemId) || "");
   if(!vid || vid.includes("/")) { const m = String(_pick(v.url, v.post_url, "")).match(/video\/(\d+)/); if(m) vid = m[1]; }
-  let ts = _num(v.createTime, v.create_time);
-  if(!ts){ const d = _pick(v.date_posted, v.create_date, v.timestamp); if(d) { const t=new Date(d).getTime(); if(!isNaN(t)) ts = Math.floor(t/1000); } }
+  // create_time may be a unix number OR an ISO date string (Bright Data). Resolve to unix seconds.
+  let ts = 0;
+  const ctNum = _num(v.createTime, v.create_time_unix, typeof v.create_time==="number"?v.create_time:undefined);
+  if(ctNum) ts = ctNum;
+  else { const d = _pick(v.create_time, v.date_posted, v.create_date, v.timestamp, v.createTimeISO); if(d){ const t=new Date(d).getTime(); if(!isNaN(t)) ts = Math.floor(t/1000); } }
   return {
     video_id: vid,
     title: _pick(v.desc, v.title, v.description, v.caption) || "",
-    play_count: _num(s.playCount, s.play_count, v.play_count, v.playCount, v.views, v.play_count_int),
+    play_count: _num(s.playCount, s.play_count, v.play_count, v.playCount, v.views, v.view_count, v.play_count_int),
     digg_count: _num(s.diggCount, s.digg_count, v.digg_count, v.diggCount, v.likes, v.like_count, v.digg_count_int),
     comment_count: _num(s.commentCount, s.comment_count, v.comment_count, v.comments, v.commentCount),
     share_count: _num(s.shareCount, s.share_count, v.share_count, v.shares, v.shareCount),
@@ -7827,12 +7830,16 @@ async function ttScrape(handle, byoKey, maxPages=4){
   const n = Math.min(Math.max(maxPages,1)*30, 100);
   const r = await bdFetch(clean, n);
   const rawText = await r.text().catch(()=>"");
-  let raw = null; try { raw = JSON.parse(rawText); } catch {}
-  if(!r.ok){ const e = new Error("bd"); e.status = r.status; e.detail = (raw?.error||rawText||"").slice(0,300); throw e; }
-  // Bright Data may return a bare array, or wrap it under a key. Dig for the first array of records.
-  let items = Array.isArray(raw) ? raw : _pick(raw?.items, raw?.data, raw?.results, raw?.records, raw?.output, raw?.data?.items);
-  if(!Array.isArray(items) && raw && typeof raw === "object"){ for(const k of Object.keys(raw)){ if(Array.isArray(raw[k]) && raw[k].length){ items = raw[k]; break; } } }
-  try { console.log("[ttScrape] BrightData raw:", rawText.slice(0,600)); } catch {}
+  if(!r.ok){ const e = new Error("bd"); e.status = r.status; e.detail = rawText.slice(0,300); throw e; }
+  // Bright Data returns NDJSON (one JSON post object per line). Also handle a plain JSON array/object.
+  let items = [];
+  try {
+    const j = JSON.parse(rawText);
+    if(Array.isArray(j)) items = j;
+    else if(j && typeof j === "object") items = (_pick(j.items, j.data, j.results, j.records) || [j]);
+  } catch {
+    items = rawText.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{ try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+  }
   if(!Array.isArray(items) || !items.length){ const e = new Error("empty"); e.status = 404; e.detail = rawText.slice(0,300); throw e; }
   const seen = new Set(); const videos = [];
   for(const it of items){ const v = ttNormalize(it); if(v.video_id && !seen.has(v.video_id)){ seen.add(v.video_id); videos.push(v); } }
