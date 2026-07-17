@@ -7770,68 +7770,72 @@ async function _postProxy(endpoint, body, byoKey) {
   if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e.error || ("Proxy error "+r.status)); }
   return r.json();
 }
-// ── TikTok scraper: tiktok-api23 (Lundehund) on RapidAPI ──────────
-// The old TIKWM wrapper (tiktok-scraper7) was disabled by the provider (405), and TIKWM's free
-// tikwm.com is Cloudflare-blocked (403). tiktok-api23 is server-callable and works through the
-// /api/rapid proxy on the existing RapidAPI key (just subscribe to it — free tier).
-// Flow: /api/user/info?uniqueId=HANDLE -> secUid + followers, then /api/user/posts?secUid=... .
-// Parsing is tolerant of field-name variants and normalises every item to the TIKWM shape the
-// rest of the app already expects (video_id, play_count, digg_count, ...), so nothing downstream
-// changes if the provider's schema differs slightly.
-const TT_HOST = "https://tiktok-api23.p.rapidapi.com";
-const ttInfoUrl  = (handle) => `${TT_HOST}/api/user/info?uniqueId=${encodeURIComponent(handle)}`;
-const ttPostsUrl = (secUid, cursor=0) => `${TT_HOST}/api/user/posts?secUid=${encodeURIComponent(secUid)}&count=35&cursor=${cursor}`;
+// ── TikTok scraper: Bright Data (server-callable, reliable) ───────
+// The RapidAPI TikTok scrapers (tiktok-scraper7, tiktok-api23, ScrapTik) were all disabled by
+// providers (405) and TIKWM's free API is Cloudflare-blocked (403). Bright Data's "TikTok - Posts
+// by Profile Fast API" is a maintained, server-callable scraper. It's called from our /api/rapid
+// proxy with the server-side BRIGHTDATA_TOKEN (synchronous mode returns the posts directly).
+// The response is an ARRAY of post records; each record also carries the profile's follower count.
+// Parsing is tolerant of field-name variants and normalises every item to the TIKWM shape the rest
+// of the app already expects (video_id, play_count, digg_count, ...), so nothing downstream changes.
 const _pick = (...vals) => { for(const v of vals){ if(v!==undefined && v!==null && v!=="") return v; } return undefined; };
 const _num  = (...vals) => Number(_pick(...vals)) || 0;
+// Follower/nickname pulled from a Bright Data post record (or a classic profile object).
 const ttProfileFrom = (j) => {
   const u = j?.userInfo || j?.data || j || {};
   const user = u.user || u;
   const stats = u.stats || u.statsV2 || user.stats || {};
+  const a = j?.author || {};
   return {
-    secUid: _pick(user.secUid, u.secUid),
-    followers: _num(stats.followerCount, stats.followers, u.followerCount),
-    likes: _num(stats.heartCount, stats.heart, stats.diggCount),
-    nick: _pick(user.nickname, user.uniqueId, u.nickname) || "",
+    followers: _num(stats.followerCount, stats.followers, j?.profile_followers, j?.followers, a.fans, a.followers, j?.author_followers),
+    likes: _num(stats.heartCount, stats.heart, j?.profile_likes, j?.likes_total, a.heart),
+    nick: _pick(user.nickname, j?.profile_nickname, j?.nickname, j?.profile_name, a.nickname, j?.profile_username, j?.account_id) || "",
   };
 };
-const ttItemsFrom  = (j) => _pick(j?.data?.itemList, j?.itemList, j?.data?.videos, j?.aweme_list, j?.videos) || [];
-const ttCursorFrom = (j) => _pick(j?.data?.cursor, j?.cursor, j?.data?.maxCursor, j?.maxCursor, 0);
-const ttHasMoreFrom= (j) => !!_pick(j?.data?.hasMore, j?.hasMore, j?.data?.has_more);
+// Normalise ONE post record (Bright Data / RapidAPI / TIKWM) to the TIKWM shape.
 const ttNormalize  = (v) => {
   const s = v.stats || v.statistics || v.statsV2 || {};
+  let vid = String(_pick(v.post_id, v.id, v.video_id, v.aweme_id, v.itemId) || "");
+  if(!vid || vid.includes("/")) { const m = String(_pick(v.url, v.post_url, "")).match(/video\/(\d+)/); if(m) vid = m[1]; }
+  let ts = _num(v.createTime, v.create_time);
+  if(!ts){ const d = _pick(v.date_posted, v.create_date, v.timestamp); if(d) { const t=new Date(d).getTime(); if(!isNaN(t)) ts = Math.floor(t/1000); } }
   return {
-    video_id: String(_pick(v.id, v.video_id, v.aweme_id, v.itemId) || ""),
-    title: _pick(v.desc, v.title, v.description) || "",
-    play_count: _num(s.playCount, s.play_count, v.play_count),
-    digg_count: _num(s.diggCount, s.digg_count, v.digg_count),
-    comment_count: _num(s.commentCount, s.comment_count, v.comment_count),
-    share_count: _num(s.shareCount, s.share_count, v.share_count),
-    duration: Math.round(_num(v.video?.duration, v.duration, v.music?.duration)),
-    play: _pick(v.video?.playAddr, v.play, v.video?.downloadAddr) || "",
-    cover: _pick(v.video?.cover, v.video?.originCover, v.cover) || "",
-    create_time: _num(v.createTime, v.create_time),
+    video_id: vid,
+    title: _pick(v.desc, v.title, v.description, v.caption) || "",
+    play_count: _num(s.playCount, s.play_count, v.play_count, v.playCount, v.views, v.play_count_int),
+    digg_count: _num(s.diggCount, s.digg_count, v.digg_count, v.diggCount, v.likes, v.like_count, v.digg_count_int),
+    comment_count: _num(s.commentCount, s.comment_count, v.comment_count, v.comments, v.commentCount),
+    share_count: _num(s.shareCount, s.share_count, v.share_count, v.shares, v.shareCount),
+    duration: Math.round(_num(v.video?.duration, v.duration, v.video_duration, v.music?.duration)),
+    play: _pick(v.video?.playAddr, v.play, v.video_url, v.video?.downloadAddr) || "",
+    cover: _pick(v.video?.cover, v.video?.originCover, v.cover, v.preview_image) || "",
+    create_time: ts,
   };
 };
-// Scrape a handle end-to-end: profile + up to maxPages of normalised videos. Throws with .status.
+// Call Bright Data through the /api/rapid proxy (server holds BRIGHTDATA_TOKEN). Returns the Response.
+async function bdFetch(handle, n){
+  const url = `/api/rapid?bd=1&handle=${encodeURIComponent(handle)}&n=${n}`;
+  if(!USE_BACKEND) return fetch(url); // dev: proxy still resolves the server token if configured
+  const token = await getAccessToken();
+  if(!token) throw new Error("Your session expired — please sign in again.");
+  return fetch(url, { headers:{ "Authorization":"Bearer "+token } });
+}
+// Scrape a handle end-to-end: profile + normalised videos. Throws with .status. (byoKey/maxPages
+// kept for call-site compatibility; Bright Data returns everything in one synchronous call.)
 async function ttScrape(handle, byoKey, maxPages=4){
-  const rInfo = await rapidFetch(ttInfoUrl(handle), byoKey);
-  if(!rInfo.ok){ const e = new Error("info"); e.status = rInfo.status; throw e; }
-  const prof = ttProfileFrom(await rInfo.json().catch(()=>({})));
-  if(!prof.secUid){ const e = new Error("no user"); e.status = 404; throw e; }
-  let cursor = 0, more = true, pages = 0; const seen = new Set(); const videos = [];
-  while(more && pages < maxPages){
-    const rp = await rapidFetch(ttPostsUrl(prof.secUid, cursor), byoKey);
-    if(!rp.ok){ if(pages===0){ const e = new Error("posts"); e.status = rp.status; throw e; } break; }
-    const pd = await rp.json().catch(()=>({}));
-    const items = ttItemsFrom(pd);
-    if(!items.length) break;
-    for(const it of items){ const n = ttNormalize(it); if(n.video_id && !seen.has(n.video_id)){ seen.add(n.video_id); videos.push(n); } }
-    cursor = ttCursorFrom(pd); more = ttHasMoreFrom(pd); pages++;
-    if(more && pages < maxPages) await new Promise(r=>setTimeout(r,500));
-  }
+  const clean = String(handle||"").replace(/^@/,"").trim();
+  const n = Math.min(Math.max(maxPages,1)*30, 100);
+  const r = await bdFetch(clean, n);
+  if(!r.ok){ const e = new Error("bd"); e.status = r.status; throw e; }
+  const raw = await r.json().catch(()=>null);
+  const items = Array.isArray(raw) ? raw : (raw?.items || raw?.data || raw?.results || []);
+  if(!Array.isArray(items) || !items.length){ const e = new Error("empty"); e.status = 404; throw e; }
+  const seen = new Set(); const videos = [];
+  for(const it of items){ const v = ttNormalize(it); if(v.video_id && !seen.has(v.video_id)){ seen.add(v.video_id); videos.push(v); } }
+  const prof = ttProfileFrom(items[0]||{});
   return { ...prof, videos };
 }
-const ttErrMsg = (status) => status===429?"Rate limited — wait ~30s and retry":status===403?"Scraper access denied — subscribe to 'tiktok-api23' on RapidAPI (free tier), it uses your existing key":status===404?"No public TikTok found — check the handle is exact (no spaces)":`Scraper error ${status||""} — try again shortly`;
+const ttErrMsg = (status) => status===429?"Rate limited — wait ~30s and retry":status===401||status===403?"Scraper auth failed — check BRIGHTDATA_TOKEN is set in Vercel":status===404?"No public TikTok found — check the handle is exact (no spaces)":status===504||status===408?"Scraper timed out — try again in a moment":`Scraper error ${status||""} — try again shortly`;
 
 // GET proxy for RapidAPI scraper calls — returns the native response.
 async function rapidFetch(targetUrl, byoKey) {
@@ -10162,14 +10166,8 @@ function Dashboard({ keys, onEditKeys }) {
     if(top.length < 2) return;
     try {
       let pool = [];
-      for(const v of top) {
-        const idOrUrl = v._tikwmId || v.url;
-        const r = await rapidFetch(TT_HOST+"/api/post/comments?videoId="+encodeURIComponent(idOrUrl)+"&count=20&cursor=0", rapidKey);
-        if(!r.ok) continue;
-        const d = await r.json().catch(()=>({}));
-        (d?.data?.comments||d?.comments||[]).forEach(c=>{ const t=c.text||c.comment||c.desc; if(t) pool.push(t); });
-        await new Promise(res=>setTimeout(res,500));
-      }
+      // Comment mining used the old RapidAPI comments endpoint (now retired). Not wired for
+      // Bright Data yet, so this optional feature no-ops (empty pool → early return below).
       pool = pool.filter(Boolean).slice(0,120);
       if(pool.length < 10) return;
       const wl = loadWL();
