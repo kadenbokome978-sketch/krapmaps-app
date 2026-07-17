@@ -29,8 +29,10 @@
 
 1. **Top up the app's backend AI key.** It's currently dry, so scoring / Checker / audit write-ups /
    the daily self-test won't run until it's funded. Nothing works without this. **#1 blocker.**
-2. **Set the niche in Settings for you + Thierno.** Existing accounts onboarded before niche capture,
-   so brand-fit runs half-blind for the two people actually using it. 30 seconds each.
+2. ~~Set the niche in Settings for you + Thierno.~~ **DONE — verified.** Both KrapMaps
+   (`client.config.json`) and Thierno (`client.config.thierno.json`) already have detailed, correct
+   niches baked into their configs. Brand-fit is NOT running blind for either. (The onboarding
+   niche-capture added earlier is for any brand-new client who onboards without a baked config.)
 3. **Verify Supabase Row-Level Security (RLS) is ON** for every table. The publishable key is safe to
    ship ONLY if RLS restricts what it can read/write. Without RLS, anyone with the key (it's in the
    bundle) could read/write your tables. **Security blocker — check this before real client data goes in.**
