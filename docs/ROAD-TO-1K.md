@@ -32,7 +32,7 @@ So: **one sale of the offer below = your £1k.** That's the whole game. Everythi
 ### 🎯 "The 30-Day Growth Sprint" — **£997** (one-off)
 *(Price the very first one at £750 as a "founding client" rate if you need the momentum — either hits ~£1k.)*
 
-**What they get (all powered by CreatorOS, so it's low-effort for you):**
+**What they get (all powered by Greenlit, so it's low-effort for you):**
 - A full **content strategy** for their page (niche + Voice DNA + what's working/what's costing views).
 - **20 video ideas scored *before* they film** — so they stop wasting posts.
 - A **30-day posting plan** (what to post, when).
@@ -114,7 +114,7 @@ Calls start landing around Week 2. This is where £1k gets collected.
 - **"How do I know it works?"** → the risk-reversal + "I'm running my own + a mate's through the exact same system." (Never claim clients you don't have — the refund promise carries it.)
 
 ### Deliver like your reputation depends on it (because it does):
-- Run their sprint **through CreatorOS** (dogfood it — proves the tool).
+- Run their sprint **through Greenlit** (dogfood it — proves the tool).
 - Over-communicate. Screenshot every win.
 - This first client becomes your **case study** → client #2 is 10× easier.
 

@@ -13,15 +13,15 @@ const CLIENTS = {
 const _activeCfg = (()=>{ try { const s=localStorage.getItem("krapmaps_v1_client"); return s?JSON.parse(s):CLIENT_CONFIG; } catch { return CLIENT_CONFIG; } })();
 const _isThiernoClient = _activeCfg.clientId === "thierno";
 if(typeof document !== "undefined") {
-  document.title = _activeCfg.appName || "CreatorOS";
+  document.title = _activeCfg.appName || "Greenlit";
   // Whitelabel the PWA install: iOS reads the apple title meta and browsers read
   // the manifest at add-to-home-screen time, so runtime rebranding sticks.
   try {
-    const appName = _activeCfg.appName || "CreatorOS";
+    const appName = _activeCfg.appName || "Greenlit";
     const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
     if(appleTitle) appleTitle.setAttribute("content", appName);
     const mLink = document.querySelector('link[rel="manifest"]');
-    if(mLink && appName !== "CreatorOS") {
+    if(mLink && appName !== "Greenlit") {
       // Draw the ring-mark icon in the client's accent colours so the install
       // is fully branded (Chrome/Android accept data-URI manifest icons).
       const drawIcon = (S) => {
@@ -86,8 +86,8 @@ const C = _isThiernoClient ? {
   fontBody:"'Bricolage Grotesque', system-ui, sans-serif",
   fontMono:"'DM Mono', 'SF Mono', monospace",
 } : {
-  // ── KrapMaps / CreatorOS ──
-  pink:"#FF2D78", cyan:"#00E5FF", yellow:"#FFD50A",
+  // ── KrapMaps / Greenlit ──
+  pink:"#22E06B", cyan:"#00E5FF", yellow:"#FFD50A",  // "pink" slot = brand green (Greenlit)
   green:"#39FF14", orange:"#FF6B1A", purple:"#C566FF",
   bg:"#07050F", card:"rgba(255,255,255,0.025)",
   cardSolid:"#0C0A1A", cardAlt:"rgba(255,255,255,0.025)",
@@ -316,7 +316,7 @@ function ScoreReveal({ score=0, title, onClose }){
 
 // ── ONBOARDING TOUR MOCKS — the real OS look, alive on mount ──────────────
 // Score slide uses the actual ScoreDial (count-up ring + particle burst).
-function OnbScoreMock({ accent="#FF2D78" }){
+function OnbScoreMock({ accent="#22E06B" }){
   const [show, setShow] = useState(false);
   useEffect(()=>{ const t=setTimeout(()=>setShow(true),120); return ()=>clearTimeout(t); },[]);
   return (
@@ -4424,7 +4424,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
       color: i.viral>=70?"#39FF14":i.viral>=50?"#00E5FF":"#FF2D78",
     }));
     return {
-      handle: wl.handle||"@creator", appName: wl.appName||"CreatorOS", creator1: wl.creator1||"",
+      handle: wl.handle||"@creator", appName: wl.appName||"Greenlit", creator1: wl.creator1||"",
       accent: wl.accentColor||"#FF2D78", accent2: wl.accentColor2||"#C566FF",
       sub: [wl.niche?wl.niche:null, `${videos.length} videos tracked`].filter(Boolean).join(" · "),
       stats: { viewsTracked: totalViews>0?fmt(totalViews):null, avgViews: (avgPostedViews||channelAvg)?fmt(avgPostedViews||channelAvg):null, accuracy },
@@ -5717,8 +5717,8 @@ const _resolveClientConfig = () => {
 const _CC = _resolveClientConfig();
 const WL_DEFAULTS = {
   clientId: _CC.clientId || "krapmaps",
-  appName: _CC.appName || "Content OS",
-  appTagline: _CC.appTagline || "Content OS",
+  appName: _CC.appName || "Greenlit",
+  appTagline: _CC.appTagline || "Greenlit",
   handle: _CC.handle || "@yourchannel",
   creator1: _CC.creator1 || "Creator",
   creator2: _CC.creator2 || "",
@@ -8870,7 +8870,7 @@ Return ONLY JSON:
       // deterministic half of the audit is valuable on its own and shouldn't be lost.
       const r = await callAI(prompt, 1600).catch(()=>null);
       if(!r) setErr("The AI couldn't generate the write-up (check your AI key) — showing the data we pulled.");
-      setReport({ h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"CreatorOS" });
+      setReport({ h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit" });
       setPhase("done");
     } catch(e){ setErr(e.message||"Audit failed"); setPhase("error"); }
   };
@@ -9774,7 +9774,7 @@ function GuidedTour({ step, onSkip, onGoContent }) {
       }}>
         <div style={{ fontSize:15, fontWeight:700, color:"#fff", marginBottom:6 }}>{tip.title}</div>
         <div style={{ fontSize:13, color:"rgba(255,255,255,0.6)", lineHeight:1.5, marginBottom:tip.cta?14:0 }}>{tip.desc}</div>
-        {tip.cta && <button onClick={tip.action} style={{ padding:"10px 20px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#FF3D81,#FF6B9D)", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", width:"100%" }}>{tip.cta}</button>}
+        {tip.cta && <button onClick={tip.action} style={{ padding:"10px 20px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#22E06B,#6EF2A3)", color:"#052312", fontWeight:700, fontSize:13, cursor:"pointer", width:"100%" }}>{tip.cta}</button>}
         <button onClick={onSkip} style={{ marginTop:8, background:"none", border:"none", color:"rgba(255,255,255,0.35)", fontSize:11, cursor:"pointer", padding:0, width:"100%", textAlign:"center" }}>Skip tour</button>
       </div>
     </>
@@ -11813,7 +11813,7 @@ function OnboardingPage({ onComplete }) {
     platformHandle: "@officialthierno",
     platformStats: [{label:"STREAMS",val:"2.4K",col:"#00C853"},{label:"SAVES",val:"184",col:"rgba(255,255,255,0.6)"},{label:"FOLLOWERS",val:"784",col:"#00C853"},{label:"MONTHLY",val:"37",col:"rgba(255,255,255,0.6)"}],
   } : {
-    windowLabel: "CREATOROS · DASHBOARD",
+    windowLabel: "GREENLIT · DASHBOARD",
     navItems: [
       {icon:"◉",lb:"HOME",    col:"#FF2D78",idx:3},
       {icon:"◆",lb:"CONTENT", col:"#C566FF",idx:0},
@@ -11910,8 +11910,8 @@ function OnboardingPage({ onComplete }) {
       } catch {}
       if(!ok) { setCodeError(true); setCodeShake(true); setTimeout(()=>setCodeShake(false),600); return; }
       // Authorized → use the hand-made client config if one exists, else a personal
-      // CreatorOS workspace keyed to this code.
-      matched = CLIENTS[entered] || { ...CLIENT_CONFIG, clientId:"creator", appName: CLIENT_CONFIG.appName || "CreatorOS", activationCode: entered };
+      // Greenlit workspace keyed to this code.
+      matched = CLIENTS[entered] || { ...CLIENT_CONFIG, clientId:"creator", appName: CLIENT_CONFIG.appName || "Greenlit", activationCode: entered };
     } else {
       // Self-host / no-auth builds: local code check only.
       matched = CLIENTS[entered];
@@ -12036,7 +12036,7 @@ function OnboardingPage({ onComplete }) {
                     [ ACTIVATE ]
                   </button>
                   <div style={{ marginTop:48, fontSize:11, color:"#1a1a1a", letterSpacing:"0.1em" }}>
-                    NO CODE? <a href={`mailto:hello@${(WL.appName||"creatorOS").toLowerCase().replace(/\s/g,"")}.io`} style={{ color:"#39FF1440", textDecoration:"none" }}>CONTACT SUPPORT</a>
+                    NO CODE? <a href="mailto:hello@greenlit.space" style={{ color:"#39FF1440", textDecoration:"none" }}>CONTACT SUPPORT</a>
                   </div>
                 </div>
               ) : (
@@ -12578,7 +12578,7 @@ function OnboardingPage({ onComplete }) {
           {/* Step 1 — Universal product tour (self-serve builds) */}
           {step === 1 && (()=>{
             const F = "'Space Grotesk',system-ui,sans-serif";
-            const app = WL.appName || "CreatorOS";
+            const app = WL.appName || "Greenlit";
             const TOUR = [
               {
                 key:"score", eyebrow:"01 · SCORE", accent:"#FF2D78",
@@ -12669,7 +12669,7 @@ function OnboardingPage({ onComplete }) {
               { n:"2", c:"#C566FF", t:"Get it scored", d:"A 0–100 virality score with hook fixes, before you waste time filming." },
               { n:"3", c:"#00E5FF", t:"Film the winners", d:"Post the high scorers, log the views — it learns your channel and gets sharper." },
             ];
-            const app2 = WL.appName || "CreatorOS";
+            const app2 = WL.appName || "Greenlit";
             return (
             <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center", padding:isMobile?"28px 22px":"32px", overflowY:"auto", fontFamily:F }}>
               {/* Ambient glows fill the space + give energy */}
@@ -12837,7 +12837,7 @@ function AuthGate({ onAuthed }) {
   };
   const accent = (typeof WL !== "undefined" && WL?.accentColor) || "#FF2D78";
   const accent2 = (typeof WL !== "undefined" && WL?.accentColor2) || "#C566FF";
-  const appName = (typeof WL !== "undefined" && WL?.appName) || "CreatorOS";
+  const appName = (typeof WL !== "undefined" && WL?.appName) || "Greenlit";
 
   const submit = async () => {
     setErr(""); setInfo("");
@@ -12933,7 +12933,7 @@ function FreeAuditApp({ onActivate }){
   return (
     <div style={{ minHeight:"100vh", background:"#07050F", color:"#fff" }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:isMobile?"14px 16px":"18px 32px", borderBottom:"1px solid rgba(255,255,255,0.07)", gap:12, flexWrap:"wrap" }}>
-        <div style={{ fontFamily:C.fontHead, fontWeight:800, fontSize:18 }}>{wl.appName||"CreatorOS"}</div>
+        <div style={{ fontFamily:C.fontHead, fontWeight:800, fontSize:18 }}>{wl.appName||"Greenlit"}</div>
         <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", justifyContent:"flex-end" }}>
           {!paid && <button onClick={()=>setShowPricing(true)} style={btn(`linear-gradient(135deg,${C.pink},${C.purple})`,"#fff")}>Upgrade to Pro</button>}
           <button onClick={onActivate} style={btn("rgba(255,255,255,0.06)","rgba(255,255,255,0.85)","1px solid rgba(255,255,255,0.12)")}>I have a code</button>
