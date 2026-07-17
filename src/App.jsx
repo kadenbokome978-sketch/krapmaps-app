@@ -115,7 +115,7 @@ const DS = {
 
 const fmt = n => n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n||0);
 const perfLabel = s => s>=80?"VIRAL":s>=65?"STRONG":s>=50?"DECENT":s>=35?"WEAK":"FLOPPED";
-const perfColor = s => s>=80?C.green:s>=65?C.yellow:s>=50?C.orange:C.pink;
+const perfColor = s => s>=80?C.green:s>=65?C.yellow:s>=50?C.orange:"#FF4D4D";
 // Median views across a set of videos (ignores 0-view items). Used by the audit.
 const medianViews = (vids) => {
   const arr = (vids||[]).map(v=>v.views||0).filter(v=>v>0).sort((a,b)=>a-b);
@@ -230,7 +230,7 @@ const HeroCount = ({ value=0, style }) => {
 // ── SCORE DIAL — the signature virality read ──────────────────────
 // A ring that sweeps to the score while the number counts up. Colour-banded,
 // elite scores (85+) breathe. This is the product's recognizable hero moment.
-const scoreBand = (s) => s>=85?{c:C.green,label:"VIRAL"} : s>=70?{c:C.cyan,label:"STRONG"} : s>=50?{c:C.yellow,label:"DECENT"} : s>=35?{c:C.orange,label:"WEAK"} : {c:C.pink,label:"RISKY"};
+const scoreBand = (s) => s>=85?{c:C.green,label:"VIRAL"} : s>=70?{c:C.cyan,label:"STRONG"} : s>=50?{c:C.yellow,label:"DECENT"} : s>=35?{c:C.orange,label:"WEAK"} : {c:"#FF4D4D",label:"RISKY"};
 const ScoreDial = ({ score=0, size=72, stroke, label, animate=true, celebrate=false, loading=false }) => {
   const s = Math.max(0, Math.min(100, Math.round(Number(score)||0)));
   const band = scoreBand(s);
@@ -470,7 +470,7 @@ const StatMini = ({ label, value, color, icon, delta, deltaUp }) => {
       <div style={{ width:40, height:40, borderRadius:12, background:`linear-gradient(135deg,${color}30,${color}10)`, border:`1px solid ${color}35`, display:"flex", alignItems:"center", justifyContent:"center", color, flexShrink:0, boxShadow:`0 4px 16px ${color}20` }}>{icon}</div>
       {delta != null && (
         <div style={{ display:"flex", alignItems:"center", gap:4, padding:isMobile?"5px 10px":"3px 8px", borderRadius:6, background:deltaUp?"rgba(0,255,148,0.1)":"rgba(255,77,77,0.1)", border:`1px solid ${deltaUp?"rgba(0,255,148,0.2)":"rgba(255,77,77,0.2)"}` }}>
-          <span style={{ fontSize:11, color:deltaUp?C.green:C.pink, fontWeight:700 }}>{deltaUp?"↑":"↓"} {delta}</span>
+          <span style={{ fontSize:11, color:deltaUp?C.green:"#FF4D4D", fontWeight:700 }}>{deltaUp?"↑":"↓"} {delta}</span>
         </div>
       )}
     </div>
@@ -1369,7 +1369,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         if(isMobile) return null;   // dense analytics block — hidden on mobile to declutter; full view in Analytics
         const PILLARS = (WL.pillars && WL.pillars.length) ? WL.pillars : [];
         if(!PILLARS.length) return null;   // no hardcoded pillars — don't leak another brand's pillars onto a new account
-        const _palette = [C.green, C.cyan, C.purple, C.yellow, C.orange, C.pink];
+        const _palette = [C.green, C.cyan, C.purple, C.yellow, C.orange, "#5B6BFF"];
         const PILLAR_COLORS = Object.fromEntries(PILLARS.map((p,i)=>[p, _palette[i%_palette.length]]));
         const today = new Date();
         const posted = (ideas||[]).filter(i=>i.status==="posted"&&i.postedDate);
@@ -1422,7 +1422,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
         const lastPosted = new Date(sorted[0].postedDate);
         const daysSinceLast = Math.floor((new Date()-lastPosted)/86400000);
         const onTrack = daysSinceLast <= avgGap + 1;
-        const statusColor = onTrack ? C.green : daysSinceLast > avgGap * 2 ? C.pink : C.yellow;
+        const statusColor = onTrack ? C.green : daysSinceLast > avgGap * 2 ? "#FF4D4D" : C.yellow;
         const videosThisWeek = postedWithDate.filter(i=>Math.floor((new Date()-new Date(i.postedDate))/86400000)<=7).length;
         return (
           <div style={{ borderRadius:16, padding:"16px 20px", background:"rgba(255,255,255,0.025)", border:`1px solid ${statusColor}20`, display:"flex", alignItems:"center", gap:16 }}>
@@ -1509,7 +1509,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
       <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:8 }}>
         <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)", fontWeight:600, letterSpacing:"0.04em" }}>SOUND LIKE YOU?</span>
         <button onClick={()=>voteVoice(text,true)} title="Sounds like me — do more of this" style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:20, cursor:"pointer", border:`1px solid ${v==="good"?C.green:"rgba(255,255,255,0.12)"}`, background:v==="good"?`${C.green}20`:"transparent", color:v==="good"?C.green:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700 }}>{I.tick(10,"currentColor")} YES</button>
-        <button onClick={()=>voteVoice(text,false)} title="Not my voice — never write like this" style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:20, cursor:"pointer", border:`1px solid ${v==="bad"?C.pink:"rgba(255,255,255,0.12)"}`, background:v==="bad"?`${C.pink}20`:"transparent", color:v==="bad"?C.pink:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700 }}>{I.x(10,"currentColor")} NO</button>
+        <button onClick={()=>voteVoice(text,false)} title="Not my voice — never write like this" style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:20, cursor:"pointer", border:`1px solid ${v==="bad"?"#FF4D4D":"rgba(255,255,255,0.12)"}`, background:v==="bad"?`#FF4D4D20`:"transparent", color:v==="bad"?C.pink:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700 }}>{I.x(10,"currentColor")} NO</button>
       </div>
     );
   };
@@ -1569,7 +1569,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
   ];
   const _activeIdeaFilter = IDEA_FILTERS.find(fl=>fl.id===ideaFilter) || IDEA_FILTERS[0];
   const displayIdeas = sorted.filter(_activeIdeaFilter.test);
-  const ic = v => (v||0)>=80?C.green:(v||0)>=60?C.yellow:C.pink;
+  const ic = v => (v||0)>=80?C.green:(v||0)>=60?C.yellow:"#FF4D4D";
   const perfLabel = s => s>=80?"VIRAL":s>=65?"STRONG":s>=50?"DECENT":s>=35?"WEAK":"NEW";
 
   return (
@@ -1673,7 +1673,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                           <>
                             <ScoreDial score={idea.viral} size={isMobile?60:72} celebrate={idea._scoredAt && (Date.now()-idea._scoredAt < 6000)} />
                             {idea.scoreDelta!=null && idea.scoreDelta!==0 && (
-                              <div style={{ fontSize:10, fontWeight:700, color:idea.scoreDelta>0?C.green:C.pink, marginTop:4 }}>{idea.scoreDelta>0?`+${idea.scoreDelta}`:idea.scoreDelta}</div>
+                              <div style={{ fontSize:10, fontWeight:700, color:idea.scoreDelta>0?C.green:"#FF4D4D", marginTop:4 }}>{idea.scoreDelta>0?`+${idea.scoreDelta}`:idea.scoreDelta}</div>
                             )}
                           </>
                         ) : (
@@ -1734,7 +1734,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                           <div style={{ padding:isMobile?"16px 18px":"14px 16px", background:`${C.green}06`, borderRadius:12, border:`1px solid ${C.green}18` }}>
                             <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center", marginBottom:idea.scoreRationale?7:0 }}>
                               {idea.confidenceLevel && (
-                                <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.08em", padding:isMobile?"5px 10px":"3px 8px", borderRadius:6, color:idea.confidenceLevel==="HIGH"?C.green:idea.confidenceLevel==="LOW"?C.pink:C.yellow, background:`${idea.confidenceLevel==="HIGH"?C.green:idea.confidenceLevel==="LOW"?C.pink:C.yellow}15` }}>{idea.confidenceLevel} CONFIDENCE</span>
+                                <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.08em", padding:isMobile?"5px 10px":"3px 8px", borderRadius:6, color:idea.confidenceLevel==="HIGH"?C.green:idea.confidenceLevel==="LOW"?"#FF4D4D":C.yellow, background:`${idea.confidenceLevel==="HIGH"?C.green:idea.confidenceLevel==="LOW"?"#FF4D4D":C.yellow}15` }}>{idea.confidenceLevel} CONFIDENCE</span>
                               )}
                               {idea.modelAgreement && (
                                 <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.06em", padding:isMobile?"5px 10px":"3px 8px", borderRadius:6, color:"rgba(255,255,255,0.6)", background:"rgba(255,255,255,0.05)", display:"inline-flex", alignItems:"center", gap:5 }}>{I.star(10,"currentColor")} {String(idea.modelAgreement).split("—")[0].trim()}</span>
@@ -1988,7 +1988,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                       <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.1em", fontFamily:C.fontHead }}>HOOK {h.label}</div>
                       <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                         {hookABResult.winner===h.label && <span style={{ fontSize:10, fontWeight:700, color:C.green, fontFamily:C.fontHead }}>WINNER</span>}
-                        <span style={{ fontSize:16, fontWeight:700, color:hookABResult.winner===h.label?C.green:C.pink, fontFamily:C.fontHead }}>{h.score}</span>
+                        <span style={{ fontSize:16, fontWeight:700, color:hookABResult.winner===h.label?C.green:"#FF4D4D", fontFamily:C.fontHead }}>{h.score}</span>
                       </div>
                     </div>
                     <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)", fontFamily:C.fontBody, marginBottom:5, fontStyle:"italic" }}>"{h.hook}"</div>
@@ -2227,7 +2227,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
   };
   const fmt = n => n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n||0);
   const rl = v => v.views>0?(v.likes/v.views)*100:0;
-  const perfColor = s => s>=80?C.green:s>=65?C.yellow:s>=50?C.orange:C.pink;
+  const perfColor = s => s>=80?C.green:s>=65?C.yellow:s>=50?C.orange:"#FF4D4D";
   const perfLabel = s => s>=80?"VIRAL":s>=65?"STRONG":s>=50?"DECENT":s>=35?"WEAK":"FLOPPED";
 
   // Chart data
@@ -2236,7 +2236,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
   const ratioLineData = [...videos].filter(v=>v.views>0).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).slice(-12).map(v=>({ label:new Date(v.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"short"}), value:parseFloat(((v.likes/v.views)*100).toFixed(1)) }));
   const typeDonut = (() => {
     const map={}; videos.forEach(v=>{if(v.type)map[v.type]=(map[v.type]||0)+(v.views||0);});
-    const cols=[C.pink,C.cyan,C.yellow,C.purple,C.green,C.orange];
+    const cols=["#5B6BFF",C.cyan,C.yellow,C.purple,C.green,C.orange];
     return Object.entries(map).map(([t,v],i)=>({label:t,value:v,color:cols[i%cols.length],name:t}));
   })();
   const channelAvg = videos.length ? Math.round(totalViews/videos.length) : 0;
@@ -2326,13 +2326,13 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                     {!vidLoading?.[v.id] && vidAnalysis?.[v.id] && (() => {
                       const ar = vidAnalysis[v.id];
                       const sc2 = ar.overall_score||0;
-                      const sc_c = sc2>=80?C.green:sc2>=60?C.yellow:sc2>=40?C.orange:C.pink;
+                      const sc_c = sc2>=80?C.green:sc2>=60?C.yellow:sc2>=40?C.orange:"#FF4D4D";
                       return (
                         <div style={{ padding:"14px 18px", borderTop:`1px solid ${C.purple}20`, background:`${C.purple}06` }}>
                           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:isMobile?8:10 }}>
                             <div style={{ fontSize:32, fontWeight:700, fontFamily:C.fontHead, color:sc_c, textShadow:`0 0 12px ${sc_c}50` }}>{sc2}</div>
                             <div>
-                              <Tag color={sc2>=80?C.green:sc2>=60?C.yellow:C.pink} sm>{(ar.performance_verdict||"analysed").replace("_"," ").toUpperCase()}</Tag>
+                              <Tag color={sc2>=80?C.green:sc2>=60?C.yellow:"#FF4D4D"} sm>{(ar.performance_verdict||"analysed").replace("_"," ").toUpperCase()}</Tag>
                               <div style={{ fontSize:10, color:"rgba(255,255,255,0.5)", marginTop:2, fontWeight:700, letterSpacing:"0.06em" }}>AI SCORE</div>
                             </div>
                             <div style={{ flex:1, fontSize:14, color:"rgba(255,255,255,0.85)", lineHeight:1.4 }}>{ar.why_it_performed?.slice(0,100)}</div>
@@ -3039,7 +3039,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                     <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:8, marginBottom:isMobile?12:14 }}>
                       {[
                         {l:"IMPACT", v:idea.impact||"HIGH", c:idea.impact==="HIGH"?C.green:C.yellow},
-                        {l:"EFFORT", v:idea.effort||"MEDIUM", c:idea.effort==="LOW"?C.green:idea.effort==="HIGH"?C.pink:C.yellow}
+                        {l:"EFFORT", v:idea.effort||"MEDIUM", c:idea.effort==="LOW"?C.green:idea.effort==="HIGH"?"#FF4D4D":C.yellow}
                       ].map((s,j)=>(
                         <div key={j} style={{ padding:"8px 10px", background:`${s.c}10`, border:`1px solid ${s.c}25`, borderRadius:10, textAlign:"center" }}>
                           <div style={{ fontSize:16, fontWeight:700, color:s.c }}>{s.v}</div>
@@ -3477,7 +3477,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
     setLoad("plan",false);
   };
 
-  const scoreColor = s => s>=80?C.green:s>=60?C.yellow:s>=40?C.orange:C.pink;
+  const scoreColor = s => s>=80?C.green:s>=60?C.yellow:s>=40?C.orange:"#FF4D4D";
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?16:24 }}>
@@ -3733,8 +3733,8 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(140px,100%),1fr))", gap:10, marginBottom:isMobile?12:16 }}>
               {[
                 {l:"PREDICTED VIEWS", v:(hasViewHistory()&&(predictResult.predicted_views_high||0)>0)?`${(predictResult.predicted_views_low||0).toLocaleString()}–${(predictResult.predicted_views_high||0).toLocaleString()}`:"—", c:predictResult.beat_average?C.green:C.yellow},
-                {l:"OVERALL SCORE", v:`${predictResult.overall_score||0}/100`, c:predictResult.overall_score>=70?C.green:predictResult.overall_score>=50?C.yellow:C.pink},
-                {l:"CONFIDENCE", v:predictResult.confidence||"–", c:predictResult.confidence==="HIGH"?C.green:predictResult.confidence==="MEDIUM"?C.yellow:C.pink},
+                {l:"OVERALL SCORE", v:`${predictResult.overall_score||0}/100`, c:predictResult.overall_score>=70?C.green:predictResult.overall_score>=50?C.yellow:"#FF4D4D"},
+                {l:"CONFIDENCE", v:predictResult.confidence||"–", c:predictResult.confidence==="HIGH"?C.green:predictResult.confidence==="MEDIUM"?C.yellow:"#FF4D4D"},
               ].map((s,i)=>(
                 <div key={i} style={{ textAlign:"center", padding:"14px 8px", background:`${s.c}10`, borderRadius:12, border:`1px solid ${s.c}25` }}>
                   <div style={{ fontSize:22, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1, textShadow:`0 0 16px ${s.c}50` }}>{s.v}</div>
@@ -3772,7 +3772,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
                 {predictResult.variations.map((v,i)=>(
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:isMobile?"13px 16px":"10px 14px", borderRadius:10, background:"rgba(255,255,255,0.025)", border:`1px solid rgba(255,255,255,0.06)`, marginBottom:6 }}>
                     <div style={{ flex:1, fontSize:isMobile?14:17, color:"#fff", fontStyle:"italic" }}>"{v.hook}"</div>
-                    <Tag color={v.predicted_uplift?.startsWith("+")?C.green:C.pink} sm>{v.predicted_uplift}</Tag>
+                    <Tag color={v.predicted_uplift?.startsWith("+")?C.green:"#FF4D4D"} sm>{v.predicted_uplift}</Tag>
                   </div>
                 ))}
               </div>
@@ -3903,7 +3903,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
                   <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
                     <div style={{ fontSize:14, color:i===0?"#fff":"rgba(255,255,255,0.8)", fontWeight:i===0?700:400, textTransform:"capitalize" }}>{t.type}</div>
                     <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                      <Tag color={t.vsAvg>0?C.green:C.pink} sm>{t.vsAvg>0?"+":""}{t.vsAvg}% vs avg</Tag>
+                      <Tag color={t.vsAvg>0?C.green:"#FF4D4D"} sm>{t.vsAvg>0?"+":""}{t.vsAvg}% vs avg</Tag>
                     </div>
                   </div>
                 ))}
@@ -3917,7 +3917,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
                   <div><div style={{ fontSize:isMobile?17:20, fontWeight:700, color:C.purple }}>{patterns.crossAvg?.toLocaleString()}</div><div style={{ fontSize:13, color:"rgba(255,255,255,0.85)" }}>TT+IG avg</div></div>
                   <div><div style={{ fontSize:isMobile?17:20, fontWeight:700, color:"rgba(255,255,255,0.8)" }}>{patterns.singleAvg?.toLocaleString()}</div><div style={{ fontSize:13, color:"rgba(255,255,255,0.85)" }}>TikTok only</div></div>
                 </div>
-                <div style={{ marginTop:8, fontSize:13, color:patterns.crossAvg>patterns.singleAvg?C.green:C.pink }}>
+                <div style={{ marginTop:8, fontSize:13, color:patterns.crossAvg>patterns.singleAvg?C.green:"#FF4D4D" }}>
                   Cross-posting {patterns.crossAvg>patterns.singleAvg?"HELPS":"HURTS"} by {Math.abs(Math.round((patterns.crossAvg/patterns.singleAvg-1)*100))}%
                 </div>
               </div>
@@ -3992,7 +3992,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
                   {m.data?.recommendations?.slice(0,3).map((r,i)=>(
                     <div key={i} style={{ marginBottom:8, paddingBottom:8, borderBottom:i<2?`1px solid rgba(255,255,255,0.05)`:"none" }}>
                       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
-                        <Tag color={r.priority==="CRITICAL"?C.pink:r.priority==="HIGH"?C.yellow:C.dim} sm>{r.priority}</Tag>
+                        <Tag color={r.priority==="CRITICAL"?"#FF4D4D":r.priority==="HIGH"?C.yellow:C.dim} sm>{r.priority}</Tag>
                         <div style={{ fontSize:15, color:"rgba(255,255,255,0.85)" }}>{r.timeframe}</div>
                       </div>
                       <div style={{ fontSize:16, color:"#fff", fontWeight:600 }}>{r.action}</div>
@@ -4021,7 +4021,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
           {/* Single model fallback */}
           {!consensus.bothSucceeded && (consensus.claude||consensus.gpt)?.recommendations?.slice(0,5).map((r,i)=>(
             <div key={i} style={{ display:"flex", gap:12, padding:"12px 0", borderBottom:i<4?`1px solid rgba(255,255,255,0.05)`:"none" }}>
-              <Tag color={r.priority==="CRITICAL"?C.pink:r.priority==="HIGH"?C.yellow:C.dim} sm>{r.priority}</Tag>
+              <Tag color={r.priority==="CRITICAL"?"#FF4D4D":r.priority==="HIGH"?C.yellow:C.dim} sm>{r.priority}</Tag>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:15, fontWeight:700, color:"#fff", marginBottom:3 }}>{r.action}</div>
                 <div style={{ fontSize:15, color:"rgba(255,255,255,0.85)" }}>{r.why}</div>
@@ -4168,8 +4168,8 @@ Return ONLY JSON: {
     setLoading(l=>({...l,[video.id]:false}));
   };
 
-  const scoreColor = s => s>=80?C.green:s>=60?C.yellow:s>=40?C.orange:C.pink;
-  const verdictColor = v => v==="viral"?C.green:v==="above_avg"?C.cyan:v==="average"?C.yellow:C.pink;
+  const scoreColor = s => s>=80?C.green:s>=60?C.yellow:s>=40?C.orange:"#FF4D4D";
+  const verdictColor = v => v==="viral"?C.green:v==="above_avg"?C.cyan:v==="average"?C.yellow:"#FF4D4D";
 
   const result = selected ? analysis[selected.id] : null;
 
@@ -4195,7 +4195,7 @@ Return ONLY JSON: {
         )}
       </div>
 
-      {err && <div style={{ padding:isMobile?"14px 18px":"12px 16px", borderRadius:12, background:`${C.pink}15`, border:`1px solid ${C.pink}40`, color:C.pink, fontSize:13 }}>Error: {err}</div>}
+      {err && <div style={{ padding:isMobile?"14px 18px":"12px 16px", borderRadius:12, background:`${"#FF4D4D"}15`, border:`1px solid ${"#FF4D4D"}40`, color:"#FF4D4D", fontSize:13 }}>Error: {err}</div>}
 
       {/* Platform filter pills */}
       {(()=>{ const hasIG = videos.some(v=>v.platform==="instagram"); if(!hasIG) return null;
@@ -4478,7 +4478,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
     if (!channelAvg) return { label:"PENDING", color:"rgba(255,255,255,0.35)" };
     return idea.postedViews >= channelAvg
       ? { label:"HIT", color:C.green }
-      : { label:"MISS", color:C.pink };
+      : { label:"MISS", color:"#FF4D4D" };
   };
 
   return (
@@ -4597,7 +4597,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
         const avg1 = firstHalf.length ? firstHalf.reduce((s,e)=>s+e.score,0)/firstHalf.length : 0;
         const avg2 = secondHalf.length ? secondHalf.reduce((s,e)=>s+e.score,0)/secondHalf.length : 0;
         const trend = avg2 - avg1;
-        const trendColor = trend>2 ? C.green : trend<-2 ? C.pink : C.yellow;
+        const trendColor = trend>2 ? C.green : trend<-2 ? "#FF4D4D" : C.yellow;
         const trendLabel = trend>2 ? "Improving" : trend<-2 ? "Declining" : "Stable";
         return card(
           <>
@@ -4619,7 +4619,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
               <defs><linearGradient id="shg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.purple} stopOpacity="0.3"/><stop offset="100%" stopColor={C.purple} stopOpacity="0"/></linearGradient></defs>
               <path d={`${line} L${pts[pts.length-1].x},${h2-pad} L${pts[0].x},${h2-pad} Z`} fill="url(#shg)"/>
               <path d={line} fill="none" stroke={C.purple} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              {pts.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r="3" fill={p.score>=70?C.green:p.score>=50?C.yellow:C.pink} stroke="rgba(0,0,0,0.5)" strokeWidth="1"><title>{p.title}: {p.score}/100</title></circle>)}
+              {pts.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r="3" fill={p.score>=70?C.green:p.score>=50?C.yellow:"#FF4D4D"} stroke="rgba(0,0,0,0.5)" strokeWidth="1"><title>{p.title}: {p.score}/100</title></circle>)}
             </svg>
             <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:"rgba(255,255,255,0.3)", marginTop:4, padding:"0 20px" }}>
               <span>{recent[0].date?.slice(0,10)}</span>
@@ -4927,7 +4927,7 @@ function AiSelfTest(){
       <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:5 }}>AI Self-Test</div>
       <div style={{ fontSize:13, color:"rgba(255,255,255,0.55)", lineHeight:1.55, marginBottom:16 }}>Runs {total} trick cases with known-correct answers through the live AI — off-brand ideas must be rejected, empty accounts must not show invented numbers. Run it after any prompt change to catch reasoning slips like the chicken-mayo GO.</div>
       {lastMeta && !results && (
-        <div style={{ marginBottom:14, fontSize:13, fontWeight:700, color:lastMeta.passed===lastMeta.total?C.green:C.pink }}>
+        <div style={{ marginBottom:14, fontSize:13, fontWeight:700, color:lastMeta.passed===lastMeta.total?C.green:"#FF4D4D" }}>
           Last auto-run ({_agoTxt(lastMeta.ts)}): {lastMeta.passed}/{lastMeta.total} passed{lastMeta.passed!==lastMeta.total?` — failing: ${lastMeta.fails.join(", ")}`:" ✓"}
         </div>
       )}
@@ -4940,9 +4940,9 @@ function AiSelfTest(){
           <div style={{ fontSize:15, fontWeight:800, fontFamily:C.fontHead, color:allPass?C.green:C.yellow, marginBottom:12 }}>{passed}/{total} passed {allPass?"✓ AI judgment looks healthy":"— review the failures below"}</div>
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             {results.map(res=>(
-              <div key={res.id} style={{ borderRadius:10, padding:"11px 13px", background:res.pass?`${C.green}0c`:`${C.pink}12`, border:`1px solid ${res.pass?C.green:C.pink}30` }}>
+              <div key={res.id} style={{ borderRadius:10, padding:"11px 13px", background:res.pass?`${C.green}0c`:`${"#FF4D4D"}12`, border:`1px solid ${res.pass?C.green:"#FF4D4D"}30` }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:res.pass?0:5 }}>
-                  <span style={{ fontSize:13, fontWeight:800, color:res.pass?C.green:C.pink }}>{res.pass?"PASS":"FAIL"}</span>
+                  <span style={{ fontSize:13, fontWeight:800, color:res.pass?C.green:"#FF4D4D" }}>{res.pass?"PASS":"FAIL"}</span>
                   <span style={{ fontSize:13, color:"rgba(255,255,255,0.85)", fontWeight:600 }}>{res.label}</span>
                 </div>
                 {!res.pass && <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", lineHeight:1.5 }}>{res.err ? `Error: ${res.err}` : `AI said: ${String(res.r?.verdict||"?")} · fit=${String(res.r?.brandFit||"?")} · score=${res.r?.score??"?"} · est=${String(res.r?.estViews||"—")} — ${res.r?.reason||""}`}</div>}
@@ -5139,7 +5139,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
   const _hStatus = (service, fallbackValue, fallbackColor) => {
     const h = health[service];
     if(!h) return { value:fallbackValue, color:fallbackColor, detail:null };
-    if(h.state==="error") return { value:"ERROR", color:C.pink, detail:h.msg };
+    if(h.state==="error") return { value:"ERROR", color:"#FF4D4D", detail:h.msg };
     return { value:fallbackValue, color:fallbackColor, detail:null };
   };
   const _sb = _hStatus("supabase", "CONNECTED", C.green);
@@ -5149,7 +5149,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
     { label:"Supabase DB", value:_sb.value, color:_sb.color, id:"db", detail:_sb.detail },
     { label:"TikTok Scraper", value:_tt.value, color:_tt.color, id:"tikwm", detail:_tt.detail },
     { label:"Instagram", value:_ig.value, color:_ig.color, id:"igscraper", detail:_ig.detail },
-    { label:"Anthropic AI", value:keys?.anthropic?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.anthropic||USE_BACKEND)?C.green:C.pink, id:"anthropic" },
+    { label:"Anthropic AI", value:keys?.anthropic?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.anthropic||USE_BACKEND)?C.green:"#FF4D4D", id:"anthropic" },
     { label:"Perplexity", value:keys?.perplexity?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.perplexity||USE_BACKEND)?C.green:C.yellow, id:"perplexity" },
     { label:"Gemini Video", value:keys?.gemini?"KEY SET":(USE_BACKEND?"SERVER":"ADD KEY"), color:(keys?.gemini||USE_BACKEND)?C.green:C.yellow, id:"gemini" },
   ];
@@ -5190,13 +5190,13 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
               const unlimited = plan?.tier==="founder" || plan?.tier==="studio" || _scoreLimit==null;
               const pct = unlimited ? 1 : Math.min(1, _scoreLimit>0 ? _scoreUsed/_scoreLimit : 0);
               const near = !unlimited && pct>=0.8;
-              const barCol = unlimited ? C.green : near ? C.pink : C.cyan;
+              const barCol = unlimited ? C.green : near ? "#FF4D4D" : C.cyan;
               return (
                 <div style={{ marginTop:12, maxWidth:340 }}>
                   <div style={{ height:7, borderRadius:99, background:"rgba(255,255,255,0.08)", overflow:"hidden" }}>
                     <div style={{ height:"100%", width:`${Math.round(pct*100)}%`, borderRadius:99, background:unlimited?`linear-gradient(90deg,${C.green},${C.cyan})`:barCol, transition:"width 0.4s ease" }}/>
                   </div>
-                  {near && <div style={{ fontSize:11.5, color:C.pink, marginTop:6, fontWeight:600 }}>{_scoreUsed>=_scoreLimit ? "You've hit your monthly limit — upgrade for more." : `Only ${_scoreLimit-_scoreUsed} scores left this month.`}</div>}
+                  {near && <div style={{ fontSize:11.5, color:"#FF4D4D", marginTop:6, fontWeight:600 }}>{_scoreUsed>=_scoreLimit ? "You've hit your monthly limit — upgrade for more." : `Only ${_scoreLimit-_scoreUsed} scores left this month.`}</div>}
                 </div>
               );
             })()}
@@ -5346,7 +5346,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
                 </div>
               </div>
             )}
-            {sbMsg && <div style={{ marginTop:10, fontSize:12, fontWeight:600, lineHeight:1.5, color:sbMsg.ok?C.green:C.pink }}>{sbMsg.text}</div>}
+            {sbMsg && <div style={{ marginTop:10, fontSize:12, fontWeight:600, lineHeight:1.5, color:sbMsg.ok?C.green:"#FF4D4D" }}>{sbMsg.text}</div>}
           </div>
 
           {/* Creator Config */}
@@ -5483,7 +5483,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
             setCsvDraft("");
             setTimeout(()=>setCsvMsg(""),3000);
           }} style={{ padding:"9px 18px", borderRadius:12, border:`1px solid ${C.yellow}40`, background:`${C.yellow}15`, color:C.yellow, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>IMPORT</button>
-          {csvMsg && <span style={{ fontSize:13, color:/^Imported/.test(csvMsg)?C.green:C.pink }}>{csvMsg}</span>}
+          {csvMsg && <span style={{ fontSize:13, color:/^Imported/.test(csvMsg)?C.green:"#FF4D4D" }}>{csvMsg}</span>}
         </div>
       </CollapsibleCard>
 
@@ -8165,7 +8165,7 @@ const DealsView = () => {
     setForm({ brand:"", type:"Sponsored Post", value:"", status:"Enquiry", platform:"TikTok", deliverable:"", deadline:"", notes:"" });
     setShowForm(false); addXP(25);
   };
-  const STATUS_C = { Enquiry:C.cyan, Negotiating:C.yellow, Signed:C.green, Live:C.pink, Delivered:C.purple, Paid:C.green, Declined:"rgba(255,255,255,0.3)" };
+  const STATUS_C = { Enquiry:C.cyan, Negotiating:C.yellow, Signed:C.green, Live:"#5B6BFF", Delivered:C.purple, Paid:C.green, Declined:"rgba(255,255,255,0.3)" };
   const totalEarned = deals.filter(d=>d.status==="Paid").reduce((s,d)=>s+parseFloat(d.value||0),0);
   const pipeline = deals.filter(d=>["Enquiry","Negotiating","Signed","Live","Delivered"].includes(d.status)).reduce((s,d)=>s+parseFloat(d.value||0),0);
   return (
@@ -8267,7 +8267,7 @@ function AutopilotView({ videos=[], ideas=[], setIdeas, WL={}, setNav, copyText,
   const [moreLoading, setMoreLoading] = useState(false);
 
   const enoughData = (videos.length + ideas.length) >= 1;
-  const band = (s)=> s>=85?C.green:s>=70?C.yellow:s>=50?C.cyan:C.pink;
+  const band = (s)=> s>=85?C.green:s>=70?C.yellow:s>=50?C.cyan:"#FF4D4D";
 
   // ── shared channel context (built once per run) ──
   const buildCtx = async () => {
@@ -8457,7 +8457,7 @@ Write today's briefing. Return ONLY JSON: {"headline":"one punchy line summarisi
             </button>
             {brief?.generatedAt && !loading && <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)" }}>Updated {new Date(brief.generatedAt).toLocaleString()}</div>}
           </div>
-          {err && <div style={{ marginTop:12, fontSize:13, color:C.pink }}>{(()=>{ const s = (err && typeof err==="object") ? (err.message || err.error) : err; return (typeof s==="string" && s && s!=="[object Object]") ? s : "Autopilot hit a snag — usually a missing or expired AI key. Check Settings → AI Keys, then try again."; })()}</div>}
+          {err && <div style={{ marginTop:12, fontSize:13, color:"#FF4D4D" }}>{(()=>{ const s = (err && typeof err==="object") ? (err.message || err.error) : err; return (typeof s==="string" && s && s!=="[object Object]") ? s : "Autopilot hit a snag — usually a missing or expired AI key. Check Settings → AI Keys, then try again."; })()}</div>}
         </div>
       </div>
 
@@ -8606,8 +8606,8 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
     setLoading(false); setStatus("");
   };
 
-  const vC = res ? (res.verdict==="GO"?C.green:res.verdict==="RISKY"?C.yellow:C.pink) : C.purple;
-  const riskC = (r)=> r==="low"?C.green:r==="med"?C.yellow:C.pink;
+  const vC = res ? (res.verdict==="GO"?C.green:res.verdict==="RISKY"?C.yellow:"#FF4D4D") : C.purple;
+  const riskC = (r)=> r==="low"?C.green:r==="med"?C.yellow:"#FF4D4D";
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?16:20 }}>
@@ -8623,7 +8623,7 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
             {I.eye(17,"currentColor")} UPLOAD & CHECK
           </button>
           {!hasGemini && <div style={{ marginTop:14, fontSize:12.5, color:C.yellow }}>Vision needs a Gemini key — add one in Settings (free tier works). If you just added it, refresh the page.</div>}
-          {err && <div style={{ marginTop:14, fontSize:13, color:C.pink }}>{err}</div>}
+          {err && <div style={{ marginTop:14, fontSize:13, color:"#FF4D4D" }}>{err}</div>}
         </div>
       )}
 
@@ -8656,7 +8656,7 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
         </div>
 
         {/* Brand fit — gates the whole verdict. Off-brand/borderline shown as a loud warning. */}
-        {res.brandFit && (()=>{ const off=res.brandFit==="off-brand"; const bord=res.brandFit==="borderline"; const fc=off?C.pink:bord?C.yellow:C.green; return (
+        {res.brandFit && (()=>{ const off=res.brandFit==="off-brand"; const bord=res.brandFit==="borderline"; const fc=off?"#FF4D4D":bord?C.yellow:C.green; return (
           <div data-card style={{ borderRadius:16, background:`${fc}0c`, border:`1px solid ${fc}${off||bord?"45":"25"}`, padding:isMobile?"15px 16px":"16px 20px", display:"flex", gap:13, alignItems:"flex-start" }}>
             <div style={{ fontSize:20, lineHeight:1, flexShrink:0, marginTop:1 }}>{off?"🚫":bord?"⚠️":"✓"}</div>
             <div>
@@ -8688,7 +8688,7 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
           {res.hookNote && <div data-card style={{ borderRadius:16, background:"rgba(255,255,255,0.025)", border:`1px solid ${C.pink}22`, padding:isMobile?"16px 16px":"18px 20px" }}><div style={{ fontSize:10, color:C.pink, fontWeight:700, letterSpacing:"0.1em", marginBottom:8 }}>THE HOOK · 0–3s</div><div style={{ fontSize:13.5, color:"rgba(255,255,255,0.8)", lineHeight:1.55, fontFamily:C.fontBody }}>{res.hookNote}</div></div>}
           <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
             {res.strongest && <div style={{ borderRadius:12, background:`${C.green}0c`, border:`1px solid ${C.green}25`, padding:"12px 14px" }}><span style={{ fontSize:9, fontWeight:800, color:C.green, letterSpacing:"0.1em" }}>STRONGEST</span> <div style={{ fontSize:13, color:"#fff", marginTop:3, lineHeight:1.45 }}>{res.strongest}</div></div>}
-            {res.weakest && <div style={{ borderRadius:12, background:`${C.pink}0c`, border:`1px solid ${C.pink}25`, padding:"12px 14px" }}><span style={{ fontSize:9, fontWeight:800, color:C.pink, letterSpacing:"0.1em" }}>WEAKEST</span> <div style={{ fontSize:13, color:"#fff", marginTop:3, lineHeight:1.45 }}>{res.weakest}</div></div>}
+            {res.weakest && <div style={{ borderRadius:12, background:`${"#FF4D4D"}0c`, border:`1px solid ${"#FF4D4D"}25`, padding:"12px 14px" }}><span style={{ fontSize:9, fontWeight:800, color:"#FF4D4D", letterSpacing:"0.1em" }}>WEAKEST</span> <div style={{ fontSize:13, color:"#fff", marginTop:3, lineHeight:1.45 }}>{res.weakest}</div></div>}
           </div>
         </div>
 
@@ -8892,7 +8892,7 @@ Return ONLY JSON:
             {phase==="scraping"?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={13}/> PULLING VIDEOS</span>:phase==="analysing"?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={13}/> ANALYSING</span>:<span style={{display:"inline-flex",alignItems:"center",gap:6}}>{I.search(14,"currentColor")} RUN AUDIT</span>}
           </button>
         </div>
-        {err && <div style={{ marginTop:12, fontSize:13.5, color:C.pink, background:`${C.pink}10`, border:`1px solid ${C.pink}25`, borderRadius:10, padding:"10px 13px", lineHeight:1.5 }}>{err}</div>}
+        {err && <div style={{ marginTop:12, fontSize:13.5, color:"#FF4D4D", background:`${"#FF4D4D"}10`, border:`1px solid ${"#FF4D4D"}25`, borderRadius:10, padding:"10px 13px", lineHeight:1.5 }}>{err}</div>}
         {busy && (
           <div style={{ marginTop:14, display:"flex", flexDirection:"column", gap:9 }}>
             {[{k:"scraping",l:"Pulling their recent videos"},{k:"analysing",l:"Reading their voice & scoring ideas"}].map((st,i)=>{
@@ -9052,7 +9052,7 @@ function PricingModal({ tier="free", reason, onClose }){
             );
           })}
         </div>
-        {err && <div style={{ marginTop:16, fontSize:13, color:C.pink, textAlign:"center" }}>{err}</div>}
+        {err && <div style={{ marginTop:16, fontSize:13, color:"#FF4D4D", textAlign:"center" }}>{err}</div>}
         <div style={{ marginTop:18, fontSize:11.5, color:"rgba(255,255,255,0.3)", textAlign:"center" }}>Secure checkout by Stripe · cancel anytime from your account</div>
       </div>
     </div>
