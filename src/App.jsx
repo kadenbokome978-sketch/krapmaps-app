@@ -7780,6 +7780,10 @@ const ttInfoUrl  = (handle) => `${TT_HOST}/api/user/info?unique_id=${encodeURICo
 
 // GET proxy for scraper calls — returns the native response.
 async function rapidFetch(targetUrl, byoKey) {
+  // tikwm.com is a free public API with permissive CORS. Call it DIRECTLY from the browser
+  // (the user's residential IP) — routing it through our Vercel proxy fails because tikwm
+  // blocks datacenter/serverless IPs with a 403. Direct browser call sidesteps that.
+  try { if(/(^|\.)tikwm\.com$/.test(new URL(targetUrl).hostname)) return await fetch(targetUrl, { headers:{ "Accept":"application/json" } }); } catch {}
   if(!USE_BACKEND) return fetch(targetUrl, { headers:{ "x-rapidapi-host": new URL(targetUrl).hostname, "x-rapidapi-key": byoKey||"" } });
   const token = await getAccessToken();
   if(!token) throw new Error("Your session expired — please sign in again.");
