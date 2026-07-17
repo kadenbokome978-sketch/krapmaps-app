@@ -87,7 +87,7 @@ const C = _isThiernoClient ? {
   fontMono:"'DM Mono', 'SF Mono', monospace",
 } : {
   // ── KrapMaps / Greenlit ──
-  pink:"#FF2D78", cyan:"#00E5FF", yellow:"#FFD50A",
+  pink:"#22E06B", cyan:"#00E5FF", yellow:"#FFD50A",  // "pink" slot = brand green (Greenlit)
   green:"#39FF14", orange:"#FF6B1A", purple:"#C566FF",
   bg:"#07050F", card:"rgba(255,255,255,0.025)",
   cardSolid:"#0C0A1A", cardAlt:"rgba(255,255,255,0.025)",
@@ -316,7 +316,7 @@ function ScoreReveal({ score=0, title, onClose }){
 
 // ── ONBOARDING TOUR MOCKS — the real OS look, alive on mount ──────────────
 // Score slide uses the actual ScoreDial (count-up ring + particle burst).
-function OnbScoreMock({ accent="#FF2D78" }){
+function OnbScoreMock({ accent="#22E06B" }){
   const [show, setShow] = useState(false);
   useEffect(()=>{ const t=setTimeout(()=>setShow(true),120); return ()=>clearTimeout(t); },[]);
   return (
@@ -9774,7 +9774,7 @@ function GuidedTour({ step, onSkip, onGoContent }) {
       }}>
         <div style={{ fontSize:15, fontWeight:700, color:"#fff", marginBottom:6 }}>{tip.title}</div>
         <div style={{ fontSize:13, color:"rgba(255,255,255,0.6)", lineHeight:1.5, marginBottom:tip.cta?14:0 }}>{tip.desc}</div>
-        {tip.cta && <button onClick={tip.action} style={{ padding:"10px 20px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#FF3D81,#FF6B9D)", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", width:"100%" }}>{tip.cta}</button>}
+        {tip.cta && <button onClick={tip.action} style={{ padding:"10px 20px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#22E06B,#6EF2A3)", color:"#052312", fontWeight:700, fontSize:13, cursor:"pointer", width:"100%" }}>{tip.cta}</button>}
         <button onClick={onSkip} style={{ marginTop:8, background:"none", border:"none", color:"rgba(255,255,255,0.35)", fontSize:11, cursor:"pointer", padding:0, width:"100%", textAlign:"center" }}>Skip tour</button>
       </div>
     </>

@@ -35,26 +35,26 @@
     /* ── CUSTOM CURSOR ── */
     .cur {
       display:none; position:fixed; pointer-events:none; z-index:9999;
-      width:6px; height:6px; border-radius:50%; background:#FF2D78;
+      width:6px; height:6px; border-radius:50%; background:#22E06B;
       transform:translate(-50%,-50%);
     }
     .cur-ring {
       display:none; position:fixed; pointer-events:none; z-index:9998;
       width:28px; height:28px; border-radius:50%;
-      border:1px solid rgba(255,107,157,0.5);
+      border:1px solid rgba(34,224,107,0.5);
       transform:translate(-50%,-50%);
       transition:width .25s, height .25s, border-color .25s, background .25s;
     }
     body.hovering .cur-ring {
       width:44px; height:44px;
-      border-color:rgba(255,107,157,0.9);
-      background:rgba(255,107,157,0.06);
+      border-color:rgba(34,224,107,0.9);
+      background:rgba(34,224,107,0.06);
     }
 
     /* ── SCROLL PROGRESS ── */
     #scroll-progress {
       position:fixed; top:0; left:0; right:0; height:2px;
-      background:linear-gradient(90deg,#FF2D78,#C566FF);
+      background:linear-gradient(90deg,#22E06B,#C566FF);
       z-index:9997; transform-origin:left; transform:scaleX(0);
       pointer-events:none;
     }
@@ -80,7 +80,7 @@
     button:hover:not([data-nav-btn]) {
       filter:brightness(1.12) !important;
       transform:translateY(-1px) scale(1.04) !important;
-      box-shadow:0 4px 14px rgba(255,107,157,0.12) !important;
+      box-shadow:0 4px 14px rgba(34,224,107,0.12) !important;
     }
     button:active:not([data-nav-btn]) { transform:scale(0.96) !important; }
     [data-nav-btn] { transition:transform .15s, filter .15s; }
@@ -100,7 +100,7 @@
     .view-root { will-change:transform,opacity; }
     .swept::before {
       content:""; position:absolute; top:0; left:-100%; width:100%; height:1px;
-      background:linear-gradient(90deg,transparent,#FF2D78,transparent);
+      background:linear-gradient(90deg,transparent,#22E06B,transparent);
       z-index:10; pointer-events:none; animation:sweepLine .9s ease-out forwards;
     }
     @keyframes sweepLine { 0%{left:-100%;opacity:1} 100%{left:100%;opacity:0} }

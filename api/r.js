@@ -11,7 +11,7 @@ const hex = (v, fb) => (/^#[0-9A-Fa-f]{3,8}$/.test(String(v || "")) ? v : fb);
 const num = (v) => (typeof v === "number" && isFinite(v) ? v : 0);
 
 function page(d) {
-  const accent = hex(d.accent, "#FF2D78");
+  const accent = hex(d.accent, "#22E06B");
   const accent2 = hex(d.accent2, "#C566FF");
   const app = esc(d.appName || "Greenlit");
   const handle = esc(d.handle || "@creator");

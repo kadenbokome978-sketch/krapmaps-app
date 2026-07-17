@@ -24,7 +24,7 @@ export default async function handler(req) {
     }
   } catch {}
 
-  const accent = hex(d?.accent, "#FF2D78");
+  const accent = hex(d?.accent, "#22E06B");
   const accent2 = hex(d?.accent2, "#C566FF");
   const app = d?.appName || "Greenlit";
   const handleLabel = d?.handle || (handle ? "@" + handle : "@creator");
