@@ -7826,10 +7826,14 @@ async function ttScrape(handle, byoKey, maxPages=4){
   const clean = String(handle||"").replace(/^@/,"").trim();
   const n = Math.min(Math.max(maxPages,1)*30, 100);
   const r = await bdFetch(clean, n);
-  if(!r.ok){ const e = new Error("bd"); e.status = r.status; throw e; }
-  const raw = await r.json().catch(()=>null);
-  const items = Array.isArray(raw) ? raw : (raw?.items || raw?.data || raw?.results || []);
-  if(!Array.isArray(items) || !items.length){ const e = new Error("empty"); e.status = 404; throw e; }
+  const rawText = await r.text().catch(()=>"");
+  let raw = null; try { raw = JSON.parse(rawText); } catch {}
+  if(!r.ok){ const e = new Error("bd"); e.status = r.status; e.detail = (raw?.error||rawText||"").slice(0,300); throw e; }
+  // Bright Data may return a bare array, or wrap it under a key. Dig for the first array of records.
+  let items = Array.isArray(raw) ? raw : _pick(raw?.items, raw?.data, raw?.results, raw?.records, raw?.output, raw?.data?.items);
+  if(!Array.isArray(items) && raw && typeof raw === "object"){ for(const k of Object.keys(raw)){ if(Array.isArray(raw[k]) && raw[k].length){ items = raw[k]; break; } } }
+  try { console.log("[ttScrape] BrightData raw:", rawText.slice(0,600)); } catch {}
+  if(!Array.isArray(items) || !items.length){ const e = new Error("empty"); e.status = 404; e.detail = rawText.slice(0,300); throw e; }
   const seen = new Set(); const videos = [];
   for(const it of items){ const v = ttNormalize(it); if(v.video_id && !seen.has(v.video_id)){ seen.add(v.video_id); videos.push(v); } }
   const prof = ttProfileFrom(items[0]||{});
@@ -10058,7 +10062,7 @@ function Dashboard({ keys, onEditKeys }) {
 
       let scrapeRes;
       try { scrapeRes = await ttScrape(handle, tikwmKey, 10); }
-      catch(e){ reportHealth("tiktok","error",`TikTok scraper HTTP ${e.status||"error"} — ${ttErrMsg(e.status)}`); return; }
+      catch(e){ reportHealth("tiktok","error",`TikTok scraper HTTP ${e.status||"error"} — ${ttErrMsg(e.status)}${e.detail?` · RAW: ${e.detail}`:""}`); return; }
 
       // Auto-update TT followers + likes from the profile
       if(scrapeRes.followers) {
