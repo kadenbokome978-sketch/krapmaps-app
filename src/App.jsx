@@ -7770,20 +7770,71 @@ async function _postProxy(endpoint, body, byoKey) {
   if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e.error || ("Proxy error "+r.status)); }
   return r.json();
 }
-// TikTok scraper endpoints. TIKWM's paid RapidAPI wrapper (tiktok-scraper7) was DISABLED by
-// the provider (returns 405 "provider has disabled access"), so we use TIKWM's FREE public API
-// at tikwm.com — identical JSON schema (data.videos, play_count, digg_count, followerCount…),
-// so all the parsing below is unchanged. Routed through /api/rapid to avoid browser CORS.
-const TT_HOST = "https://www.tikwm.com";
-const ttPostsUrl = (handle, cursor=0) => `${TT_HOST}/api/user/posts?unique_id=${encodeURIComponent(handle)}&count=35&cursor=${cursor}`;
-const ttInfoUrl  = (handle) => `${TT_HOST}/api/user/info?unique_id=${encodeURIComponent(handle)}`;
+// ── TikTok scraper: tiktok-api23 (Lundehund) on RapidAPI ──────────
+// The old TIKWM wrapper (tiktok-scraper7) was disabled by the provider (405), and TIKWM's free
+// tikwm.com is Cloudflare-blocked (403). tiktok-api23 is server-callable and works through the
+// /api/rapid proxy on the existing RapidAPI key (just subscribe to it — free tier).
+// Flow: /api/user/info?uniqueId=HANDLE -> secUid + followers, then /api/user/posts?secUid=... .
+// Parsing is tolerant of field-name variants and normalises every item to the TIKWM shape the
+// rest of the app already expects (video_id, play_count, digg_count, ...), so nothing downstream
+// changes if the provider's schema differs slightly.
+const TT_HOST = "https://tiktok-api23.p.rapidapi.com";
+const ttInfoUrl  = (handle) => `${TT_HOST}/api/user/info?uniqueId=${encodeURIComponent(handle)}`;
+const ttPostsUrl = (secUid, cursor=0) => `${TT_HOST}/api/user/posts?secUid=${encodeURIComponent(secUid)}&count=35&cursor=${cursor}`;
+const _pick = (...vals) => { for(const v of vals){ if(v!==undefined && v!==null && v!=="") return v; } return undefined; };
+const _num  = (...vals) => Number(_pick(...vals)) || 0;
+const ttProfileFrom = (j) => {
+  const u = j?.userInfo || j?.data || j || {};
+  const user = u.user || u;
+  const stats = u.stats || u.statsV2 || user.stats || {};
+  return {
+    secUid: _pick(user.secUid, u.secUid),
+    followers: _num(stats.followerCount, stats.followers, u.followerCount),
+    likes: _num(stats.heartCount, stats.heart, stats.diggCount),
+    nick: _pick(user.nickname, user.uniqueId, u.nickname) || "",
+  };
+};
+const ttItemsFrom  = (j) => _pick(j?.data?.itemList, j?.itemList, j?.data?.videos, j?.aweme_list, j?.videos) || [];
+const ttCursorFrom = (j) => _pick(j?.data?.cursor, j?.cursor, j?.data?.maxCursor, j?.maxCursor, 0);
+const ttHasMoreFrom= (j) => !!_pick(j?.data?.hasMore, j?.hasMore, j?.data?.has_more);
+const ttNormalize  = (v) => {
+  const s = v.stats || v.statistics || v.statsV2 || {};
+  return {
+    video_id: String(_pick(v.id, v.video_id, v.aweme_id, v.itemId) || ""),
+    title: _pick(v.desc, v.title, v.description) || "",
+    play_count: _num(s.playCount, s.play_count, v.play_count),
+    digg_count: _num(s.diggCount, s.digg_count, v.digg_count),
+    comment_count: _num(s.commentCount, s.comment_count, v.comment_count),
+    share_count: _num(s.shareCount, s.share_count, v.share_count),
+    duration: Math.round(_num(v.video?.duration, v.duration, v.music?.duration)),
+    play: _pick(v.video?.playAddr, v.play, v.video?.downloadAddr) || "",
+    cover: _pick(v.video?.cover, v.video?.originCover, v.cover) || "",
+    create_time: _num(v.createTime, v.create_time),
+  };
+};
+// Scrape a handle end-to-end: profile + up to maxPages of normalised videos. Throws with .status.
+async function ttScrape(handle, byoKey, maxPages=4){
+  const rInfo = await rapidFetch(ttInfoUrl(handle), byoKey);
+  if(!rInfo.ok){ const e = new Error("info"); e.status = rInfo.status; throw e; }
+  const prof = ttProfileFrom(await rInfo.json().catch(()=>({})));
+  if(!prof.secUid){ const e = new Error("no user"); e.status = 404; throw e; }
+  let cursor = 0, more = true, pages = 0; const seen = new Set(); const videos = [];
+  while(more && pages < maxPages){
+    const rp = await rapidFetch(ttPostsUrl(prof.secUid, cursor), byoKey);
+    if(!rp.ok){ if(pages===0){ const e = new Error("posts"); e.status = rp.status; throw e; } break; }
+    const pd = await rp.json().catch(()=>({}));
+    const items = ttItemsFrom(pd);
+    if(!items.length) break;
+    for(const it of items){ const n = ttNormalize(it); if(n.video_id && !seen.has(n.video_id)){ seen.add(n.video_id); videos.push(n); } }
+    cursor = ttCursorFrom(pd); more = ttHasMoreFrom(pd); pages++;
+    if(more && pages < maxPages) await new Promise(r=>setTimeout(r,500));
+  }
+  return { ...prof, videos };
+}
+const ttErrMsg = (status) => status===429?"Rate limited — wait ~30s and retry":status===403?"Scraper access denied — subscribe to 'tiktok-api23' on RapidAPI (free tier), it uses your existing key":status===404?"No public TikTok found — check the handle is exact (no spaces)":`Scraper error ${status||""} — try again shortly`;
 
-// GET proxy for scraper calls — returns the native response.
+// GET proxy for RapidAPI scraper calls — returns the native response.
 async function rapidFetch(targetUrl, byoKey) {
-  // tikwm.com is a free public API with permissive CORS. Call it DIRECTLY from the browser
-  // (the user's residential IP) — routing it through our Vercel proxy fails because tikwm
-  // blocks datacenter/serverless IPs with a 403. Direct browser call sidesteps that.
-  try { if(/(^|\.)tikwm\.com$/.test(new URL(targetUrl).hostname)) return await fetch(targetUrl, { headers:{ "Accept":"application/json" } }); } catch {}
   if(!USE_BACKEND) return fetch(targetUrl, { headers:{ "x-rapidapi-host": new URL(targetUrl).hostname, "x-rapidapi-key": byoKey||"" } });
   const token = await getAccessToken();
   if(!token) throw new Error("Your session expired — please sign in again.");
@@ -7802,28 +7853,12 @@ async function scrapeProspectTikTok(handle){
   if(!clean) throw new Error("Enter a TikTok @handle first");
   const key = loadJSON(KEYS_KEY,{})?.keys?.tikwm;
   if(!key && !USE_BACKEND) throw new Error("Add your TikTok (RapidAPI) key in Settings first — that's what pulls their videos.");
-  const [r, rUser] = await Promise.all([
-    rapidFetch(ttPostsUrl(clean, 0), key),
-    rapidFetch(ttInfoUrl(clean), key),
-  ]);
-  if(!r.ok) throw new Error(r.status===429?"Rate limited — wait ~30s and retry":r.status>=500?"Scraper temporarily down — try again shortly":`Scraper error ${r.status} — check the handle is exact`);
-  const data = await r.json();
-  if(data.code!==0 || !data.data?.videos?.length) throw new Error(`No public videos found for @${clean} — check the handle is exact (no spaces).`);
-  let followers=0, nick="";
-  try { const u=await rUser.json(); const st=u?.data?.user?.stats||u?.data?.stats; followers=st?.followerCount||0; nick=u?.data?.user?.nickname||u?.data?.user?.uniqueId||""; } catch {}
-  let vids=data.data.videos, cursor=data.data.cursor, more=!!data.data.hasMore, pages=1;
-  while(more && cursor && pages<4){
-    await new Promise(res=>setTimeout(res,500));
-    const r2=await rapidFetch(ttPostsUrl(clean, cursor), key);
-    if(!r2.ok) break;
-    const d2=await r2.json();
-    if(d2.code!==0 || !d2.data?.videos?.length) break;
-    vids=vids.concat(d2.data.videos); cursor=d2.data.cursor; more=!!d2.data.hasMore; pages++;
-  }
-  const seen=new Set();
-  const videos = vids.filter(tv=>{ if(seen.has(tv.video_id)) return false; seen.add(tv.video_id); return true; })
-    .map(tv=>({ id:"p_"+tv.video_id, title:tv.title||"", views:tv.play_count||0, likes:tv.digg_count||0, comments:tv.comment_count||0, shares:tv.share_count||0, created_at:new Date((tv.create_time||0)*1000).toISOString(), platform:"tiktok" }));
-  return { handle:clean, nick, followers, videos };
+  let res;
+  try { res = await ttScrape(clean, key, 4); }
+  catch(e){ throw new Error(e.status===404?`No public TikTok found for @${clean} — check the handle is exact (no spaces).`:ttErrMsg(e.status)); }
+  if(!res.videos.length) throw new Error(`No public videos found for @${clean} — check the handle is exact (no spaces).`);
+  const videos = res.videos.map(tv=>({ id:"p_"+tv.video_id, title:tv.title||"", views:tv.play_count||0, likes:tv.digg_count||0, comments:tv.comment_count||0, shares:tv.share_count||0, created_at:new Date((tv.create_time||0)*1000).toISOString(), platform:"tiktok" }));
+  return { handle:clean, nick:res.nick, followers:res.followers, videos };
 }
 
 // ── CROSS-CLIENT ANONYMISED PRIORS ────────────────────────────────
@@ -10016,61 +10051,23 @@ function Dashboard({ keys, onEditKeys }) {
     try {
       const wl = loadWL();
       const handle = (wl.handle||"@findkrap").replace("@","");
-      
-      // Fetch user info for followers in parallel with first page of videos
-      const [r, rUser] = await Promise.all([
-        rapidFetch(ttPostsUrl(handle, 0), tikwmKey),
-        rapidFetch(ttInfoUrl(handle), tikwmKey)
-      ]);
 
-      // Auto-update TT followers from user info
-      if(rUser.ok) {
-        try {
-          const userData = await rUser.json();
-          const followers = userData?.data?.user?.stats?.followerCount || userData?.data?.stats?.followerCount;
-          const totalLikes = userData?.data?.user?.stats?.heartCount || userData?.data?.stats?.heartCount;
-          if(followers) {
-            setManualData(prev => {
-              const updated = { ...prev, tt_followers: followers };
-              if(totalLikes) updated.tt_likes = totalLikes;
-              saveJSON(MANUAL_KEY, updated);
-              return updated;
-            });
-          }
-        } catch(e) { console.warn("User info parse failed:", e.message); }
+      let scrapeRes;
+      try { scrapeRes = await ttScrape(handle, tikwmKey, 10); }
+      catch(e){ reportHealth("tiktok","error",`TikTok scraper HTTP ${e.status||"error"} — ${ttErrMsg(e.status)}`); return; }
+
+      // Auto-update TT followers + likes from the profile
+      if(scrapeRes.followers) {
+        setManualData(prev => {
+          const updated = { ...prev, tt_followers: scrapeRes.followers };
+          if(scrapeRes.likes) updated.tt_likes = scrapeRes.likes;
+          saveJSON(MANUAL_KEY, updated);
+          return updated;
+        });
       }
 
-      if(!r.ok) { reportHealth("tiktok","error",`TikTok scraper HTTP ${r.status}${r.status===429?" — rate limited by tikwm, retries automatically":r.status>=500?" — tikwm scraper temporarily down, try again shortly":" — couldn't reach the scraper, check the handle in Settings"}`); return; }
-      const data = await r.json();
-      if(data.code !== 0 || !data.data?.videos) { reportHealth("tiktok","error","TikTok scraper returned no videos — check the handle in Settings ("+(wl.handle||"not set")+")"); return; }
-      
-      let tikVideos = data.data.videos;
-
-      // Paginate — hasMore can be boolean or 1/0
-      let ttCursor = data.data.cursor;
-      let ttMore = !!data.data.hasMore;
-      let ttPages = 1;
-      while(ttMore && ttCursor && ttPages < 10) {
-        await new Promise(res => setTimeout(res, 600));
-        const r2 = await rapidFetch(ttPostsUrl(handle, ttCursor), tikwmKey);
-        if(!r2.ok) break;
-        const d2 = await r2.json();
-        if(d2.code !== 0 || !d2.data?.videos?.length) break;
-        tikVideos = tikVideos.concat(d2.data.videos);
-        ttCursor = d2.data.cursor;
-        ttMore = !!d2.data.hasMore;
-        ttPages++;
-        console.log("TT page", ttPages, "total:", tikVideos.length, "more:", ttMore);
-      }
-      
-      // Dedupe by video_id (pagination can overlap)
-      const seenIds = new Set();
-      tikVideos = tikVideos.filter(tv => {
-        if(seenIds.has(tv.video_id)) return false;
-        seenIds.add(tv.video_id);
-        return true;
-      });
-      console.log("TT after dedupe:", tikVideos.length);
+      let tikVideos = scrapeRes.videos;  // already normalised (TIKWM shape) + deduped
+      if(!tikVideos.length) { reportHealth("tiktok","error","TikTok scraper returned no videos — check the handle in Settings ("+(wl.handle||"not set")+")"); return; }
       
       // Update existing videos with fresh stats
       setVideos(prev => {
@@ -10167,10 +10164,10 @@ function Dashboard({ keys, onEditKeys }) {
       let pool = [];
       for(const v of top) {
         const idOrUrl = v._tikwmId || v.url;
-        const r = await rapidFetch("https://tiktok-scraper7.p.rapidapi.com/comment/list?url="+encodeURIComponent(idOrUrl)+"&count=20&cursor=0", rapidKey);
+        const r = await rapidFetch(TT_HOST+"/api/post/comments?videoId="+encodeURIComponent(idOrUrl)+"&count=20&cursor=0", rapidKey);
         if(!r.ok) continue;
-        const d = await r.json();
-        (d?.data?.comments||[]).forEach(c=>{ if(c.text) pool.push(c.text); });
+        const d = await r.json().catch(()=>({}));
+        (d?.data?.comments||d?.comments||[]).forEach(c=>{ const t=c.text||c.comment||c.desc; if(t) pool.push(t); });
         await new Promise(res=>setTimeout(res,500));
       }
       pool = pool.filter(Boolean).slice(0,120);
