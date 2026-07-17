@@ -34,7 +34,7 @@ if(typeof document !== "undefined") {
         g.fillStyle = bg; g.fill();
         g.save(); g.clip();
         const ring = g.createLinearGradient(0, 0, S, S);
-        ring.addColorStop(0, _activeCfg.accentColor || "#FF2D78");
+        ring.addColorStop(0, _activeCfg.accentColor || "#22E06B");
         ring.addColorStop(1, _activeCfg.accentColor2 || "#C566FF");
         g.strokeStyle = ring; g.lineWidth = S*0.125; g.lineCap = "round";
         const gap = Math.PI/4.4;
@@ -469,7 +469,7 @@ const StatMini = ({ label, value, color, icon, delta, deltaUp }) => {
     <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:isMobile?12:16 }}>
       <div style={{ width:40, height:40, borderRadius:12, background:`linear-gradient(135deg,${color}30,${color}10)`, border:`1px solid ${color}35`, display:"flex", alignItems:"center", justifyContent:"center", color, flexShrink:0, boxShadow:`0 4px 16px ${color}20` }}>{icon}</div>
       {delta != null && (
-        <div style={{ display:"flex", alignItems:"center", gap:4, padding:isMobile?"5px 10px":"3px 8px", borderRadius:6, background:deltaUp?"rgba(0,255,148,0.1)":"rgba(255,45,120,0.1)", border:`1px solid ${deltaUp?"rgba(0,255,148,0.2)":"rgba(255,45,120,0.2)"}` }}>
+        <div style={{ display:"flex", alignItems:"center", gap:4, padding:isMobile?"5px 10px":"3px 8px", borderRadius:6, background:deltaUp?"rgba(0,255,148,0.1)":"rgba(255,77,77,0.1)", border:`1px solid ${deltaUp?"rgba(0,255,148,0.2)":"rgba(255,77,77,0.2)"}` }}>
           <span style={{ fontSize:11, color:deltaUp?C.green:C.pink, fontWeight:700 }}>{deltaUp?"↑":"↓"} {delta}</span>
         </div>
       )}
@@ -2932,7 +2932,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                     {!isMobile && <div style={{ width:32, height:32, borderRadius:10, background:`${ac(t.assignee)}20`, border:`1px solid ${ac(t.assignee)}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:ac(t.assignee), flexShrink:0 }}>
                       {acLabel(t.assignee)}
                     </div>}
-                    <button onClick={()=>setTasks(ts=>ts.filter(x=>x.id!==t.id))} aria-label="Delete task" style={{ width:isMobile?40:28, height:isMobile?40:28, borderRadius:8, border:"1px solid rgba(255,45,120,0.2)", background:"rgba(255,45,120,0.08)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <button onClick={()=>setTasks(ts=>ts.filter(x=>x.id!==t.id))} aria-label="Delete task" style={{ width:isMobile?40:28, height:isMobile?40:28, borderRadius:8, border:"1px solid rgba(255,77,77,0.2)", background:"rgba(255,77,77,0.08)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                       {I.trash(12,C.pink)}
                     </button>
                   </div>
@@ -4393,7 +4393,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
       { min:85, max:100, label:"Scored 85+", color:"#39FF14" },
       { min:70, max:84, label:"Scored 70–84", color:"#00E5FF" },
       { min:50, max:69, label:"Scored 50–69", color:"#FFD50A" },
-      { min:0,  max:49, label:"Under 50", color:"#FF2D78" },
+      { min:0,  max:49, label:"Under 50", color:"#FF4D4D" },
     ];
     const pts = postedWithViews.filter(i=>i.viral!=null && i.postedViews>0);
     const bands = bandDefs.map(b=>{
@@ -4421,11 +4421,11 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
     const topVideos = [...pts].sort((a,b)=>b.postedViews-a.postedViews).slice(0,3).map(i=>({
       score:i.viral, title:(i.title||i.hook||"Untitled").slice(0,70), views:fmt(i.postedViews),
       sub:[i.hook?`${i.hook} hook`:null, i.postedDate?fmtDate(i.postedDate):null].filter(Boolean).join(" · "),
-      color: i.viral>=70?"#39FF14":i.viral>=50?"#00E5FF":"#FF2D78",
+      color: i.viral>=70?"#39FF14":i.viral>=50?"#00E5FF":"#FF4D4D",
     }));
     return {
       handle: wl.handle||"@creator", appName: wl.appName||"Greenlit", creator1: wl.creator1||"",
-      accent: wl.accentColor||"#FF2D78", accent2: wl.accentColor2||"#C566FF",
+      accent: wl.accentColor||"#22E06B", accent2: wl.accentColor2||"#C566FF",
       sub: [wl.niche?wl.niche:null, `${videos.length} videos tracked`].filter(Boolean).join(" · "),
       stats: { viewsTracked: totalViews>0?fmt(totalViews):null, avgViews: (avgPostedViews||channelAvg)?fmt(avgPostedViews||channelAvg):null, accuracy },
       hero: best ? { score:best.viral, viewsLabel:fmt(best.postedViews), title:(best.title||best.hook||"").slice(0,70), mult: channelAvg>0?`${(best.postedViews/channelAvg).toFixed(1)}× channel average`:"" } : null,
@@ -5178,7 +5178,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
           "Free" plan inside the app (free users live on the audit screen), so we
           never show a Free/usage card here. */}
       {USE_BACKEND && ["pro","studio","founder"].includes(plan?.tier) && (
-        <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"22px 26px", background:"linear-gradient(145deg,rgba(255,45,120,0.1),rgba(10,6,20,0.95))", border:`1px solid ${C.pink}30`, display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexWrap:"wrap", position:"relative", overflow:"hidden" }}>
+        <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"22px 26px", background:"linear-gradient(145deg,rgba(34,224,107,0.1),rgba(10,6,20,0.95))", border:`1px solid ${C.pink}30`, display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexWrap:"wrap", position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:11, letterSpacing:"0.12em", color:"rgba(255,255,255,0.45)", fontWeight:700, textTransform:"uppercase", marginBottom:5 }}>{USE_BACKEND ? "Your Plan" : "Plans — Preview"}</div>
@@ -5225,7 +5225,7 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:16, alignItems:"start" }}>
 
         {/* LEFT — API Keys (admin only — regular users go through backend proxy) */}
-        {_activeCfg.clientId==="krapmaps" && <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"22px 24px", background:"linear-gradient(145deg,rgba(255,45,120,0.07),rgba(10,6,20,0.95))", border:`1px solid ${C.pink}25`, position:"relative", overflow:"hidden" }}>
+        {_activeCfg.clientId==="krapmaps" && <div style={{ borderRadius:16, padding:isMobile?"18px 18px":"22px 24px", background:"linear-gradient(145deg,rgba(34,224,107,0.07),rgba(10,6,20,0.95))", border:`1px solid ${C.pink}25`, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.pink},${C.pink}00)` }}/>
           <div style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>API Keys</div>
           <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginBottom:12, lineHeight:1.5 }}>Keys auto-save to cloud (Supabase) — persist across devices &amp; new builds. Requires a <code style={{background:"rgba(255,255,255,0.07)",padding:"1px 5px",borderRadius:4}}>km_config</code> table in your Supabase project.</div>
@@ -7065,7 +7065,7 @@ const calcVideoScore = (video, allVideos=[]) => {
   }
 
   const label = score >= 80 ? "VIRAL" : score >= 65 ? "STRONG" : score >= 50 ? "AVERAGE" : score >= 35 ? "WEAK" : "FLOPPED";
-  const color = score >= 80 ? "#00FF94" : score >= 65 ? "#FFD60A" : score >= 50 ? "#00CFFF" : score >= 35 ? "#FF6B35" : "#FF2D78";
+  const color = score >= 80 ? "#00FF94" : score >= 65 ? "#FFD60A" : score >= 50 ? "#00CFFF" : score >= 35 ? "#FF6B35" : "#FF4D4D";
 
   return { score, label, color, phase, velocity: Math.round(velocity), ageDays: Math.round(ageDays * 10) / 10, likeRatio: likeRatio.toFixed(1) };
 };
@@ -9025,7 +9025,7 @@ function PricingModal({ tier="free", reason, onClose }){
           {PRICING_PLANS.map(p=>{
             const current = tier===p.id;
             return (
-              <div key={p.id} style={{ position:"relative", background:p.hot?"linear-gradient(165deg,rgba(255,45,120,0.12),rgba(197,102,255,0.06))":"rgba(255,255,255,0.03)", border:`1px solid ${p.hot?C.pink+"55":"rgba(255,255,255,0.09)"}`, borderRadius:16, padding:"22px 20px", display:"flex", flexDirection:"column", gap:14 }}>
+              <div key={p.id} style={{ position:"relative", background:p.hot?"linear-gradient(165deg,rgba(34,224,107,0.12),rgba(197,102,255,0.06))":"rgba(255,255,255,0.03)", border:`1px solid ${p.hot?C.pink+"55":"rgba(255,255,255,0.09)"}`, borderRadius:16, padding:"22px 20px", display:"flex", flexDirection:"column", gap:14 }}>
                 {p.hot && <div style={{ position:"absolute", top:-10, right:16, fontSize:10, fontWeight:800, letterSpacing:"0.1em", color:"#fff", background:`linear-gradient(135deg,${C.pink},${C.purple})`, borderRadius:20, padding:"3px 10px" }}>MOST POPULAR</div>}
                 <div>
                   <div style={{ fontSize:13, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:p.hot?C.pink:"rgba(255,255,255,0.55)" }}>{p.name}</div>
@@ -9738,7 +9738,7 @@ function GuidedTour({ step, onSkip, onGoContent }) {
   if(step===2) return (
     <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", zIndex:9999, textAlign:"center", animation:"tourFadeIn 0.4s ease" }}>
       <style>{`@keyframes tourFadeIn{from{opacity:0;transform:translate(-50%,-50%) scale(0.9)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}`}</style>
-      <div style={{ background:"rgba(8,7,12,0.95)", border:"1px solid rgba(255,61,129,0.3)", borderRadius:20, padding:"40px 48px", backdropFilter:"blur(20px)", boxShadow:"0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(255,61,129,0.15)" }}>
+      <div style={{ background:"rgba(8,7,12,0.95)", border:"1px solid rgba(34,224,107,0.3)", borderRadius:20, padding:"40px 48px", backdropFilter:"blur(20px)", boxShadow:"0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(34,224,107,0.15)" }}>
         <div style={{ fontSize:48, marginBottom:16 }}>🎉</div>
         <div style={{ fontSize:22, fontWeight:800, color:"#fff", marginBottom:8 }}>First score done!</div>
         <div style={{ fontSize:14, color:"rgba(255,255,255,0.6)", maxWidth:280, lineHeight:1.5 }}>You're all set. Keep adding ideas and let AI tell you which ones to film.</div>
@@ -9761,15 +9761,15 @@ function GuidedTour({ step, onSkip, onGoContent }) {
   return (
     <>
       <style>{`
-        @keyframes tourPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,61,129,0.4)}50%{box-shadow:0 0 0 12px rgba(255,61,129,0)}}
+        @keyframes tourPulse{0%,100%{box-shadow:0 0 0 0 rgba(34,224,107,0.4)}50%{box-shadow:0 0 0 12px rgba(34,224,107,0)}}
         @keyframes tourSlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
       `}</style>
       {step===0 && <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:9997 }} onClick={onSkip} />}
       <div style={{
         ...posStyle,
-        background:"rgba(8,7,12,0.96)", border:"1px solid rgba(255,61,129,0.3)", borderRadius:16,
+        background:"rgba(8,7,12,0.96)", border:"1px solid rgba(34,224,107,0.3)", borderRadius:16,
         padding:isMobile?"20px":"18px 22px", maxWidth:300, backdropFilter:"blur(16px)",
-        boxShadow:"0 12px 40px rgba(0,0,0,0.5), 0 0 20px rgba(255,61,129,0.1)",
+        boxShadow:"0 12px 40px rgba(0,0,0,0.5), 0 0 20px rgba(34,224,107,0.1)",
         animation:"tourSlideIn 0.3s ease, tourPulse 2s ease-in-out infinite"
       }}>
         <div style={{ fontSize:15, fontWeight:700, color:"#fff", marginBottom:6 }}>{tip.title}</div>
@@ -11721,7 +11721,7 @@ function OnboardingPage({ onComplete }) {
   // Known-brand builds (hand-made) show the editorial brand overview; generic
   // self-serve creators get the product tour instead.
   const showBrief = isBraz || WL.clientId === "krapmaps";
-  const ac1 = WL.accentColor || "#FF2D78";
+  const ac1 = WL.accentColor || "#22E06B";
   const ac2wl = WL.accentColor2 || "#00E5FF";
 
   // ── EDITORIAL BRIEF — same layout on every build, content driven by client ──
@@ -11750,18 +11750,18 @@ function OnboardingPage({ onComplete }) {
   } : {
     name:"KrapMaps", sub:"@findkrap · Kaden + Harley",
     desc:"World's first crowdsourced bin-finding app for backpackers. SE Asia + UK. Founder-built, mission-driven, slightly self-deprecating.",
-    cols:{ c1:"#FF2D78", c2:"#00E5FF", c3:"#C566FF", c4:"#FF6B1A" },
+    cols:{ c1:"#22E06B", c2:"#00E5FF", c3:"#C566FF", c4:"#FF6B1A" },
     headline:{ label:"NEXT MILESTONE", big:"10K", unit:"FOLLOWERS", caption:<>Organic TikTok target — plus <span style={{color:"#00E5FF"}}>3 hostel partnerships</span> and 1,000 app downloads from content alone.</> },
     numbersLabel:"CURRENT NUMBERS",
     numbers:[
-      {platform:"App",val:"247",label:"active users",col:"#FF2D78"},
+      {platform:"App",val:"247",label:"active users",col:"#22E06B"},
       {platform:"Bins",val:"710",label:"mapped",col:"#00E5FF"},
       {platform:"Partners",val:"2",label:"hostel chains · 24+ sites",col:"#C566FF"},
       {platform:"Stage",val:"Pre-seed",label:"raise in progress",col:"rgba(255,255,255,0.3)"},
     ],
     listLabel:"CONTENT PILLARS",
     list:[
-      {title:"Local Connection",status:"CEILING 500K+",col:"#FF2D78"},
+      {title:"Local Connection",status:"CEILING 500K+",col:"#22E06B"},
       {title:"Location Contrast",status:"CEILING 200K+",col:"#00E5FF"},
       {title:"Mission Reveal",status:"CEILING 100K+",col:"#C566FF"},
       {title:"App In Action",status:"CEILING 50K",col:"rgba(255,255,255,0.3)"},
@@ -11789,23 +11789,23 @@ function OnboardingPage({ onComplete }) {
     contentAddLabel: "+ ADD IDEA",
     handle: "@officialthierno",
     ideas: [
-      {title:`POV: you drop a raw vocal and your whole comment section loses it`,score:91,tag:"POST NOW",col:"#FF2D78",pinned:true},
+      {title:`POV: you drop a raw vocal and your whole comment section loses it`,score:91,tag:"POST NOW",col:"#22E06B",pinned:true},
       {title:`Day in the life making music in Portsmouth vs London`,score:78,tag:"GOOD",col:"#FFD50A",pinned:false},
       {title:`Reacting to my first song 'Flaws' a year later`,score:65,tag:"GOOD",col:"rgba(255,255,255,0.35)",pinned:false},
     ],
     selectedIdea: `POV: raw vocal drop in my bedroom`,
     scriptScenes: [
-      {scene:"HOOK",col:"#FF2D78",text:`Raw vocal clip — no music, just voice. Text: "POV: this is what my room sounds like at 2am"`},
+      {scene:"HOOK",col:"#22E06B",text:`Raw vocal clip — no music, just voice. Text: "POV: this is what my room sounds like at 2am"`},
       {scene:"BUILD",col:"#FF6B1A",text:"Cut to: writing the melody on phone notes, replaying it, fixing the run."},
       {scene:"REVEAL",col:"#39FF14",text:"Final take — full vocal with the beat drops in. Reaction to playback."},
       {scene:"CTA",col:"#00E5FF",text:`"Can't Imagine is out now. Link in bio. Tell me what you feel."`},
     ],
     aiQ: "Which of my ideas should I post first?",
-    aiA: <>Post <span style={{color:"#FF2D78",fontWeight:600}}>"raw vocal drop"</span> first — scored <span style={{color:"#FF2D78"}}>91/100</span>. Raw vocals are your best-performing format. Evening post, Thursday or Friday.</>,
+    aiA: <>Post <span style={{color:"#22E06B",fontWeight:600}}>"raw vocal drop"</span> first — scored <span style={{color:"#22E06B"}}>91/100</span>. Raw vocals are your best-performing format. Evening post, Thursday or Friday.</>,
     weekHandle: "@officialthierno · Week in Review",
     stats: [{label:"STREAMS",val:"2.4K",col:"#00C853"},{label:"SAVES",val:"184",col:"rgba(255,255,255,0.6)"},{label:"LIKE RATIO",val:"6.1%",col:"rgba(255,255,255,0.6)"},{label:"FOLLOWERS",val:"+112",col:"#00C853"}],
     quickActions: [
-      {icon:"◈",label:"WHAT'S WORKING",sub:"Top content analysis",col:"#FF2D78"},
+      {icon:"◈",label:"WHAT'S WORKING",sub:"Top content analysis",col:"#22E06B"},
       {icon:"▶",label:"NEXT RELEASE",sub:"Pipeline planning",col:"#C566FF"},
       {icon:"⊞",label:"CONTENT BRIEF",sub:"Your weekly plan",col:"#FFD50A"},
       {icon:"◆",label:"TRENDS",sub:"R&B trends now",col:"#00E5FF"},
@@ -11815,43 +11815,43 @@ function OnboardingPage({ onComplete }) {
   } : {
     windowLabel: "GREENLIT · DASHBOARD",
     navItems: [
-      {icon:"◉",lb:"HOME",    col:"#FF2D78",idx:3},
+      {icon:"◉",lb:"HOME",    col:"#22E06B",idx:3},
       {icon:"◆",lb:"CONTENT", col:"#C566FF",idx:0},
       {icon:"▶",lb:"ANALYTICS",col:"#FF6B1A",idx:5},
       {icon:"≡",lb:"TASKS",   col:"#00E5FF",idx:1},
       {icon:"◇",lb:"DEALS",   col:"#39FF14",idx:4},
-      {icon:"◎",lb:"ASSIST",  col:"#FF2D78",idx:2},
+      {icon:"◎",lb:"ASSIST",  col:"#22E06B",idx:2},
       {icon:"▲",lb:"GROWTH",  col:"#00E5FF",idx:6},
     ],
     slidePageLabels: ["CONTENT","CONTENT","ASSIST","DASHBOARD","DEALS","ANALYTICS","GROWTH"],
-    slideTitleColors: ["#C566FF","#C566FF","#FF2D78","#FF2D78","#39FF14","#FF6B1A","#00E5FF"],
+    slideTitleColors: ["#C566FF","#C566FF","#22E06B","#22E06B","#39FF14","#FF6B1A","#00E5FF"],
     contentTabLabel: "IDEAS",
     contentAddLabel: "+ ADD IDEA",
     handle: "@findkrap",
     ideas: [
-      {title:`POV: you can't find a single bin in Bali`,score:87,tag:"FILM THIS",col:"#FF2D78",pinned:true},
+      {title:`POV: you can't find a single bin in Bali`,score:87,tag:"FILM THIS",col:"#22E06B",pinned:true},
       {title:`I mapped every bin in Chiang Mai in one day`,score:74,tag:"GOOD",col:"#FFD50A",pinned:false},
       {title:`Why tourists always end up littering abroad`,score:61,tag:"REWORK",col:"rgba(255,255,255,0.25)",pinned:false},
     ],
     selectedIdea: `POV: can't find a single bin in Bali`,
     scriptScenes: [
-      {scene:"HOOK",col:"#FF2D78",text:`"POV: you're in Bali and you literally cannot find a single bin anywhere…"`},
+      {scene:"HOOK",col:"#22E06B",text:`"POV: you're in Bali and you literally cannot find a single bin anywhere…"`},
       {scene:"PROBLEM",col:"#FF6B1A",text:"Cut to street shots — rubbish everywhere, tourists confused, bins nowhere."},
       {scene:"SOLUTION",col:"#39FF14",text:"Open KrapMaps — drop a pin on every bin in real-time. Map fills up live."},
       {scene:"CTA",col:"#00E5FF",text:`"Tap the link, download KrapMaps. Let's stop the littering."`},
     ],
     aiQ: "Which of my ideas should I film next?",
-    aiA: <>Film <span style={{color:"#FF2D78",fontWeight:600}}>"bin in Bali"</span> first — highest scored at <span style={{color:"#FF2D78"}}>87/100</span>. Strong hook, good trend timing. Thursday 6pm is your best slot.</>,
+    aiA: <>Film <span style={{color:"#22E06B",fontWeight:600}}>"bin in Bali"</span> first — highest scored at <span style={{color:"#22E06B"}}>87/100</span>. Strong hook, good trend timing. Thursday 6pm is your best slot.</>,
     weekHandle: "@findkrap · Week in Review",
-    stats: [{label:"TOTAL VIEWS",val:"12.4K",col:"#FF2D78"},{label:"AVG VIEWS",val:"3,100",col:"rgba(255,255,255,0.6)"},{label:"LIKE RATIO",val:"4.2%",col:"rgba(255,255,255,0.6)"},{label:"FOLLOWERS",val:"+847",col:"#39FF14"}],
+    stats: [{label:"TOTAL VIEWS",val:"12.4K",col:"#22E06B"},{label:"AVG VIEWS",val:"3,100",col:"rgba(255,255,255,0.6)"},{label:"LIKE RATIO",val:"4.2%",col:"rgba(255,255,255,0.6)"},{label:"FOLLOWERS",val:"+847",col:"#39FF14"}],
     quickActions: [
-      {icon:"◈",label:"WHAT'S WORKING",sub:"Analyse top content",col:"#FF2D78"},
+      {icon:"◈",label:"WHAT'S WORKING",sub:"Analyse top content",col:"#22E06B"},
       {icon:"▶",label:"NEXT VIDEOS",sub:"AI recommendations",col:"#C566FF"},
       {icon:"⊞",label:"WEEKLY BRIEF",sub:"Your filming brief",col:"#FFD50A"},
       {icon:"◆",label:"TRENDS",sub:"What's hot now",col:"#00E5FF"},
     ],
     platformHandle: "@findkrap",
-    platformStats: [{label:"TOTAL VIEWS",val:"12.4K",col:"#FF2D78"},{label:"AVG VIEWS",val:"3,100",col:"rgba(255,255,255,0.6)"},{label:"LIKE RATIO",val:"4.2%",col:"rgba(255,255,255,0.6)"},{label:"FOLLOWERS",val:"2,841",col:"#FF2D78"}],
+    platformStats: [{label:"TOTAL VIEWS",val:"12.4K",col:"#22E06B"},{label:"AVG VIEWS",val:"3,100",col:"rgba(255,255,255,0.6)"},{label:"LIKE RATIO",val:"4.2%",col:"rgba(255,255,255,0.6)"},{label:"FOLLOWERS",val:"2,841",col:"#22E06B"}],
   };
 
   const BOOT_LINES = [
@@ -12256,7 +12256,7 @@ function OnboardingPage({ onComplete }) {
                       {/* Slide dots */}
                       <div style={{ position:"absolute", bottom:8, left:"50%", transform:"translateX(-50%)", display:"flex", gap:4, zIndex:10 }}>
                         {[0,1,2,3,4,5,6].map(i=>(
-                          <div key={i} onClick={()=>setSlideIdx(i)} style={{ width:i===slideIdx?16:4, height:4, borderRadius:2, background:i===slideIdx?"#FF2D78":"rgba(255,255,255,0.1)", transition:"all 0.3s", cursor:"pointer" }}/>
+                          <div key={i} onClick={()=>setSlideIdx(i)} style={{ width:i===slideIdx?16:4, height:4, borderRadius:2, background:i===slideIdx?"#22E06B":"rgba(255,255,255,0.1)", transition:"all 0.3s", cursor:"pointer" }}/>
                         ))}
                       </div>
 
@@ -12272,7 +12272,7 @@ function OnboardingPage({ onComplete }) {
                             {["IDEAS","CALENDAR","CAPTIONS"].map((t,i)=>(
                               <div key={t} style={{ fontSize:8, color:i===0?"#C566FF":"rgba(255,255,255,0.3)", padding:"4px 10px", borderBottom:i===0?"1px solid #C566FF":"1px solid transparent", marginBottom:-1, fontFamily:"Courier New,monospace", letterSpacing:"0.08em", cursor:"pointer" }}>{t}</div>
                             ))}
-                            <div style={{ marginLeft:"auto", fontSize:8, color:"#FF2D78", border:"1px solid #FF2D7840", borderRadius:6, padding:isMobile?"5px 10px":"3px 8px", fontFamily:"Courier New,monospace" }}>+ ADD IDEA</div>
+                            <div style={{ marginLeft:"auto", fontSize:8, color:"#22E06B", border:"1px solid #22E06B40", borderRadius:6, padding:isMobile?"5px 10px":"3px 8px", fontFamily:"Courier New,monospace" }}>+ ADD IDEA</div>
                           </div>
                           <div style={{ display:"flex", flexDirection:"column", gap:6, flex:1 }}>
                             {[
@@ -12283,7 +12283,7 @@ function OnboardingPage({ onComplete }) {
                                 <div style={{ flex:1, paddingLeft:4 }}>
                                   <div style={{ fontSize:9, color:"rgba(255,255,255,0.75)", lineHeight:1.4, marginBottom:3 }}>{title}</div>
                                   <div style={{ display:"flex", gap:5, alignItems:"center" }}>
-                                    {pinned && <div style={{ fontSize:7, color:"#FF2D78", background:"rgba(255,45,120,0.12)", padding:"1px 5px", borderRadius:3, fontFamily:"Courier New,monospace" }}>PINNED</div>}
+                                    {pinned && <div style={{ fontSize:7, color:"#22E06B", background:"rgba(34,224,107,0.12)", padding:"1px 5px", borderRadius:3, fontFamily:"Courier New,monospace" }}>PINNED</div>}
                                     <div style={{ fontSize:7, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace" }}>Idea · AI scored</div>
                                   </div>
                                 </div>
@@ -12314,13 +12314,13 @@ function OnboardingPage({ onComplete }) {
                           </div>
                           <div style={{ display:"flex", gap:10, flex:1, overflow:"hidden" }}>
                             <div style={{ width:"38%", display:"flex", flexDirection:"column", gap:7 }}>
-                              <div style={{ background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,45,120,0.2)", borderRadius:10, padding:"8px 10px" }}>
+                              <div style={{ background:"rgba(255,255,255,0.025)", border:"1px solid rgba(34,224,107,0.2)", borderRadius:10, padding:"8px 10px" }}>
                                 <div style={{ fontSize:7, color:SC.slideTitleColors[1], fontFamily:"Courier New,monospace", marginBottom:3 }}>SELECTED IDEA</div>
                                 <div style={{ fontSize:9, color:"rgba(255,255,255,0.75)", lineHeight:1.4 }}>{SC.selectedIdea}</div>
-                                <div style={{ fontSize:22, fontFamily:"'Lilita One',Georgia,serif", color:"#FF2D78", marginTop:4, lineHeight:1 }}>87</div>
+                                <div style={{ fontSize:22, fontFamily:"'Lilita One',Georgia,serif", color:"#22E06B", marginTop:4, lineHeight:1 }}>87</div>
                               </div>
                               <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-                                {[["HOOK","#FF2D78","0–3s"],["PROBLEM","#FF6B1A","3–12s"],["STRUGGLE","#FFD50A","12–28s"],["SOLUTION","#39FF14","28–42s"],["CTA","#00E5FF","42–47s"]].map(([name,col,t])=>(
+                                {[["HOOK","#22E06B","0–3s"],["PROBLEM","#FF6B1A","3–12s"],["STRUGGLE","#FFD50A","12–28s"],["SOLUTION","#39FF14","28–42s"],["CTA","#00E5FF","42–47s"]].map(([name,col,t])=>(
                                   <div key={name} style={{ display:"flex", alignItems:"center", gap:6 }}>
                                     <div style={{ width:2, height:16, background:col, borderRadius:1, flexShrink:0 }}/>
                                     <div style={{ fontSize:8, color:col, fontFamily:"Courier New,monospace", width:60 }}>{name}</div>
@@ -12423,14 +12423,14 @@ function OnboardingPage({ onComplete }) {
                               <div style={{ fontSize:20, fontWeight:800, background:"linear-gradient(135deg,#fff 60%,rgba(255,255,255,0.4))", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1.1 }}>Brand Deals</div>
                               <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", marginTop:2 }}>Your partnerships, rates and conversations</div>
                             </div>
-                            <div style={{ fontSize:8, color:"#FF2D78", border:"1px solid rgba(255,45,120,0.3)", borderRadius:6, padding:isMobile?"5px 10px":"3px 8px", fontFamily:"Courier New,monospace" }}>+ ADD DEAL</div>
+                            <div style={{ fontSize:8, color:"#22E06B", border:"1px solid rgba(34,224,107,0.3)", borderRadius:6, padding:isMobile?"5px 10px":"3px 8px", fontFamily:"Courier New,monospace" }}>+ ADD DEAL</div>
                           </div>
                           <div style={{ display:"flex", gap:7 }}>
                             {[
                               {label:"ACTIVE EARNINGS",val:"£4,400",col:"#39FF14"},
                               {label:"OUTREACH",val:"12",col:"rgba(255,255,255,0.5)"},
                               {label:"IN PROGRESS",val:"3",col:"#FFD50A"},
-                              {label:"IN DEALS",val:"2",col:"#FF2D78"},
+                              {label:"IN DEALS",val:"2",col:"#22E06B"},
                             ].map(({label,val,col})=>(
                               <div key={label} style={{ flex:1, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"8px" }}>
                                 <div style={{ fontSize:6, color:"rgba(255,255,255,0.3)", fontFamily:"Courier New,monospace", marginBottom:3 }}>{label}</div>
@@ -12467,7 +12467,7 @@ function OnboardingPage({ onComplete }) {
                           </div>
                           <div style={{ display:"flex", gap:0, borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
                             {["OVERVIEW","VIDEOS","AI INSIGHTS"].map((t,i)=>(
-                              <div key={t} style={{ fontSize:8, color:i===0?"#FF2D78":"rgba(255,255,255,0.3)", padding:"4px 10px", borderBottom:i===0?"1px solid #FF2D78":"1px solid transparent", marginBottom:-1, fontFamily:"Courier New,monospace", letterSpacing:"0.08em" }}>{t}</div>
+                              <div key={t} style={{ fontSize:8, color:i===0?"#22E06B":"rgba(255,255,255,0.3)", padding:"4px 10px", borderBottom:i===0?"1px solid #22E06B":"1px solid transparent", marginBottom:-1, fontFamily:"Courier New,monospace", letterSpacing:"0.08em" }}>{t}</div>
                             ))}
                           </div>
                           <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:10, padding:isMobile?"13px 16px":"10px 12px" }}>
@@ -12477,7 +12477,7 @@ function OnboardingPage({ onComplete }) {
                                 <div style={{ fontSize:9, color:"rgba(255,255,255,0.7)", fontWeight:600 }}>TikTok</div>
                                 <div style={{ fontSize:7, color:"rgba(255,255,255,0.25)", fontFamily:"Courier New,monospace" }}>{SC.handle}</div>
                               </div>
-                              <div style={{ fontSize:7, color:"#FF2D78", fontFamily:"Courier New,monospace", border:"1px solid rgba(255,45,120,0.25)", borderRadius:4, padding:"2px 6px" }}>PINNED</div>
+                              <div style={{ fontSize:7, color:"#22E06B", fontFamily:"Courier New,monospace", border:"1px solid rgba(34,224,107,0.25)", borderRadius:4, padding:"2px 6px" }}>PINNED</div>
                             </div>
                             <div style={{ display:"flex", gap:8, marginBottom:8 }}>
                               {SC.platformStats.map(({label,val,col})=>(
@@ -12488,7 +12488,7 @@ function OnboardingPage({ onComplete }) {
                               ))}
                             </div>
                             <svg width="100%" height="28" viewBox="0 0 300 28" preserveAspectRatio="none">
-                              <polyline points="0,22 40,18 80,20 120,14 160,16 200,8 240,10 300,4" fill="none" stroke="#FF2D78" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              <polyline points="0,22 40,18 80,20 120,14 160,16 200,8 240,10 300,4" fill="none" stroke="#22E06B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                           </div>
                           <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:10, padding:isMobile?"13px 16px":"10px 12px" }}>
@@ -12538,7 +12538,7 @@ function OnboardingPage({ onComplete }) {
                             </div>
                             <div style={{ fontSize:6, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace", marginBottom:3 }}>FOLLOWERS · 7 DAYS</div>
                             <svg width="100%" height="30" viewBox="0 0 300 30" preserveAspectRatio="none">
-                              <polyline points="0,26 50,24 100,22 150,18 200,16 250,10 300,6" fill="none" stroke="#FF2D78" strokeWidth="1.5" strokeLinecap="round"/>
+                              <polyline points="0,26 50,24 100,22 150,18 200,16 250,10 300,6" fill="none" stroke="#22E06B" strokeWidth="1.5" strokeLinecap="round"/>
                             </svg>
                             <div style={{ fontSize:6, color:"rgba(255,255,255,0.2)", fontFamily:"Courier New,monospace", marginBottom:3, marginTop:6 }}>VIEWS · 7 DAYS</div>
                             <svg width="100%" height="30" viewBox="0 0 300 30" preserveAspectRatio="none">
@@ -12581,7 +12581,7 @@ function OnboardingPage({ onComplete }) {
             const app = WL.appName || "Greenlit";
             const TOUR = [
               {
-                key:"score", eyebrow:"01 · SCORE", accent:"#FF2D78",
+                key:"score", eyebrow:"01 · SCORE", accent:"#22E06B",
                 title:"Score every idea before you film",
                 body:<>Type a rough concept and get a <span style={{color:"#fff",fontWeight:600}}>0–100 virality score</span> with hook fixes — so you only shoot the winners.</>,
               },
@@ -12611,7 +12611,7 @@ function OnboardingPage({ onComplete }) {
                 {/* Brand welcome header */}
                 <div style={{ textAlign:"center", marginBottom:22 }}>
                   <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.42em", fontFamily:"Courier New,monospace", fontWeight:700, marginBottom:8 }}>WELCOME TO</div>
-                  <div style={{ fontSize:isMobile?30:38, fontWeight:800, letterSpacing:"-0.02em", lineHeight:1, background:"linear-gradient(120deg,#fff 20%,#FF2D78 55%,#C566FF 90%)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundSize:"200% auto", animation:"tourShine 5s linear infinite" }}>{app}</div>
+                  <div style={{ fontSize:isMobile?30:38, fontWeight:800, letterSpacing:"-0.02em", lineHeight:1, background:"linear-gradient(120deg,#fff 20%,#22E06B 55%,#C566FF 90%)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundSize:"200% auto", animation:"tourShine 5s linear infinite" }}>{app}</div>
                 </div>
 
                 {/* Story-style progress bar — active segment fills over the auto-advance */}
@@ -12644,9 +12644,9 @@ function OnboardingPage({ onComplete }) {
 
                 {/* CTA */}
                 <button onClick={()=>{ if(tourIdx<2) setTourIdx(tourIdx+1); else setStep(showBrief?3:2); }}
-                  style={{ width:"100%", maxWidth:340, padding:"16px 0", border:"none", borderRadius:16, background:"linear-gradient(135deg,#FF2D78,#C566FF)", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", fontFamily:F, boxShadow:"0 10px 30px rgba(255,45,120,0.3)", transition:"transform 0.15s, box-shadow 0.2s" }}
-                  onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 14px 38px rgba(255,45,120,0.42)"; }}
-                  onMouseLeave={e=>{ e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="0 10px 30px rgba(255,45,120,0.3)"; }}
+                  style={{ width:"100%", maxWidth:340, padding:"16px 0", border:"none", borderRadius:16, background:"linear-gradient(135deg,#22E06B,#C566FF)", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", fontFamily:F, boxShadow:"0 10px 30px rgba(34,224,107,0.3)", transition:"transform 0.15s, box-shadow 0.2s" }}
+                  onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 14px 38px rgba(34,224,107,0.42)"; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="0 10px 30px rgba(34,224,107,0.3)"; }}
                 >{tourIdx<2 ? "Continue →" : showBrief ? "See your brand overview →" : "Set up my channel →"}</button>
                 <button onClick={()=>finish("")} style={{ marginTop:14, background:"none", border:"none", color:"rgba(255,255,255,0.4)", fontSize:13, cursor:"pointer", fontFamily:F, fontWeight:600, padding:4 }}>Skip tour</button>
               </div>
@@ -12665,7 +12665,7 @@ function OnboardingPage({ onComplete }) {
           {step === 2 && (()=>{
             const F = "'Space Grotesk',system-ui,sans-serif";
             const steps = [
-              { n:"1", c:"#FF2D78", t:"Drop an idea", d:"Type a rough video concept — the AI expands it into a full idea." },
+              { n:"1", c:"#22E06B", t:"Drop an idea", d:"Type a rough video concept — the AI expands it into a full idea." },
               { n:"2", c:"#C566FF", t:"Get it scored", d:"A 0–100 virality score with hook fixes, before you waste time filming." },
               { n:"3", c:"#00E5FF", t:"Film the winners", d:"Post the high scorers, log the views — it learns your channel and gets sharper." },
             ];
@@ -12673,14 +12673,14 @@ function OnboardingPage({ onComplete }) {
             return (
             <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center", padding:isMobile?"28px 22px":"32px", overflowY:"auto", fontFamily:F }}>
               {/* Ambient glows fill the space + give energy */}
-              <div style={{ position:"fixed", top:"-10%", left:"12%", width:520, height:520, borderRadius:"50%", background:"radial-gradient(circle,rgba(255,45,120,0.16) 0%,transparent 62%)", pointerEvents:"none", zIndex:0 }}/>
+              <div style={{ position:"fixed", top:"-10%", left:"12%", width:520, height:520, borderRadius:"50%", background:"radial-gradient(circle,rgba(34,224,107,0.16) 0%,transparent 62%)", pointerEvents:"none", zIndex:0 }}/>
               <div style={{ position:"fixed", bottom:"-14%", right:"10%", width:560, height:560, borderRadius:"50%", background:"radial-gradient(circle,rgba(197,102,255,0.14) 0%,transparent 62%)", pointerEvents:"none", zIndex:0 }}/>
               <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.035) 1px,transparent 1px)", backgroundSize:"32px 32px", pointerEvents:"none", zIndex:0 }}/>
 
               <div style={{ position:"relative", zIndex:2, display:"flex", flexDirection:"column", width:"100%", maxWidth:460, animation:"tourPop 0.5s cubic-bezier(0.16,1,0.3,1)" }}>
               {/* Progress */}
               <div style={{ display:"flex", gap:5, marginBottom:26 }}>
-                {[0,1].map(i=><div key={i} style={{ height:3, flex:1, borderRadius:3, background:"linear-gradient(90deg,#FF2D78,#C566FF)" }}/>)}
+                {[0,1].map(i=><div key={i} style={{ height:3, flex:1, borderRadius:3, background:"linear-gradient(90deg,#22E06B,#C566FF)" }}/>)}
               </div>
               <div style={{ display:"inline-flex", alignItems:"center", gap:8, alignSelf:"flex-start", padding:"6px 14px", borderRadius:100, background:"rgba(0,229,255,0.1)", border:"1px solid rgba(0,229,255,0.25)", marginBottom:18, boxShadow:"0 0 24px rgba(0,229,255,0.15)" }}>
                 <span style={{ fontSize:13 }}>🎉</span>
@@ -12697,7 +12697,7 @@ function OnboardingPage({ onComplete }) {
                 onKeyDown={e=>e.key==="Enter"&&finish("")}
                 placeholder="@yourchannel"
                 autoFocus
-                style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1.5px solid ${handle?"#FF2D78":"rgba(255,255,255,0.12)"}`, borderRadius:16, color:"#fff", padding:"15px 18px", fontSize:17, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s, box-shadow 0.2s", fontFamily:F, fontWeight:600, caretColor:"#FF2D78", marginBottom:20, boxShadow:handle?"0 0 26px rgba(255,45,120,0.18)":"none" }}
+                style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:`1.5px solid ${handle?"#22E06B":"rgba(255,255,255,0.12)"}`, borderRadius:16, color:"#fff", padding:"15px 18px", fontSize:17, outline:"none", boxSizing:"border-box", transition:"border-color 0.2s, box-shadow 0.2s", fontFamily:F, fontWeight:600, caretColor:"#22E06B", marginBottom:20, boxShadow:handle?"0 0 26px rgba(34,224,107,0.18)":"none" }}
               />
 
               {/* Niche input — without this the AI has no idea what the page is about and gives generic, off-brand advice */}
@@ -12726,9 +12726,9 @@ function OnboardingPage({ onComplete }) {
               </div>
 
               <button onClick={()=>finish("")}
-                style={{ padding:"16px 0", border:"none", borderRadius:16, background:"linear-gradient(135deg,#FF2D78,#C566FF)", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", letterSpacing:"0.01em", fontFamily:F, width:"100%", marginBottom:14, boxShadow:"0 10px 30px rgba(255,45,120,0.28)", transition:"transform 0.15s, box-shadow 0.2s" }}
-                onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 14px 38px rgba(255,45,120,0.4)"; }}
-                onMouseLeave={e=>{ e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="0 10px 30px rgba(255,45,120,0.28)"; }}
+                style={{ padding:"16px 0", border:"none", borderRadius:16, background:"linear-gradient(135deg,#22E06B,#C566FF)", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", letterSpacing:"0.01em", fontFamily:F, width:"100%", marginBottom:14, boxShadow:"0 10px 30px rgba(34,224,107,0.28)", transition:"transform 0.15s, box-shadow 0.2s" }}
+                onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 14px 38px rgba(34,224,107,0.4)"; }}
+                onMouseLeave={e=>{ e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="0 10px 30px rgba(34,224,107,0.28)"; }}
               >Enter {app2} →</button>
               <button onClick={()=>finish("")} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", fontSize:13, cursor:"pointer", fontFamily:F, fontWeight:600, padding:"4px", textAlign:"center", width:"100%" }}>Skip for now</button>
               </div>
@@ -12778,7 +12778,7 @@ class AppErrorBoundary extends React.Component {
   render(){
     if(this.state.error){
       const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900);
-      const accent = (typeof WL !== "undefined" && WL?.accentColor) || "#FF2D78";
+      const accent = (typeof WL !== "undefined" && WL?.accentColor) || "#22E06B";
       return (
         <div style={{ position:"fixed", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:isMobile?"32px 24px":"48px", background:"#07050F", color:"#fff", textAlign:"center", fontFamily:"'Space Grotesk',system-ui,sans-serif" }}>
           <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}>{I.warn(isMobile?40:52,C.pink)}</div>
@@ -12835,7 +12835,7 @@ function AuthGate({ onAuthed }) {
     catch(e) { setErr(e.message); }
     setBusy(false);
   };
-  const accent = (typeof WL !== "undefined" && WL?.accentColor) || "#FF2D78";
+  const accent = (typeof WL !== "undefined" && WL?.accentColor) || "#22E06B";
   const accent2 = (typeof WL !== "undefined" && WL?.accentColor2) || "#C566FF";
   const appName = (typeof WL !== "undefined" && WL?.appName) || "Greenlit";
 
