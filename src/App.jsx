@@ -2034,7 +2034,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                   <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:`linear-gradient(90deg,${C.cyan},${C.cyan}00)` }}/>
                   <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10, marginBottom:isMobile?10:12 }}>
                     <div style={{ fontSize:15, fontWeight:700, color:"#fff", lineHeight:1.35, flex:1 }}>{c.title}</div>
-                    <button onClick={()=>setCalItems(cs=>cs.filter(x=>x.id!==c.id))} aria-label="Delete" style={{ padding:"4px 8px", borderRadius:8, border:`1px solid ${C.pink}20`, background:`${C.pink}08`, color:C.pink, cursor:"pointer", flexShrink:0 }}>{I.trash(12,C.pink)}</button>
+                    <button onClick={()=>setCalItems(cs=>cs.filter(x=>x.id!==c.id))} aria-label="Delete" style={{ padding:"4px 8px", borderRadius:8, border:`1px solid ${"#FF4D4D"}20`, background:`${"#FF4D4D"}08`, color:"#FF4D4D", cursor:"pointer", flexShrink:0 }}>{I.trash(12,"#FF4D4D")}</button>
                   </div>
                   <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                     <Tag color={C.cyan} sm>{c.date?.slice(5)||"TBD"}</Tag>
@@ -2314,7 +2314,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                       <button onClick={()=>analyseVideo&&analyseVideo(v)} style={{ padding:"6px 14px", borderRadius:10, border:`1px solid ${C.purple}30`, background:vidAnalysis?.[v.id]?`${C.purple}25`:vidLoading?.[v.id]?`${C.purple}20`:`${C.purple}10`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:vidLoading?.[v.id]?"wait":"pointer", opacity:vidLoading?.[v.id]?0.7:1, transition:"all 0.2s" }}>
                         {vidLoading?.[v.id] ? <span style={{display:"inline-flex",alignItems:"center",gap:6}}><Spin s={11}/> ANALYSING</span> : vidAnalysis?.[v.id] ? <span style={{display:"inline-flex",alignItems:"center",gap:5}}>{I.tick(12,"currentColor")} TEARDOWN</span> : "AI TEARDOWN"}
                       </button>
-                      <button onClick={()=>deleteVideo&&deleteVideo(v.id)} aria-label="Delete" style={{ marginLeft:"auto", padding:isMobile?"10px 12px":"6px 10px", borderRadius:10, border:`1px solid ${C.pink}20`, background:`${C.pink}08`, color:C.pink, fontFamily:C.fontHead, cursor:"pointer" }}>{I.trash(13,C.pink)}</button>
+                      <button onClick={()=>deleteVideo&&deleteVideo(v.id)} aria-label="Delete" style={{ marginLeft:"auto", padding:isMobile?"10px 12px":"6px 10px", borderRadius:10, border:`1px solid ${"#FF4D4D"}20`, background:`${"#FF4D4D"}08`, color:"#FF4D4D", fontFamily:C.fontHead, cursor:"pointer" }}>{I.trash(13,"#FF4D4D")}</button>
                     </div>
                     {/* Loading state */}
                     {vidLoading?.[v.id] && (
@@ -3050,7 +3050,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
                     <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                       <button onClick={()=>{ setEditAppIdeaTarget&&setEditAppIdeaTarget(idea); setModals&&setModals(m=>({...m,editAppIdea:true})); }} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.yellow}30`, background:`${C.yellow}10`, color:C.yellow, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>EDIT</button>
                       <button onClick={()=>setTasks(ts=>[{id:Date.now(),text:idea.text,assignee:WL.creator1||"Me",done:false},...ts])} style={{ padding:"8px 14px", borderRadius:10, border:`1px solid ${C.cyan}30`, background:`${C.cyan}10`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>→ TO DO</button>
-                      <button onClick={()=>setAppIdeas(is=>is.filter(x=>x.id!==idea.id))} aria-label="Delete" style={{ padding:"8px 12px", borderRadius:10, border:`1px solid ${C.pink}20`, background:`${C.pink}08`, color:C.pink, fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>{I.trash(13,C.pink)}</button>
+                      <button onClick={()=>setAppIdeas(is=>is.filter(x=>x.id!==idea.id))} aria-label="Delete" style={{ padding:"8px 12px", borderRadius:10, border:`1px solid ${"#FF4D4D"}20`, background:`${"#FF4D4D"}08`, color:"#FF4D4D", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:"pointer" }}>{I.trash(13,"#FF4D4D")}</button>
                     </div>
                   </div>
                 );
@@ -8238,7 +8238,7 @@ const DealsView = () => {
                 <select value={deal.status} onChange={e=>setDeals(ds=>ds.map(d=>d.id===deal.id?{...d,status:e.target.value}:d))} style={{ background:"#0C0A1A", border:`1px solid ${sc}55`, borderRadius:8, color:sc, padding:isMobile?"10px 12px":"8px 12px", fontSize:12, fontFamily:C.fontHead, fontWeight:700, cursor:"pointer", outline:"none", appearance:"none", colorScheme:"dark", letterSpacing:"0.03em" }}>
                   {["Enquiry","Negotiating","Signed","Live","Delivered","Paid","Declined"].map(s=><option key={s} value={s} style={{background:"#0C0A1A"}}>{s}</option>)}
                 </select>
-                <button onClick={()=>{ if(window.confirm("Delete this deal?")) setDeals(ds=>ds.filter(d=>d.id!==deal.id)); }} aria-label="Delete deal" style={{ padding:"7px 9px", borderRadius:8, border:`1px solid ${C.pink}20`, background:"transparent", color:`${C.pink}70`, cursor:"pointer", display:"inline-flex" }}>{I.trash(13,C.pink)}</button>
+                <button onClick={()=>{ if(window.confirm("Delete this deal?")) setDeals(ds=>ds.filter(d=>d.id!==deal.id)); }} aria-label="Delete deal" style={{ padding:"7px 9px", borderRadius:8, border:`1px solid ${"#FF4D4D"}20`, background:"transparent", color:`${"#FF4D4D"}70`, cursor:"pointer", display:"inline-flex" }}>{I.trash(13,"#FF4D4D")}</button>
               </div>
             </div>
           );})}
