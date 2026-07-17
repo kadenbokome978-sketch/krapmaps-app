@@ -11391,9 +11391,9 @@ Return JSON:
             <div>
               {_isThiernoClient ? (<>
                 <div style={{ fontSize:20, fontWeight:900, color:"#fff", fontFamily:C.fontHead, lineHeight:1 }}>{WL.creator1 || "Thierno"}</div>
-                <div style={{ fontSize:13, marginTop:3, fontFamily:C.fontHead, fontWeight:900, color:"#fff", lineHeight:1 }}>{WL.appName.slice(0,-2) || "Artist"}<span style={{color:WL.accentColor}}>{WL.appName.slice(-2) || "OS"}</span></div>
+                <div style={{ fontSize:13, marginTop:3, fontFamily:C.fontHead, fontWeight:900, color:"#fff", lineHeight:1 }}>{WL.appName.slice(0, WL.appName?.endsWith("lit")?-3:-2) || "Artist"}<span style={{color:WL.accentColor}}>{WL.appName.slice(WL.appName?.endsWith("lit")?-3:-2) || "OS"}</span></div>
               </>) : (<>
-                <div style={{ fontSize:20, fontWeight:900, color:"#fff", fontFamily:C.fontHead, lineHeight:1 }}>{WL.appName.slice(0,-2) || "Artist"}<span style={{color:WL.accentColor}}>{WL.appName.slice(-2) || "OS"}</span></div>
+                <div style={{ fontSize:20, fontWeight:900, color:"#fff", fontFamily:C.fontHead, lineHeight:1 }}>{WL.appName.slice(0, WL.appName?.endsWith("lit")?-3:-2) || "Artist"}<span style={{color:WL.accentColor}}>{WL.appName.slice(WL.appName?.endsWith("lit")?-3:-2) || "OS"}</span></div>
                 <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", letterSpacing:"0.14em", marginTop:2, fontFamily:C.fontHead }}>{WL.appTagline.toUpperCase()}</div>
               </>)}
             </div>
@@ -12042,7 +12042,7 @@ function OnboardingPage({ onComplete }) {
               ) : (
                 /* ── LOADING SCREEN ── */
                 <div style={{ width:"100%", maxWidth:420 }}>
-                  <div style={{ fontSize:46, color:"#39FF14", letterSpacing:"0.22em", marginBottom:32, fontWeight:800, fontFamily:"Courier New,Courier,monospace", textShadow:"0 0 60px #39FF1430, 0 0 120px #39FF1418, 0 0 200px #39FF1410" }}>CREATOR<span style={{color:"#39FF1455", fontWeight:400, letterSpacing:"0.18em"}}>OS</span></div>
+                  <div style={{ fontSize:46, color:"#39FF14", letterSpacing:"0.22em", marginBottom:32, fontWeight:800, fontFamily:"Courier New,Courier,monospace", textShadow:"0 0 60px #39FF1430, 0 0 120px #39FF1418, 0 0 200px #39FF1410" }}>GREEN<span style={{color:"#39FF1455", fontWeight:400, letterSpacing:"0.18em"}}>LIT</span></div>
                   <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                     {loadLines.map((l,i)=>(
                       <div key={i} style={{ fontSize:13, color:l.green?"#39FF14":"#555", letterSpacing:"0.08em", fontWeight:l.bold?700:400, opacity: l.bold ? 1 : 0.85, animation:"fadeInLine 0.3s ease" }}>
@@ -12873,7 +12873,7 @@ function AuthGate({ onAuthed }) {
       <div style={{ width:"100%", maxWidth:400, position:"relative", zIndex:1 }}>
         <div style={{ textAlign:"center", marginBottom:32 }}>
           <img src="/icon-512.png" alt={appName} style={{ width:56, height:56, borderRadius:16, boxShadow:`0 0 28px ${accent}44`, marginBottom:16 }} />
-          <div style={{ fontSize:isMobile?28:34, fontWeight:800, letterSpacing:"-0.02em" }}><span style={{ color:"#fff" }}>Creator</span><span style={{ color:accent }}>OS</span></div>
+          <div style={{ fontSize:isMobile?28:34, fontWeight:800, letterSpacing:"-0.02em" }}><span style={{ color:"#fff" }}>Green</span><span style={{ color:accent }}>lit</span></div>
           <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:8 }}>{mode==="signin" ? "Sign in to your account" : mode==="reset" ? "Choose a new password" : "Create your account"}</div>
         </div>
         {mode!=="reset" && <button onClick={()=>{ window.location.href=`${getSbUrl()}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(window.location.origin+'/dashboard')}`; }}
