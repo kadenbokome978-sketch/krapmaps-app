@@ -1,0 +1,15 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Greenlit">
+  <!-- App-icon background (delete this rect for a transparent version) -->
+  <rect width="512" height="512" rx="112" fill="#0A0813"/>
+
+  <!-- Score-gauge track (unfilled segment) -->
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#173A24" stroke-width="30"/>
+
+  <!-- Score-gauge fill (~89%), gap top-left -->
+  <path d="M 192.6 120.1 A 150 150 0 1 1 120.1 192.6"
+        fill="none" stroke="#22E06B" stroke-width="30" stroke-linecap="round"/>
+
+  <!-- Play triangle (short-form video) -->
+  <path d="M216 188 L216 324 L334 256 Z"
+        fill="#22E06B" stroke="#22E06B" stroke-width="26" stroke-linejoin="round"/>
+</svg>
