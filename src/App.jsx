@@ -7772,7 +7772,7 @@ async function _postProxy(endpoint, body, byoKey) {
 }
 // GET proxy for RapidAPI scraper calls — returns the native RapidAPI response.
 async function rapidFetch(targetUrl, byoKey) {
-  if(!USE_BACKEND) return fetch(targetUrl, { headers:{ "x-rapidapi-host": new URL(targetUrl).hostname, "x-rapidapi-key": byoKey||"", "Content-Type":"application/json" } });
+  if(!USE_BACKEND) return fetch(targetUrl, { headers:{ "x-rapidapi-host": new URL(targetUrl).hostname, "x-rapidapi-key": byoKey||"" } });
   const token = await getAccessToken();
   if(!token) throw new Error("Your session expired — please sign in again.");
   const headers = { "Authorization":"Bearer "+token };
@@ -10029,7 +10029,7 @@ function Dashboard({ keys, onEditKeys }) {
         } catch(e) { console.warn("User info parse failed:", e.message); }
       }
 
-      if(!r.ok) { reportHealth("tiktok","error",`TikTok scraper HTTP ${r.status}${r.status===403?" — RapidAPI key invalid or not subscribed":r.status===429?" — rate limited, retries automatically":""}`); return; }
+      if(!r.ok) { reportHealth("tiktok","error",`TikTok scraper HTTP ${r.status}${r.status===403?" — RapidAPI key invalid or not subscribed to tiktok-scraper7":r.status===405?" — the scraper API rejected the request. Check your RapidAPI subscription to 'tiktok-scraper7' is active":r.status===429?" — rate limited, retries automatically":""}`); return; }
       const data = await r.json();
       if(data.code !== 0 || !data.data?.videos) { reportHealth("tiktok","error","TikTok scraper returned no videos — check the handle in Settings ("+(wl.handle||"not set")+")"); return; }
       
