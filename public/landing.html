@@ -52,8 +52,8 @@
   .content{position:relative;z-index:3}
 
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-weight:600;border-radius:13px;cursor:pointer;border:none;font-family:var(--body);white-space:nowrap;transition:transform .16s cubic-bezier(.2,.8,.2,1),box-shadow .24s,background .24s,border-color .24s;font-size:15.5px}
-  .btn-primary{background:linear-gradient(180deg,#2BE871,#15C256);color:#04160B;padding:15px 28px;font-weight:700;letter-spacing:-.01em;box-shadow:0 1px 0 rgba(255,255,255,.4) inset,0 6px 20px rgba(20,180,90,.24)}
-  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 34px rgba(20,180,90,.36)}
+  .btn-primary{background:linear-gradient(180deg,#22D866,#12B052);color:#05170C;padding:15px 28px;font-weight:700;letter-spacing:-.01em;box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 4px 14px rgba(18,160,80,.18)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 1px 0 rgba(255,255,255,.45) inset,0 8px 22px rgba(18,160,80,.28)}
   .btn-ghost{background:rgba(255,255,255,.03);color:var(--ink);border:1px solid var(--line-2);padding:15px 26px;backdrop-filter:blur(6px)}
   .btn-ghost:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.24)}
   .btn-sm{padding:11px 19px;font-size:14.5px;border-radius:11px}
@@ -91,7 +91,7 @@
     .navlinks a:not(.btn):hover,.navlinks a:not(.btn):active{color:var(--ink)}
     /* Signed-in account item: show the Sign out as a normal always-visible menu
        row instead of a desktop dropdown (which couldn't open inside the mobile menu). */
-    .nav-user{align-items:center;gap:12px;padding:20px 2px;margin-top:6px;border-top:1px solid rgba(255,255,255,.07);border-bottom:none;width:100%;font-size:16px;font-weight:600;color:var(--ink)}
+    .nav-user{flex-wrap:wrap;align-items:center;gap:12px;padding:20px 2px 4px;margin-top:6px;border-top:1px solid rgba(255,255,255,.07);border-bottom:none;width:100%;font-size:16px;font-weight:600;color:var(--ink)}
     .nav-avatar{width:38px;height:38px;border-width:1.5px}
     .nav-user-dropdown{display:block!important;position:static;top:auto;right:auto;background:none;border:none;box-shadow:none;padding:0;min-width:0;margin-top:4px;width:100%}
     .nav-user-dropdown button{width:100%;font-size:14.5px;font-weight:600;padding:13px 16px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.02);color:#FF6B7D;text-align:center;letter-spacing:.01em;transition:background .16s,border-color .16s}
