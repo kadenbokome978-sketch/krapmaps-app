@@ -8795,6 +8795,8 @@ function ProspectAuditView({ WL }){
     if(!report) return;
     const a = report.ai||{};
     const lines = [
+      a.headline?`${a.headline}`:``,
+      a.headline?``:``,
       `CONTENT AUDIT — @${report.h}${report.nick?` (${report.nick})`:""}`,
       `${fmtN(report.followers)} followers · ${fmtN(report.median)} typical views (best: ${fmtN(report.ceiling)}) · ${report.engRate.toFixed(1)}% engagement`,
       ``,
@@ -8805,7 +8807,7 @@ function ProspectAuditView({ WL }){
       ``,
       a.fixing?.length?`WHAT'S COSTING VIEWS:\n${a.fixing.map(t=>`• ${t}`).join("\n")}`:``,
       ``,
-      a.ideas?.length?`5 VIDEOS TO POST NEXT (in your voice):\n${a.ideas.slice(0,5).map((i,n)=>`${n+1}. ${i.title}${i.hook?` — "${i.hook}"`:""}`).join("\n")}`:``,
+      a.ideas?.length?`5 VIDEOS TO POST NEXT — scored before you film (in your voice):\n${a.ideas.slice(0,5).map((i,n)=>`${n+1}. [${parseInt(i.score,10)||"—"}/100] ${i.title}${i.hook?` — "${i.hook}"`:""}`).join("\n")}`:``,
       ``,
       `Full breakdown + idea scoring: ${report.app}`,
     ].filter(l=>l!=="").join("\n");
@@ -8882,7 +8884,7 @@ Be concrete and reference THEIR actual captions + numbers. No generic advice, no
 ${COACH_PRINCIPLES}
 
 Return ONLY JSON:
-{"verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views, grounded in the real numbers/captions above","potential":"one line: what they could realistically hit, scaled from their proven ceiling of ${fmtN(ceiling)} — no fantasy numbers","working":["3 specific things working, each citing a REAL caption or number above (never invented footage)"],"fixing":["3 honest things holding them back — each a fix they'd actually accept (reframe or upgrade their existing content, never 'stop doing X that's core to them'), grounded in what you can actually see"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them, tied to what already works"}]}`;
+{"headline":"ONE scroll-stopping sentence — the single most compelling, specific insight about this channel, built around a REAL number (ideally the gap between their ${fmtN(median)} typical and their proven ${fmtN(ceiling)} best). This is the first line they read; it must make them feel seen and want to keep reading. No fluff, no fantasy numbers.","verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views, grounded in the real numbers/captions above","potential":"one line: what they could realistically hit, scaled from their proven ceiling of ${fmtN(ceiling)} — no fantasy numbers","working":["3 specific things working, each citing a REAL caption or number above (never invented footage)"],"fixing":["3 honest things holding them back — each a fix they'd actually accept (reframe or upgrade their existing content, never 'stop doing X that's core to them'), grounded in what you can actually see"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them, tied to what already works","score":"predicted virality score as an integer 62-94 — a genuine prediction (the same call the paid product makes before they film), grounded in how close this idea is to their proven hits. Vary the scores; don't give them all the same number."}]}`;
       // If the AI narrative fails, still show the scraped numbers + voice — the
       // deterministic half of the audit is valuable on its own and shouldn't be lost.
       const r = await callAI(prompt, 1600).catch(()=>null);
@@ -8945,6 +8947,12 @@ Return ONLY JSON:
               </div>
             </div>
           </div>
+          {/* Hero insight — the first thing they read; the scroll-stopper */}
+          {report.ai?.headline && (
+            <div style={{ marginBottom:20, paddingLeft:14, borderLeft:`3px solid ${C.pink}`, fontSize:isMobile?18:22, fontWeight:800, fontFamily:C.fontHead, color:"#fff", lineHeight:1.28, letterSpacing:"-0.01em" }}>
+              {report.ai.headline}
+            </div>
+          )}
           {/* Stats */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))", gap:10, marginBottom:22 }}>
             {[{l:"FOLLOWERS",v:fmtN(report.followers),c:C.pink},{l:"TYPICAL VIEWS",v:fmtN(report.median),c:C.cyan},{l:"BEST VIDEO",v:fmtN(report.ceiling),c:C.purple},{l:"ENGAGEMENT",v:report.engRate.toFixed(1)+"%",c:C.green}].map((s,i)=>(
@@ -8954,6 +8962,18 @@ Return ONLY JSON:
               </div>
             ))}
           </div>
+          {/* The gap — their proven ceiling vs their normal. This contrast IS the pitch. */}
+          {report.ceiling>0 && report.median>0 && report.ceiling > report.median*1.5 && (
+            <div style={{ display:"flex", alignItems:"center", gap:14, background:`linear-gradient(90deg,${C.cyan}0e,${C.pink}0e)`, border:`1px solid ${C.cyan}22`, borderRadius:12, padding:"14px 18px", marginBottom:22, flexWrap:"wrap" }}>
+              <div><div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", letterSpacing:"0.1em", fontWeight:700 }}>YOUR NORMAL</div><div style={{ fontSize:22, fontWeight:800, fontFamily:C.fontHead, color:C.cyan, lineHeight:1 }}>{fmtN(report.median)}</div></div>
+              <div style={{ color:C.pink, fontSize:22, fontWeight:800 }}>→</div>
+              <div><div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", letterSpacing:"0.1em", fontWeight:700 }}>YOU'VE HIT</div><div style={{ fontSize:22, fontWeight:800, fontFamily:C.fontHead, color:C.pink, lineHeight:1 }}>{fmtN(report.ceiling)}</div></div>
+              <div style={{ marginLeft:"auto", textAlign:"right", minWidth:150 }}>
+                <div style={{ fontSize:14, color:"#fff", fontWeight:800, fontFamily:C.fontHead }}>{Math.round(report.ceiling/Math.max(report.median,1))}× your normal</div>
+                <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.5)", lineHeight:1.4 }}>You've proven the ceiling. The gap is what's on the table.</div>
+              </div>
+            </div>
+          )}
           {/* Verdict */}
           {report.ai?.verdict && (
             <div style={{ background:`${C.cyan}0d`, border:`1px solid ${C.cyan}22`, borderRadius:12, padding:"16px 18px", marginBottom:18 }}>
@@ -8991,22 +9011,33 @@ Return ONLY JSON:
           {/* Ideas */}
           {report.ai?.ideas?.length>0 && (
             <div>
-              <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.pink, fontWeight:700, marginBottom:10 }}>5 VIDEOS TO POST NEXT — IN THEIR VOICE</div>
+              <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.pink, fontWeight:700, marginBottom:10 }}>5 VIDEOS TO POST NEXT — SCORED, IN THEIR VOICE</div>
               <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
-                {report.ai.ideas.slice(0,5).map((idea,i)=>(
-                  <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:12, padding:"13px 15px" }}>
-                    <div style={{ fontSize:14.5, fontWeight:700, color:"#fff", marginBottom:idea.hook?4:0 }}>{i+1}. {idea.title}</div>
-                    {idea.hook && <div style={{ fontSize:13.5, color:C.cyan, fontStyle:"italic" }}>"{idea.hook}"</div>}
-                    {idea.why && <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", marginTop:3 }}>{idea.why}</div>}
+                {report.ai.ideas.slice(0,5).map((idea,i)=>{
+                  const sc = parseInt(idea.score,10)||0;
+                  const scc = sc>=80?C.green:sc>=65?C.cyan:C.yellow;
+                  return (
+                  <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:12, padding:"13px 15px", display:"flex", gap:12, alignItems:"flex-start" }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:14.5, fontWeight:700, color:"#fff", marginBottom:idea.hook?4:0 }}>{i+1}. {idea.title}</div>
+                      {idea.hook && <div style={{ fontSize:13.5, color:C.cyan, fontStyle:"italic" }}>"{idea.hook}"</div>}
+                      {idea.why && <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", marginTop:3 }}>{idea.why}</div>}
+                    </div>
+                    {sc>0 && (
+                      <div style={{ flexShrink:0, textAlign:"center", background:`${scc}14`, border:`1px solid ${scc}38`, borderRadius:10, padding:"6px 11px", minWidth:52 }}>
+                        <div style={{ fontSize:18, fontWeight:800, fontFamily:C.fontHead, color:scc, lineHeight:1 }}>{sc}</div>
+                        <div style={{ fontSize:7.5, color:"rgba(255,255,255,0.42)", letterSpacing:"0.1em", fontWeight:700, marginTop:2 }}>PREDICTED</div>
+                      </div>
+                    )}
                   </div>
-                ))}
+                );})}
               </div>
             </div>
           )}
           {/* CTA footer — sells the OUTCOME and asks for the reply (this is the sales artifact) */}
           <div style={{ marginTop:22, paddingTop:18, borderTop:"1px solid rgba(255,255,255,0.08)", textAlign:"center" }}>
-            <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.55)", lineHeight:1.5 }}>This is just the surface read. The full version scores every idea <em>before</em> you film — so you stop wasting posts — then tracks what actually hits and doubles down on it.</div>
-            <div style={{ fontSize:16, color:"#fff", fontWeight:800, fontFamily:C.fontHead, marginTop:10, letterSpacing:"-0.01em" }}>Want me to run this for your page? Reply and let's talk 👇</div>
+            <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.55)", lineHeight:1.5 }}>Those 5 ideas are scored the exact way I'd score <em>every</em> idea for your page — before you film — so you stop wasting posts, then track what actually hits and double down. This free read is the surface; the real thing runs your whole content engine for 30 days.</div>
+            <div style={{ fontSize:16, color:"#fff", fontWeight:800, fontFamily:C.fontHead, marginTop:10, letterSpacing:"-0.01em" }}>Want me to run this for @{report.h}? Reply and I'll show you what 30 days looks like 👇</div>
           </div>
         </div>
       )}
