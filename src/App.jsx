@@ -8620,7 +8620,7 @@ STEP 2 — only if it fits, judge the craft: first frame + first 3 seconds (scro
 
 PREDICTED VIEWS: ${avgV?`base the range on the channel average of ${fmt(avgV)} — realistic, not fantasy.`:`there is NO channel history, so do NOT invent a confident number. Return predictedViews as "—" and never fabricate a range.`}
 
-Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand","fitNote":"one or two sentences: what this account is about vs what this video is, and why it fits or doesn't","score":0-100,"predictedViews":"${avgV?"realistic range e.g. 8K-20K":"—"}","hookRating":0-100,"hookNote":"what happens in the first 3 seconds and whether it earns the scroll-stop","retention":[{"seg":"0-3s","risk":"low|med|high","note":"why viewers stay or leave here"},{"seg":"3-10s","risk":"low|med|high","note":"..."},{"seg":"10s+","risk":"low|med|high","note":"..."}],"fixes":[{"at":"timestamp e.g. 0:01","fix":"specific change"}],"strongest":"one line — the best thing about it","weakest":"one line — the biggest problem","action":"the single highest-impact change"}`;
+Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand","fitNote":"one or two sentences: what this account is about vs what this video is, and why it fits or doesn't","score":0-100,"predictedViews":"${avgV?"realistic range e.g. 8K-20K":"—"}","hookRating":0-100,"hookNote":"what happens in the first 3 seconds and whether it earns the scroll-stop","retention":[{"seg":"0-3s","risk":"low|med|high","note":"why viewers stay or leave here"},{"seg":"3-10s","risk":"low|med|high","note":"..."},{"seg":"10s+","risk":"low|med|high","note":"..."}],"fixes":[{"at":"timestamp e.g. 0:01","fix":"specific change","lift":"estimated score gain if applied, e.g. '+6'"}],"strongest":"one line — the best thing about it","weakest":"one line — the biggest problem","action":"the single highest-impact change","ifFixed":"the score (0-100) this video would realistically reach if the top fixes were applied — a genuine projection, must be >= score, don't inflate"}`;
       const text = await geminiUploadAnalyse(f, prompt, setStatus);
       const parsed = _extractJSON(text);
       if(!parsed || !parsed.verdict) throw new Error("Couldn't read the analysis — try a shorter MP4.");
@@ -8676,6 +8676,15 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
             </div>
           </div>
           {res.action && <div style={{ marginTop:18, padding:"13px 16px", borderRadius:12, background:"rgba(255,255,255,0.04)", border:`1px solid ${vC}30` }}><span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.1em", color:vC }}>DO THIS →</span> <span style={{ fontSize:14, color:"#fff", fontWeight:600 }}>{res.action}</span></div>}
+          {(()=>{ const now=parseInt(res.score,10)||0; const fixed=parseInt(res.ifFixed,10)||0; if(fixed>now){ return (
+            <div style={{ marginTop:12, display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderRadius:12, background:`linear-gradient(90deg,${C.pink}0e,${C.cyan}0e)`, border:`1px solid ${C.pink}22`, flexWrap:"wrap" }}>
+              <span style={{ fontSize:10.5, fontWeight:800, letterSpacing:"0.1em", color:"rgba(255,255,255,0.5)" }}>IF YOU FIX IT</span>
+              <span style={{ fontSize:19, fontWeight:800, fontFamily:C.fontHead, color:"rgba(255,255,255,0.55)" }}>{now}</span>
+              <span style={{ color:C.pink, fontSize:18, fontWeight:800 }}>→</span>
+              <span style={{ fontSize:22, fontWeight:800, fontFamily:C.fontHead, color:fixed>=80?C.green:C.cyan }}>{fixed}</span>
+              <span style={{ fontSize:12.5, color:"rgba(255,255,255,0.5)", marginLeft:"auto" }}>apply the fixes below to get here</span>
+            </div>
+          ); } return null; })()}
         </div>
 
         {/* Brand fit — gates the whole verdict. Off-brand/borderline shown as a loud warning. */}
@@ -8723,6 +8732,7 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
               <div key={i} style={{ display:"flex", gap:11, alignItems:"flex-start", padding:"9px 0", borderTop:i>0?"1px solid rgba(255,255,255,0.05)":"none" }}>
                 <div style={{ fontSize:11, fontWeight:800, color:C.cyan, fontFamily:C.fontHead, background:`${C.cyan}14`, border:`1px solid ${C.cyan}30`, borderRadius:6, padding:"3px 8px", flexShrink:0 }}>{f.at}</div>
                 <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.8)", lineHeight:1.55, flex:1, fontFamily:C.fontBody }}>{f.fix}</div>
+                {f.lift && <div style={{ fontSize:12, fontWeight:800, color:C.green, fontFamily:C.fontHead, flexShrink:0, background:`${C.green}12`, border:`1px solid ${C.green}30`, borderRadius:6, padding:"3px 8px" }}>{String(f.lift).replace(/^(?!\+)/,"+").replace(/^\+\+/,"+")}</div>}
               </div>
             ))}
           </div>
@@ -10849,6 +10859,7 @@ ${seriesMomentum ? `\n${seriesMomentum}` : ""}
 ${pillarGapLine ? `\n${pillarGapLine}` : ""}
 
 ━━ NICHE INTELLIGENCE (what's working for competitors RIGHT NOW) ━━
+${(!hasViewHistory() && corpusBlock) ? `⚡ COLD-START — this channel has little/no history of its own yet, so DO NOT guess blindly. ANCHOR your prediction PRIMARILY on the cross-creator base rates below: this is how comparable creators in this exact niche actually perform by hook type. Weight it as your main signal until the channel builds its own track record.\n` : ""}
 ${corpusBlock ? `CROSS-CREATOR CORPUS (real outcomes pooled across creators in this niche — evidence-backed, use especially when own-channel data is thin): ${corpusBlock}\n` : ""}
 ${stolenHooks ? `Proven hooks from similar creators to adapt:\n${stolenHooks}` : "Run a competitor scan in settings to unlock niche benchmarks."}
 ${compOpportunities ? `Active content gaps competitors aren't covering: ${compOpportunities}` : ""}

@@ -385,5 +385,29 @@
       el.classList.remove('swept'); void el.offsetWidth; el.classList.add('swept');
     };
   </script>
+  <script>
+    // ── PWA: register the service worker so Greenlit is installable to the home screen.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function () {});
+      });
+    }
+    // ── Install prompt: capture the event, show a subtle "Install app" chip.
+    (function () {
+      var deferred = null;
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault(); deferred = e;
+        if (localStorage.getItem('km_pwa_dismissed') === '1') return;
+        var bar = document.createElement('div');
+        bar.style.cssText = 'position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9000;display:flex;align-items:center;gap:12px;padding:11px 14px 11px 16px;border-radius:14px;background:linear-gradient(180deg,rgba(20,18,31,.98),rgba(12,11,19,.98));border:1px solid rgba(34,224,107,.35);box-shadow:0 12px 40px rgba(0,0,0,.5);font-family:-apple-system,system-ui,sans-serif;color:#F3F0F8;font-size:13.5px;max-width:92vw';
+        bar.innerHTML = '<span style="font-weight:600">Install Greenlit as an app</span>' +
+          '<button id="_pwaAdd" style="border:none;border-radius:9px;padding:8px 14px;background:linear-gradient(180deg,#22D866,#12B052);color:#05170C;font-weight:700;font-size:13px;cursor:pointer">Add</button>' +
+          '<button id="_pwaNo" style="border:none;background:none;color:rgba(255,255,255,.45);font-size:18px;cursor:pointer;line-height:1;padding:2px 4px">×</button>';
+        document.body.appendChild(bar);
+        document.getElementById('_pwaAdd').onclick = function () { bar.remove(); if (deferred) { deferred.prompt(); deferred = null; } };
+        document.getElementById('_pwaNo').onclick = function () { bar.remove(); try { localStorage.setItem('km_pwa_dismissed', '1'); } catch (e) {} };
+      });
+    })();
+  </script>
 </body>
 </html>
