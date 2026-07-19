@@ -7607,12 +7607,29 @@ const sbLoadArray = async (table) => {
 // Columns: id text PK, niche text, hook text, type text, platform text,
 //          score int, views int8, mult float8, ts timestamptz.
 const CORPUS_TABLE = "km_corpus";
+// Canonical niche buckets — so "finance", "money tips", "side hustle", "investing"
+// all pool into ONE prior instead of fragmenting the corpus into weak slivers.
+// Consistent labels are what make the cross-creator priors actually compound.
+const _NICHE_ALIASES = [
+  { canon:"personal finance", re:/financ|money|budget|invest|saving|side.?hustle|make.?money|wealth|passive.?income|frugal|debt|stock|crypto|trading|dividend|net.?worth/ },
+  { canon:"fitness", re:/fitness|gym|workout|muscle|weight.?loss|bodybuild|calisthenic/ },
+  { canon:"skincare & beauty", re:/skincare|beauty|makeup|grwm|cosmetic/ },
+  { canon:"business & entrepreneur", re:/entrepreneur|startup|small.?business|e.?commerce|dropship|agency|founder/ },
+  { canon:"self-improvement", re:/self.?improv|motivation|discipline|mindset|productivity|habit/ },
+  { canon:"tech & AI", re:/\btech\b|\bai\b|software|coding|gadget|saas/ },
+  { canon:"food & cooking", re:/food|cook|recipe|baking|meal/ },
+];
+const normNiche = (s) => {
+  const t = String(s||"general").toLowerCase().trim();
+  for(const a of _NICHE_ALIASES){ if(a.re.test(t)) return a.canon; }
+  return t.slice(0,40);
+};
 const corpusWrite = async (rec) => {
   try {
     if(!rec || rec.mult==null || !isFinite(rec.mult)) return;   // mult is the signal — skip rows we can't normalise
     const row = {
       id: `c_${Date.now()}_${Math.random().toString(36).slice(2,9)}`,   // global, not workspace-scoped, anonymous
-      niche: String(rec.niche||"general").toLowerCase().slice(0,40),
+      niche: normNiche(rec.niche),
       hook: String(rec.hook||"unknown").toLowerCase().slice(0,40),
       type: String(rec.type||"unknown").toLowerCase().slice(0,40),
       platform: rec.platform || "tiktok",
@@ -7627,7 +7644,7 @@ const corpusWrite = async (rec) => {
 // Aggregate the corpus for a niche into a compact base-rate block for scoring.
 // Cached ~6h so it doesn't refetch on every score.
 const corpusPriors = async (niche) => {
-  const nk = String(niche||"general").toLowerCase().slice(0,40);
+  const nk = normNiche(niche);
   try {
     const cached = loadJSON("km_corpus_priors", null);
     if(cached && cached.niche===nk && (Date.now()-cached.ts) < 6*3600*1000) return cached.block;
@@ -8786,6 +8803,37 @@ function ProspectAuditView({ WL }){
   const [report, setReport] = useState(null);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  // ── CORPUS SEED (operator) ── paste a batch of niche-leading handles → scrape +
+  // score + write to the cross-creator corpus in one go. Seeds the transfer-learning
+  // priors so every future audit in this niche is smart from the first one.
+  const [seedOpen, setSeedOpen] = useState(false);
+  const [seedNiche, setSeedNiche] = useState("personal finance");
+  const [seedHandles, setSeedHandles] = useState("");
+  const [seeding, setSeeding] = useState(false);
+  const [seedLog, setSeedLog] = useState([]);
+  const runSeed = async () => {
+    const list = seedHandles.split(/[\s,]+/).map(s=>s.replace(/^@/,"").trim()).filter(Boolean);
+    if(!list.length || seeding) return;
+    setSeeding(true); setSeedLog([]);
+    let ok=0, rows=0;
+    for(const h of list){
+      try {
+        const { videos } = await scrapeProspectTikTok(h);
+        const withV = (videos||[]).filter(v=>v.views>0);
+        const med = medianViews(videos) || 0;
+        if(withV.length>=3 && med>0){
+          let wrote=0;
+          withV.forEach(v=>{ const s=calcVideoScore(v, withV); if(s && v.views>0){ corpusWrite({ niche:seedNiche, hook:v.hook||"unknown", type:v.type||"unknown", score:s.score, views:v.views, mult:+(v.views/med).toFixed(2), platform:"tiktok" }); wrote++; } });
+          ok++; rows+=wrote;
+          setSeedLog(l=>[...l, `✓ @${h} — ${wrote} videos seeded`]);
+        } else {
+          setSeedLog(l=>[...l, `– @${h} — too few videos, skipped`]);
+        }
+      } catch(e){ setSeedLog(l=>[...l, `✗ @${h} — ${(e.message||"failed").slice(0,40)}`]); }
+    }
+    setSeedLog(l=>[...l, `Done: ${ok}/${list.length} creators, ${rows} rows into "${normNiche(seedNiche)}".`]);
+    setSeeding(false);
+  };
   // Render the whole report to one shareable PNG — sends via the native share sheet
   // (iPad/phone) or downloads. Keeps the full length; just makes it one image.
   const saveImage = async () => {
@@ -9064,6 +9112,30 @@ Return ONLY JSON:
         </div>
       )}
       {report && <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.35)", textAlign:"center" }}>Screenshot this and send it to @{report.h} — or read it out on a call.</div>}
+
+      {/* ── SEED THE CORPUS (operator utility) ── */}
+      <div style={{ ...card, padding:isMobile?"16px 18px":"18px 22px", marginTop:8 }}>
+        <div onClick={()=>setSeedOpen(o=>!o)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer" }}>
+          <div>
+            <div style={{ fontSize:12, letterSpacing:"0.12em", color:C.purple, fontWeight:700 }}>⚡ SEED THE CORPUS</div>
+            <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.45)", marginTop:3 }}>Batch-load niche leaders → smarter predictions for every audit in this niche.</div>
+          </div>
+          <div style={{ fontSize:18, color:"rgba(255,255,255,0.4)" }}>{seedOpen?"–":"+"}</div>
+        </div>
+        {seedOpen && (
+          <div style={{ marginTop:14, display:"flex", flexDirection:"column", gap:10 }}>
+            <input value={seedNiche} onChange={e=>setSeedNiche(e.target.value)} placeholder="niche for this batch (e.g. personal finance)" style={{ width:"100%", padding:"11px 14px", borderRadius:10, border:"1px solid rgba(255,255,255,0.12)", background:"rgba(255,255,255,0.04)", color:"#fff", fontSize:14, outline:"none", boxSizing:"border-box" }} />
+            <textarea value={seedHandles} onChange={e=>setSeedHandles(e.target.value)} placeholder={"paste handles, one per line or comma-separated\n@creator1  @creator2  @creator3 …"} rows={5} style={{ width:"100%", padding:"11px 14px", borderRadius:10, border:"1px solid rgba(255,255,255,0.12)", background:"rgba(255,255,255,0.04)", color:"#fff", fontSize:13.5, outline:"none", boxSizing:"border-box", resize:"vertical", fontFamily:"inherit" }} />
+            <button onClick={runSeed} disabled={seeding||!seedHandles.trim()} style={{ padding:"12px 0", borderRadius:12, border:"none", background:seeding||!seedHandles.trim()?"rgba(255,255,255,0.08)":`linear-gradient(135deg,${C.purple},${C.cyan})`, color:seeding||!seedHandles.trim()?"rgba(255,255,255,0.4)":"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:seeding||!seedHandles.trim()?"default":"pointer" }}>{seeding?"SEEDING…":"SEED CORPUS"}</button>
+            {seedLog.length>0 && (
+              <div style={{ maxHeight:180, overflowY:"auto", background:"rgba(0,0,0,0.25)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:10, padding:"10px 12px", fontSize:12, fontFamily:"'Courier New',monospace", color:"rgba(255,255,255,0.7)", lineHeight:1.6 }}>
+                {seedLog.map((l,i)=><div key={i} style={{ color: l.startsWith("✓")?C.green : l.startsWith("✗")?"#FF6B7D" : l.startsWith("Done")?C.cyan : "rgba(255,255,255,0.55)" }}>{l}</div>)}
+              </div>
+            )}
+            <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.35)", lineHeight:1.5 }}>Tip: seed ~15–20 top creators + ~20 rising (20–100k) in this niche. Uses your Bright Data credits (scrape only, no AI) — cheap.</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
