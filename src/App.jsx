@@ -10849,6 +10849,7 @@ ${seriesMomentum ? `\n${seriesMomentum}` : ""}
 ${pillarGapLine ? `\n${pillarGapLine}` : ""}
 
 ━━ NICHE INTELLIGENCE (what's working for competitors RIGHT NOW) ━━
+${(!hasViewHistory() && corpusBlock) ? `⚡ COLD-START — this channel has little/no history of its own yet, so DO NOT guess blindly. ANCHOR your prediction PRIMARILY on the cross-creator base rates below: this is how comparable creators in this exact niche actually perform by hook type. Weight it as your main signal until the channel builds its own track record.\n` : ""}
 ${corpusBlock ? `CROSS-CREATOR CORPUS (real outcomes pooled across creators in this niche — evidence-backed, use especially when own-channel data is thin): ${corpusBlock}\n` : ""}
 ${stolenHooks ? `Proven hooks from similar creators to adapt:\n${stolenHooks}` : "Run a competitor scan in settings to unlock niche benchmarks."}
 ${compOpportunities ? `Active content gaps competitors aren't covering: ${compOpportunities}` : ""}
