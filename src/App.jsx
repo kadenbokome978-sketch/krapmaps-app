@@ -8043,14 +8043,20 @@ function _parseClaude(d) {
   throw new Error("Could not parse AI response -- try again");
 }
 
-async function callAI(prompt, maxTokens=2000) {
+// systemOverride: pass a neutral system prompt for calls that AREN'T about the
+// operator's own channel (e.g. auditing a prospect). Without it, buildSystem
+// injects the operator's niche/identity into every call — which contaminates a
+// prospect audit with the wrong niche ("bin-finding" bleeding into a finance
+// creator's audit). Analysing someone else must not carry our own workspace.
+async function callAI(prompt, maxTokens=2000, systemOverride=null) {
   const storedCfg = loadJSON(KEYS_KEY,{});
   const currentWL = loadWL();
+  const sys = systemOverride || buildSystem(currentWL);
 
   // Backend mode: server holds the key (BYO forwarded if the user set their own).
   if(USE_BACKEND) {
     const byo = (storedCfg?.keys?.anthropic||"").trim();
-    const d = await _postProxy("/api/ai", { provider:"anthropic", prompt, maxTokens, system:buildSystem(currentWL) }, byo);
+    const d = await _postProxy("/api/ai", { provider:"anthropic", prompt, maxTokens, system:sys }, byo);
     return _parseClaude(d);
   }
 
@@ -8063,7 +8069,7 @@ async function callAI(prompt, maxTokens=2000) {
     if(k.gemini || BAKED_GEMINI_KEY) return callGeminiText(prompt);
     throw new Error("No AI key set — add at least one in Settings (Anthropic recommended). You don't need all of them.");
   }
-  const d = await _anthropicFetch(apiKey, { max_tokens:maxTokens, system:buildSystem(currentWL), messages:[{ role:"user", content:prompt }] });
+  const d = await _anthropicFetch(apiKey, { max_tokens:maxTokens, system:sys, messages:[{ role:"user", content:prompt }] });
   const text = (d.content||[]).map(b=>b.text||"").join("").trim();
   if(!text) throw new Error("Empty AI response");
   const parsed = _extractJSON(text);
@@ -8841,15 +8847,8 @@ function ProspectAuditView({ WL }){
       const engBlock = engSignals ? formatEngagementSignals(engSignals) : "";
       // Score every video with the engine (median-benchmarked) to find genuine hits vs typical.
       const scored = withV.map(v=>({ v, s:calcVideoScore(v, withV) })).filter(x=>x.s);
-      // ── DATA FARM ── Feed anonymised niche performance into the cross-creator corpus, FREE, off
-      // the scrape we already ran. Every audit fattens the data moat → sharper predictions over time.
-      try {
-        const _median = medianViews(videos) || 0;
-        const _niche = (WL?.niche || loadWL().niche || "").trim();
-        if(_niche && _median > 0){
-          scored.forEach(x=>{ if((x.v.views||0) > 0) corpusWrite({ niche:_niche, hook:x.v.hook||"unknown", type:x.v.type||"unknown", score:x.s.score, views:x.v.views, mult:+(x.v.views/_median).toFixed(2), platform:"tiktok" }); });
-        }
-      } catch {}
+      // ── DATA FARM runs AFTER the AI call — we tag the corpus with the PROSPECT'S
+      // real niche (inferred by the audit), never the operator's workspace niche.
       const engineTop = [...scored].sort((a,b)=>(b.s.score||0)-(a.s.score||0)).slice(0,5);
       const engineFlop = [...scored].sort((a,b)=>(a.s.score||0)-(b.s.score||0)).slice(0,3);
       const cap = v => (v.title||"(no caption)").replace(/\s+/g," ").slice(0,70);
@@ -8884,10 +8883,23 @@ Be concrete and reference THEIR actual captions + numbers. No generic advice, no
 ${COACH_PRINCIPLES}
 
 Return ONLY JSON:
-{"headline":"ONE scroll-stopping sentence — the single most compelling, specific insight about this channel, built around a REAL number (ideally the gap between their ${fmtN(median)} typical and their proven ${fmtN(ceiling)} best). This is the first line they read; it must make them feel seen and want to keep reading. No fluff, no fantasy numbers.","verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views, grounded in the real numbers/captions above","potential":"one line: what they could realistically hit, scaled from their proven ceiling of ${fmtN(ceiling)} — no fantasy numbers","working":["3 specific things working, each citing a REAL caption or number above (never invented footage)"],"fixing":["3 honest things holding them back — each a fix they'd actually accept (reframe or upgrade their existing content, never 'stop doing X that's core to them'), grounded in what you can actually see"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them, tied to what already works","score":"predicted virality score as an integer 81-94 — a genuine prediction grounded in how close this idea is to their proven hits. These 5 are their STRONGEST opportunities, so every one must genuinely earn 81+ (don't pad weak ideas up — generate ideas good enough to actually score this high). Vary the numbers across the 5; don't repeat the same score. Only surface ideas you'd genuinely stake 81+ on — if one wouldn't clear that bar, replace it with a stronger one until all 5 do. These are 5 winners, not a mixed bag."}]}`;
+{"niche":"this creator's actual niche in 2-4 words (e.g. 'personal finance', 'faceless motivation', 'skincare') — read from their captions/content, NOT any other context","headline":"ONE scroll-stopping sentence — the single most compelling, specific insight about this channel, built around a REAL number (ideally the gap between their ${fmtN(median)} typical and their proven ${fmtN(ceiling)} best). This is the first line they read; it must make them feel seen and want to keep reading. No fluff, no fantasy numbers.","verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views, grounded in the real numbers/captions above","potential":"one line: what they could realistically hit, scaled from their proven ceiling of ${fmtN(ceiling)} — no fantasy numbers","working":["3 specific things working, each citing a REAL caption or number above (never invented footage)"],"fixing":["3 honest things holding them back — each a fix they'd actually accept (reframe or upgrade their existing content, never 'stop doing X that's core to them'), grounded in what you can actually see"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them, tied to what already works","score":"predicted virality score as an integer 81-94 — a genuine prediction grounded in how close this idea is to their proven hits. These 5 are their STRONGEST opportunities, so every one must genuinely earn 81+ (don't pad weak ideas up — generate ideas good enough to actually score this high). Vary the numbers across the 5; don't repeat the same score. Only surface ideas you'd genuinely stake 81+ on — if one wouldn't clear that bar, replace it with a stronger one until all 5 do. These are 5 winners, not a mixed bag."}]}`;
       // If the AI narrative fails, still show the scraped numbers + voice — the
       // deterministic half of the audit is valuable on its own and shouldn't be lost.
-      const r = await callAI(prompt, 1600).catch(()=>null);
+      // Neutral system — the audit analyses a DIFFERENT creator, so it must NOT
+      // carry the operator's own niche/identity (which would make a finance
+      // audit read as if it were about our bin-finding app).
+      const AUDIT_SYS = "You are an elite short-form content strategist doing a paid-grade audit of ONE specific creator described in the user's message. Use ONLY that creator's data. You have no other client, product, or niche of your own — do not reference any brand, app, or niche except the creator you are analysing.";
+      const r = await callAI(prompt, 1600, AUDIT_SYS).catch(()=>null);
+      // DATA FARM — now tag the corpus with the PROSPECT'S real niche (from the audit),
+      // never the operator's. Anonymised, fire-and-forget; fattens the data moat.
+      try {
+        const _pn = (r?.niche || "").trim().toLowerCase();
+        const _median = medianViews(videos) || 0;
+        if(_pn && _median > 0){
+          scored.forEach(x=>{ if((x.v.views||0) > 0) corpusWrite({ niche:_pn, hook:x.v.hook||"unknown", type:x.v.type||"unknown", score:x.s.score, views:x.v.views, mult:+(x.v.views/_median).toFixed(2), platform:"tiktok" }); });
+        }
+      } catch {}
       if(!r) setErr("The AI couldn't generate the write-up (check your AI key) — showing the data we pulled.");
       setReport({ h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit" });
       setPhase("done");
