@@ -5047,7 +5047,7 @@ const SettingsView = ({ plan, onManagePlan, keys, onEditKeys, scrapedStats, hasI
       const compData = loadCompetitorData();
       const compSummary = compData?.data?.opportunities?.slice(0,2).map(o=>o.gap).join(", ")||"";
 
-      const d = await anthropicMessages({model:"claude-sonnet-4-6",max_tokens:600,messages:[{role:"user",content:`You are a media psychologist analysing why a specific social media channel goes viral. Channel: ${loadWL().handle} (${loadWL().appName} — ${loadWL().niche}, creator${loadWL().creator2?`s: ${loadWL().creator1} + ${loadWL().creator2}`:`: ${loadWL().creator1}`}).
+      const d = await anthropicMessages({model:"claude-sonnet-5",max_tokens:600,messages:[{role:"user",content:`You are a media psychologist analysing why a specific social media channel goes viral. Channel: ${loadWL().handle} (${loadWL().appName} — ${loadWL().niche}, creator${loadWL().creator2?`s: ${loadWL().creator1} + ${loadWL().creator2}`:`: ${loadWL().creator1}`}).
 
 TOP PERFORMING VIDEOS: ${JSON.stringify(top5)}
 BOTTOM PERFORMING VIDEOS: ${JSON.stringify(bot5)}
@@ -8075,7 +8075,7 @@ async function callAI(prompt, maxTokens=2000) {
 // Model resilience for EVERY Anthropic call (chat, visual DNA, channel theory,
 // post-mortems, scoring): if the preferred model is retired (the way
 // gemini-1.5-pro 404'd), fall through the chain; 429/529 get one retried call.
-const CLAUDE_MODELS = ["claude-opus-4-8","claude-sonnet-4-6","claude-sonnet-5","claude-haiku-4-5-20251001"];
+const CLAUDE_MODELS = ["claude-opus-4-8","claude-sonnet-5","claude-haiku-4-5-20251001"];
 async function _anthropicFetch(apiKey, payload) {
   const preferred = payload.model ? [payload.model, ...CLAUDE_MODELS.filter(m=>m!==payload.model)] : CLAUDE_MODELS;
   let lastErr = null;
@@ -9393,7 +9393,7 @@ ${memCtx ? `━━ CHANNEL MEMORY ━━\n${memCtx}` : ""}`;
       const hasClaude = !!anthropicKey || USE_BACKEND;
       if(hasClaude){
         // Full tool-enabled chat (Claude's tool-calling — can add tasks, pull stats, etc.)
-        let data = await anthropicMessages({ model:"claude-sonnet-4-6", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:conversationMsgs }, anthropicKey);
+        let data = await anthropicMessages({ model:"claude-sonnet-5", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:conversationMsgs }, anthropicKey);
         let assistantContent = data.content;
         let allMsgs = [...conversationMsgs, { role:"assistant", content:assistantContent }];
         // Handle tool use in a loop
@@ -9405,7 +9405,7 @@ ${memCtx ? `━━ CHANNEL MEMORY ━━\n${memCtx}` : ""}`;
             content: executeTool(tu.name, tu.input)
           }));
           allMsgs = [...allMsgs, { role:"user", content:toolResults }];
-          data = await anthropicMessages({ model:"claude-sonnet-4-6", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:allMsgs }, anthropicKey);
+          data = await anthropicMessages({ model:"claude-sonnet-5", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:allMsgs }, anthropicKey);
           assistantContent = data.content;
           allMsgs = [...allMsgs, { role:"assistant", content:assistantContent }];
         }
@@ -10220,7 +10220,7 @@ function Dashboard({ keys, onEditKeys }) {
       top.forEach((v,i)=>{ content.push({ type:"text", text:`HIGH PERFORMER #${i+1} — ${fmt(v.views)} views:` }); content.push({ type:"image", source:{ type:"url", url:v.cover } }); });
       bottom.forEach((v,i)=>{ content.push({ type:"text", text:`LOW PERFORMER #${i+1} — ${fmt(v.views)} views:` }); content.push({ type:"image", source:{ type:"url", url:v.cover } }); });
       content.push({ type:"text", text:`Return ONLY JSON: {"winning_traits":["specific visual traits the high performers share"],"losing_traits":["what the low performers do that hurts them"],"color_palette":"dominant colors/contrast that wins here","composition":"framing/subject placement that wins","face_pattern":"role of faces/expressions in winners","text_overlay":"how on-thumbnail text is used by winners vs losers","one_rule":"the single most important visual rule for this channel's thumbnails"}` });
-      const d = await anthropicMessages({ model:"claude-sonnet-4-6", max_tokens:1200, messages:[{ role:"user", content }] });
+      const d = await anthropicMessages({ model:"claude-sonnet-5", max_tokens:1200, messages:[{ role:"user", content }] });
       const dna = _extractJSON((d.content||[]).map(b=>b.text||"").join(""));
       if(!dna) return;
       saveJSON(VISION_KEY, { ...dna, sampleSize:top.length+bottom.length, analyzedAt:new Date().toISOString() });
