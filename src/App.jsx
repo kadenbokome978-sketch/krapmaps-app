@@ -8816,6 +8816,11 @@ function ProspectAuditView({ WL }){
   const [saving, setSaving] = useState(false);
   const auditAbort = useRef(null); // lets the user cancel an in-flight audit scrape
   const cancelRun = () => { try { auditAbort.current?.abort(); } catch {} setPhase("idle"); setErr(""); };
+  // Restore the last audit after a refresh (within 24h) so no re-scrape is needed.
+  useEffect(() => {
+    const last = loadJSON("km_last_audit", null);
+    if(last?.rep && Date.now()-last.at < 24*3600*1000){ setReport(last.rep); setHandle(last.rep.h||""); setPhase("done"); }
+  }, []);
   // ── CORPUS SEED (operator) ── paste a batch of niche-leading handles → scrape +
   // score + write to the cross-creator corpus in one go. Seeds the transfer-learning
   // priors so every future audit in this niche is smart from the first one.
@@ -8894,12 +8899,23 @@ function ProspectAuditView({ WL }){
   };
   const fmtN = n => n>=1000000?`${(n/1000000).toFixed(1)}M`:n>=1000?`${(n/1000).toFixed(1)}k`:String(Math.round(n||0));
 
+  // Scrape cache — a Bright Data pull costs credits, so we keep each handle's
+  // scraped videos for 24h. Re-auditing the same handle (after a refresh, or by
+  // accident) reuses the saved pull instead of paying for it again.
+  const SCRAPE_CACHE = "km_prospect_scrape_v1", SCRAPE_TTL = 24*3600*1000;
+  const cachedScrape = (h) => { const c = loadJSON(SCRAPE_CACHE,{})[h.toLowerCase()]; return (c && Date.now()-c.at < SCRAPE_TTL) ? c.data : null; };
+  const putScrape = (h, data) => { const all = loadJSON(SCRAPE_CACHE,{}); all[h.toLowerCase()] = { at:Date.now(), data }; saveJSON(SCRAPE_CACHE, all); };
+
   const run = async () => {
     setErr(""); setReport(null); setPhase("scraping");
     const ac = new AbortController(); auditAbort.current = ac;
     await _withWakeLock(async () => {
     try {
-      const { handle:h, nick, followers, videos } = await scrapeProspectTikTok(handle, 4, ac.signal);
+      const hk = handle.trim().replace(/^@/,"").replace(/\s+/g,"");
+      const hit = cachedScrape(hk);
+      const scr = hit || await scrapeProspectTikTok(handle, 4, ac.signal);
+      if(!hit) putScrape(hk, scr); // save the fresh pull so a refresh won't re-charge
+      const { handle:h, nick, followers, videos } = scr;
       if(videos.length < 3) throw new Error(`Only ${videos.length} videos found — need a few more to audit properly.`);
       // Meter only once we have a real channel to audit, so a typo never burns
       // a free user's monthly audit. Pro/founder are unlimited (meter passes).
@@ -8976,7 +8992,9 @@ Return ONLY JSON:
         }
       } catch {}
       if(!r) setErr("The AI couldn't generate the write-up (check your AI key) — showing the data we pulled.");
-      setReport({ h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit" });
+      const rep = { h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit" };
+      setReport(rep);
+      saveJSON("km_last_audit", { at:Date.now(), rep }); // survives a page refresh
       setPhase("done");
     } catch(e){ if(e.name==="AbortError"){ setPhase("idle"); setErr(""); } else { setErr(e.message||"Audit failed"); setPhase("error"); } }
     });
