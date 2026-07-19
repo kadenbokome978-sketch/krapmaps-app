@@ -4460,7 +4460,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
 
   const sectionHead = (label, color=C.cyan) => (
     <div style={{ fontSize:isMobile?12:13, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", color, marginBottom:isMobile?12:18, display:"flex", alignItems:"center", gap:8 }}>
-      <div style={{ width:3, height:14, borderRadius:2, background:color, flexShrink:0 }}/>
+      <div style={{ width:3, height:14, borderRadius:2, background:`linear-gradient(180deg,${C.pink},${C.purple},${C.cyan})`, flexShrink:0 }}/>
       {label}
     </div>
   );
@@ -8911,7 +8911,7 @@ Return ONLY JSON:
 
       {report && (
         <div id="prospect-report" style={{ ...card, padding:isMobile?"22px 18px":"32px 30px", background:"linear-gradient(160deg,rgba(0,229,255,0.06),rgba(10,6,20,0.72))", position:"relative", overflow:"hidden" }}>
-          <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.cyan},${C.pink},${C.purple})` }}/>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${C.pink},${C.purple},${C.cyan},transparent)` }}/>
           <div style={{ position:"absolute", top:-90, right:-70, width:280, height:280, borderRadius:"50%", background:`radial-gradient(circle,${C.cyan}12,transparent 70%)`, pointerEvents:"none" }}/>
           {/* Header */}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:14, flexWrap:"wrap", marginBottom:20 }}>
@@ -11590,7 +11590,7 @@ Return JSON:
                   {nav==="ai"&&"Ask anything — get instant content advice."}
                 </div>
               </div>
-              <div style={{ height:1, flex:1, margin:"0 32px 4px", background:"linear-gradient(90deg,rgba(255,255,255,0.06),transparent)" }} />
+              <div style={{ height:2, flex:1, margin:"0 32px 6px", borderRadius:2, background:`linear-gradient(90deg,${C.pink}99,${C.purple}66,${C.cyan}33,transparent)` }} />
             </div>}
 
             {/* Mobile section subtitle — one punchy line per tab (not home) */}
