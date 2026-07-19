@@ -7844,19 +7844,19 @@ const ttNormalize  = (v) => {
   };
 };
 // Call Bright Data through the /api/rapid proxy (server holds BRIGHTDATA_TOKEN). Returns the Response.
-async function bdFetch(handle, n){
+async function bdFetch(handle, n, signal){
   const url = `/api/rapid?bd=1&handle=${encodeURIComponent(handle)}&n=${n}`;
-  if(!USE_BACKEND) return fetch(url); // dev: proxy still resolves the server token if configured
+  if(!USE_BACKEND) return fetch(url, { signal }); // dev: proxy still resolves the server token if configured
   const token = await getAccessToken();
   if(!token) throw new Error("Your session expired — please sign in again.");
-  return fetch(url, { headers:{ "Authorization":"Bearer "+token } });
+  return fetch(url, { headers:{ "Authorization":"Bearer "+token }, signal });
 }
 // Scrape a handle end-to-end: profile + normalised videos. Throws with .status. (byoKey/maxPages
 // kept for call-site compatibility; Bright Data returns everything in one synchronous call.)
-async function ttScrape(handle, byoKey, maxPages=4){
+async function ttScrape(handle, byoKey, maxPages=4, signal){
   const clean = String(handle||"").replace(/^@/,"").trim();
   const n = Math.min(Math.max(maxPages,1)*30, 100);
-  const r = await bdFetch(clean, n);
+  const r = await bdFetch(clean, n, signal);
   const rawText = await r.text().catch(()=>"");
   if(!r.ok){ const e = new Error("bd"); e.status = r.status; e.detail = rawText.slice(0,300); throw e; }
   // Bright Data returns NDJSON (one JSON post object per line). Also handle a plain JSON array/object.
@@ -7891,14 +7891,14 @@ async function rapidFetch(targetUrl, byoKey) {
 // the free-audit outreach play. Uses the same scraper as the owner's own sync,
 // but returns the data in-memory only: it never touches the operator's workspace,
 // so you can audit an unlimited number of prospects without setting anything up.
-async function scrapeProspectTikTok(handle, maxPages=4){
+async function scrapeProspectTikTok(handle, maxPages=4, signal){
   const clean = String(handle||"").trim().replace(/^@/,"").replace(/\s+/g,"");
   if(!clean) throw new Error("Enter a TikTok @handle first");
   const key = loadJSON(KEYS_KEY,{})?.keys?.tikwm;
   if(!key && !USE_BACKEND) throw new Error("Add your TikTok (RapidAPI) key in Settings first — that's what pulls their videos.");
   let res;
-  try { res = await ttScrape(clean, key, maxPages); }
-  catch(e){ throw new Error(e.status===404?`No public TikTok found for @${clean} — check the handle is exact (no spaces).`:ttErrMsg(e.status)); }
+  try { res = await ttScrape(clean, key, maxPages, signal); }
+  catch(e){ if(e.name==="AbortError") throw e; throw new Error(e.status===404?`No public TikTok found for @${clean} — check the handle is exact (no spaces).`:ttErrMsg(e.status)); }
   if(!res.videos.length) throw new Error(`No public videos found for @${clean} — check the handle is exact (no spaces).`);
   const videos = res.videos.map(tv=>({ id:"p_"+tv.video_id, title:tv.title||"", views:tv.play_count||0, likes:tv.digg_count||0, comments:tv.comment_count||0, shares:tv.share_count||0, created_at:new Date((tv.create_time||0)*1000).toISOString(), platform:"tiktok" }));
   return { handle:clean, nick:res.nick, followers:res.followers, videos };
@@ -8814,6 +8814,8 @@ function ProspectAuditView({ WL }){
   const [report, setReport] = useState(null);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const auditAbort = useRef(null); // lets the user cancel an in-flight audit scrape
+  const cancelRun = () => { try { auditAbort.current?.abort(); } catch {} setPhase("idle"); setErr(""); };
   // ── CORPUS SEED (operator) ── paste a batch of niche-leading handles → scrape +
   // score + write to the cross-creator corpus in one go. Seeds the transfer-learning
   // priors so every future audit in this niche is smart from the first one.
@@ -8894,9 +8896,10 @@ function ProspectAuditView({ WL }){
 
   const run = async () => {
     setErr(""); setReport(null); setPhase("scraping");
+    const ac = new AbortController(); auditAbort.current = ac;
     await _withWakeLock(async () => {
     try {
-      const { handle:h, nick, followers, videos } = await scrapeProspectTikTok(handle);
+      const { handle:h, nick, followers, videos } = await scrapeProspectTikTok(handle, 4, ac.signal);
       if(videos.length < 3) throw new Error(`Only ${videos.length} videos found — need a few more to audit properly.`);
       // Meter only once we have a real channel to audit, so a typo never burns
       // a free user's monthly audit. Pro/founder are unlimited (meter passes).
@@ -8975,7 +8978,7 @@ Return ONLY JSON:
       if(!r) setErr("The AI couldn't generate the write-up (check your AI key) — showing the data we pulled.");
       setReport({ h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit" });
       setPhase("done");
-    } catch(e){ setErr(e.message||"Audit failed"); setPhase("error"); }
+    } catch(e){ if(e.name==="AbortError"){ setPhase("idle"); setErr(""); } else { setErr(e.message||"Audit failed"); setPhase("error"); } }
     });
   };
 
@@ -8992,9 +8995,15 @@ Return ONLY JSON:
             <span style={{ color:"rgba(255,255,255,0.4)", fontSize:16 }}>@</span>
             <input value={handle} onChange={e=>setHandle(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!busy&&run()} placeholder="theirhandle" style={{ flex:1, background:"none", border:"none", outline:"none", color:"#fff", fontSize:16, padding:"13px 0", fontFamily:C.fontHead }}/>
           </div>
-          <button onClick={run} disabled={busy||!handle.trim()} style={{ padding:"13px 24px", borderRadius:12, border:"none", background:busy?"rgba(255,255,255,0.1)":`linear-gradient(135deg,${C.cyan},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:busy?"wait":"pointer", opacity:(!handle.trim())?0.5:1, whiteSpace:"nowrap" }}>
-            {phase==="scraping"?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={13}/> PULLING VIDEOS</span>:phase==="analysing"?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={13}/> ANALYSING</span>:<span style={{display:"inline-flex",alignItems:"center",gap:6}}>{I.search(14,"currentColor")} RUN AUDIT</span>}
+          {busy ? (
+            <button onClick={cancelRun} style={{ padding:"13px 24px", borderRadius:12, border:"1px solid #FF4D4D40", background:"#FF4D4D14", color:"#FF4D4D", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", whiteSpace:"nowrap" }}>
+              <span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={13}/> {phase==="scraping"?"PULLING":"ANALYSING"} · STOP</span>
+            </button>
+          ) : (
+          <button onClick={run} disabled={!handle.trim()} style={{ padding:"13px 24px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${C.cyan},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", opacity:(!handle.trim())?0.5:1, whiteSpace:"nowrap" }}>
+            <span style={{display:"inline-flex",alignItems:"center",gap:6}}>{I.search(14,"currentColor")} RUN AUDIT</span>
           </button>
+          )}
         </div>
         {err && <div style={{ marginTop:12, fontSize:13.5, color:"#FF4D4D", background:`${"#FF4D4D"}10`, border:`1px solid ${"#FF4D4D"}25`, borderRadius:10, padding:"10px 13px", lineHeight:1.5 }}>{err}</div>}
         {busy && (
