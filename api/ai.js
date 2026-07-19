@@ -8,7 +8,7 @@ import { cors, requireUser, readJson, resolveKey } from "./_lib.js";
 export const config = { api: { bodyParser: { sizeLimit: "4mb" } } };
 
 // Providers retire model names (gemini-1.5-pro started 404ing) — never pin one.
-const CLAUDE_MODELS = ["claude-sonnet-4-6", "claude-sonnet-5", "claude-haiku-4-5-20251001"];
+const CLAUDE_MODELS = ["claude-opus-4-8", "claude-sonnet-5", "claude-haiku-4-5-20251001"];
 const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
 
 // ── Free score (no auth, rate-limited) ──
