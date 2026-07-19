@@ -89,7 +89,13 @@ export default async function handler(req, res) {
       const r = await tryModels(models, (model) => {
         // body.messages allows rich payloads (multimodal, chat history); prompt is the simple path.
         const payload = { model, max_tokens: maxTokens, messages: body.messages || [{ role: "user", content: prompt }] };
-        if (body.system) payload.system = body.system;
+        if (body.system) {
+          // Prompt caching (GA): cache the stable system prefix (channel context,
+          // Voice DNA) so repeat calls bill it at ~10% — same output, lower cost.
+          payload.system = typeof body.system === "string" && body.system.length > 1200
+            ? [{ type: "text", text: body.system, cache_control: { type: "ephemeral" } }]
+            : body.system;
+        }
         if (body.tools) payload.tools = body.tools;
         return fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
