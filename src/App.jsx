@@ -7880,13 +7880,13 @@ async function rapidFetch(targetUrl, byoKey) {
 // the free-audit outreach play. Uses the same scraper as the owner's own sync,
 // but returns the data in-memory only: it never touches the operator's workspace,
 // so you can audit an unlimited number of prospects without setting anything up.
-async function scrapeProspectTikTok(handle){
+async function scrapeProspectTikTok(handle, maxPages=4){
   const clean = String(handle||"").trim().replace(/^@/,"").replace(/\s+/g,"");
   if(!clean) throw new Error("Enter a TikTok @handle first");
   const key = loadJSON(KEYS_KEY,{})?.keys?.tikwm;
   if(!key && !USE_BACKEND) throw new Error("Add your TikTok (RapidAPI) key in Settings first — that's what pulls their videos.");
   let res;
-  try { res = await ttScrape(clean, key, 4); }
+  try { res = await ttScrape(clean, key, maxPages); }
   catch(e){ throw new Error(e.status===404?`No public TikTok found for @${clean} — check the handle is exact (no spaces).`:ttErrMsg(e.status)); }
   if(!res.videos.length) throw new Error(`No public videos found for @${clean} — check the handle is exact (no spaces).`);
   const videos = res.videos.map(tv=>({ id:"p_"+tv.video_id, title:tv.title||"", views:tv.play_count||0, likes:tv.digg_count||0, comments:tv.comment_count||0, shares:tv.share_count||0, created_at:new Date((tv.create_time||0)*1000).toISOString(), platform:"tiktok" }));
@@ -8818,7 +8818,7 @@ function ProspectAuditView({ WL }){
     let ok=0, rows=0;
     for(const h of list){
       try {
-        const { videos } = await scrapeProspectTikTok(h);
+        const { videos } = await scrapeProspectTikTok(h, 1); // ~30 recent videos — plenty for priors, ~3x fewer credits than a full pull
         const withV = (videos||[]).filter(v=>v.views>0);
         const med = medianViews(videos) || 0;
         if(withV.length>=3 && med>0){
