@@ -8837,7 +8837,12 @@ function ProspectAuditView({ WL }){
     let ok=0, rows=0;
     for(const h of list){
       try {
-        const { videos } = await scrapeProspectTikTok(h, 1); // ~30 recent videos — plenty for priors, ~3x fewer credits than a full pull
+        const hk = h.toLowerCase();
+        const hit = cachedScrape(hk);
+        if(hit) setSeedLog(l=>[...l, `⟳ @${h} — using cached pull (no credits)`]);
+        const scr = hit || await scrapeProspectTikTok(h, 1); // ~30 recent videos — plenty for priors, ~3x fewer credits than a full pull
+        if(!hit) putScrape(hk, scr); // save so a restart/refresh never re-charges this creator
+        const { videos } = scr;
         const withV = (videos||[]).filter(v=>v.views>0);
         const med = medianViews(videos) || 0;
         if(withV.length>=3 && med>0){
