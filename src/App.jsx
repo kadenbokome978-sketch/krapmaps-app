@@ -7470,6 +7470,17 @@ const STATUS_C    = { idea:C.dim, scripted:C.purple, filming:C.yellow, editing:C
 
 const loadJSON  = (k,fb) => { try { const v=JSON.parse(localStorage.getItem(k)); return v!=null?v:fb; } catch { return fb; } };
 const saveJSON  = (k,d)  => { try { localStorage.setItem(k,JSON.stringify(d)); } catch {} };
+// Keep the screen awake for the duration of a long async job so mobile browsers
+// don't dim + suspend the JS mid-run (seeding, audits, batch scoring). The lock
+// auto-releases when the tab is hidden, so we re-acquire on return to visible.
+async function _withWakeLock(fn){
+  let wake = null;
+  const acquire = async () => { try { wake = await navigator.wakeLock?.request?.("screen"); } catch {} };
+  const onVis = () => { if(document.visibilityState === "visible" && !wake) acquire(); };
+  try { await acquire(); document.addEventListener("visibilitychange", onVis); } catch {}
+  try { return await fn(); }
+  finally { document.removeEventListener("visibilitychange", onVis); try { await wake?.release?.(); } catch {} }
+}
 const getSbUrl  = () => localStorage.getItem(SB_URL_KEY) || _ENV.VITE_SB_URL || _ENV.VITE_SUPABASE_URL || DEFAULT_SB_URL;
 // The project has legacy JWT (eyJ…) anon keys DISABLED — only new-style
 // sb_publishable_… keys are accepted. To stay immune to a stale build-time env
@@ -8815,6 +8826,7 @@ function ProspectAuditView({ WL }){
     const list = seedHandles.split(/[\s,]+/).map(s=>s.replace(/^@/,"").trim()).filter(Boolean);
     if(!list.length || seeding) return;
     setSeeding(true); setSeedLog([]);
+    await _withWakeLock(async () => {
     let ok=0, rows=0;
     for(const h of list){
       try {
@@ -8832,6 +8844,7 @@ function ProspectAuditView({ WL }){
       } catch(e){ setSeedLog(l=>[...l, `✗ @${h} — ${(e.message||"failed").slice(0,40)}`]); }
     }
     setSeedLog(l=>[...l, `Done: ${ok}/${list.length} creators, ${rows} rows into "${normNiche(seedNiche)}".`]);
+    });
     setSeeding(false);
   };
   // Render the whole report to one shareable PNG — sends via the native share sheet
@@ -8881,6 +8894,7 @@ function ProspectAuditView({ WL }){
 
   const run = async () => {
     setErr(""); setReport(null); setPhase("scraping");
+    await _withWakeLock(async () => {
     try {
       const { handle:h, nick, followers, videos } = await scrapeProspectTikTok(handle);
       if(videos.length < 3) throw new Error(`Only ${videos.length} videos found — need a few more to audit properly.`);
@@ -8962,6 +8976,7 @@ Return ONLY JSON:
       setReport({ h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit" });
       setPhase("done");
     } catch(e){ setErr(e.message||"Audit failed"); setPhase("error"); }
+    });
   };
 
   const card = { background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16 };
