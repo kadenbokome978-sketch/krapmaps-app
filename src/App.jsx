@@ -8829,6 +8829,29 @@ function ProspectAuditView({ WL, operator=false }){
   const [saving, setSaving] = useState(false);
   const auditAbort = useRef(null); // lets the user cancel an in-flight audit scrape
   const cancelRun = () => { try { auditAbort.current?.abort(); } catch {} setPhase("idle"); setErr(""); };
+  // ── OUTREACH TRACKER (operator) ── auto-logs every creator you audit and tracks
+  // where each one is in the pipeline (audited → sent → replied → client). Local, private.
+  const PROSPECTS_KEY = "km_prospects";
+  const [prospects, setProspects] = useState(()=>loadJSON(PROSPECTS_KEY, []));
+  const [trackOpen, setTrackOpen] = useState(true);
+  const saveProspects = (list) => { setProspects(list); saveJSON(PROSPECTS_KEY, list); };
+  const STAGES = ["audited","sent","replied","client","passed"];
+  const STAGE_LABEL = { audited:"AUDITED", sent:"DM SENT", replied:"REPLIED", client:"CLIENT", passed:"PASSED" };
+  const STAGE_COLOR = { audited:"rgba(255,255,255,0.5)", sent:C.cyan, replied:C.yellow, client:C.green, passed:"#FF4D4D" };
+  const logProspect = (rep) => {
+    if(!rep?.h) return;
+    setProspects(prev => {
+      const i = prev.findIndex(p=>p.h.toLowerCase()===rep.h.toLowerCase());
+      const base = { h:rep.h, nick:rep.nick||"", median:rep.median||0, ceiling:rep.ceiling||0, niche:(rep.ai?.niche||"").trim(), at:Date.now() };
+      let next;
+      if(i>=0){ next=[...prev]; next[i]={ ...next[i], ...base, stage:next[i].stage||"audited" }; }
+      else next=[{ ...base, stage:"audited" }, ...prev];
+      saveJSON(PROSPECTS_KEY, next); return next;
+    });
+  };
+  const cycleStage = (h) => saveProspects(prospects.map(p=> p.h===h ? { ...p, stage: STAGES[(STAGES.indexOf(p.stage)+1)%STAGES.length] } : p));
+  const setStage = (h, stage) => saveProspects(prospects.map(p=> p.h===h ? { ...p, stage } : p));
+  const removeProspect = (h) => saveProspects(prospects.filter(p=>p.h!==h));
   // Restore the last audit after a refresh (within 24h) so no re-scrape is needed.
   useEffect(() => {
     const last = loadJSON("km_last_audit", null);
@@ -9050,6 +9073,7 @@ Return ONLY JSON:
       const rep = { h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit" };
       setReport(rep);
       saveJSON("km_last_audit", { at:Date.now(), rep }); // survives a page refresh
+      if(operator) logProspect(rep); // auto-log into the outreach tracker
       setPhase("done");
     } catch(e){ if(e.name==="AbortError"){ setPhase("idle"); setErr(""); } else { setErr(e.message||"Audit failed"); setPhase("error"); } }
     });
@@ -9227,6 +9251,42 @@ Return ONLY JSON:
         </div>
       )}
       {report && <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.35)", textAlign:"center" }}>Tap <b style={{color:"rgba(255,255,255,0.6)"}}>SAVE IMAGE</b> → on iPhone/iPad choose <b style={{color:"rgba(255,255,255,0.6)"}}>Save Image</b> to add the clean audit to Photos, then send it to @{report.h}.</div>}
+
+      {/* ── OUTREACH TRACKER (operator) ── auto-logged pipeline of everyone you've audited ── */}
+      {operator && prospects.length>0 && (() => {
+        const counts = STAGES.reduce((a,s)=>{ a[s]=prospects.filter(p=>p.stage===s).length; return a; }, {});
+        return (
+        <div style={{ ...card, padding:isMobile?"16px 18px":"18px 22px", marginTop:8 }}>
+          <div onClick={()=>setTrackOpen(o=>!o)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", gap:12 }}>
+            <div>
+              <div style={{ fontSize:12, letterSpacing:"0.12em", color:C.cyan, fontWeight:700 }}>📋 OUTREACH TRACKER</div>
+              <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.45)", marginTop:3 }}>{prospects.length} audited · {counts.sent} sent · {counts.replied} replied · {counts.client} client{counts.client===1?"":"s"}</div>
+            </div>
+            <div style={{ fontSize:18, color:"rgba(255,255,255,0.4)" }}>{trackOpen?"–":"+"}</div>
+          </div>
+          {trackOpen && (
+            <div style={{ marginTop:14, display:"flex", flexDirection:"column", gap:8 }}>
+              {prospects.map(p=>(
+                <div key={p.h} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"9px 12px", flexWrap:"wrap" }}>
+                  <div style={{ flex:1, minWidth:isMobile?"100%":140 }}>
+                    <div style={{ fontSize:14, fontWeight:700, color:"#fff" }}>@{p.h}</div>
+                    <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.4)" }}>{p.median?`${fmtN(p.median)}→${fmtN(p.ceiling)}`:""}{p.niche?` · ${p.niche}`:""}</div>
+                  </div>
+                  <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                    {STAGES.map(s=>(
+                      <button key={s} onClick={()=>setStage(p.h,s)} style={{ padding:"4px 9px", borderRadius:20, border:`1px solid ${p.stage===s?STAGE_COLOR[s]:"rgba(255,255,255,0.12)"}`, background:p.stage===s?`${STAGE_COLOR[s]}1e`:"transparent", color:p.stage===s?STAGE_COLOR[s]:"rgba(255,255,255,0.4)", fontSize:9.5, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer", fontFamily:C.fontHead }}>{STAGE_LABEL[s]}</button>
+                    ))}
+                    <button onClick={()=>{ setHandle(p.h); }} title="Load this handle" style={{ padding:"4px 8px", borderRadius:8, border:"1px solid rgba(255,255,255,0.12)", background:"transparent", color:"rgba(255,255,255,0.5)", fontSize:10, cursor:"pointer" }}>↑</button>
+                    <button onClick={()=>removeProspect(p.h)} title="Remove" style={{ padding:"4px 8px", borderRadius:8, border:"1px solid rgba(255,255,255,0.12)", background:"transparent", color:"rgba(255,255,255,0.35)", fontSize:11, cursor:"pointer" }}>✕</button>
+                  </div>
+                </div>
+              ))}
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", lineHeight:1.5 }}>Every creator you audit lands here automatically. Tap a stage to update where they are. Stored privately on this device.</div>
+            </div>
+          )}
+        </div>
+        );
+      })()}
 
       {/* ── SEED THE CORPUS (operator utility — never on the public free audit) ── */}
       {operator && <div style={{ ...card, padding:isMobile?"16px 18px":"18px 22px", marginTop:8 }}>
