@@ -4835,6 +4835,11 @@ const AI_EVAL_CASES = [
 ];
 
 const EVAL_LAST_KEY = "km_eval_last";
+// Each eval case supplies its OWN account (via brandContext in the prompt). The default
+// system (buildSystem) would inject the operator's own niche and make every case judged
+// against THAT — so a finance idea reads as "off-brand" for a bin-finding app. Judge each
+// case only against the account described in its message.
+const EVAL_SYS = "You are an elite short-form content strategist. Judge the video idea ONLY against the account described in the user's message. You have no other client, product, or niche of your own — do not reference or apply any brand, app, or niche except the account described in the message.";
 const _gradeEvalCase = (c, r) => {
   const bf = String(r?.brandFit||"").toLowerCase();
   const verdict = String(r?.verdict||"").toUpperCase();
@@ -4856,7 +4861,7 @@ This account has NO posted view history, so do NOT invent a view number — retu
 Judge this video idea for the account above. Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand","score":0-100,"estViews":"— or a range","reason":"one short line"}
 IDEA — Title: "${c.title}" | Hook: "${c.hook}"`;
     let r=null, err=null;
-    try { r = await callAI(prompt, 400); } catch(e){ err = e.message||"failed"; }
+    try { r = await callAI(prompt, 400, EVAL_SYS); } catch(e){ err = e.message||"failed"; }
     out.push({ id:c.id, label:c.label, expect:c.expect, r, err, pass: !err && _gradeEvalCase(c, r) });
     onProgress && onProgress(out.length);
   }
