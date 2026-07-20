@@ -12,16 +12,25 @@ export const config = { api: { bodyParser: false }, maxDuration: 60 };
 
 const GEN_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"];
 
+import { requireUser } from "./_lib.js";
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Gemini-Key, X-File-Name, X-Mime-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Gemini-Key, X-File-Name, X-Mime-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // Server key by default; browser BYO override optional.
-  const geminiKey = req.headers['x-gemini-key'] || process.env.GEMINI_KEY;
+  // Only fall back to the SERVER's GEMINI_KEY for a signed-in user — otherwise anyone
+  // could upload video and run generateContent on the operator's Gemini budget. A caller
+  // who brings their own key (X-Gemini-Key) spends their own quota and needs no session.
+  const byoKey = req.headers['x-gemini-key'];
+  if (!byoKey) {
+    const user = await requireUser(req, res);
+    if (!user) return;
+  }
+  const geminiKey = byoKey || process.env.GEMINI_KEY;
   if (!geminiKey) return res.status(400).json({ error: 'No Gemini key configured on server (set GEMINI_KEY).' });
 
   try {

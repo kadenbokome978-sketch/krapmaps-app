@@ -3,7 +3,7 @@
 // Returns each provider's NATIVE response body so the client's existing parsers are unchanged.
 // Body: { provider: "anthropic"|"openai"|"gemini", prompt, system?, maxTokens?, model? }
 // BYO override: send header "X-BYO-Key: <key>" to use the caller's own key instead of the server's.
-import { cors, requireUser, readJson, resolveKey } from "./_lib.js";
+import { cors, requireUser, readJson, resolveKey, clientIp } from "./_lib.js";
 
 export const config = { api: { bodyParser: { sizeLimit: "4mb" } } };
 
@@ -21,7 +21,7 @@ function freeScoreOk(ip) {
 async function handleFreeScore(req, res) {
   const key = process.env.GEMINI_KEY;
   if (!key) return res.status(500).json({ error: "AI not configured" });
-  const ip = (req.headers["x-forwarded-for"]?.split(",")[0]?.trim()) || "unknown";
+  const ip = clientIp(req); // trusted platform IP, not the spoofable XFF chain
   if (!freeScoreOk(ip)) return res.status(429).json({ error: "You've used your free scores for this hour. Sign up for unlimited scoring." });
   let body; try { body = await readJson(req); } catch { return res.status(400).json({ error: "Bad JSON" }); }
   const idea = String(body.idea || "").trim();

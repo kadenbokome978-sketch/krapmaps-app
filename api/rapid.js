@@ -26,6 +26,10 @@ export default async function handler(req, res) {
 
   // ── Bright Data TikTok scraper ────────────────────────────────
   if (req.query.bd) {
+    // This path spends the operator's server BRIGHTDATA_TOKEN, so a BYO-only caller
+    // (unverified X-BYO-Key) must NOT be allowed — require a real session, or anyone
+    // could drain scrape credits with a junk header.
+    if (user.byoOnly) return res.status(401).json({ error: "Sign in to run a scrape." });
     const token = process.env.BRIGHTDATA_TOKEN;
     if (!token) return res.status(400).json({ error: "BRIGHTDATA_TOKEN not set in Vercel" });
     const handle = String(req.query.handle || "").replace(/^@/, "").trim();
