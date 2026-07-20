@@ -8911,12 +8911,20 @@ function ProspectAuditView({ WL, operator=false }){
     const mult = rep.median>0 ? Math.round(rep.ceiling/Math.max(rep.median,1)) : 0;
     const bestTopic = (rep.ai?.headline||rep.top?.[0]?.title||"").replace(/\s+/g," ").slice(0,120);
     const DM_SYS = "You write short, natural cold-outreach DMs for a creator-growth service. You sound like a sharp real person who actually watched the creator's videos, never like a marketer or an AI. " + NO_EMDASH;
+    // LEARN FROM WHAT CONVERTS: DMs that reached "replied" or "client" are proven openers
+    // for THIS operator's voice and audience. Feed the best few back as style guidance so
+    // the generator biases toward what actually earns replies. (Templates that never got a
+    // reply are left out, so the winning patterns dominate over time.)
+    const wins = loadJSON(PROSPECTS_KEY,[])
+      .filter(p=>p.dm && (p.stage==="replied"||p.stage==="client") && p.h.toLowerCase()!==rep.h.toLowerCase())
+      .slice(0,3);
+    const winBlock = wins.length ? `\nOPENERS THAT ALREADY EARNED REPLIES for this exact sender (match their tone, rhythm and length, do NOT copy their specifics):\n${wins.map((w,i)=>`Example ${i+1}:\n"""${w.dm}"""`).join("\n")}\n` : "";
     const prompt = `Write ONE cold DM to open a conversation with a TikTok/Instagram creator. It offers them a free content audit that is ALREADY done (their numbers, voice, what's working, and 5 scored video ideas). You will send that audit once they say yes, so the DM's only job is to earn a "yeah send it".
 
 CREATOR: ${first}${rep.nick&&rep.nick!==first?` (${rep.nick})`:""}, handle @${rep.h}.
 THEIR NUMBERS: typical video ~${fmtN(rep.median)} views, best video ${fmtN(rep.ceiling)} views${mult>1?` (about ${mult}x their normal)`:""}.
 THEIR BREAKOUT (paraphrase naturally, do not quote a wrong number): ${bestTopic||"one video massively outperformed the rest"}.
-
+${winBlock}
 RULES:
 - Open with a specific, genuine observation about THEIR channel built on the real gap (${fmtN(rep.median)} typical vs ${fmtN(rep.ceiling)} best). Make them curious about their own channel.
 - Use their first name "${first}".
