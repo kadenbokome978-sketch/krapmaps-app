@@ -9174,6 +9174,20 @@ Return ONLY JSON: {"dm":"the message, with a line break between the two paragrap
       const cap = v => (v.title||"(no caption)").replace(/\s+/g," ").slice(0,70);
       const voice = buildVoiceDNA(videos, []);
       const wl = WL || loadWL();
+      // ── LIVE TRENDS (best-effort) ── the ideas' biggest weakness is feeling "obvious"
+      // and timeless. Pull what is ACTUALLY working on short-form right now for this kind
+      // of creator, so at least a couple of ideas ride a live format instead of an
+      // evergreen guess. Graceful no-op if no Perplexity key is configured.
+      let trendsBlock = "";
+      try {
+        const cfg = loadJSON("krapmaps_v1_config", {});
+        if(cfg?.keys?.perplexity || BAKED_PERPLEXITY_KEY || USE_BACKEND){
+          const topCaps = engineTop.slice(0,3).map(x=>`"${cap(x.v)}"`).join(", ");
+          const tr = await callPerplexity(`A short-form creator posts content like: ${topCaps}. Search for what is working on TikTok/Reels RIGHT NOW in the last 3-4 weeks for this kind of content. List 4-6 SPECIFIC current video formats, hooks, angles, or trends that are getting real reach right now (not generic timeless advice, actual current formats a creator could ride this month). Return ONLY JSON: {"trends":["short specific format or hook that's working now", ...]}`, wl).catch(()=>null);
+          const arr = Array.isArray(tr?.trends) ? tr.trends.filter(Boolean).slice(0,6) : [];
+          if(arr.length) trendsBlock = `LIVE TRENDS (what is actually working on short-form RIGHT NOW for this kind of creator — use these to make at least 1-2 of the 5 ideas ride a CURRENT format, not a timeless-but-obvious one):\n${arr.map(t=>`- ${t}`).join("\n")}`;
+        }
+      } catch {}
       const prompt = `You are the sharpest short-form strategist alive. Audit this TikTok creator using ONLY the data below — this is a real free audit that must feel worth paying for.
 
 ━━ WHAT YOU CAN AND CANNOT SEE (critical — read first) ━━
@@ -9190,7 +9204,7 @@ PERFORMANCE (TikTok is heavy-tailed — ANCHOR everything to the MEDIAN, not the
 ${recencyBlock}
 
 ${varianceBlock}
-
+${trendsBlock?`\n${trendsBlock}\n`:""}
 ━━ ENGINE ANALYSIS (computed from their real numbers — the same engine the paid app runs) ━━
 ${insightsBlock}
 ${engBlock}
@@ -9210,6 +9224,7 @@ ${COACH_PRINCIPLES}
 Give a genuine MIX, not five variations of the same move:
 - 2 that AMPLIFY a proven but under-used angle: take a specific line, caption, or story of theirs that already overperformed (or was buried in a caption) and turn it into its own dedicated video. Say in "why" which real moment it builds on.
 - At least 2 that are GENUINELY NEW: an angle, format, or hook they have NOT already posted, but that fits their voice and is proven to work in their niche. These must feel fresh to them, not a rerun.
+- These 5 ideas will be read by an experienced creator who has already thought of the obvious ones. "Obvious and competent" reads as "yeah I know" and loses them. To actually feel fresh, do at least one of these on the NEW ideas: (a) TRANSPLANT a format that is proven in a DIFFERENT or adjacent niche and adapt it to theirs (name where it comes from in "why"), or (b) ride a LIVE TREND from the trends section above if one is present, or (c) find a genuinely non-obvious angle on their proven topic. Avoid ideas any competent creator in their niche would list off the top of their head.
 - NEVER suggest a video that is basically a repeat of one they've clearly already made. You only see captions, so if a topic already appears as a caption above, do not just hand it back. Either take it somewhere new or pick a different idea. A creator instantly loses trust if you suggest something they've already done.
 - Respect the VARIANCE section above. Do NOT stack all 5 ideas on the same rare, event-dependent format that only worked once. At least 2 of the 5 must be EVERGREEN, things they can post any week without waiting on a live opportunity or season. A sharp creator will call you out if every idea depends on an event that isn't always there.
 - Each idea must be specific enough that they could film it tomorrow. No vague "make more engaging content".
