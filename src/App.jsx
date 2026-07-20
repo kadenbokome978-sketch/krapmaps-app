@@ -461,7 +461,7 @@ const SectionHead = ({ title, color=C.text, action, actionColor=C.pink }) => (
   </Row>
 );
 const StatMini = ({ label, value, color, icon, delta, deltaUp }) => {
-  const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900);
+  const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 768);
   return (
   <Glass glow={color} style={{ padding:isMobile?"20px 18px":"22px 22px", position:"relative", overflow:"hidden" }}>
     <div style={{ position:"absolute", bottom:-30, right:-30, width:120, height:120, borderRadius:"50%", background:`${color}10`, filter:"blur(40px)", pointerEvents:"none" }} />
@@ -790,7 +790,7 @@ const AiThinking = ({ color=C.purple, preset="score", msgs, size=13 }) => {
 };
 
 const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calItems, setNav, runAI, aiLoad, openModal, ttViewsDisplay, igViewsTotal=0, allViewsDisplay=0, m, scrapedStats, statsError, igData, videos=[], weeklyDebrief, debriefLoading, runDebrief }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const _allIdeas = allIdeas.length ? allIdeas : (ideas||[]);
   const topIdeas = [..._allIdeas].sort((a,b)=>(Number(b.viral)||0)-(Number(a.viral)||0)).slice(0,3);
   const ritual = React.useMemo(()=>buildRitual(allIdeas.length?allIdeas:(ideas||[]), videos),[allIdeas, ideas, videos]);
@@ -1489,7 +1489,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
 };
 
 const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCaption, aiLoad, captionResult, captionIdea, copied, copyText, openModal, setEditIdeaTarget, setModals, setNavSub, onBuildScript, markPosted }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [sub, setSub]         = useState("IDEAS");
   const [expanded, setExpanded] = useState(null);
   const [calFilter, setCalFilter] = useState("ALL");
@@ -2173,7 +2173,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
 };
 
 const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={}, commentInsights=null, visualDNA=null, setIdeas }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [sentIdeas, setSentIdeas] = useState({});
   const [hiddenInsights, setHiddenInsights] = useState({ whatsWorking:true, nextVids:true, weekly:true, trends:true, visualDNA:true }); // collapsed by default
   const toggleHide = (key) => setHiddenInsights(h=>({...h,[key]:!h[key]}));
@@ -2826,7 +2826,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
   );
 };
 const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarget, setModals }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [sub, setSub]             = useState("TO DO");
   const [taskInput, setTaskInput] = useState("");
   const [taskFilter, setTaskFilter] = useState("ALL");
@@ -3065,7 +3065,7 @@ const TasksView = ({ tasks, setTasks, appIdeas, setAppIdeas, setEditAppIdeaTarge
 
 
 const NicheView = ({ WL, keys, aiLoad, setAiLoad, setAiErr, videos=[], ideas=[] }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [trends, setTrends]           = useState(null);
   const [strategy, setStrategy]       = useState(null);
   const [contentPlan, setContentPlan] = useState(null);
@@ -4061,7 +4061,7 @@ Return ONLY JSON: { ideas:[{title,hook,description,why_viral,why_beats_average,s
 
 
 const VideoReaderView = ({ videos=[], WL }) => {
-  const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900);
+  const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 768);
   const [selected, setSelected]   = useState(null);
   const [vidPlat, setVidPlat]      = useState("ALL");
   const [analysis, setAnalysis]   = useState({});
@@ -4346,7 +4346,7 @@ Return ONLY JSON: {
 };
 
 const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scrapedStats, saveManual, setManualData, videos=[], ideas=[] }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [shareMsg, setShareMsg] = React.useState(null);
 
   // --- Derived data ---
@@ -4798,7 +4798,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
 // Collapsible settings card — shows just a title bar until clicked, to cut the
 // wall-of-text clutter. Action buttons (SAVE/GENERATE) appear only when open.
 function CollapsibleCard({ title, subtitle, accent="#8B5CF6", actions, children, bg }){
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [open, setOpen] = useState(false);
   return (
     <div style={{ borderRadius:16, padding:isMobile?"18px 20px":"18px 24px", background: bg||`linear-gradient(145deg,${accent}14,rgba(10,6,20,0.95))`, border:`1px solid ${accent}25`, position:"relative", overflow:"hidden" }}>
@@ -4871,7 +4871,7 @@ IDEA — Title: "${c.title}" | Hook: "${c.hook}"`;
 // Global "report anything" widget — a small always-present button on every screen. Captures
 // the current screen automatically so a user can flag anything that looks wrong or confusing.
 function GlobalReport({ screen }){
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
   const [sent, setSent] = useState(false);
@@ -4904,7 +4904,7 @@ function GlobalReport({ screen }){
 }
 
 function AiSelfTest(){
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [running, setRunning] = useState(false);
   const [results, setResults] = useState(null);
   const [done, setDone] = useState(0);
@@ -4974,7 +4974,7 @@ function AiSelfTest(){
 }
 
 const SettingsView = ({ plan, onManagePlan, keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[], onBulkImport }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [editing, setEditing] = useState(null);
   const [draftKey, setDraftKey] = useState("");
   const [wlDraft, setWlDraft] = useState(null);
@@ -8203,7 +8203,7 @@ async function anthropicMessages(payload, keyOverride) {
 // ── DEALS ─────────────────────────────────────────────────────────
 const DEALS_KEY = "krapmaps_v1_deals";
 const DealsView = () => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [deals, setDeals] = useState(()=>loadJSON(DEALS_KEY,[]));
   const [form, setForm] = useState({ brand:"", type:"Sponsored Post", value:"", status:"Enquiry", platform:"TikTok", deliverable:"", deadline:"", notes:"" });
   const [showForm, setShowForm] = useState(false);
@@ -8319,7 +8319,7 @@ const DealsView = () => {
 // and auto-refreshes when stale, so you open the app to a finished plan.
 const AUTOPILOT_KEY = "km_autopilot_v1";
 function AutopilotView({ videos=[], ideas=[], setIdeas, WL={}, setNav, copyText, copied }) {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [brief, setBrief] = useState(()=>loadJSON(AUTOPILOT_KEY, null));
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState(null);          // scan | ideas | scoring | planning
@@ -8623,7 +8623,7 @@ Write today's briefing. Return ONLY JSON: {"headline":"one punchy line summarisi
 // gives a GO / RISKY / NO verdict + predicted views + a retention heatmap +
 // timestamped fixes. The "don't post until you've checked it" habit.
 function PrePostCheck({ videos=[], WL={} }) {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
@@ -8820,7 +8820,7 @@ const NAV = [
 // Voice DNA, what's working, what to fix, and 5 scored ideas in THEIR voice).
 // This is what you send a prospect for free to open a conversation.
 function ProspectAuditView({ WL, operator=false }){
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [handle, setHandle] = useState("");
   const [phase, setPhase] = useState("idle"); // idle | scraping | analysing | done | error
   const [err, setErr] = useState("");
@@ -9509,7 +9509,7 @@ const PRICING_PLANS = [
   { id:"pro",   name:"Pro",   price:"£29", per:"/month",  tagline:"The full engine, every day", hot:true, feats:["Unlimited audits + idea scoring","Live trends + competitor spy","Multi-model consensus scoring","Priority AI, no queue","First 10 signups: £19/mo for 3 months (founding)"] },
 ];
 function PricingModal({ tier="free", reason, onClose }){
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
   const go = async (plan) => { setErr(""); setBusy(plan); try { await startCheckout(plan); } catch(e){ setErr(e.message); setBusy(""); } };
@@ -9564,7 +9564,7 @@ function PricingModal({ tier="free", reason, onClose }){
 
 // ── AI CHAT VIEW ──────────────────────────────────────────────────
 function AIChatView({ anthropicKey, tasks, setTasks, ideas, setIdeas, videos, preloadMsg }) {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [viewH, setViewH] = useState(typeof window !== 'undefined' ? window.innerHeight : 700);
   useEffect(() => {
     const onResize = () => setViewH(window.innerHeight);
@@ -10218,7 +10218,7 @@ Be extremely specific with timestamps. This is for someone who is not confident 
 
 // ── GUIDED FIRST-SCORE TOUR ──────────────────────────────────────
 function GuidedTour({ step, onSkip, onGoContent }) {
-  const isMobile = typeof window!=="undefined" && window.innerWidth < 900;
+  const isMobile = typeof window!=="undefined" && window.innerWidth < 768;
   const [pos, setPos] = useState(null);
 
   useEffect(()=>{
@@ -10287,7 +10287,7 @@ function GuidedTour({ step, onSkip, onGoContent }) {
 // ── DASHBOARD ─────────────────────────────────────────────────────
 function Dashboard({ keys, onEditKeys }) {
   const isPhone = typeof window!=="undefined" && window.innerWidth < 520;
-  const [isMobile] = useState(() => (typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900)));
+  const [isMobile] = useState(() => (typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 768)));
 
   // ── GUIDED FIRST-SCORE TOUR ──────────────────────────────────
   const [tourStep, setTourStep] = useState(()=>{
@@ -12202,7 +12202,7 @@ Return JSON:
 }
 // ── ONBOARDING PAGE ──────────────────────────────────────────────
 function OnboardingPage({ onComplete }) {
-  const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900);
+  const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 768);
   const _pendingStep = parseInt(localStorage.getItem("krapmaps_v1_pending_step")||"0",10);
   if(_pendingStep) { localStorage.removeItem("krapmaps_v1_pending_step"); }
   const _initStep = _pendingStep || 0;
@@ -13282,7 +13282,7 @@ class AppErrorBoundary extends React.Component {
   componentDidCatch(error, info){ try { console.error("App crashed:", error, info?.componentStack); } catch {} }
   render(){
     if(this.state.error){
-      const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900);
+      const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 768);
       const accent = (typeof WL !== "undefined" && WL?.accentColor) || "#22E06B";
       return (
         <div style={{ position:"fixed", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:isMobile?"32px 24px":"48px", background:"#07050F", color:"#fff", textAlign:"center", fontFamily:"'Space Grotesk',system-ui,sans-serif" }}>
@@ -13307,7 +13307,7 @@ class AppErrorBoundary extends React.Component {
 
 // ── AUTH GATE — login / signup screen (only shown when VITE_REQUIRE_AUTH="true") ──
 function AuthGate({ onAuthed }) {
-  const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 900);
+  const isMobile = typeof window !== 'undefined' && (window.__isMobile || window.innerWidth < 768);
   const [mode, setMode] = useState("signin"); // signin | signup | reset
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13426,7 +13426,7 @@ function AuthGate({ onAuthed }) {
 // Audit screen (their free monthly audit). "I have a code" takes anyone who's
 // upgraded to Pro to the activation screen to unlock the full app.
 function FreeAuditApp({ onActivate }){
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [showPricing, setShowPricing] = useState(false);
   const [me, setMe] = useState(null);
   const wl = loadWL();
