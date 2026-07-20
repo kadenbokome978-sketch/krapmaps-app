@@ -8876,7 +8876,9 @@ function ProspectAuditView({ WL, operator=false }){
     setSaving(true);
     try {
       const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(el, { backgroundColor:"#0A0612", scale:2, useCORS:true, logging:false });
+      // Exclude the action buttons from the capture — otherwise they render INTO
+      // the saved image and it looks like a screenshot of the app, not a clean deliverable.
+      const canvas = await html2canvas(el, { backgroundColor:"#0A0612", scale:2, useCORS:true, logging:false, ignoreElements:(node)=>node.id==="audit-actions" });
       const blob = await new Promise(res=>canvas.toBlob(res, "image/png"));
       const file = new File([blob], `audit-${report.h}.png`, { type:"image/png" });
       if(navigator.canShare && navigator.canShare({ files:[file] })){
@@ -9067,8 +9069,8 @@ Return ONLY JSON:
             </div>
             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8 }}>
               <div style={{ fontSize:12, letterSpacing:"0.04em", color:"rgba(255,255,255,0.5)", fontWeight:600, textAlign:"right" }}>by <span style={{ color:"#fff", fontWeight:700, fontFamily:C.fontHead }}>{report.app}</span></div>
-              <div style={{ display:"flex", gap:8 }}>
-                <button onClick={saveImage} disabled={saving} style={{ padding:isMobile?"10px 16px":"6px 12px", borderRadius:10, border:`1px solid ${C.cyan}40`, background:`${C.cyan}12`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:saving?"wait":"pointer", whiteSpace:"nowrap", opacity:saving?0.6:1 }}>{saving?"MAKING…":"SHARE IMAGE"}</button>
+              <div id="audit-actions" style={{ display:"flex", gap:8 }}>
+                <button onClick={saveImage} disabled={saving} style={{ padding:isMobile?"10px 16px":"6px 12px", borderRadius:10, border:`1px solid ${C.cyan}40`, background:`${C.cyan}12`, color:C.cyan, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:saving?"wait":"pointer", whiteSpace:"nowrap", opacity:saving?0.6:1 }}>{saving?"MAKING…":"SAVE IMAGE"}</button>
                 <button onClick={copyReport} style={{ padding:isMobile?"10px 16px":"6px 12px", borderRadius:10, border:`1px solid ${copied?C.green:"rgba(255,255,255,0.15)"}`, background:copied?`${C.green}18`:"rgba(255,255,255,0.05)", color:copied?C.green:"rgba(255,255,255,0.75)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", whiteSpace:"nowrap" }}>{copied?"COPIED":"COPY AS TEXT"}</button>
               </div>
             </div>
@@ -9165,9 +9167,15 @@ Return ONLY JSON:
             <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.55)", lineHeight:1.5 }}>Those 5 ideas are scored the exact way I'd score <em>every</em> idea for your page — before you film — so you stop wasting posts, then track what actually hits and double down. This free read is the surface; the real thing runs your whole content engine for 30 days.</div>
             <div style={{ fontSize:16, color:"#fff", fontWeight:800, fontFamily:C.fontHead, marginTop:10, letterSpacing:"-0.01em" }}>Want me to run this for @{report.h}? Reply and I'll show you what 30 days looks like 👇</div>
           </div>
+          {/* Branded footer — rides along in the saved/shared image so every audit is an ad */}
+          <div style={{ marginTop:20, paddingTop:14, borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center", gap:8, opacity:0.75 }}>
+            <span style={{ fontSize:12, letterSpacing:"0.02em", color:"rgba(255,255,255,0.5)" }}>AI content audit by</span>
+            <span style={{ fontSize:13, fontFamily:C.fontHead, fontWeight:800, color:"#fff" }}>{report.app}</span>
+            <span style={{ fontSize:12, color:C.cyan, fontWeight:600 }}>· greenlit.space</span>
+          </div>
         </div>
       )}
-      {report && <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.35)", textAlign:"center" }}>Screenshot this and send it to @{report.h} — or read it out on a call.</div>}
+      {report && <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.35)", textAlign:"center" }}>Tap <b style={{color:"rgba(255,255,255,0.6)"}}>SAVE IMAGE</b> → on iPhone/iPad choose <b style={{color:"rgba(255,255,255,0.6)"}}>Save Image</b> to add the clean audit to Photos, then send it to @{report.h}.</div>}
 
       {/* ── SEED THE CORPUS (operator utility — never on the public free audit) ── */}
       {operator && <div style={{ ...card, padding:isMobile?"16px 18px":"18px 22px", marginTop:8 }}>
