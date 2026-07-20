@@ -8861,6 +8861,20 @@ function ProspectAuditView({ WL, operator=false }){
       saveJSON(PROSPECTS_KEY, next); return next;
     });
   };
+  // ── CORPUS MEMORY READOUT ── show the operator the cross-creator memory growing:
+  // how many performance patterns are banked and across how many niches. Proof the
+  // data moat is compounding with every audit.
+  const [corpusStat, setCorpusStat] = useState(null);
+  const loadCorpusStat = async () => {
+    try {
+      const rows = await sbFetch(CORPUS_TABLE, "select=niche");
+      if(Array.isArray(rows)){
+        const niches = [...new Set(rows.map(r=>r.niche).filter(Boolean))];
+        setCorpusStat({ patterns: rows.length, capped: rows.length>=1000, niches });
+      }
+    } catch {}
+  };
+  useEffect(() => { if(operator) loadCorpusStat(); }, []);
   // Reopen a stored audit instantly (no scrape, no AI, no credits) so you can review it
   // and SAVE IMAGE only when you're ready to send.
   const openProspect = (p) => {
@@ -8953,6 +8967,7 @@ function ProspectAuditView({ WL, operator=false }){
     }
     setSeedLog(l=>[...l, `Done: ${ok}/${list.length} creators, ${rows} rows into "${normNiche(seedNiche)}".`]);
     });
+    setTimeout(loadCorpusStat, 2500);
     setSeeding(false);
   };
   // Auto-write the cold-outreach DM for a prospect from their real audit numbers.
@@ -9203,7 +9218,7 @@ Return ONLY JSON:
       const rep = { h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit", ceilingAge, recentMed, trend };
       setReport(rep);
       saveJSON("km_last_audit", { at:Date.now(), rep }); // survives a page refresh
-      if(operator){ logProspect(rep); if(r) genDM(rep); } // auto-log + auto-write the DM
+      if(operator){ logProspect(rep); if(r) genDM(rep); setTimeout(loadCorpusStat, 2500); } // auto-log + DM + refresh memory count
       setPhase("done");
     } catch(e){ if(e.name==="AbortError"){ setPhase("idle"); setErr(""); } else { setErr(e.message||"Audit failed"); setPhase("error"); } }
     });
@@ -9214,6 +9229,17 @@ Return ONLY JSON:
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20, maxWidth:760, margin:"0 auto" }}>
+      {operator && corpusStat && corpusStat.patterns>0 && (
+        <div style={{ ...card, padding:isMobile?"13px 16px":"14px 20px", display:"flex", alignItems:"center", gap:12, background:`linear-gradient(160deg,${C.purple}0d,rgba(10,6,20,0.5))`, border:`1px solid ${C.purple}22`, flexWrap:"wrap" }}>
+          <span style={{ fontSize:18 }}>🧠</span>
+          <div style={{ flex:1, minWidth:isMobile?"100%":200 }}>
+            <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.purple, fontWeight:700 }}>SYSTEM MEMORY</div>
+            <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.7)", marginTop:2 }}>
+              <b style={{ color:"#fff" }}>{corpusStat.capped?"1,000+":corpusStat.patterns.toLocaleString()}</b> performance patterns banked across <b style={{ color:"#fff" }}>{corpusStat.niches.length}</b> niche{corpusStat.niches.length===1?"":"s"}. Every audit makes predictions in that niche sharper.
+            </div>
+          </div>
+        </div>
+      )}
       <div style={{ ...card, padding:isMobile?"20px":"24px" }}>
         <div style={{ fontSize:12, letterSpacing:"0.14em", color:C.cyan, fontWeight:700, marginBottom:8 }}>FREE PROSPECT AUDIT</div>
         <div style={{ fontSize:isMobile?15:16, color:"rgba(255,255,255,0.6)", lineHeight:1.5, marginBottom:16 }}>Type any creator's TikTok handle. Pulls their public videos and builds a shareable audit — their numbers, their voice, what's working, what to fix, and 5 ideas in their voice. Send it to open the conversation.</div>
