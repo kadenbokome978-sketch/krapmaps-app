@@ -9178,16 +9178,18 @@ Return ONLY JSON: {"dm":"the message, with a line break between the two paragrap
       // and timeless. Pull what is ACTUALLY working on short-form right now for this kind
       // of creator, so at least a couple of ideas ride a live format instead of an
       // evergreen guess. Graceful no-op if no Perplexity key is configured.
-      let trendsBlock = "";
+      let trendsBlock = "", trendsUsed = null;
       try {
         const cfg = loadJSON("krapmaps_v1_config", {});
         if(cfg?.keys?.perplexity || BAKED_PERPLEXITY_KEY || USE_BACKEND){
+          setPhase("trends");
           const topCaps = engineTop.slice(0,3).map(x=>`"${cap(x.v)}"`).join(", ");
-          const tr = await callPerplexity(`A short-form creator posts content like: ${topCaps}. Search for what is working on TikTok/Reels RIGHT NOW in the last 3-4 weeks for this kind of content. List 4-6 SPECIFIC current video formats, hooks, angles, or trends that are getting real reach right now (not generic timeless advice, actual current formats a creator could ride this month). Return ONLY JSON: {"trends":["short specific format or hook that's working now", ...]}`, wl).catch(()=>null);
+          const tr = await callPerplexity(`A short-form creator posts content like: ${topCaps}. Search for what is working on TikTok/Reels RIGHT NOW in the last 3-4 weeks for this kind of content. List 4-6 SPECIFIC current video formats, hooks, angles, or trends that are getting real reach right now (not generic timeless advice, actual current formats a creator could ride this month). Return ONLY JSON: {"trends":["short specific format or hook that's working now", ...]}`, wl).catch((e)=>{ console.warn("[trends] perplexity failed:", e?.message); return null; });
           const arr = Array.isArray(tr?.trends) ? tr.trends.filter(Boolean).slice(0,6) : [];
-          if(arr.length) trendsBlock = `LIVE TRENDS (what is actually working on short-form RIGHT NOW for this kind of creator — use these to make at least 1-2 of the 5 ideas ride a CURRENT format, not a timeless-but-obvious one):\n${arr.map(t=>`- ${t}`).join("\n")}`;
+          if(arr.length){ trendsUsed = arr; trendsBlock = `LIVE TRENDS (what is actually working on short-form RIGHT NOW for this kind of creator — use these to make at least 1-2 of the 5 ideas ride a CURRENT format, not a timeless-but-obvious one):\n${arr.map(t=>`- ${t}`).join("\n")}`; }
+          setPhase("analysing");
         }
-      } catch {}
+      } catch(e){ console.warn("[trends] error:", e?.message); }
       const prompt = `You are the sharpest short-form strategist alive. Audit this TikTok creator using ONLY the data below — this is a real free audit that must feel worth paying for.
 
 ━━ WHAT YOU CAN AND CANNOT SEE (critical — read first) ━━
@@ -9253,7 +9255,7 @@ Return ONLY JSON:
         }
       } catch {}
       if(!r) setErr("The AI couldn't generate the write-up (check your AI key) — showing the data we pulled.");
-      const rep = { h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit", ceilingAge, recentMed, trend };
+      const rep = { h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit", ceilingAge, recentMed, trend, trendsUsed };
       setReport(rep);
       saveJSON("km_last_audit", { at:Date.now(), rep }); // survives a page refresh
       if(operator){ logProspect(rep); if(r) genDM(rep); setTimeout(loadCorpusStat, 2500); } // auto-log + DM + refresh memory count
@@ -9263,7 +9265,7 @@ Return ONLY JSON:
   };
 
   const card = { background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16 };
-  const busy = phase==="scraping"||phase==="analysing";
+  const busy = phase==="scraping"||phase==="analysing"||phase==="trends";
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20, maxWidth:760, margin:"0 auto" }}>
@@ -9288,7 +9290,7 @@ Return ONLY JSON:
           </div>
           {busy ? (
             <button onClick={cancelRun} style={{ padding:"13px 24px", borderRadius:12, border:"1px solid #FF4D4D40", background:"#FF4D4D14", color:"#FF4D4D", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", whiteSpace:"nowrap" }}>
-              <span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={13}/> {phase==="scraping"?"PULLING":"ANALYSING"} · STOP</span>
+              <span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={13}/> {phase==="scraping"?"PULLING":phase==="trends"?"TRENDS":"ANALYSING"} · STOP</span>
             </button>
           ) : (
           <button onClick={run} disabled={!handle.trim()} style={{ padding:"13px 24px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${C.cyan},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", opacity:(!handle.trim())?0.5:1, whiteSpace:"nowrap" }}>
@@ -9449,6 +9451,24 @@ Return ONLY JSON:
         </div>
       )}
       {report && <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.35)", textAlign:"center" }}>Tap <b style={{color:"rgba(255,255,255,0.6)"}}>SAVE IMAGE</b> → on iPhone/iPad choose <b style={{color:"rgba(255,255,255,0.6)"}}>Save Image</b> to add the clean audit to Photos, then send it to @{report.h}.</div>}
+
+      {/* ── LIVE TRENDS STATUS (operator only, not in the sent image) ── self-check that
+          the Perplexity live-trend pull actually fired for this audit. ── */}
+      {operator && report && (
+        report.trendsUsed?.length ? (
+          <div style={{ ...card, padding:isMobile?"13px 16px":"14px 18px", background:`${C.orange}0c`, border:`1px solid ${C.orange}2e` }}>
+            <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.orange, fontWeight:700, marginBottom:7 }}>🔥 LIVE TRENDS PULLED ({report.trendsUsed.length}) — WORKING</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+              {report.trendsUsed.map((t,i)=>(<div key={i} style={{ fontSize:12.5, color:"rgba(255,255,255,0.7)", lineHeight:1.45, paddingLeft:14, position:"relative" }}><span style={{ position:"absolute", left:0, top:6, width:5, height:5, borderRadius:"50%", background:C.orange }}/>{t}</div>))}
+            </div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginTop:8, lineHeight:1.5 }}>These fed the ideas so at least one rides a current format. Perplexity live search is live.</div>
+          </div>
+        ) : (
+          <div style={{ ...card, padding:isMobile?"12px 15px":"13px 17px", background:"rgba(255,77,77,0.06)", border:"1px solid rgba(255,77,77,0.22)" }}>
+            <div style={{ fontSize:12.5, color:"#FF6B7D", fontWeight:600, lineHeight:1.5 }}>⚠ Live trends did NOT fire for this audit. Ideas used evergreen logic only. Likely the Perplexity key isn't set server-side, or the search returned nothing parseable. Check PERPLEXITY_KEY in Vercel.</div>
+          </div>
+        )
+      )}
 
       {/* ── AUTO-GENERATED OUTREACH DM (operator) ── the message to open the convo ── */}
       {operator && report && (dm || dmBusy) && (
