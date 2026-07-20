@@ -8977,6 +8977,7 @@ function ProspectAuditView({ WL, operator=false }){
 CREATOR: ${first}${rep.nick&&rep.nick!==first?` (${rep.nick})`:""}, handle @${rep.h}.
 THEIR NUMBERS: typical video ~${fmtN(rep.median)} views, best video ${fmtN(rep.ceiling)} views${mult>1?` (about ${mult}x their normal)`:""}.
 THEIR BREAKOUT (paraphrase naturally, do not quote a wrong number): ${bestTopic||"one video massively outperformed the rest"}.
+${rep.ceilingAge!=null && rep.ceilingAge>180 ? `RECENCY: their best video is about ${rep.ceilingAge<365?Math.round(rep.ceilingAge/30)+" months":(rep.ceilingAge/365).toFixed(1)+" years"} old${rep.recentMed?`, and recently they average around ${fmtN(rep.recentMed)}`:""}. Do NOT imply that old number is easy to hit again. Frame it as proof they've done it before and you can help them get back there. Stay honest.` : ""}
 ${winBlock}
 RULES:
 - Open with a specific, genuine observation about THEIR channel built on the real gap (${fmtN(rep.median)} typical vs ${fmtN(rep.ceiling)} best). Make them curious about their own channel.
@@ -9102,6 +9103,25 @@ Return ONLY JSON: {"dm":"the message, with a line break between the two paragrap
       const top = sorted.slice(0,5), bottom = sorted.slice(-3).reverse();
       const median = medianViews(videos);
       const ceiling = withV.length ? Math.max(...withV.map(v=>v.views)) : 0;
+      // ── RECENCY: a viral hit from a year ago may not be repeatable today. Work out
+      // how old the ceiling video is, and whether recent posts are trending up or down,
+      // so the audit anchors "potential" on their CURRENT trajectory, not a stale peak.
+      const _now = Date.now();
+      const ageDays = v => v.created_at ? Math.floor((_now - new Date(v.created_at).getTime())/86400000) : null;
+      const ceilingV = withV.find(v=>v.views===ceiling);
+      const ceilingAge = ceilingV ? ageDays(ceilingV) : null;
+      const dated = withV.filter(v=>v.created_at);
+      const recentV = dated.filter(v=>ageDays(v)<=90);
+      const olderV  = dated.filter(v=>ageDays(v)>90);
+      const recentMed = recentV.length>=3 ? medianViews(recentV) : null;
+      const olderMed  = olderV.length>=3 ? medianViews(olderV) : null;
+      const recentCeil = recentV.length ? Math.max(...recentV.map(v=>v.views)) : 0;
+      const ageStr = d => d===null?"unknown date" : d<31?`${d} days ago` : d<365?`${Math.round(d/30)} months ago` : `${(d/365).toFixed(1)} years ago`;
+      const trend = (recentMed!=null && olderMed!=null) ? (recentMed>=olderMed*1.15?"UP":recentMed<=olderMed*0.85?"DOWN":"FLAT") : "unknown";
+      const recencyBlock = `RECENCY (critical for honesty):
+- Best video (${fmtN(ceiling)} views) was posted ${ageStr(ceilingAge)}.${ceilingAge!==null&&ceilingAge>180?" This is an OLD peak — do NOT imply it is casually repeatable today; treat it as proof of past reach, and base realistic 'potential' on their RECENT trajectory, not this number.":""}
+- Recent form (last 90 days): ${recentMed!=null?`median ${fmtN(recentMed)} views, best ${fmtN(recentCeil)}`:"too few recent posts to judge"}.${olderMed!=null&&recentMed!=null?` Older median: ${fmtN(olderMed)}. Trajectory is trending ${trend}.`:""}
+- Anchor 'potential' and the headline on what they can hit NOW. If the ceiling is old and recent posts are well below it, say so honestly rather than dangling the old number.`;
       // STANDARD engagement rate — what a creator actually recognises: (likes+comments+shares)/views.
       const engRate = withV.length ? (withV.reduce((s,v)=>s+((v.likes+v.comments+v.shares)/Math.max(v.views,1)),0)/withV.length*100) : 0;
       // Run the SAME engine the paid app uses internally, on their scraped videos —
@@ -9131,6 +9151,8 @@ CREATOR: @${h}${nick?` (${nick})`:""} — ${fmtN(followers)} followers, ${withV.
 PERFORMANCE (TikTok is heavy-tailed — ANCHOR everything to the MEDIAN, not the average):
 - Typical video (median): ${fmtN(median)} views — their real "normal". Judge ideas against THIS.
 - Best video (ceiling): ${fmtN(ceiling)} views — proof of what they can hit; scale "potential" from THIS, not a fantasy number.
+
+${recencyBlock}
 
 ━━ ENGINE ANALYSIS (computed from their real numbers — the same engine the paid app runs) ━━
 ${insightsBlock}
@@ -9171,7 +9193,7 @@ Return ONLY JSON:
         }
       } catch {}
       if(!r) setErr("The AI couldn't generate the write-up (check your AI key) — showing the data we pulled.");
-      const rep = { h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit" };
+      const rep = { h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit", ceilingAge, recentMed, trend };
       setReport(rep);
       saveJSON("km_last_audit", { at:Date.now(), rep }); // survives a page refresh
       if(operator){ logProspect(rep); if(r) genDM(rep); } // auto-log + auto-write the DM
@@ -9247,10 +9269,11 @@ Return ONLY JSON:
           )}
           {/* Stats */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(110px,100%),1fr))", gap:10, marginBottom:22 }}>
-            {[{l:"FOLLOWERS",v:fmtN(report.followers),c:C.pink},{l:"TYPICAL VIEWS",v:fmtN(report.median),c:C.cyan},{l:"BEST VIDEO",v:fmtN(report.ceiling),c:C.purple},{l:"ENGAGEMENT",v:report.engRate.toFixed(1)+"%",c:C.green}].map((s,i)=>(
+            {[{l:"FOLLOWERS",v:fmtN(report.followers),c:C.pink},{l:"TYPICAL VIEWS",v:fmtN(report.median),c:C.cyan},{l:"BEST VIDEO",v:fmtN(report.ceiling),c:C.purple,sub:report.ceilingAge!=null?(report.ceilingAge<31?`${report.ceilingAge}d ago`:report.ceilingAge<365?`${Math.round(report.ceilingAge/30)}mo ago`:`${(report.ceilingAge/365).toFixed(1)}y ago`):""},{l:"ENGAGEMENT",v:report.engRate.toFixed(1)+"%",c:C.green}].map((s,i)=>(
               <div key={i} style={{ background:`linear-gradient(160deg,${s.c}0e,rgba(255,255,255,0.02))`, border:`1px solid ${s.c}28`, borderRadius:12, padding:"15px 16px" }}>
                 <div style={{ fontSize:10, letterSpacing:"0.12em", color:"rgba(255,255,255,0.45)", fontWeight:700, marginBottom:8, textTransform:"uppercase" }}>{s.l}</div>
                 <div style={{ fontSize:isMobile?23:28, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1, letterSpacing:"-0.02em", textShadow:`0 0 18px ${s.c}45` }}>{s.v}</div>
+                {s.sub && <div style={{ fontSize:10.5, color:"rgba(255,255,255,0.4)", marginTop:5, fontWeight:600 }}>posted {s.sub}</div>}
               </div>
             ))}
           </div>
