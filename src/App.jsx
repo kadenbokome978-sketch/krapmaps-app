@@ -7987,6 +7987,9 @@ const formatMetaPriors = (mp, ownLearning) => {
 };
 
 // ── AI ────────────────────────────────────────────────────────────
+// Em-dashes (and en-dashes) are a dead giveaway that copy is AI-written. Every
+// generation the creator might read or send must read like a person typed it.
+const NO_EMDASH = "WRITING STYLE (strict): Never use em-dashes (—) or en-dashes (–) anywhere. Use a comma, a full stop, or the word 'and' instead. Don't use semicolons either. Write the way a sharp person actually texts, not like an essay or an AI. Keep punctuation plain.";
 const buildSystem = (wl=WL) => `You are the AI content strategist for ${wl.appName} (${wl.handle}).
 
 WHAT ${(wl.appName||"").toUpperCase()} IS: ${wl.appDescription||wl.niche}
@@ -8012,6 +8015,7 @@ COMPETITORS: ${wl.competitors}
 ${wl.nicheLogic ? `NICHE-SPECIFIC PRINCIPLES:\n${wl.nicheLogic}` : ""}
 
 Always give brutally specific, actionable advice tailored to ${wl.appName}'s exact niche and voice. No generic social media advice.
+${NO_EMDASH}
 Respond ONLY with valid JSON.`;
 const SYSTEM = buildSystem(WL);
 
@@ -9026,7 +9030,7 @@ Return ONLY JSON:
       // Neutral system — the audit analyses a DIFFERENT creator, so it must NOT
       // carry the operator's own niche/identity (which would make a finance
       // audit read as if it were about our bin-finding app).
-      const AUDIT_SYS = "You are an elite short-form content strategist doing a paid-grade audit of ONE specific creator described in the user's message. Use ONLY that creator's data. You have no other client, product, or niche of your own — do not reference any brand, app, or niche except the creator you are analysing.";
+      const AUDIT_SYS = "You are an elite short-form content strategist doing a paid-grade audit of ONE specific creator described in the user's message. Use ONLY that creator's data. You have no other client, product, or niche of your own, so do not reference any brand, app, or niche except the creator you are analysing. " + NO_EMDASH;
       // 1600 tokens was too tight — the full JSON (headline + verdict + potential +
       // 3 working + 3 fixing + 5 full ideas + niche) truncated mid-array and failed to
       // parse, leaving an empty write-up. Give it room, and retry once on a transient
@@ -9196,7 +9200,7 @@ Return ONLY JSON:
                       <div style={{ fontSize:14.5, fontWeight:700, color:"#fff", marginBottom:idea.hook?4:0 }}>{i+1}. {idea.title}</div>
                       {idea.hook && <div style={{ fontSize:13.5, color:C.cyan, fontStyle:"italic" }}>"{idea.hook}"</div>}
                       {idea.why && <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", marginTop:3 }}>{idea.why}</div>}
-                      {idea.verify && <div style={{ fontSize:11, color:C.yellow, marginTop:6, fontWeight:600, display:"inline-flex", alignItems:"center", gap:5, background:`${C.yellow}12`, border:`1px solid ${C.yellow}33`, borderRadius:7, padding:"3px 8px" }}>⚠ Only post if true — this makes a specific personal claim</div>}
+                      {idea.verify && <div style={{ fontSize:11, color:C.yellow, marginTop:6, fontWeight:600, display:"inline-flex", alignItems:"center", gap:5, background:`${C.yellow}12`, border:`1px solid ${C.yellow}33`, borderRadius:7, padding:"3px 8px" }}>⚠ Only post if true. This makes a specific personal claim</div>}
                     </div>
                     {sc>0 && (
                       <div style={{ flexShrink:0, textAlign:"center", background:`${scc}14`, border:`1px solid ${scc}38`, borderRadius:10, padding:"6px 11px", minWidth:52 }}>
@@ -9211,7 +9215,7 @@ Return ONLY JSON:
           )}
           {/* CTA footer — sells the OUTCOME and asks for the reply (this is the sales artifact) */}
           <div style={{ marginTop:22, paddingTop:18, borderTop:"1px solid rgba(255,255,255,0.08)", textAlign:"center" }}>
-            <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.55)", lineHeight:1.5 }}>Those 5 ideas are scored the exact way I'd score <em>every</em> idea for your page — before you film — so you stop wasting posts, then track what actually hits and double down. This free read is the surface; the real thing runs your whole content engine for 30 days.</div>
+            <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.55)", lineHeight:1.5 }}>Those 5 ideas are scored the exact way I'd score <em>every</em> idea for your page, before you film, so you stop wasting posts and double down on what actually hits. This free read is just the surface. The real thing runs your whole content engine for 30 days.</div>
             <div style={{ fontSize:16, color:"#fff", fontWeight:800, fontFamily:C.fontHead, marginTop:10, letterSpacing:"-0.01em" }}>Want me to run this for @{report.h}? Reply and I'll show you what 30 days looks like 👇</div>
           </div>
           {/* Branded footer — rides along in the saved/shared image so every audit is an ad */}
