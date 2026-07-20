@@ -21,9 +21,14 @@ export function cors(res) {
 // session is required — they're spending their own quota, not our server keys.
 // This also lets the deployed proxy solve browser CORS for direct-mode users
 // (e.g. Perplexity blocks browser calls entirely).
-export async function requireUser(req, res) {
+// opts.allowByo (default true): when false, an X-BYO-Key header does NOT bypass
+// auth — a real verified Supabase session is required. Use allowByo:false on any
+// route that spends a SERVER credential regardless of BYO (e.g. Bright Data), so a
+// junk "X-BYO-Key: x" header can't drain the operator's paid credits.
+export async function requireUser(req, res, opts = {}) {
+  const { allowByo = true } = opts;
   const byo = req.headers["x-byo-key"];
-  if (byo && String(byo).trim()) return { byoOnly: true };
+  if (allowByo && byo && String(byo).trim()) return { byoOnly: true };
   const auth = req.headers["authorization"] || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   if (!token) { res.status(401).json({ error: "Not signed in" }); return null; }
@@ -41,6 +46,18 @@ export async function requireUser(req, res) {
     res.status(401).json({ error: "Auth check failed: " + e.message });
     return null;
   }
+}
+
+// Trusted client IP for rate limiting. Vercel sets x-real-ip / x-vercel-forwarded-for
+// to the real connecting IP; the raw x-forwarded-for CHAIN is client-spoofable, so
+// prefer the platform-provided single value and only fall back to the first XFF hop.
+export function clientIp(req) {
+  return (
+    req.headers["x-real-ip"] ||
+    req.headers["x-vercel-forwarded-for"] ||
+    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+    "unknown"
+  );
 }
 
 // Parse a JSON body whether Vercel already parsed it or handed us a stream.

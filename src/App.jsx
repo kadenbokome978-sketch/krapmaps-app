@@ -1509,7 +1509,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
       <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:8 }}>
         <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)", fontWeight:600, letterSpacing:"0.04em" }}>SOUND LIKE YOU?</span>
         <button onClick={()=>voteVoice(text,true)} title="Sounds like me — do more of this" style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:20, cursor:"pointer", border:`1px solid ${v==="good"?C.green:"rgba(255,255,255,0.12)"}`, background:v==="good"?`${C.green}20`:"transparent", color:v==="good"?C.green:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700 }}>{I.tick(10,"currentColor")} YES</button>
-        <button onClick={()=>voteVoice(text,false)} title="Not my voice — never write like this" style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:20, cursor:"pointer", border:`1px solid ${v==="bad"?"#FF4D4D":"rgba(255,255,255,0.12)"}`, background:v==="bad"?`#FF4D4D20`:"transparent", color:v==="bad"?C.pink:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700 }}>{I.x(10,"currentColor")} NO</button>
+        <button onClick={()=>voteVoice(text,false)} title="Not my voice — never write like this" style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:20, cursor:"pointer", border:`1px solid ${v==="bad"?"#FF4D4D":"rgba(255,255,255,0.12)"}`, background:v==="bad"?`#FF4D4D20`:"transparent", color:v==="bad"?"#FF4D4D":"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700 }}>{I.x(10,"currentColor")} NO</button>
       </div>
     );
   };
@@ -2746,7 +2746,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                   <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:10 }}>
                     {[
                       {l:"Winning Traits", arr:visualDNA.winning_traits, c:C.green},
-                      {l:"What Loses", arr:visualDNA.losing_traits, c:C.pink},
+                      {l:"What Loses", arr:visualDNA.losing_traits, c:"#FF4D4D"},
                     ].filter(x=>x.arr?.length).map((x,i)=>(
                       <div key={i} style={{ padding:"12px 14px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${x.c}18` }}>
                         <div style={{ fontSize:10, color:x.c, fontWeight:700, letterSpacing:"0.08em", marginBottom:8 }}>{x.l.toUpperCase()}</div>
@@ -4521,7 +4521,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
           for(let i=0;i<n;i++){ num+=(rs[i]-mr)*(rv[i]-mr); ds+=(rs[i]-mr)**2; dv+=(rv[i]-mr)**2; }
           rho = (ds&&dv) ? num/Math.sqrt(ds*dv) : 0;
         }
-        const BANDS = [ {label:"85+", min:85, max:100, c:C.green}, {label:"70–84", min:70, max:84, c:C.cyan}, {label:"50–69", min:50, max:69, c:C.yellow}, {label:"<50", min:0, max:49, c:C.pink} ];
+        const BANDS = [ {label:"85+", min:85, max:100, c:C.green}, {label:"70–84", min:70, max:84, c:C.cyan}, {label:"50–69", min:50, max:69, c:C.yellow}, {label:"<50", min:0, max:49, c:"#FF4D4D"} ];
         const bandRows = BANDS.map(b=>{
           const inB = pts.filter(p=>p.score>=b.min && p.score<=b.max);
           if(!inB.length) return null;
@@ -4532,7 +4532,7 @@ const GrowthView = ({ m, ttViewsDisplay, igData, hasIG, igLoad, fetchIG, scraped
         const verdictOf = (r) => r>=0.6 ? { t:"STRONG SIGNAL", d:"Higher scores are reliably getting more views on this channel — trust the ranking.", c:C.green }
           : r>=0.3 ? { t:"MODERATE SIGNAL", d:"Higher scores tend to do better, with exceptions — use scores as a guide, not gospel.", c:C.cyan }
           : r>=0 ? { t:"WEAK SO FAR", d:"Scores and results barely align yet — keep logging outcomes so the model can calibrate.", c:C.yellow }
-          : { t:"INVERTED", d:"Low scores are outperforming high ones — the AI is mis-modelling this channel. Regenerate the Channel Theory and rescore.", c:C.pink };
+          : { t:"INVERTED", d:"Low scores are outperforming high ones — the AI is mis-modelling this channel. Regenerate the Channel Theory and rescore.", c:"#FF4D4D" };
         const v = rho!=null ? verdictOf(rho) : null;
         return card(
           <>
@@ -7349,7 +7349,11 @@ async function geminiUploadAnalyse(file, prompt, onStatus=()=>{}, opts={}) {
   // their own key) — the whole flow runs through /api/gemini-upload and no key ever
   // touches the browser. A BYO key, if present, is forwarded to override the server key.
   const mimeType = file.type === "video/quicktime" ? "video/mov" : (file.type || "video/mp4");
-  const keyHeader = geminiKey ? { "X-Gemini-Key":geminiKey } : {};
+  // Send the session token so the server will use its own GEMINI_KEY for signed-in
+  // users (the endpoint now requires auth unless a BYO key is supplied).
+  const authHeader = {};
+  if(!geminiKey && USE_BACKEND){ const tok = await getAccessToken(); if(tok) authHeader["Authorization"] = "Bearer "+tok; }
+  const keyHeader = geminiKey ? { "X-Gemini-Key":geminiKey } : authHeader;
 
   onStatus("Uploading your clip…");
   // Step 1 — upload the raw video through the proxy (uses server key, bypasses CORS).
@@ -8672,7 +8676,7 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${C.purple}80 40%,${C.pink}80 70%,transparent)` }}/>
           <div style={{ width:52, height:52, borderRadius:16, background:`linear-gradient(135deg,${C.purple},${C.pink})`, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", boxShadow:`0 8px 24px ${C.purple}45` }}>{I.eye(24,"#fff")}</div>
           <div style={{ fontSize:isMobile?22:28, fontWeight:800, color:"#fff", marginBottom:8, fontFamily:C.fontHead, letterSpacing:"-0.02em" }}>Check it before you post</div>
-          <div style={{ fontSize:14, color:"rgba(255,255,255,0.55)", lineHeight:1.6, maxWidth:440, margin:"0 auto 22px" }}>Upload your finished video. The AI watches it and gives you a straight <span style={{color:C.green,fontWeight:700}}>GO</span> / <span style={{color:C.yellow,fontWeight:700}}>RISKY</span> / <span style={{color:C.pink,fontWeight:700}}>NO</span> — predicted views, a retention heatmap, and the exact fixes.</div>
+          <div style={{ fontSize:14, color:"rgba(255,255,255,0.55)", lineHeight:1.6, maxWidth:440, margin:"0 auto 22px" }}>Upload your finished video. The AI watches it and gives you a straight <span style={{color:C.green,fontWeight:700}}>GO</span> / <span style={{color:C.yellow,fontWeight:700}}>RISKY</span> / <span style={{color:"#FF4D4D",fontWeight:700}}>NO</span> — predicted views, a retention heatmap, and the exact fixes.</div>
           <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e=>{ if(e.target.files[0]) run(e.target.files[0]); }} />
           <button onClick={()=>{ const liveKey = (loadJSON(KEYS_KEY,{})?.keys?.gemini)||BAKED_GEMINI_KEY||USE_BACKEND; if(!liveKey){ setErr("No Gemini key found. Go to Settings → AI Keys → Gemini, paste your key and press save — then come back."); return; } setErr(null); fileRef.current?.click(); }}
             style={{ padding:isMobile?"14px 24px":"14px 30px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:800, fontSize:15, cursor:"pointer", letterSpacing:"0.02em", boxShadow:`0 10px 30px ${C.purple}40`, display:"inline-flex", alignItems:"center", gap:9 }}>
@@ -8700,7 +8704,7 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:"0.14em", fontWeight:700, marginTop:4 }}>{res.verdict==="GO"?"POST IT":res.verdict==="RISKY"?"FIX FIRST":"DON'T POST YET"}</div>
             </div>
             <div style={{ flex:1, display:"flex", gap:isMobile?14:24, flexWrap:"wrap" }}>
-              {[{l:"SCORE",v:`${res.score||0}`,c:vC},{l:"PREDICTED VIEWS",v:res.predictedViews||"—",c:C.cyan},{l:"HOOK",v:`${res.hookRating||0}/100`,c:res.hookRating>=70?C.green:res.hookRating>=50?C.yellow:C.pink}].map((s,i)=>(
+              {[{l:"SCORE",v:`${res.score||0}`,c:vC},{l:"PREDICTED VIEWS",v:res.predictedViews||"—",c:C.cyan},{l:"HOOK",v:`${res.hookRating||0}/100`,c:res.hookRating>=70?C.green:res.hookRating>=50?C.yellow:"#FF4D4D"}].map((s,i)=>(
                 <div key={i}>
                   <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700, marginBottom:5 }}>{s.l}</div>
                   <div style={{ fontSize:isMobile?20:26, fontWeight:700, fontFamily:C.fontHead, color:s.c, lineHeight:1 }}>{s.v}</div>
@@ -9076,7 +9080,7 @@ Return ONLY JSON:
             </div>
           )}
           {/* Stats */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))", gap:10, marginBottom:22 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(110px,100%),1fr))", gap:10, marginBottom:22 }}>
             {[{l:"FOLLOWERS",v:fmtN(report.followers),c:C.pink},{l:"TYPICAL VIEWS",v:fmtN(report.median),c:C.cyan},{l:"BEST VIDEO",v:fmtN(report.ceiling),c:C.purple},{l:"ENGAGEMENT",v:report.engRate.toFixed(1)+"%",c:C.green}].map((s,i)=>(
               <div key={i} style={{ background:`linear-gradient(160deg,${s.c}0e,rgba(255,255,255,0.02))`, border:`1px solid ${s.c}28`, borderRadius:12, padding:"15px 16px" }}>
                 <div style={{ fontSize:10, letterSpacing:"0.12em", color:"rgba(255,255,255,0.45)", fontWeight:700, marginBottom:8, textTransform:"uppercase" }}>{s.l}</div>
