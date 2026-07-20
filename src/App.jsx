@@ -9137,6 +9137,25 @@ Return ONLY JSON: {"dm":"the message, with a line break between the two paragrap
 - Best video (${fmtN(ceiling)} views) was posted ${ageStr(ceilingAge)}.${ceilingAge!==null&&ceilingAge>180?" This is an OLD peak — do NOT imply it is casually repeatable today; treat it as proof of past reach, and base realistic 'potential' on their RECENT trajectory, not this number.":""}
 - Recent form (last 90 days): ${recentMed!=null?`median ${fmtN(recentMed)} views, best ${fmtN(recentCeil)}`:"too few recent posts to judge"}.${olderMed!=null&&recentMed!=null?` Older median: ${fmtN(olderMed)}. Trajectory is trending ${trend}.`:""}
 - Anchor 'potential' and the headline on what they can hit NOW. If the ceiling is old and recent posts are well below it, say so honestly rather than dangling the old number.`;
+      // ── VARIANCE & FORMAT REALITY: the #1 way an audit loses credibility is treating a
+      // rare outlier as a repeatable format ("your NatWest video hit, do more of that")
+      // when the creator has actually posted 10 lookalikes that flopped. Detect how spiky
+      // the channel is, and check whether videos in the SAME style as the best one actually
+      // performed, so the AI recommends the real repeatable engines, not survivorship bias.
+      const _hit2 = withV.filter(v=>v.views>=median*2).length;
+      const _nearCeil = withV.filter(v=>v.views>=ceiling*0.5).length;
+      const _ratio = Math.round(ceiling/Math.max(median,1));
+      const _STOP = new Set(["the","and","you","your","for","are","with","that","this","just","have","how","who","what","when","not","but","all","can","get","got","out","now","one","from","they","them","their","was","were","has","had","why","which","been","will","would","about","into","over","than","then","some","most","more","real","here","only","every","these","those","dont","its","you're","really"]);
+      const _kw = s => String(s||"").toLowerCase().replace(/[^a-z0-9£$%\s]/g," ").split(/\s+/).filter(w=>w.length>=4 && !_STOP.has(w));
+      const _ceilWords = new Set(_kw(ceilingV?.title));
+      let _sib = [];
+      if(_ceilWords.size>=2) _sib = withV.filter(v=>v!==ceilingV && _kw(v.title).filter(w=>_ceilWords.has(w)).length>=2);
+      const _sibMed = _sib.length>=2 ? medianViews(_sib) : null;
+      const _sibHits = _sib.length ? _sib.filter(v=>v.views>=median*2).length : 0;
+      const varianceBlock = `VARIANCE & FORMAT REALITY (critical — never mistake a rare spike for a repeatable format):
+- The best video is ${_ratio}x the median. Only ${_nearCeil} of ${withV.length} videos got within half of that peak, and just ${_hit2}/${withV.length} beat 2x their median. This channel is SPIKY: most posts cluster near ${fmtN(median)} and the ceiling is a rare event, not a norm.${_sib.length>=2?`\n- Videos in the SAME style as the best one (they share its wording) had a median of ${fmtN(_sibMed)} and only ${_sibHits}/${_sib.length} of them beat 2x median. So the format ALONE does not guarantee reach — the big hit stacked rare conditions its lookalikes did not have.`:""}
+- Because of this: do NOT tell them to "just post more of the winning format". Instead (a) name the SPECIFIC rare combination that made the top video explode (brand size, an unusual number, a low barrier, timing, novelty), (b) be honest that lookalikes without those conditions flop, (c) identify the formats that hit CONSISTENTLY (more than once), which are the real repeatable engines for the gaps between rare opportunities.
+- Think about the WHOLE account, not each idea in isolation. Some winning formats depend on external timing (a live opportunity, a season, a news moment) and are NOT always available. Do not stack all 5 ideas on the same event-dependent format. Balance opportunity-dependent ideas with evergreen ones the creator can genuinely post any week.`;
       // STANDARD engagement rate — what a creator actually recognises: (likes+comments+shares)/views.
       const engRate = withV.length ? (withV.reduce((s,v)=>s+((v.likes+v.comments+v.shares)/Math.max(v.views,1)),0)/withV.length*100) : 0;
       // Run the SAME engine the paid app uses internally, on their scraped videos —
@@ -9169,6 +9188,8 @@ PERFORMANCE (TikTok is heavy-tailed — ANCHOR everything to the MEDIAN, not the
 
 ${recencyBlock}
 
+${varianceBlock}
+
 ━━ ENGINE ANALYSIS (computed from their real numbers — the same engine the paid app runs) ━━
 ${insightsBlock}
 ${engBlock}
@@ -9189,6 +9210,7 @@ Give a genuine MIX, not five variations of the same move:
 - 2 that AMPLIFY a proven but under-used angle: take a specific line, caption, or story of theirs that already overperformed (or was buried in a caption) and turn it into its own dedicated video. Say in "why" which real moment it builds on.
 - At least 2 that are GENUINELY NEW: an angle, format, or hook they have NOT already posted, but that fits their voice and is proven to work in their niche. These must feel fresh to them, not a rerun.
 - NEVER suggest a video that is basically a repeat of one they've clearly already made. You only see captions, so if a topic already appears as a caption above, do not just hand it back. Either take it somewhere new or pick a different idea. A creator instantly loses trust if you suggest something they've already done.
+- Respect the VARIANCE section above. Do NOT stack all 5 ideas on the same rare, event-dependent format that only worked once. At least 2 of the 5 must be EVERGREEN, things they can post any week without waiting on a live opportunity or season. A sharp creator will call you out if every idea depends on an event that isn't always there.
 - Each idea must be specific enough that they could film it tomorrow. No vague "make more engaging content".
 
 Return ONLY JSON:
