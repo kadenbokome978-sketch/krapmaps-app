@@ -8876,17 +8876,38 @@ function ProspectAuditView({ WL, operator=false }){
     setSaving(true);
     try {
       const html2canvas = (await import("html2canvas")).default;
-      // Exclude the action buttons from the capture — otherwise they render INTO
-      // the saved image and it looks like a screenshot of the app, not a clean deliverable.
-      const canvas = await html2canvas(el, { backgroundColor:"#0A0612", scale:2, useCORS:true, logging:false, ignoreElements:(node)=>node.id==="audit-actions" });
-      const blob = await new Promise(res=>canvas.toBlob(res, "image/png"));
-      const file = new File([blob], `audit-${report.h}.png`, { type:"image/png" });
-      if(navigator.canShare && navigator.canShare({ files:[file] })){
-        await navigator.share({ files:[file], title:`Content Audit — @${report.h}` });
+      // Exclude the action/re-run buttons from the capture — otherwise they render
+      // INTO the saved image and it looks like a screenshot, not a clean deliverable.
+      const canvas = await html2canvas(el, { backgroundColor:"#0A0612", scale:2, useCORS:true, logging:false, ignoreElements:(node)=>node.id==="audit-actions"||node.id==="audit-rerun" });
+
+      // A full audit is tall — one giant image is awkward to read/send on a phone.
+      // If it exceeds ~1.6 screens, slice it top-to-bottom into page-sized images
+      // (audit-@handle-1of3.png …) so each is clean and saveable on its own.
+      const pageH = Math.round(canvas.width * 1.4); // ~portrait page per slice
+      const pages = canvas.height > pageH*1.15 ? Math.ceil(canvas.height/pageH) : 1;
+      const files = [];
+      for(let p=0; p<pages; p++){
+        const sliceH = Math.min(pageH, canvas.height - p*pageH);
+        const pc = document.createElement("canvas");
+        pc.width = canvas.width; pc.height = sliceH;
+        const ctx = pc.getContext("2d");
+        ctx.fillStyle = "#0A0612"; ctx.fillRect(0,0,pc.width,sliceH);
+        ctx.drawImage(canvas, 0, p*pageH, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+        const b = await new Promise(res=>pc.toBlob(res, "image/png"));
+        const name = pages>1 ? `audit-${report.h}-${p+1}of${pages}.png` : `audit-${report.h}.png`;
+        files.push(new File([b], name, { type:"image/png" }));
+      }
+      // Share all pages at once where supported (iOS lets you Save all to Photos);
+      // otherwise download each slice in order.
+      if(navigator.canShare && navigator.canShare({ files })){
+        await navigator.share({ files, title:`Content Audit — @${report.h}` });
       } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a"); a.href=url; a.download=file.name; a.click();
-        URL.revokeObjectURL(url);
+        for(const f of files){
+          const url = URL.createObjectURL(f);
+          const a = document.createElement("a"); a.href=url; a.download=f.name; a.click();
+          URL.revokeObjectURL(url);
+          await new Promise(r=>setTimeout(r,300)); // let each download register
+        }
       }
     } catch(e){ setErr("Couldn't make the image — screenshot it instead. ("+(e.message||"")+")"); }
     setSaving(false);
@@ -8997,7 +9018,12 @@ Return ONLY JSON:
       // carry the operator's own niche/identity (which would make a finance
       // audit read as if it were about our bin-finding app).
       const AUDIT_SYS = "You are an elite short-form content strategist doing a paid-grade audit of ONE specific creator described in the user's message. Use ONLY that creator's data. You have no other client, product, or niche of your own — do not reference any brand, app, or niche except the creator you are analysing.";
-      const r = await callAI(prompt, 1600, AUDIT_SYS).catch(()=>null);
+      // 1600 tokens was too tight — the full JSON (headline + verdict + potential +
+      // 3 working + 3 fixing + 5 full ideas + niche) truncated mid-array and failed to
+      // parse, leaving an empty write-up. Give it room, and retry once on a transient
+      // failure (parse slip / model overload) before giving up.
+      let r = await callAI(prompt, 3200, AUDIT_SYS).catch(()=>null);
+      if(!r || !r.ideas?.length){ r = await callAI(prompt, 3200, AUDIT_SYS).catch(()=>r); }
       // DATA FARM — now tag the corpus with the PROSPECT'S real niche (from the audit),
       // never the operator's. Anonymised, fire-and-forget; fattens the data moat.
       try {
@@ -9121,7 +9147,9 @@ Return ONLY JSON:
               </div>
             </div>
           )}
-          {/* Working / Fixing */}
+          {/* Working / Fixing — only render if the AI actually returned content, so a
+              failed write-up never shows bare empty headers. */}
+          {((report.ai?.working||[]).length>0 || (report.ai?.fixing||[]).length>0) && (
           <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:14, marginBottom:18 }}>
             <div>
               <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.green, fontWeight:700, marginBottom:9 }}>WHAT'S WORKING</div>
@@ -9136,6 +9164,14 @@ Return ONLY JSON:
               </div>
             </div>
           </div>
+          )}
+          {/* Write-up failed (rare) — offer a one-tap re-run instead of a half-empty report. */}
+          {report && !report.ai?.ideas?.length && (
+            <div id="audit-rerun" style={{ background:`#FF4D4D0d`, border:`1px solid #FF4D4D30`, borderRadius:12, padding:"14px 16px", marginBottom:18, display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
+              <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.7)", lineHeight:1.5 }}>The AI write-up didn't come through this time (the data above is real). Re-run it — no new scrape, no credits.</div>
+              <button onClick={run} disabled={busy} style={{ padding:"10px 18px", borderRadius:10, border:"none", background:`linear-gradient(135deg,${C.cyan},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:busy?"wait":"pointer", whiteSpace:"nowrap" }}>{busy?"RE-RUNNING…":"RE-RUN WRITE-UP"}</button>
+            </div>
+          )}
           {/* Ideas */}
           {report.ai?.ideas?.length>0 && (
             <div>
