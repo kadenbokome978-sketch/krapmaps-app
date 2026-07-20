@@ -8827,6 +8827,9 @@ function ProspectAuditView({ WL, operator=false }){
   const [report, setReport] = useState(null);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dm, setDm] = useState("");            // auto-generated outreach message
+  const [dmBusy, setDmBusy] = useState(false);
+  const [dmCopied, setDmCopied] = useState(false);
   const auditAbort = useRef(null); // lets the user cancel an in-flight audit scrape
   const cancelRun = () => { try { auditAbort.current?.abort(); } catch {} setPhase("idle"); setErr(""); };
   // ── OUTREACH TRACKER (operator) ── auto-logs every creator you audit and tracks
@@ -8855,7 +8858,11 @@ function ProspectAuditView({ WL, operator=false }){
   // Restore the last audit after a refresh (within 24h) so no re-scrape is needed.
   useEffect(() => {
     const last = loadJSON("km_last_audit", null);
-    if(last?.rep && Date.now()-last.at < 24*3600*1000){ setReport(last.rep); setHandle(last.rep.h||""); setPhase("done"); }
+    if(last?.rep && Date.now()-last.at < 24*3600*1000){
+      setReport(last.rep); setHandle(last.rep.h||""); setPhase("done");
+      const saved = (loadJSON(PROSPECTS_KEY,[]).find(p=>p.h?.toLowerCase()===last.rep.h?.toLowerCase()));
+      if(saved?.dm) setDm(saved.dm);
+    }
   }, []);
   // ── CORPUS SEED (operator) ── paste a batch of niche-leading handles → scrape +
   // score + write to the cross-creator corpus in one go. Seeds the transfer-learning
@@ -8895,6 +8902,39 @@ function ProspectAuditView({ WL, operator=false }){
     });
     setSeeding(false);
   };
+  // Auto-write the cold-outreach DM for a prospect from their real audit numbers.
+  // Human, specific, no AI tells — the message you actually paste into their DMs.
+  const genDM = async (rep) => {
+    if(!rep?.h || dmBusy) return;
+    setDmBusy(true); setDm("");
+    const first = (rep.nick||rep.h).split(/\s+/)[0];
+    const mult = rep.median>0 ? Math.round(rep.ceiling/Math.max(rep.median,1)) : 0;
+    const bestTopic = (rep.ai?.headline||rep.top?.[0]?.title||"").replace(/\s+/g," ").slice(0,120);
+    const DM_SYS = "You write short, natural cold-outreach DMs for a creator-growth service. You sound like a sharp real person who actually watched the creator's videos, never like a marketer or an AI. " + NO_EMDASH;
+    const prompt = `Write ONE cold DM to open a conversation with a TikTok/Instagram creator. It offers them a free content audit that is ALREADY done (their numbers, voice, what's working, and 5 scored video ideas). You will send that audit once they say yes, so the DM's only job is to earn a "yeah send it".
+
+CREATOR: ${first}${rep.nick&&rep.nick!==first?` (${rep.nick})`:""}, handle @${rep.h}.
+THEIR NUMBERS: typical video ~${fmtN(rep.median)} views, best video ${fmtN(rep.ceiling)} views${mult>1?` (about ${mult}x their normal)`:""}.
+THEIR BREAKOUT (paraphrase naturally, do not quote a wrong number): ${bestTopic||"one video massively outperformed the rest"}.
+
+RULES:
+- Open with a specific, genuine observation about THEIR channel built on the real gap (${fmtN(rep.median)} typical vs ${fmtN(rep.ceiling)} best). Make them curious about their own channel.
+- Use their first name "${first}".
+- Then offer to send the breakdown plus 5 ideas in their voice. Free, no catch.
+- 3 to 5 sentences, at most two short paragraphs. Casual, contractions, texting tone.
+- No hashtags. No emojis. No em-dashes or semicolons. Do not sound like a template.
+- Do not pitch a price or the paid service. Just get the yes.
+
+Return ONLY JSON: {"dm":"the message, with a line break between the two paragraphs as \\n\\n"}`;
+    try {
+      const r = await callAI(prompt, 500, DM_SYS);
+      const msg = (r?.dm || "").trim();
+      if(msg){ setDm(msg); saveProspects((loadJSON(PROSPECTS_KEY,[])).map(p=>p.h===rep.h?{...p, dm:msg}:p)); }
+      else setDm("");
+    } catch { setDm(""); }
+    setDmBusy(false);
+  };
+  const copyDM = () => { if(!dm) return; try { navigator.clipboard?.writeText(dm); } catch {} setDmCopied(true); setTimeout(()=>setDmCopied(false),1500); };
   // Render the whole report to one shareable PNG — sends via the native share sheet
   // (iPad/phone) or downloads. Keeps the full length; just makes it one image.
   const saveImage = async () => {
@@ -8980,7 +9020,7 @@ function ProspectAuditView({ WL, operator=false }){
   const putScrape = (h, data) => { const all = loadJSON(SCRAPE_CACHE,{}); all[h.toLowerCase()] = { at:Date.now(), data }; saveJSON(SCRAPE_CACHE, all); };
 
   const run = async () => {
-    setErr(""); setReport(null); setPhase("scraping");
+    setErr(""); setReport(null); setDm(""); setPhase("scraping");
     const ac = new AbortController(); auditAbort.current = ac;
     await _withWakeLock(async () => {
     try {
@@ -9073,7 +9113,7 @@ Return ONLY JSON:
       const rep = { h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit" };
       setReport(rep);
       saveJSON("km_last_audit", { at:Date.now(), rep }); // survives a page refresh
-      if(operator) logProspect(rep); // auto-log into the outreach tracker
+      if(operator){ logProspect(rep); if(r) genDM(rep); } // auto-log + auto-write the DM
       setPhase("done");
     } catch(e){ if(e.name==="AbortError"){ setPhase("idle"); setErr(""); } else { setErr(e.message||"Audit failed"); setPhase("error"); } }
     });
@@ -9251,6 +9291,25 @@ Return ONLY JSON:
         </div>
       )}
       {report && <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.35)", textAlign:"center" }}>Tap <b style={{color:"rgba(255,255,255,0.6)"}}>SAVE IMAGE</b> → on iPhone/iPad choose <b style={{color:"rgba(255,255,255,0.6)"}}>Save Image</b> to add the clean audit to Photos, then send it to @{report.h}.</div>}
+
+      {/* ── AUTO-GENERATED OUTREACH DM (operator) ── the message to open the convo ── */}
+      {operator && report && (dm || dmBusy) && (
+        <div style={{ ...card, padding:isMobile?"18px":"20px 22px", background:`linear-gradient(160deg,${C.cyan}0a,rgba(10,6,20,0.6))`, border:`1px solid ${C.cyan}22` }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, marginBottom:12, flexWrap:"wrap" }}>
+            <div style={{ fontSize:12, letterSpacing:"0.12em", color:C.cyan, fontWeight:700 }}>✍️ YOUR OUTREACH DM</div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={()=>genDM(report)} disabled={dmBusy} style={{ padding:"7px 13px", borderRadius:9, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.05)", color:"rgba(255,255,255,0.75)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:dmBusy?"wait":"pointer", whiteSpace:"nowrap" }}>{dmBusy?"WRITING…":"↻ REWRITE"}</button>
+              <button onClick={copyDM} disabled={!dm} style={{ padding:"7px 15px", borderRadius:9, border:"none", background:dmCopied?`${C.green}20`:`linear-gradient(135deg,${C.cyan},${C.pink})`, color:dmCopied?C.green:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer", whiteSpace:"nowrap" }}>{dmCopied?"COPIED ✓":"COPY DM"}</button>
+            </div>
+          </div>
+          {dmBusy && !dm ? (
+            <div style={{ display:"flex", alignItems:"center", gap:9, color:"rgba(255,255,255,0.55)", fontSize:13.5, padding:"6px 0" }}><Spin s={14}/> Writing a message in their language…</div>
+          ) : (
+            <div style={{ fontSize:14.5, color:"#fff", lineHeight:1.6, whiteSpace:"pre-wrap", background:"rgba(0,0,0,0.22)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:12, padding:"14px 16px" }}>{dm}</div>
+          )}
+          <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.4)", lineHeight:1.5, marginTop:10 }}>Copy this into their DMs. When they reply "send it", drop the audit image. Read it once before sending, it's a draft, not gospel.</div>
+        </div>
+      )}
 
       {/* ── OUTREACH TRACKER (operator) ── auto-logged pipeline of everyone you've audited ── */}
       {operator && prospects.length>0 && (() => {
