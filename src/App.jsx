@@ -8875,26 +8875,35 @@ function ProspectAuditView({ WL, operator=false }){
     if(!el || saving) return;
     setSaving(true);
     try {
+      const SCALE = 2;
       const html2canvas = (await import("html2canvas")).default;
       // Exclude the action/re-run buttons from the capture — otherwise they render
       // INTO the saved image and it looks like a screenshot, not a clean deliverable.
-      const canvas = await html2canvas(el, { backgroundColor:"#0A0612", scale:2, useCORS:true, logging:false, ignoreElements:(node)=>node.id==="audit-actions"||node.id==="audit-rerun" });
+      const canvas = await html2canvas(el, { backgroundColor:"#0A0612", scale:SCALE, useCORS:true, logging:false, ignoreElements:(node)=>node.id==="audit-actions"||node.id==="audit-rerun" });
 
-      // A full audit is tall — one giant image is awkward to read/send on a phone.
-      // If it exceeds ~1.6 screens, slice it top-to-bottom into page-sized images
-      // (audit-@handle-1of3.png …) so each is clean and saveable on its own.
-      const pageH = Math.round(canvas.width * 1.4); // ~portrait page per slice
-      const pages = canvas.height > pageH*1.15 ? Math.ceil(canvas.height/pageH) : 1;
+      // Split on the SECTION boundary, not a blind pixel line — so page 1 is the whole
+      // write-up (through "what's costing views") and page 2 starts clean at the 5 ideas.
+      // We cut at the top of #audit-ideas; a section is never sliced through its middle.
+      const cuts = [0];
+      const ideasEl = el.querySelector("#audit-ideas");
+      if(ideasEl){
+        const boundary = Math.round((ideasEl.getBoundingClientRect().top - el.getBoundingClientRect().top) * SCALE);
+        // Only split if both halves are substantial (avoids a silly 1px sliver page).
+        if(boundary > canvas.height*0.15 && boundary < canvas.height*0.9) cuts.push(boundary);
+      }
+      cuts.push(canvas.height);
+
       const files = [];
-      for(let p=0; p<pages; p++){
-        const sliceH = Math.min(pageH, canvas.height - p*pageH);
+      const nPages = cuts.length - 1;
+      for(let p=0; p<nPages; p++){
+        const y = cuts[p], sliceH = cuts[p+1] - y;
         const pc = document.createElement("canvas");
         pc.width = canvas.width; pc.height = sliceH;
         const ctx = pc.getContext("2d");
         ctx.fillStyle = "#0A0612"; ctx.fillRect(0,0,pc.width,sliceH);
-        ctx.drawImage(canvas, 0, p*pageH, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+        ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
         const b = await new Promise(res=>pc.toBlob(res, "image/png"));
-        const name = pages>1 ? `audit-${report.h}-${p+1}of${pages}.png` : `audit-${report.h}.png`;
+        const name = nPages>1 ? `audit-${report.h}-${p+1}of${nPages}.png` : `audit-${report.h}.png`;
         files.push(new File([b], name, { type:"image/png" }));
       }
       // Share all pages at once where supported (iOS lets you Save all to Photos);
@@ -9011,7 +9020,7 @@ Be concrete and reference THEIR actual captions + numbers. No generic advice, no
 ${COACH_PRINCIPLES}
 
 Return ONLY JSON:
-{"niche":"this creator's actual niche in 2-4 words (e.g. 'personal finance', 'faceless motivation', 'skincare') — read from their captions/content, NOT any other context","headline":"ONE scroll-stopping sentence — the single most compelling, specific insight about this channel, built around a REAL number (ideally the gap between their ${fmtN(median)} typical and their proven ${fmtN(ceiling)} best). This is the first line they read; it must make them feel seen and want to keep reading. No fluff, no fantasy numbers.","verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views, grounded in the real numbers/captions above","potential":"one line: what they could realistically hit, scaled from their proven ceiling of ${fmtN(ceiling)} — no fantasy numbers","working":["3 specific things working, each citing a REAL caption or number above (never invented footage)"],"fixing":["3 honest things holding them back — each a fix they'd actually accept (reframe or upgrade their existing content, never 'stop doing X that's core to them'), grounded in what you can actually see"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them, tied to what already works","score":"predicted virality score as an integer 81-94 — a genuine prediction grounded in how close this idea is to their proven hits. These 5 are their STRONGEST opportunities, so every one must genuinely earn 81+ (don't pad weak ideas up — generate ideas good enough to actually score this high). Vary the numbers across the 5; don't repeat the same score. Only surface ideas you'd genuinely stake 81+ on — if one wouldn't clear that bar, replace it with a stronger one until all 5 do. These are 5 winners, not a mixed bag."}]}`;
+{"niche":"this creator's actual niche in 2-4 words (e.g. 'personal finance', 'faceless motivation', 'skincare') — read from their captions/content, NOT any other context","headline":"ONE scroll-stopping sentence — the single most compelling, specific insight about this channel, built around a REAL number (ideally the gap between their ${fmtN(median)} typical and their proven ${fmtN(ceiling)} best). This is the first line they read; it must make them feel seen and want to keep reading. No fluff, no fantasy numbers.","verdict":"2 honest sentences — their single biggest strength and biggest thing costing them views, grounded in the real numbers/captions above","potential":"one line: what they could realistically hit, scaled from their proven ceiling of ${fmtN(ceiling)} — no fantasy numbers","working":["3 specific things working, each citing a REAL caption or number above (never invented footage)"],"fixing":["3 honest things holding them back — each a fix they'd actually accept (reframe or upgrade their existing content, never 'stop doing X that's core to them'), grounded in what you can actually see"],"ideas":[{"title":"idea in their voice","hook":"hook under 10 words in their voice","why":"one line: why it fits them, tied to what already works","verify":"boolean — set true ONLY if the idea asserts a SPECIFIC personal claim that must be literally true to post honestly (a named figure like a £100k loss, a specific event like 'I quit my job', a real salary/number about THEM). Omit or false for generic angles. This flags the creator to confirm it really happened before posting, so we never suggest fabricating a story.","score":"predicted virality score as an integer 81-94 — a genuine prediction grounded in how close this idea is to their proven hits. These 5 are their STRONGEST opportunities, so every one must genuinely earn 81+ (don't pad weak ideas up — generate ideas good enough to actually score this high). Vary the numbers across the 5; don't repeat the same score. Only surface ideas you'd genuinely stake 81+ on — if one wouldn't clear that bar, replace it with a stronger one until all 5 do. These are 5 winners, not a mixed bag."}]}`;
       // If the AI narrative fails, still show the scraped numbers + voice — the
       // deterministic half of the audit is valuable on its own and shouldn't be lost.
       // Neutral system — the audit analyses a DIFFERENT creator, so it must NOT
@@ -9172,9 +9181,10 @@ Return ONLY JSON:
               <button onClick={run} disabled={busy} style={{ padding:"10px 18px", borderRadius:10, border:"none", background:`linear-gradient(135deg,${C.cyan},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:busy?"wait":"pointer", whiteSpace:"nowrap" }}>{busy?"RE-RUNNING…":"RE-RUN WRITE-UP"}</button>
             </div>
           )}
-          {/* Ideas */}
+          {/* Ideas — id lets SAVE IMAGE cut the page here so the write-up and the
+              5 ideas never bleed across a slice boundary. */}
           {report.ai?.ideas?.length>0 && (
-            <div>
+            <div id="audit-ideas">
               <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.pink, fontWeight:700, marginBottom:10 }}>5 VIDEOS TO POST NEXT — SCORED, IN THEIR VOICE</div>
               <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
                 {report.ai.ideas.slice(0,5).map((idea,i)=>{
@@ -9186,6 +9196,7 @@ Return ONLY JSON:
                       <div style={{ fontSize:14.5, fontWeight:700, color:"#fff", marginBottom:idea.hook?4:0 }}>{i+1}. {idea.title}</div>
                       {idea.hook && <div style={{ fontSize:13.5, color:C.cyan, fontStyle:"italic" }}>"{idea.hook}"</div>}
                       {idea.why && <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", marginTop:3 }}>{idea.why}</div>}
+                      {idea.verify && <div style={{ fontSize:11, color:C.yellow, marginTop:6, fontWeight:600, display:"inline-flex", alignItems:"center", gap:5, background:`${C.yellow}12`, border:`1px solid ${C.yellow}33`, borderRadius:7, padding:"3px 8px" }}>⚠ Only post if true — this makes a specific personal claim</div>}
                     </div>
                     {sc>0 && (
                       <div style={{ flexShrink:0, textAlign:"center", background:`${scc}14`, border:`1px solid ${scc}38`, borderRadius:10, padding:"6px 11px", minWidth:52 }}>
