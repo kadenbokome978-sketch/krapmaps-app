@@ -9094,7 +9094,7 @@ Return ONLY JSON:
               <div><div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", letterSpacing:"0.1em", fontWeight:700 }}>YOUR NORMAL</div><div style={{ fontSize:22, fontWeight:800, fontFamily:C.fontHead, color:C.cyan, lineHeight:1 }}>{fmtN(report.median)}</div></div>
               <div style={{ color:C.pink, fontSize:22, fontWeight:800 }}>→</div>
               <div><div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", letterSpacing:"0.1em", fontWeight:700 }}>YOU'VE HIT</div><div style={{ fontSize:22, fontWeight:800, fontFamily:C.fontHead, color:C.pink, lineHeight:1 }}>{fmtN(report.ceiling)}</div></div>
-              <div style={{ marginLeft:"auto", textAlign:"right", minWidth:150 }}>
+              <div style={{ marginLeft:"auto", textAlign:"right", minWidth:120 }}>
                 <div style={{ fontSize:14, color:"#fff", fontWeight:800, fontFamily:C.fontHead }}>{Math.round(report.ceiling/Math.max(report.median,1))}× your normal</div>
                 <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.5)", lineHeight:1.4 }}>You've proven the ceiling. The gap is what's on the table.</div>
               </div>
