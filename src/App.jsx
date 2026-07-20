@@ -8806,7 +8806,7 @@ const NAV = [
 // videos, and generate a shareable one-page audit (their real numbers, their
 // Voice DNA, what's working, what to fix, and 5 scored ideas in THEIR voice).
 // This is what you send a prospect for free to open a conversation.
-function ProspectAuditView({ WL }){
+function ProspectAuditView({ WL, operator=false }){
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [handle, setHandle] = useState("");
   const [phase, setPhase] = useState("idle"); // idle | scraping | analysing | done | error
@@ -9160,8 +9160,8 @@ Return ONLY JSON:
       )}
       {report && <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.35)", textAlign:"center" }}>Screenshot this and send it to @{report.h} — or read it out on a call.</div>}
 
-      {/* ── SEED THE CORPUS (operator utility) ── */}
-      <div style={{ ...card, padding:isMobile?"16px 18px":"18px 22px", marginTop:8 }}>
+      {/* ── SEED THE CORPUS (operator utility — never on the public free audit) ── */}
+      {operator && <div style={{ ...card, padding:isMobile?"16px 18px":"18px 22px", marginTop:8 }}>
         <div onClick={()=>setSeedOpen(o=>!o)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer" }}>
           <div>
             <div style={{ fontSize:12, letterSpacing:"0.12em", color:C.purple, fontWeight:700 }}>⚡ SEED THE CORPUS</div>
@@ -9182,7 +9182,7 @@ Return ONLY JSON:
             <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.35)", lineHeight:1.5 }}>Tip: seed ~15–20 top creators + ~20 rising (20–100k) in this niche. Uses your Bright Data credits (scrape only, no AI) — cheap.</div>
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 }
@@ -11808,7 +11808,7 @@ Return JSON:
         {nav==="check"     && <PrePostCheck videos={videos} WL={WL} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
-        {nav==="audit"     && <ProspectAuditView WL={activeWL} />}
+        {nav==="audit"     && <ProspectAuditView WL={activeWL} operator={true} />}
         {pricing && <PricingModal tier={plan.tier} reason={pricing.reason} onClose={()=>setPricing(null)} />}
         {scoreReveal && <ScoreReveal score={scoreReveal.score} title={scoreReveal.title} onClose={()=>setScoreReveal(null)} />}
         {nav==="ai"        && <AIChatView anthropicKey={keys?.anthropic || BAKED_ANTHROPIC_KEY} tasks={tasks} setTasks={setTasks} ideas={ideas} setIdeas={setIdeas} videos={videos} preloadMsg={assistPreload} />}
