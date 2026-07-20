@@ -8830,6 +8830,8 @@ function ProspectAuditView({ WL, operator=false }){
   const [dm, setDm] = useState("");            // auto-generated outreach message
   const [dmBusy, setDmBusy] = useState(false);
   const [dmCopied, setDmCopied] = useState(false);
+  const [expanded, setExpanded] = useState(""); // tracker row expanded for notes/follow-ups
+  const [fu, setFu] = useState({});             // {handle: {text, busy, kind, copied}}
   const auditAbort = useRef(null); // lets the user cancel an in-flight audit scrape
   const cancelRun = () => { try { auditAbort.current?.abort(); } catch {} setPhase("idle"); setErr(""); };
   // ── OUTREACH TRACKER (operator) ── auto-logs every creator you audit and tracks
@@ -8867,9 +8869,45 @@ function ProspectAuditView({ WL, operator=false }){
     setReport(rep); setHandle(rep.h); setDm(p.dm||""); setErr(""); setPhase("done");
     try { window.scrollTo({ top:0, behavior:"smooth" }); } catch {}
   };
-  const cycleStage = (h) => saveProspects(prospects.map(p=> p.h===h ? { ...p, stage: STAGES[(STAGES.indexOf(p.stage)+1)%STAGES.length] } : p));
-  const setStage = (h, stage) => saveProspects(prospects.map(p=> p.h===h ? { ...p, stage } : p));
+  const setStage = (h, stage) => saveProspects(prospects.map(p=> p.h===h ? { ...p, stage, touchedAt:Date.now() } : p));
+  const setNote = (h, note) => saveProspects(prospects.map(p=> p.h===h ? { ...p, note } : p));
   const removeProspect = (h) => saveProspects(prospects.filter(p=>p.h!==h));
+  // ── Outreach cockpit helpers ──
+  const daysSince = (ts) => ts ? Math.floor((Date.now()-ts)/86400000) : null;
+  const agoLabel = (ts) => { const d = daysSince(ts); return d===null?"" : d===0?"today" : d===1?"1d ago" : `${d}d ago`; };
+  // What the operator should DO next for this prospect, and whether it's overdue.
+  const nextAction = (p) => {
+    const d = daysSince(p.touchedAt||p.at) ?? 0;
+    if(p.stage==="audited") return { text:"Send the DM", due:true, color:C.cyan };
+    if(p.stage==="sent")    return d>=3 ? { text:"Follow up (no reply)", due:true, color:C.yellow } : { text:`Wait for reply (${3-d}d)`, due:false, color:"rgba(255,255,255,0.4)" };
+    if(p.stage==="replied") return { text:"Send audit → pitch Sprint", due:true, color:C.green };
+    if(p.stage==="client")  return { text:"Deliver the Sprint", due:false, color:C.green };
+    return { text:"Closed", due:false, color:"rgba(255,255,255,0.35)" };
+  };
+  // Rank: things that need action first, then most recently touched.
+  const rankedProspects = [...prospects].sort((a,b)=>{
+    const da = nextAction(a).due?0:1, db = nextAction(b).due?0:1;
+    if(da!==db) return da-db;
+    return (b.touchedAt||b.at||0)-(a.touchedAt||a.at||0);
+  });
+  const funnel = { audited:prospects.length, sent:prospects.filter(p=>["sent","replied","client"].includes(p.stage)).length, replied:prospects.filter(p=>["replied","client"].includes(p.stage)).length, client:prospects.filter(p=>p.stage==="client").length };
+  const replyRate = funnel.sent ? Math.round(funnel.replied/funnel.sent*100) : 0;
+  const closeRate = funnel.sent ? Math.round(funnel.client/funnel.sent*100) : 0;
+  // Generate a follow-up message (a soft "bump" or the Sprint pitch) in the same human voice.
+  const genFollowup = async (p, kind) => {
+    setFu(f=>({ ...f, [p.h]:{ ...(f[p.h]||{}), busy:true, kind } }));
+    const first = (p.nick||p.h).split(/\s+/)[0];
+    const FU_SYS = "You write short, natural creator-outreach follow-up DMs. You sound like a real person, never a marketer or an AI. " + NO_EMDASH;
+    const prompt = kind==="bump"
+      ? `Write ONE short, low-pressure follow-up DM to ${first} (@${p.h}). You messaged a few days ago offering a free content audit and got no reply. Nudge once, warmly, and offer to just send it over anyway since it's already done. 2 to 3 sentences max. Casual, no pressure, no guilt. No hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"dm":"the message"}`
+      : `Write ONE short DM to ${first} (@${p.h}) who reacted well to the free audit you sent. Softly offer the done-for-you service: you run their whole content engine for 30 days, every idea scored before they film, a 30-day plan, weekly check-ins. Founding price 297 pounds for the month. Low pressure, "no worries either way". 3 to 4 sentences. Casual and human. No hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"dm":"the message"}`;
+    try {
+      const r = await callAI(prompt, 400, FU_SYS);
+      const msg = (r?.dm||"").trim();
+      setFu(f=>({ ...f, [p.h]:{ text:msg, busy:false, kind } }));
+    } catch { setFu(f=>({ ...f, [p.h]:{ text:"", busy:false, kind } })); }
+  };
+  const copyFu = (h) => { const t = fu[h]?.text; if(!t) return; try { navigator.clipboard?.writeText(t); } catch {} setFu(f=>({ ...f, [h]:{ ...f[h], copied:true } })); setTimeout(()=>setFu(f=>({ ...f, [h]:{ ...(f[h]||{}), copied:false } })),1500); };
   // Restore the last audit after a refresh (within 24h) so no re-scrape is needed.
   useEffect(() => {
     const last = loadJSON("km_last_audit", null);
@@ -9334,41 +9372,74 @@ Return ONLY JSON:
         </div>
       )}
 
-      {/* ── OUTREACH TRACKER (operator) ── auto-logged pipeline of everyone you've audited ── */}
-      {operator && prospects.length>0 && (() => {
-        const counts = STAGES.reduce((a,s)=>{ a[s]=prospects.filter(p=>p.stage===s).length; return a; }, {});
-        return (
+      {/* ── OUTREACH COCKPIT (operator) ── pipeline, next-step nudges, notes, follow-ups ── */}
+      {operator && prospects.length>0 && (
         <div style={{ ...card, padding:isMobile?"16px 18px":"18px 22px", marginTop:8 }}>
           <div onClick={()=>setTrackOpen(o=>!o)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", gap:12 }}>
             <div>
-              <div style={{ fontSize:12, letterSpacing:"0.12em", color:C.cyan, fontWeight:700 }}>📋 OUTREACH TRACKER</div>
-              <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.45)", marginTop:3 }}>{prospects.length} audited · {counts.sent} sent · {counts.replied} replied · {counts.client} client{counts.client===1?"":"s"}</div>
+              <div style={{ fontSize:12, letterSpacing:"0.12em", color:C.cyan, fontWeight:700 }}>📋 OUTREACH COCKPIT</div>
+              <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.45)", marginTop:3 }}>{funnel.audited} audited · {funnel.sent} sent · {funnel.replied} replied · {funnel.client} client{funnel.client===1?"":"s"}</div>
             </div>
             <div style={{ fontSize:18, color:"rgba(255,255,255,0.4)" }}>{trackOpen?"–":"+"}</div>
           </div>
           {trackOpen && (
             <div style={{ marginTop:14, display:"flex", flexDirection:"column", gap:8 }}>
-              {prospects.map(p=>(
-                <div key={p.h} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"9px 12px", flexWrap:"wrap" }}>
-                  <div onClick={()=>openProspect(p)} style={{ flex:1, minWidth:isMobile?"100%":140, cursor:"pointer" }}>
-                    <div style={{ fontSize:14, fontWeight:700, color:"#fff" }}>@{p.h}</div>
-                    <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.4)" }}>{p.median?`${fmtN(p.median)}→${fmtN(p.ceiling)}`:""}{p.niche?` · ${p.niche}`:""}{p.dm?" · ✍️ DM ready":""}</div>
+              {/* Funnel + conversion */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(90px,100%),1fr))", gap:8, marginBottom:6 }}>
+                {[{k:"AUDITED",v:funnel.audited,c:"rgba(255,255,255,0.6)"},{k:"SENT",v:funnel.sent,c:C.cyan},{k:"REPLIED",v:`${funnel.replied}`,sub:funnel.sent?`${replyRate}%`:"",c:C.yellow},{k:"CLIENTS",v:funnel.client,sub:funnel.sent?`${closeRate}%`:"",c:C.green}].map((s,i)=>(
+                  <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:`1px solid ${s.c}22`, borderRadius:10, padding:"9px 11px" }}>
+                    <div style={{ fontSize:9.5, letterSpacing:"0.08em", color:"rgba(255,255,255,0.45)", fontWeight:700 }}>{s.k}</div>
+                    <div style={{ display:"flex", alignItems:"baseline", gap:6 }}><div style={{ fontSize:20, fontWeight:800, fontFamily:C.fontHead, color:s.c, lineHeight:1.1 }}>{s.v}</div>{s.sub&&<div style={{ fontSize:11, color:s.c, fontWeight:700 }}>{s.sub}</div>}</div>
                   </div>
-                  <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
-                    <button onClick={()=>openProspect(p)} title="Reopen this audit + DM" style={{ padding:"4px 11px", borderRadius:8, border:`1px solid ${C.cyan}45`, background:`${C.cyan}14`, color:C.cyan, fontSize:9.5, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer", fontFamily:C.fontHead }}>OPEN</button>
+                ))}
+              </div>
+              {/* Prospect rows — action-first order */}
+              {rankedProspects.map(p=>{ const na = nextAction(p); const isOpen = expanded===p.h; const fux = fu[p.h]||{};
+                return (
+                <div key={p.h} style={{ background:"rgba(255,255,255,0.03)", border:`1px solid ${na.due?na.color+"33":"rgba(255,255,255,0.07)"}`, borderRadius:10, padding:"9px 12px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+                    <div onClick={()=>openProspect(p)} style={{ flex:1, minWidth:isMobile?"60%":140, cursor:"pointer" }}>
+                      <div style={{ fontSize:14, fontWeight:700, color:"#fff" }}>@{p.h} <span style={{ fontSize:10.5, color:"rgba(255,255,255,0.3)", fontWeight:500 }}>{agoLabel(p.touchedAt||p.at)}</span></div>
+                      <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.4)" }}>{p.median?`${fmtN(p.median)}→${fmtN(p.ceiling)}`:""}{p.niche?` · ${p.niche}`:""}{p.dm?" · ✍️ DM ready":""}</div>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:6, background:`${na.color}14`, border:`1px solid ${na.color}33`, borderRadius:8, padding:"4px 9px" }}>
+                      {na.due && <span style={{ width:6, height:6, borderRadius:"50%", background:na.color, display:"inline-block" }}/>}
+                      <span style={{ fontSize:10.5, color:na.color, fontWeight:700 }}>{na.text}</span>
+                    </div>
+                    <button onClick={()=>setExpanded(isOpen?"":p.h)} title="Notes & follow-ups" style={{ padding:"4px 9px", borderRadius:8, border:"1px solid rgba(255,255,255,0.14)", background:"transparent", color:"rgba(255,255,255,0.55)", fontSize:11, cursor:"pointer" }}>{isOpen?"▲":"⋯"}</button>
+                  </div>
+                  {/* stage chips */}
+                  <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginTop:8 }}>
+                    <button onClick={()=>openProspect(p)} title="Reopen audit + DM" style={{ padding:"4px 11px", borderRadius:8, border:`1px solid ${C.cyan}45`, background:`${C.cyan}14`, color:C.cyan, fontSize:9.5, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer", fontFamily:C.fontHead }}>OPEN</button>
                     {STAGES.map(s=>(
                       <button key={s} onClick={()=>setStage(p.h,s)} style={{ padding:"4px 9px", borderRadius:20, border:`1px solid ${p.stage===s?STAGE_COLOR[s]:"rgba(255,255,255,0.12)"}`, background:p.stage===s?`${STAGE_COLOR[s]}1e`:"transparent", color:p.stage===s?STAGE_COLOR[s]:"rgba(255,255,255,0.4)", fontSize:9.5, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer", fontFamily:C.fontHead }}>{STAGE_LABEL[s]}</button>
                     ))}
                     <button onClick={()=>removeProspect(p.h)} title="Remove" style={{ padding:"4px 8px", borderRadius:8, border:"1px solid rgba(255,255,255,0.12)", background:"transparent", color:"rgba(255,255,255,0.35)", fontSize:11, cursor:"pointer" }}>✕</button>
                   </div>
+                  {/* expanded: notes + follow-up generators */}
+                  {isOpen && (
+                    <div style={{ marginTop:10, display:"flex", flexDirection:"column", gap:9, borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:10 }}>
+                      <textarea value={p.note||""} onChange={e=>setNote(p.h, e.target.value)} placeholder="Notes — what they said, when to circle back…" rows={2} style={{ width:"100%", background:"rgba(0,0,0,0.22)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:9, color:"#fff", padding:"9px 11px", fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:C.fontBody, resize:"vertical" }}/>
+                      <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                        <button onClick={()=>genFollowup(p,"bump")} disabled={fux.busy} style={{ padding:"7px 13px", borderRadius:9, border:`1px solid ${C.yellow}40`, background:`${C.yellow}12`, color:C.yellow, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:fux.busy?"wait":"pointer" }}>{fux.busy&&fux.kind==="bump"?"WRITING…":"↳ FOLLOW-UP DM"}</button>
+                        <button onClick={()=>genFollowup(p,"sprint")} disabled={fux.busy} style={{ padding:"7px 13px", borderRadius:9, border:`1px solid ${C.green}40`, background:`${C.green}12`, color:C.green, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:fux.busy?"wait":"pointer" }}>{fux.busy&&fux.kind==="sprint"?"WRITING…":"£ SPRINT PITCH"}</button>
+                      </div>
+                      {fux.text && (
+                        <div>
+                          <div style={{ fontSize:14, color:"#fff", lineHeight:1.6, whiteSpace:"pre-wrap", background:"rgba(0,0,0,0.22)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"12px 14px" }}>{fux.text}</div>
+                          <button onClick={()=>copyFu(p.h)} style={{ marginTop:7, padding:"6px 13px", borderRadius:8, border:"none", background:fux.copied?`${C.green}20`:`linear-gradient(135deg,${C.cyan},${C.pink})`, color:fux.copied?C.green:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer" }}>{fux.copied?"COPIED ✓":"COPY"}</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              ))}
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", lineHeight:1.5 }}>Every audit is saved here automatically. Tap <b style={{color:"rgba(255,255,255,0.55)"}}>OPEN</b> any time to reopen the full audit and its DM, then SAVE IMAGE only when you're ready to send. Nothing touches your camera roll until then. Stored privately on this device.</div>
+                );
+              })}
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", lineHeight:1.5 }}>The dot means it needs action. Rows sort by what to do next. Tap <b style={{color:"rgba(255,255,255,0.55)"}}>OPEN</b> to reopen an audit + DM (SAVE IMAGE only when you send). <b style={{color:"rgba(255,255,255,0.55)"}}>⋯</b> for notes and follow-up messages. Stored privately on this device.</div>
             </div>
           )}
         </div>
-        );
-      })()}
+      )}
 
       {/* ── SEED THE CORPUS (operator utility — never on the public free audit) ── */}
       {operator && <div style={{ ...card, padding:isMobile?"16px 18px":"18px 22px", marginTop:8 }}>
