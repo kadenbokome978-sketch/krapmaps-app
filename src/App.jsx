@@ -8838,11 +8838,18 @@ function ProspectAuditView({ WL, operator=false }){
   const [prospects, setProspects] = useState(()=>loadJSON(PROSPECTS_KEY, []));
   const [trackOpen, setTrackOpen] = useState(true);
   const saveProspects = (list) => { setProspects(list); saveJSON(PROSPECTS_KEY, list); };
+  // Full audit reports live in their own keyed store so the tracker list stays light,
+  // and any past audit can be reopened + saved as an image on demand (nothing hits your
+  // camera roll until you actually tap SAVE IMAGE for the one you're sending).
+  const REPORTS_KEY = "km_audit_reports";
+  const saveReport = (rep) => { if(!rep?.h) return; const all = loadJSON(REPORTS_KEY,{}); all[rep.h.toLowerCase()] = rep; saveJSON(REPORTS_KEY, all); };
+  const loadReport = (h) => loadJSON(REPORTS_KEY,{})[String(h||"").toLowerCase()] || null;
   const STAGES = ["audited","sent","replied","client","passed"];
   const STAGE_LABEL = { audited:"AUDITED", sent:"DM SENT", replied:"REPLIED", client:"CLIENT", passed:"PASSED" };
   const STAGE_COLOR = { audited:"rgba(255,255,255,0.5)", sent:C.cyan, replied:C.yellow, client:C.green, passed:"#FF4D4D" };
   const logProspect = (rep) => {
     if(!rep?.h) return;
+    saveReport(rep); // stash the full report so it can be reopened later
     setProspects(prev => {
       const i = prev.findIndex(p=>p.h.toLowerCase()===rep.h.toLowerCase());
       const base = { h:rep.h, nick:rep.nick||"", median:rep.median||0, ceiling:rep.ceiling||0, niche:(rep.ai?.niche||"").trim(), at:Date.now() };
@@ -8851,6 +8858,14 @@ function ProspectAuditView({ WL, operator=false }){
       else next=[{ ...base, stage:"audited" }, ...prev];
       saveJSON(PROSPECTS_KEY, next); return next;
     });
+  };
+  // Reopen a stored audit instantly (no scrape, no AI, no credits) so you can review it
+  // and SAVE IMAGE only when you're ready to send.
+  const openProspect = (p) => {
+    const rep = loadReport(p.h);
+    if(!rep){ setHandle(p.h); setErr("That audit wasn't stored on this device — run it again (it's cached, no credits)."); return; }
+    setReport(rep); setHandle(rep.h); setDm(p.dm||""); setErr(""); setPhase("done");
+    try { window.scrollTo({ top:0, behavior:"smooth" }); } catch {}
   };
   const cycleStage = (h) => saveProspects(prospects.map(p=> p.h===h ? { ...p, stage: STAGES[(STAGES.indexOf(p.stage)+1)%STAGES.length] } : p));
   const setStage = (h, stage) => saveProspects(prospects.map(p=> p.h===h ? { ...p, stage } : p));
@@ -9335,20 +9350,20 @@ Return ONLY JSON:
             <div style={{ marginTop:14, display:"flex", flexDirection:"column", gap:8 }}>
               {prospects.map(p=>(
                 <div key={p.h} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"9px 12px", flexWrap:"wrap" }}>
-                  <div style={{ flex:1, minWidth:isMobile?"100%":140 }}>
+                  <div onClick={()=>openProspect(p)} style={{ flex:1, minWidth:isMobile?"100%":140, cursor:"pointer" }}>
                     <div style={{ fontSize:14, fontWeight:700, color:"#fff" }}>@{p.h}</div>
-                    <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.4)" }}>{p.median?`${fmtN(p.median)}→${fmtN(p.ceiling)}`:""}{p.niche?` · ${p.niche}`:""}</div>
+                    <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.4)" }}>{p.median?`${fmtN(p.median)}→${fmtN(p.ceiling)}`:""}{p.niche?` · ${p.niche}`:""}{p.dm?" · ✍️ DM ready":""}</div>
                   </div>
                   <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                    <button onClick={()=>openProspect(p)} title="Reopen this audit + DM" style={{ padding:"4px 11px", borderRadius:8, border:`1px solid ${C.cyan}45`, background:`${C.cyan}14`, color:C.cyan, fontSize:9.5, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer", fontFamily:C.fontHead }}>OPEN</button>
                     {STAGES.map(s=>(
                       <button key={s} onClick={()=>setStage(p.h,s)} style={{ padding:"4px 9px", borderRadius:20, border:`1px solid ${p.stage===s?STAGE_COLOR[s]:"rgba(255,255,255,0.12)"}`, background:p.stage===s?`${STAGE_COLOR[s]}1e`:"transparent", color:p.stage===s?STAGE_COLOR[s]:"rgba(255,255,255,0.4)", fontSize:9.5, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer", fontFamily:C.fontHead }}>{STAGE_LABEL[s]}</button>
                     ))}
-                    <button onClick={()=>{ setHandle(p.h); }} title="Load this handle" style={{ padding:"4px 8px", borderRadius:8, border:"1px solid rgba(255,255,255,0.12)", background:"transparent", color:"rgba(255,255,255,0.5)", fontSize:10, cursor:"pointer" }}>↑</button>
                     <button onClick={()=>removeProspect(p.h)} title="Remove" style={{ padding:"4px 8px", borderRadius:8, border:"1px solid rgba(255,255,255,0.12)", background:"transparent", color:"rgba(255,255,255,0.35)", fontSize:11, cursor:"pointer" }}>✕</button>
                   </div>
                 </div>
               ))}
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", lineHeight:1.5 }}>Every creator you audit lands here automatically. Tap a stage to update where they are. Stored privately on this device.</div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", lineHeight:1.5 }}>Every audit is saved here automatically. Tap <b style={{color:"rgba(255,255,255,0.55)"}}>OPEN</b> any time to reopen the full audit and its DM, then SAVE IMAGE only when you're ready to send. Nothing touches your camera roll until then. Stored privately on this device.</div>
             </div>
           )}
         </div>
