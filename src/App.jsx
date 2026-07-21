@@ -7990,6 +7990,10 @@ const formatMetaPriors = (mp, ownLearning) => {
 // Em-dashes (and en-dashes) are a dead giveaway that copy is AI-written. Every
 // generation the creator might read or send must read like a person typed it.
 const NO_EMDASH = "WRITING STYLE (strict): Never use em-dashes (—) or en-dashes (–) anywhere. Use a comma, a full stop, or the word 'and' instead. Don't use semicolons either. Write the way a sharp person actually texts, not like an essay or an AI. Keep punctuation plain.";
+// Persuasion frameworks distilled from Cialdini + high-ticket sales research, tuned for
+// warm creator outreach. Applied to every message the operator sends. Must read human,
+// never like a salesperson working from a script.
+const PERSUASION_RULES = "PERSUASION (apply naturally and subtly, NEVER salesy, cheesy, or scripted): (1) Reciprocity: they were already given a genuinely useful free audit, lead from that generosity and never act owed. (2) Specific and personal beats generic every time, reference their real numbers and content. (3) Liking and common ground: sound like a peer who actually gets creators, warm, human, a little informal. (4) Authority through the system and the data, not bragging, let the results speak. (5) Genuine scarcity only: if you mention limited spots it must be true, fake urgency destroys trust with sharp people. (6) Loss aversion: gently frame what they are leaving on the table by guessing (wasted posts, reach they are not getting), not only what they gain. (7) Small yes: end on a tiny easy commitment (want me to send it, want to see it), never a big ask. (8) Value not cost: talk in terms of what it is worth and what inaction costs, never just a price tag.";
 const buildSystem = (wl=WL) => `You are the AI content strategist for ${wl.appName} (${wl.handle}).
 
 WHAT ${(wl.appName||"").toUpperCase()} IS: ${wl.appDescription||wl.niche}
@@ -8911,10 +8915,17 @@ function ProspectAuditView({ WL, operator=false }){
   const genFollowup = async (p, kind) => {
     setFu(f=>({ ...f, [p.h]:{ ...(f[p.h]||{}), busy:true, kind } }));
     const first = (p.nick||p.h).split(/\s+/)[0];
-    const FU_SYS = "You write short, natural creator-outreach follow-up DMs. You sound like a real person, never a marketer or an AI. " + NO_EMDASH;
+    const FU_SYS = "You write short, natural creator-outreach follow-up DMs. You sound like a real person, never a marketer or an AI. " + PERSUASION_RULES + " " + NO_EMDASH;
     const prompt = kind==="bump"
-      ? `Write ONE short, low-pressure follow-up DM to ${first} (@${p.h}). You messaged a few days ago offering a free content audit and got no reply. Nudge once, warmly, and offer to just send it over anyway since it's already done. 2 to 3 sentences max. Casual, no pressure, no guilt. No hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"dm":"the message"}`
-      : `Write ONE short DM to ${first} (@${p.h}) who reacted well to the free audit you sent. Softly offer the done-for-you service: you run their whole content engine for 30 days, every idea scored before they film, a 30-day plan, weekly check-ins. Founding price 297 pounds for the month. Low pressure, "no worries either way". 3 to 4 sentences. Casual and human. No hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"dm":"the message"}`;
+      ? `Write ONE short, low-pressure follow-up DM to ${first} (@${p.h}). You messaged a few days ago offering a free content audit and got no reply. Use the reciprocity + takeaway angle: warmly offer to just send the audit over anyway since it is already done and free, and take the pressure fully off (no worries if the timing is off). Do NOT chase or guilt. A tiny generous nudge that reopens the door. 2 to 3 sentences max. No hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"dm":"the message"}`
+      : `Write ONE short DM to ${first} (@${p.h}) who reacted well to the free audit you sent. Softly offer the done-for-you service: you run their whole content engine for 30 days, every idea scored before they film, a 30-day plan, weekly check-ins.
+Apply these sales principles naturally, not as a hard pitch:
+- ANCHOR then land: the full done-for-you service normally runs much higher, but the founding rate right now is 297 pounds for the month. Mention it is a founding rate so 297 lands as a deal, not the ceiling.
+- LOSS AVERSION over hype: frame what they keep losing by posting on guesswork (wasted posts, reach left on the table) more than what they gain.
+- VALUE not cost: position 297 as an investment against how much a single wasted month of content costs them, never as an expense.
+- GENUINE SCARCITY: you only take a few creators so it stays hands on (only if true, keep it honest).
+- SMALL YES: end on a tiny easy step (want me to build your first week so you can see it), not a hard close.
+Keep it 3 to 5 sentences, casual and human. No hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"dm":"the message"}`;
     try {
       const r = await callAI(prompt, 400, FU_SYS);
       const msg = (r?.dm||"").trim();
@@ -8978,7 +8989,7 @@ function ProspectAuditView({ WL, operator=false }){
     const first = (rep.nick||rep.h).split(/\s+/)[0];
     const mult = rep.median>0 ? Math.round(rep.ceiling/Math.max(rep.median,1)) : 0;
     const bestTopic = (rep.ai?.headline||rep.top?.[0]?.title||"").replace(/\s+/g," ").slice(0,120);
-    const DM_SYS = "You write short, natural cold-outreach DMs for a creator-growth service. You sound like a sharp real person who actually watched the creator's videos, never like a marketer or an AI. " + NO_EMDASH;
+    const DM_SYS = "You write short, natural cold-outreach DMs for a creator-growth service. You sound like a sharp real person who actually watched the creator's videos, never like a marketer or an AI. " + PERSUASION_RULES + " " + NO_EMDASH;
     // LEARN FROM WHAT CONVERTS: DMs that reached "replied" or "client" are proven openers
     // for THIS operator's voice and audience. Feed the best few back as style guidance so
     // the generator biases toward what actually earns replies. (Templates that never got a
