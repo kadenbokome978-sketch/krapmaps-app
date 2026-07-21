@@ -8933,6 +8933,23 @@ Keep it 3 to 5 sentences, casual and human. No hashtags, no emojis, no em-dashes
     } catch { setFu(f=>({ ...f, [p.h]:{ text:"", busy:false, kind } })); }
   };
   const copyFu = (h) => { const t = fu[h]?.text; if(!t) return; try { navigator.clipboard?.writeText(t); } catch {} setFu(f=>({ ...f, [h]:{ ...f[h], copied:true } })); setTimeout(()=>setFu(f=>({ ...f, [h]:{ ...(f[h]||{}), copied:false } })),1500); };
+  // ── Objection responder ── paste what the prospect actually said and get a reply
+  // in the operator's voice, built on the Validate → Isolate → Reframe framework.
+  const [obj, setObj] = useState({}); // {handle: {input, text, busy, copied}}
+  const setObjInput = (h, input) => setObj(o=>({ ...o, [h]:{ ...(o[h]||{}), input } }));
+  const genObjection = async (p) => {
+    const input = (obj[p.h]?.input||"").trim();
+    if(!input || obj[p.h]?.busy) return;
+    setObj(o=>({ ...o, [p.h]:{ ...(o[p.h]||{}), busy:true } }));
+    const first = (p.nick||p.h).split(/\s+/)[0];
+    const OBJ_SYS = "You write short, natural replies for a creator-growth operator handling a real prospect reply. You sound like a sharp, warm real person, never a salesperson working a script. " + PERSUASION_RULES + " " + NO_EMDASH;
+    const prompt = `A creator, ${first} (@${p.h}${p.median?`, typical ${fmtN(p.median)} views, best ${fmtN(p.ceiling)}`:""}), just replied to you with this:\n"""${input}"""\n\nWrite the single best reply to send back. Use the Validate, Isolate, Reframe approach where it fits: genuinely agree with anything fair in what they said (never get defensive), gently find the real blocker if there is one, then reframe around value and what guessing/inaction costs them, not price. If it is a price hesitation, do not discount, reconnect it to the cost of a wasted month of content and offer a small next step. If it is a critique of the tool, concede honestly and show you personally see what the tool missed (that human layer is the actual product). Keep it real and human, 2 to 5 sentences, no hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"reply":"the message"}`;
+    try {
+      const r = await callAI(prompt, 500, OBJ_SYS);
+      setObj(o=>({ ...o, [p.h]:{ ...(o[p.h]||{}), text:(r?.reply||"").trim(), busy:false } }));
+    } catch { setObj(o=>({ ...o, [p.h]:{ ...(o[p.h]||{}), text:"", busy:false } })); }
+  };
+  const copyObj = (h) => { const t = obj[h]?.text; if(!t) return; try { navigator.clipboard?.writeText(t); } catch {} setObj(o=>({ ...o, [h]:{ ...o[h], copied:true } })); setTimeout(()=>setObj(o=>({ ...o, [h]:{ ...(o[h]||{}), copied:false } })),1500); };
   // Restore the last audit after a refresh (within 24h) so no re-scrape is needed.
   useEffect(() => {
     const last = loadJSON("km_last_audit", null);
@@ -9558,6 +9575,20 @@ Return ONLY JSON:
                           <button onClick={()=>copyFu(p.h)} style={{ marginTop:7, padding:"6px 13px", borderRadius:8, border:"none", background:fux.copied?`${C.green}20`:`linear-gradient(135deg,${C.cyan},${C.pink})`, color:fux.copied?C.green:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer" }}>{fux.copied?"COPIED ✓":"COPY"}</button>
                         </div>
                       )}
+                      {/* Objection responder — paste their reply, get a research-backed answer */}
+                      {(() => { const ox = obj[p.h]||{}; return (
+                        <div style={{ borderTop:"1px dashed rgba(255,255,255,0.08)", paddingTop:9, display:"flex", flexDirection:"column", gap:8 }}>
+                          <div style={{ fontSize:10.5, letterSpacing:"0.08em", color:C.purple, fontWeight:700 }}>THEY SAID SOMETHING? GET A REPLY</div>
+                          <textarea value={ox.input||""} onChange={e=>setObjInput(p.h, e.target.value)} placeholder="Paste what they replied (a price wobble, a doubt, a critique)…" rows={2} style={{ width:"100%", background:"rgba(0,0,0,0.22)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:9, color:"#fff", padding:"9px 11px", fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:C.fontBody, resize:"vertical" }}/>
+                          <button onClick={()=>genObjection(p)} disabled={ox.busy||!(ox.input||"").trim()} style={{ alignSelf:"flex-start", padding:"7px 14px", borderRadius:9, border:`1px solid ${C.purple}45`, background:`${C.purple}14`, color:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:ox.busy?"wait":"pointer", opacity:(ox.input||"").trim()?1:0.5 }}>{ox.busy?"THINKING…":"✎ WRITE MY REPLY"}</button>
+                          {ox.text && (
+                            <div>
+                              <div style={{ fontSize:14, color:"#fff", lineHeight:1.6, whiteSpace:"pre-wrap", background:"rgba(0,0,0,0.22)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"12px 14px" }}>{ox.text}</div>
+                              <button onClick={()=>copyObj(p.h)} style={{ marginTop:7, padding:"6px 13px", borderRadius:8, border:"none", background:ox.copied?`${C.green}20`:`linear-gradient(135deg,${C.cyan},${C.pink})`, color:ox.copied?C.green:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:"pointer" }}>{ox.copied?"COPIED ✓":"COPY"}</button>
+                            </div>
+                          )}
+                        </div>
+                      ); })()}
                     </div>
                   )}
                 </div>
