@@ -50,6 +50,23 @@ Sources at the bottom.
 - **Value framing, not cost**: say "investment," never "expense." Break it down ("less than a tenner a day to never post a dud again").
 - **Charge with confidence.** The research is blunt: the difference between consultants who defend their rates and those who get signed at 5x is *how they say the number*, not the number. State it plainly, once, no flinching.
 
+## 4b. Tactical empathy (Chris Voss) — for replying to real messages
+
+Now baked into the follow-up and objection-responder generators. Use it live too:
+- **Labeling**: name their feeling to defuse it. "Seems like the price is the sticking point." "Sounds like you've been burned by tools before." Naming it drains it. Never argue.
+- **Calibrated questions** (open "how"/"what"): hand them the illusion of control and make them solve it with you. "How would you want this to work?" "What would make this a yes for you?" Beats any statement.
+- **Accusation audit**: say the objection before they do. "This probably sounds like every other pitch in your DMs." Disarms the defence they were about to raise.
+- **Aim for "that's right," not "you're right."** "You're right" is a brush-off. "That's right" means they feel understood, that's the real turn.
+- **Mirror**: repeat their last few words back as a question to keep them talking.
+- **No defensiveness, ever.** The Apprentice Guide critique is the model: agree with what's fair, then reframe.
+
+## 4c. Hero framing (StoryBrand) — who the story is about
+
+Now baked into all generators. The rule: **the creator is the hero, you are the guide.** Making yourself or the tool the hero creates subconscious competition with the buyer. Being the guide builds trust.
+- ❌ "My system is incredible, look what it does."
+- ✅ "You've already proven your channel can hit 500k. Here's the plan to make that repeatable."
+- The SB7 spine for any pitch or page: a **Creator** (hero) with a **Problem** (inconsistent views, guessing) meets a **Guide** (you) who gives a **Plan** (the Sprint) and calls them to **Action** so they **avoid** the grind of wasted posts and reach **Success** (repeatable growth). Frame the landing page and pitch on this skeleton.
+
 ## 5. Your one-line strategy from all of this
 
 Give value first (reciprocity + personalisation), let the system be your authority, get small yeses before the ask (consistency), frame the price against what guessing costs them (loss aversion + value framing), anchor high so £297 lands soft, keep scarcity honest, and put most of your energy into the follow-up. That's the whole game, and it's now wired into every message the app writes for you.
@@ -57,6 +74,8 @@ Give value first (reciprocity + personalisation), let the system be your authori
 ---
 
 ### Sources
+- [Never Split the Difference (Chris Voss) — chapter notes](https://grahammann.net/book-notes/never-split-the-difference-chris-voss)
+- [StoryBrand SB7 Framework — customer as hero, brand as guide](https://yukaichou.com/gamification-analysis/storybrand-donald-miller-customer-as-hero/)
 - [Cialdini's 7 Principles of Persuasion — CXL](https://cxl.com/blog/cialdinis-principles-persuasion/)
 - [7 Principles of Persuasion in Sales — Instantly](https://instantly.ai/blog/principles-of-persuasion/)
 - [Psychological Pricing Strategies for High-Ticket Consulting](https://successknocks.com/psychological-pricing-strategies-for-high-ticket-consulting/)
