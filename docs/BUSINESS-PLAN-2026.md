@@ -8,25 +8,32 @@
 
 Greenlit predicts whether a short-form video will hit **before it's filmed**, grounded in the creator's *own* results and written in their *own* voice — and it compounds: every post makes it sharper and every audit fattens a cross-creator data moat competitors can't clone.
 
-**Current honest state:** the product is over-built for its customer count (zero paying, today). The engine is genuinely strong. The bottleneck is **proof + distribution**, not features. This plan is built around fixing that, then scaling.
+**Current honest state:** the product is strong and now battle-tested against real prospects. Outreach has started (first audits sent, 2 warm replies, 0 closed). The bottleneck is **proof + volume of outreach**, not features. This plan is built around fixing that, then scaling.
+
+*(See PROGRESS-LOG.md for the full day-by-day, SALES-PLAYBOOK.md for the sales frameworks now baked into the app.)*
 
 ---
 
-## 1. Where it stands — component ratings
+## 1. Where it stands — component ratings (updated)
 
 | Component | Rating | Honest note |
 |---|---|---|
-| Core prediction engine | 8.5 / 10 | Median-anchored scoring, NN calibration layer, multimodal signals. Real, not a GPT wrapper. |
+| Core prediction engine | 8.5 / 10 | Median-anchored scoring, NN calibration, recency + survivorship-bias fixes added. Real, not a GPT wrapper. |
 | Voice DNA (in-voice output) | 8 / 10 | Genuinely differentiated; the demo sells it. |
-| Free prospect audit (sales weapon) | 9 / 10 | The best asset. Hero + gap visual + 81+ scored ideas. This is what closes. |
-| Cross-creator corpus / data moat | 7 / 10 | 1,462 finance rows seeded — real edge in finance, cold elsewhere. Compounds automatically. |
+| Free prospect audit (diagnosis) | 9 / 10 | The best asset and the true hero. The *read on their channel* is what earns trust. |
+| Idea generation | 6.5 / 10 | **Honestly the weak half.** Now has live-trends + cross-niche + anti-obvious rules, but "ideas a smart creator hasn't thought of" is genuinely hard. Frame as starting points, not guarantees. |
+| Cross-creator corpus / data moat | 7 / 10 | Compounds automatically with every audit; visible via System Memory readout. |
+| Outreach system (cockpit + generators) | 8 / 10 | **New.** Auto DM, pipeline, follow-ups, learns from wins, research-backed persuasion. |
 | Landing / brand (Greenlit) | 8.5 / 10 | Sleek, converts, live demo. |
-| App polish (PWA, mobile) | 7.5 / 10 | Installable, wake-lock, cache. A few rough edges being audited. |
-| Proof / social proof | 2 / 10 | **The gap.** Zero testimonials, zero case studies. Everything hinges on closing this. |
-| Distribution / pipeline | 2 / 10 | **The other gap.** No audits sent yet. |
-| **Overall product** | **8 / 10** | **Overall business: 4 / 10** — great product, no customers. The two 2/10s are the whole game. |
+| App polish (PWA, mobile) | 8 / 10 | Installable, wake-lock, cache, iPad fixed, de-binned. |
+| Proof / social proof | 2 / 10 | **Still the gap.** Zero case studies. Everything hinges on closing #1. |
+| Distribution / pipeline | 3 / 10 | **Improving.** Outreach started, 2 warm replies, machine proven. Needs volume. |
+| **Overall product** | **8 / 10** | **Overall business: 4.5 / 10** — proven machine, no close yet. Proof is the whole game. |
 
-**Takeaway:** you don't need a better product to make money. You need 5 sent audits → 1 case study → a repeatable loop.
+**Takeaway:** the product is not the problem. Send more audits to the *right* profile, follow up with the new loss-aversion messages, and land one case study.
+
+### Targeting insight (learned in the field)
+Aim at **instinctive, growth-hungry, slightly disorganised creators** who want someone to handle it (like MrFlipWhips), not **sophisticated operators** who'll pick the tool apart and think they can DIY (like The Apprentice Guide). The warm profile buys the feeling of "this person gets my channel." The analytical profile audits your audit.
 
 ---
 
@@ -121,9 +128,22 @@ Rating of Path C: **high reward (8/10), high risk (7/10), wrong timing now.** Pa
 
 5. **Referral loop.** Every audit ends with "want your friend audited? send this link." Viral coefficient on a free, valuable, shareable asset.
 
-6. **Brand-deal marketplace (Path C).** The big swing. Year 2+.
+6. **Full done-for-you content service (£997+/mo, the premium tier).** The endgame of the ladder: strategy + a hired editor actually produce the videos. Four-figure/month per client because you save them 10+ hrs/week. It's a *service* not software (doesn't scale like SaaS, you're the delivery bottleneck), so only build it when a Sprint client asks "can you just do the whole thing?" Let demand pull the editor hire, never hire ahead of revenue. Also acts as the **high price anchor** that makes the £297 Sprint look cheap.
 
-7. **API / embed.** Let other creator tools call your scoring engine. Long-term platform play.
+7. **Course-creator affiliate channel.** Creators who teach "how to go viral" have your exact buyer inside their courses. Put Greenlit in their course with a **30–40% recurring cut**. Performance-based, no upfront cost, one creator can out-reach 500 cold DMs. **Requires:** self-serve Pro working + a bit of proof + affiliate tracking. Phase 2, after case studies. Use the audit-on-the-course-creator as the opener.
+
+8. **Brand-deal marketplace.** The big swing. Year 2+.
+
+9. **API / embed.** Let other creator tools call your scoring engine. Long-term platform play.
+
+### The 3-tier pricing ladder (anchoring by design)
+| Tier | Price | Role |
+|---|---|---|
+| Self-serve Pro | £29/mo | Cheap anchor ("just an app") |
+| **Growth Sprint** | **£297/mo** | **The target — the one to sell** |
+| Full done-for-you | £997+/mo | Premium anchor (makes £297 a steal) |
+
+Presenting the £997 first makes £297 land soft. This is now reflected in the app's Sprint pitch generator (it anchors before naming the founding rate).
 
 ---
 
