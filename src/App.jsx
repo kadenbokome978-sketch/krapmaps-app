@@ -7994,6 +7994,11 @@ const NO_EMDASH = "WRITING STYLE (strict): Never use em-dashes (—) or en-dashe
 // warm creator outreach. Applied to every message the operator sends. Must read human,
 // never like a salesperson working from a script.
 const PERSUASION_RULES = "PERSUASION (apply naturally and subtly, NEVER salesy, cheesy, or scripted): (1) Reciprocity: they were already given a genuinely useful free audit, lead from that generosity and never act owed. (2) Specific and personal beats generic every time, reference their real numbers and content. (3) Liking and common ground: sound like a peer who actually gets creators, warm, human, a little informal. (4) Authority through the system and the data, not bragging, let the results speak. (5) Genuine scarcity only: if you mention limited spots it must be true, fake urgency destroys trust with sharp people. (6) Loss aversion: gently frame what they are leaving on the table by guessing (wasted posts, reach they are not getting), not only what they gain. (7) Small yes: end on a tiny easy commitment (want me to send it, want to see it), never a big ask. (8) Value not cost: talk in terms of what it is worth and what inaction costs, never just a price tag.";
+// StoryBrand: the customer is the hero, the brand is the guide. Making yourself the hero
+// creates subconscious competition with the buyer; being the guide builds trust.
+const HERO_FRAMING = "FRAMING (StoryBrand): the CREATOR is the hero of this story, you are the guide who helps them win. Never make yourself or the tool the hero. Centre their goals, their channel, their win. You provide the plan and point them to it. Frame everything as helping them succeed and escape the grind of guessing, not as you being impressive.";
+// Chris Voss tactical empathy, for replying to a real prospect message.
+const TACTICAL_EMPATHY = "TACTICAL EMPATHY (Chris Voss, use when replying to something they actually said): LABEL their feeling to defuse it ('seems like...', 'sounds like...', 'looks like...') instead of arguing. Ask ONE calibrated how/what question that hands them the illusion of control and makes them solve it with you ('how would you want this to work?', 'what would make this a yes?'). When it fits, run a quick accusation audit, name the objection before they weaponise it ('this probably sounds like every other pitch in your DMs'). Aim to earn a 'that's right', not to win an argument. Mirror their own words back. Never get defensive.";
 const buildSystem = (wl=WL) => `You are the AI content strategist for ${wl.appName} (${wl.handle}).
 
 WHAT ${(wl.appName||"").toUpperCase()} IS: ${wl.appDescription||wl.niche}
@@ -8915,7 +8920,7 @@ function ProspectAuditView({ WL, operator=false }){
   const genFollowup = async (p, kind) => {
     setFu(f=>({ ...f, [p.h]:{ ...(f[p.h]||{}), busy:true, kind } }));
     const first = (p.nick||p.h).split(/\s+/)[0];
-    const FU_SYS = "You write short, natural creator-outreach follow-up DMs. You sound like a real person, never a marketer or an AI. " + PERSUASION_RULES + " " + NO_EMDASH;
+    const FU_SYS = "You write short, natural creator-outreach follow-up DMs. You sound like a real person, never a marketer or an AI. " + HERO_FRAMING + " " + TACTICAL_EMPATHY + " " + PERSUASION_RULES + " " + NO_EMDASH;
     const prompt = kind==="bump"
       ? `Write ONE short, low-pressure follow-up DM to ${first} (@${p.h}). You messaged a few days ago offering a free content audit and got no reply. Use the reciprocity + takeaway angle: warmly offer to just send the audit over anyway since it is already done and free, and take the pressure fully off (no worries if the timing is off). Do NOT chase or guilt. A tiny generous nudge that reopens the door. 2 to 3 sentences max. No hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"dm":"the message"}`
       : `Write ONE short DM to ${first} (@${p.h}) who reacted well to the free audit you sent. Softly offer the done-for-you service: you run their whole content engine for 30 days, every idea scored before they film, a 30-day plan, weekly check-ins.
@@ -8942,7 +8947,7 @@ Keep it 3 to 5 sentences, casual and human. No hashtags, no emojis, no em-dashes
     if(!input || obj[p.h]?.busy) return;
     setObj(o=>({ ...o, [p.h]:{ ...(o[p.h]||{}), busy:true } }));
     const first = (p.nick||p.h).split(/\s+/)[0];
-    const OBJ_SYS = "You write short, natural replies for a creator-growth operator handling a real prospect reply. You sound like a sharp, warm real person, never a salesperson working a script. " + PERSUASION_RULES + " " + NO_EMDASH;
+    const OBJ_SYS = "You write short, natural replies for a creator-growth operator handling a real prospect reply. You sound like a sharp, warm real person, never a salesperson working a script. " + HERO_FRAMING + " " + TACTICAL_EMPATHY + " " + PERSUASION_RULES + " " + NO_EMDASH;
     const prompt = `A creator, ${first} (@${p.h}${p.median?`, typical ${fmtN(p.median)} views, best ${fmtN(p.ceiling)}`:""}), just replied to you with this:\n"""${input}"""\n\nWrite the single best reply to send back. Use the Validate, Isolate, Reframe approach where it fits: genuinely agree with anything fair in what they said (never get defensive), gently find the real blocker if there is one, then reframe around value and what guessing/inaction costs them, not price. If it is a price hesitation, do not discount, reconnect it to the cost of a wasted month of content and offer a small next step. If it is a critique of the tool, concede honestly and show you personally see what the tool missed (that human layer is the actual product). Keep it real and human, 2 to 5 sentences, no hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"reply":"the message"}`;
     try {
       const r = await callAI(prompt, 500, OBJ_SYS);
@@ -9006,7 +9011,7 @@ Keep it 3 to 5 sentences, casual and human. No hashtags, no emojis, no em-dashes
     const first = (rep.nick||rep.h).split(/\s+/)[0];
     const mult = rep.median>0 ? Math.round(rep.ceiling/Math.max(rep.median,1)) : 0;
     const bestTopic = (rep.ai?.headline||rep.top?.[0]?.title||"").replace(/\s+/g," ").slice(0,120);
-    const DM_SYS = "You write short, natural cold-outreach DMs for a creator-growth service. You sound like a sharp real person who actually watched the creator's videos, never like a marketer or an AI. " + PERSUASION_RULES + " " + NO_EMDASH;
+    const DM_SYS = "You write short, natural cold-outreach DMs for a creator-growth service. You sound like a sharp real person who actually watched the creator's videos, never like a marketer or an AI. " + HERO_FRAMING + " " + PERSUASION_RULES + " " + NO_EMDASH;
     // LEARN FROM WHAT CONVERTS: DMs that reached "replied" or "client" are proven openers
     // for THIS operator's voice and audience. Feed the best few back as style guidance so
     // the generator biases toward what actually earns replies. (Templates that never got a
