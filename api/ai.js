@@ -89,6 +89,14 @@ export default async function handler(req, res) {
       const r = await tryModels(models, (model) => {
         // body.messages allows rich payloads (multimodal, chat history); prompt is the simple path.
         const payload = { model, max_tokens: maxTokens, messages: body.messages || [{ role: "user", content: prompt }] };
+        // COST CONTROL: extended thinking bills as OUTPUT tokens (Opus $25/M, Sonnet
+        // $15/M) and Sonnet 5 runs adaptive thinking ON by default when `thinking`
+        // is omitted — that silent thinking spend was the credit drain. `budget_tokens`
+        // is rejected with 400 on these models, so we disable thinking outright unless
+        // a caller explicitly asks for it. This app's calls are structured-JSON
+        // generation that does not need chain-of-thought. Callers can opt back in by
+        // sending `thinking` in the body (e.g. {type:"adaptive"}).
+        payload.thinking = body.thinking || { type: "disabled" };
         if (body.system) {
           // Prompt caching (GA): cache the stable system prefix (channel context,
           // Voice DNA) so repeat calls bill it at ~10% — same output, lower cost.

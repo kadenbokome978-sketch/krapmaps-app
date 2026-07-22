@@ -8168,6 +8168,9 @@ const CLAUDE_MODELS = ["claude-opus-4-8","claude-sonnet-5","claude-haiku-4-5-202
 // user message (uncached), so it never breaks the cached prefix.
 function _withCache(p) {
   const out = { ...p };
+  // COST CONTROL: thinking bills as OUTPUT tokens and Sonnet 5 thinks by default.
+  // Disable it unless a caller explicitly opts in — matches the server proxy.
+  if (out.thinking === undefined) out.thinking = { type: "disabled" };
   if (typeof out.system === "string" && out.system.length > 1200) {
     out.system = [{ type: "text", text: out.system, cache_control: { type: "ephemeral" } }];
   } else if (Array.isArray(out.system) && out.system.length) {
