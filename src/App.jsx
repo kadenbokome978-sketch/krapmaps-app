@@ -5576,6 +5576,10 @@ const ResetZone = () => {
 // ── CONSTANTS ─────────────────────────────────────────────────────
 const KEYS_KEY     = "krapmaps_v1_config";
 const MANUAL_KEY   = "krapmaps_v1_manual";
+// Stats the operator set by hand and that the auto-sync must NOT overwrite. Kept local
+// only (never synced to the km_manual table, so no schema change). Fixes the case where a
+// flaky scraper stomps a correct manual follower count.
+const STAT_LOCK_KEY = "krapmaps_v1_stat_locks";
 const VIDEOS_KEY   = "krapmaps_v1_videos";
 const IDEAS_KEY    = "krapmaps_v1_ideas";
 const CAL_KEY      = "krapmaps_v1_calendar";
@@ -10714,10 +10718,14 @@ function Dashboard({ keys, onEditKeys }) {
       try { scrapeRes = await ttScrape(handle, tikwmKey, 10); }
       catch(e){ reportHealth("tiktok","error",`TikTok scraper HTTP ${e.status||"error"} — ${ttErrMsg(e.status)}${e.detail?` · RAW: ${e.detail}`:""}`); return; }
 
-      // Auto-update TT followers + likes from the profile
+      // Auto-update TT followers + likes from the profile — but NEVER overwrite a
+      // follower count the operator has locked by setting it manually (scrapers are
+      // unreliable on small accounts).
       if(scrapeRes.followers) {
+        const locked = loadJSON(STAT_LOCK_KEY, []);
         setManualData(prev => {
-          const updated = { ...prev, tt_followers: scrapeRes.followers };
+          const updated = { ...prev };
+          if(!locked.includes("tt_followers")) updated.tt_followers = scrapeRes.followers;
           if(scrapeRes.likes) updated.tt_likes = scrapeRes.likes;
           saveJSON(MANUAL_KEY, updated);
           return updated;
@@ -11686,6 +11694,11 @@ Return JSON:
 
   // ── COMPUTED ──────────────────────────────────────────────────
   const saveManual = (data) => {
+    // Lock followers once set by hand so the (often wrong on small accounts) scrape can't
+    // overwrite it. Blank the field to hand control back to the auto-sync.
+    const locked = new Set(loadJSON(STAT_LOCK_KEY, []));
+    if(Number(data.tt_followers) > 0) locked.add("tt_followers"); else locked.delete("tt_followers");
+    saveJSON(STAT_LOCK_KEY, [...locked]);
     setManualData(data);
     sbUpsert("km_manual",[{id:wsId(1),...data,updated_at:new Date().toISOString()}]).catch(()=>{});
   };
