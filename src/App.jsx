@@ -8856,6 +8856,29 @@ function ProspectAuditView({ WL, operator=false }){
   const PROSPECTS_KEY = "km_prospects";
   const [prospects, setProspects] = useState(()=>loadJSON(PROSPECTS_KEY, []));
   const [trackOpen, setTrackOpen] = useState(true);
+  // ── PROSPECT FINDER ── live-search candidate creators to audit, by niche + follower band.
+  const [findOpen, setFindOpen] = useState(false);
+  const [findNiche, setFindNiche] = useState("");
+  const [findBand, setFindBand] = useState("20k-250k");
+  const [findBusy, setFindBusy] = useState(false);
+  const [findErr, setFindErr] = useState("");
+  const [findResults, setFindResults] = useState([]);
+  const runFinder = async () => {
+    const niche = findNiche.trim();
+    if(!niche || findBusy) return;
+    setFindBusy(true); setFindErr(""); setFindResults([]);
+    try {
+      const cfg = loadJSON("krapmaps_v1_config", {});
+      if(!(cfg?.keys?.perplexity || BAKED_PERPLEXITY_KEY || USE_BACKEND)){ setFindErr("Add a Perplexity key in Settings to use live prospect search."); setFindBusy(false); return; }
+      const wl = WL || loadWL();
+      const r = await callPerplexity(`Find 10 real TikTok creators in the "${niche}" niche who currently have roughly ${findBand} followers and post consistently, good outreach targets for a done-for-you content strategy service. Prefer creators whose views are inconsistent (some pop, most don't) and who clearly care about growth. For each give their EXACT current @handle, an approximate follower count, and one short reason they fit. Only include creators you are genuinely confident exist with that exact handle right now, never invent a handle. Return ONLY JSON: {"creators":[{"handle":"@...","followers":"~50k","why":"one line"}]}`, wl).catch((e)=>{ throw new Error(e?.message||"search failed"); });
+      const arr = Array.isArray(r?.creators) ? r.creators.filter(c=>c?.handle) : [];
+      if(!arr.length){ setFindErr("No candidates came back, try a more specific niche."); }
+      setFindResults(arr.slice(0,12));
+    } catch(e){ setFindErr((e.message||"Search failed").slice(0,120)); }
+    setFindBusy(false);
+  };
+  const loadHandle = (h) => { const clean = String(h||"").replace(/^@/,"").trim(); setHandle(clean); setErr(""); try { window.scrollTo({ top:0, behavior:"smooth" }); } catch {} };
   const saveProspects = (list) => { setProspects(list); saveJSON(PROSPECTS_KEY, list); };
   // Full audit reports live in their own keyed store so the tracker list stays light,
   // and any past audit can be reopened + saved as an image on demand (nothing hits your
@@ -9355,6 +9378,45 @@ Return ONLY JSON:
           </div>
         )}
       </div>
+
+      {/* ── PROSPECT FINDER (operator) ── live-search creators to audit ── */}
+      {operator && (
+        <div style={{ ...card, padding:isMobile?"16px 18px":"18px 22px" }}>
+          <div onClick={()=>setFindOpen(o=>!o)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", gap:12 }}>
+            <div>
+              <div style={{ fontSize:12, letterSpacing:"0.12em", color:C.purple, fontWeight:700 }}>🔎 FIND PROSPECTS</div>
+              <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.45)", marginTop:3 }}>Live-search creators to audit by niche and size, then tap to load one.</div>
+            </div>
+            <div style={{ fontSize:18, color:"rgba(255,255,255,0.4)" }}>{findOpen?"–":"+"}</div>
+          </div>
+          {findOpen && (
+            <div style={{ marginTop:14, display:"flex", flexDirection:"column", gap:10 }}>
+              <div style={{ display:"flex", gap:8, flexWrap:isMobile?"wrap":"nowrap" }}>
+                <input value={findNiche} onChange={e=>setFindNiche(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!findBusy&&runFinder()} placeholder="niche, e.g. personal finance, car flipping…" style={{ flex:1, minWidth:isMobile?"100%":180, padding:"11px 14px", borderRadius:10, border:"1px solid rgba(255,255,255,0.12)", background:"rgba(255,255,255,0.04)", color:"#fff", fontSize:14, outline:"none", boxSizing:"border-box" }} />
+                <select value={findBand} onChange={e=>setFindBand(e.target.value)} style={{ padding:"11px 12px", borderRadius:10, border:"1px solid rgba(255,255,255,0.12)", background:"rgba(20,14,30,0.9)", color:"#fff", fontSize:13, outline:"none" }}>
+                  {["5k-50k","20k-250k","50k-500k","100k-1M"].map(b=><option key={b} value={b}>{b} followers</option>)}
+                </select>
+                <button onClick={runFinder} disabled={findBusy||!findNiche.trim()} style={{ padding:"11px 20px", borderRadius:10, border:"none", background:findBusy?"rgba(255,255,255,0.1)":`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:findBusy?"wait":"pointer", opacity:findNiche.trim()?1:0.5, whiteSpace:"nowrap" }}>{findBusy?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={12}/> SEARCHING</span>:"FIND"}</button>
+              </div>
+              {findErr && <div style={{ fontSize:12.5, color:"#FF6B7D", lineHeight:1.5 }}>{findErr}</div>}
+              {findResults.length>0 && (
+                <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+                  {findResults.map((c,i)=>{ const hc = String(c.handle||"").replace(/^@/,"").trim(); const already = prospects.some(p=>p.h?.toLowerCase()===hc.toLowerCase()); return (
+                    <div key={i} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"9px 12px", flexWrap:"wrap" }}>
+                      <div style={{ flex:1, minWidth:isMobile?"60%":140 }}>
+                        <div style={{ fontSize:14, fontWeight:700, color:"#fff" }}>@{hc} {c.followers&&<span style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:500 }}>· {c.followers}</span>}{already&&<span style={{ fontSize:9.5, color:C.green, fontWeight:700, marginLeft:6 }}>✓ AUDITED</span>}</div>
+                        {c.why && <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.45)", marginTop:2 }}>{c.why}</div>}
+                      </div>
+                      <button onClick={()=>loadHandle(hc)} style={{ padding:"5px 12px", borderRadius:8, border:`1px solid ${C.cyan}45`, background:`${C.cyan}14`, color:C.cyan, fontSize:10, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer", fontFamily:C.fontHead }}>LOAD →</button>
+                    </div>
+                  ); })}
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", lineHeight:1.5 }}>Live search, so double-check a handle exists before auditing (search is good, not perfect). Tap LOAD to drop one into the audit box above.</div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {report && (
         <div id="prospect-report" style={{ ...card, padding:isMobile?"22px 18px":"32px 30px", background:"linear-gradient(160deg,rgba(0,229,255,0.06),rgba(10,6,20,0.72))", position:"relative", overflow:"hidden" }}>
