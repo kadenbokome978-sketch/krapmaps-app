@@ -8133,8 +8133,24 @@ async function callAI(prompt, maxTokens=2000, systemOverride=null, model=null) {
   // Backend mode: server holds the key (BYO forwarded if the user set their own).
   if(USE_BACKEND) {
     const byo = (storedCfg?.keys?.anthropic||"").trim();
-    const d = await _postProxy("/api/ai", { provider:"anthropic", prompt, maxTokens, system:sys, ...(model?{model}:{}) }, byo);
-    return _parseClaude(d);
+    try {
+      const d = await _postProxy("/api/ai", { provider:"anthropic", prompt, maxTokens, system:sys, ...(model?{model}:{}) }, byo);
+      return _parseClaude(d);
+    } catch(anthropicErr) {
+      // Anthropic unavailable (suspended balance, no key, outage) — don't strand the
+      // app. Fall back to Gemini on the server (free tier) so audits keep working.
+      // Only fires when Anthropic actually fails; when it's healthy this never runs.
+      try {
+        const gbyo = (storedCfg?.keys?.gemini||"").trim();
+        const d = await _postProxy("/api/ai", { provider:"gemini", prompt, system:sys, maxTokens }, gbyo);
+        const txt = d?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const j = _extractJSON(txt);
+        if(j) return j;
+        throw new Error("Gemini fallback returned no usable content");
+      } catch(geminiErr) {
+        throw anthropicErr; // surface the original Anthropic error if fallback also fails
+      }
+    }
   }
 
   const apiKey = (storedCfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY || "").trim();
