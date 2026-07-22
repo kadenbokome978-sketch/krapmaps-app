@@ -8116,7 +8116,16 @@ function _parseClaude(d) {
 // injects the operator's niche/identity into every call — which contaminates a
 // prospect audit with the wrong niche ("bin-finding" bleeding into a finance
 // creator's audit). Analysing someone else must not carry our own workspace.
-async function callAI(prompt, maxTokens=2000, systemOverride=null) {
+// model: optional Anthropic model override. Opus is premium-priced ($25/M output), so
+// only the AUDIT (the quality-critical sales weapon) should use the default Opus chain.
+// Cheap auxiliary jobs (DMs, follow-ups, objection replies, self-test) pass HAIKU_MODEL
+// and cost a fraction, with no meaningful quality loss for those tasks.
+const HAIKU_MODEL = "claude-haiku-4-5-20251001";
+// Sonnet 5: near-Opus quality at lower cost. Used for the SENT messages (DM, follow-up,
+// objection) where persuasive quality matters but full Opus is overkill. The audit itself
+// and the self-test stay on the default Opus chain.
+const SONNET_MODEL = "claude-sonnet-5";
+async function callAI(prompt, maxTokens=2000, systemOverride=null, model=null) {
   const storedCfg = loadJSON(KEYS_KEY,{});
   const currentWL = loadWL();
   const sys = systemOverride || buildSystem(currentWL);
@@ -8124,7 +8133,7 @@ async function callAI(prompt, maxTokens=2000, systemOverride=null) {
   // Backend mode: server holds the key (BYO forwarded if the user set their own).
   if(USE_BACKEND) {
     const byo = (storedCfg?.keys?.anthropic||"").trim();
-    const d = await _postProxy("/api/ai", { provider:"anthropic", prompt, maxTokens, system:sys }, byo);
+    const d = await _postProxy("/api/ai", { provider:"anthropic", prompt, maxTokens, system:sys, ...(model?{model}:{}) }, byo);
     return _parseClaude(d);
   }
 
@@ -8137,7 +8146,7 @@ async function callAI(prompt, maxTokens=2000, systemOverride=null) {
     if(k.gemini || BAKED_GEMINI_KEY) return callGeminiText(prompt);
     throw new Error("No AI key set — add at least one in Settings (Anthropic recommended). You don't need all of them.");
   }
-  const d = await _anthropicFetch(apiKey, { max_tokens:maxTokens, system:sys, messages:[{ role:"user", content:prompt }] });
+  const d = await _anthropicFetch(apiKey, { max_tokens:maxTokens, system:sys, messages:[{ role:"user", content:prompt }], ...(model?{model}:{}) });
   const text = (d.content||[]).map(b=>b.text||"").join("").trim();
   if(!text) throw new Error("Empty AI response");
   const parsed = _extractJSON(text);
@@ -8987,7 +8996,7 @@ Apply these sales principles naturally, not as a hard pitch:
 - SMALL YES: end on a tiny easy step (want me to build your first week so you can see it), not a hard close.
 Keep it 3 to 5 sentences, casual and human. No hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"dm":"the message"}`;
     try {
-      const r = await callAI(prompt, 400, FU_SYS);
+      const r = await callAI(prompt, 400, FU_SYS, SONNET_MODEL);
       const msg = (r?.dm||"").trim();
       setFu(f=>({ ...f, [p.h]:{ text:msg, busy:false, kind } }));
     } catch { setFu(f=>({ ...f, [p.h]:{ text:"", busy:false, kind } })); }
@@ -9005,7 +9014,7 @@ Keep it 3 to 5 sentences, casual and human. No hashtags, no emojis, no em-dashes
     const OBJ_SYS = "You write short, natural replies for a creator-growth operator handling a real prospect reply. You sound like a sharp, warm real person, never a salesperson working a script. " + HERO_FRAMING + " " + TACTICAL_EMPATHY + " " + PERSUASION_RULES + " " + NO_EMDASH;
     const prompt = `A creator, ${first} (@${p.h}${p.median?`, typical ${fmtN(p.median)} views, best ${fmtN(p.ceiling)}`:""}), just replied to you with this:\n"""${input}"""\n\nWrite the single best reply to send back. Use the Validate, Isolate, Reframe approach where it fits: genuinely agree with anything fair in what they said (never get defensive), gently find the real blocker if there is one, then reframe around value and what guessing/inaction costs them, not price. If it is a price hesitation, do not discount, reconnect it to the cost of a wasted month of content and offer a small next step. If it is a critique of the tool, concede honestly and show you personally see what the tool missed (that human layer is the actual product). Keep it real and human, 2 to 5 sentences, no hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"reply":"the message"}`;
     try {
-      const r = await callAI(prompt, 500, OBJ_SYS);
+      const r = await callAI(prompt, 500, OBJ_SYS, SONNET_MODEL);
       setObj(o=>({ ...o, [p.h]:{ ...(o[p.h]||{}), text:(r?.reply||"").trim(), busy:false } }));
     } catch { setObj(o=>({ ...o, [p.h]:{ ...(o[p.h]||{}), text:"", busy:false } })); }
   };
@@ -9092,7 +9101,7 @@ RULES:
 
 Return ONLY JSON: {"dm":"the message, with a line break between the two paragraphs as \\n\\n"}`;
     try {
-      const r = await callAI(prompt, 500, DM_SYS);
+      const r = await callAI(prompt, 500, DM_SYS, SONNET_MODEL);
       const msg = (r?.dm || "").trim();
       if(msg){ setDm(msg); saveProspects((loadJSON(PROSPECTS_KEY,[])).map(p=>p.h===rep.h?{...p, dm:msg}:p)); }
       else setDm("");
