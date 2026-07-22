@@ -7925,7 +7925,7 @@ async function scrapeProspectTikTok(handle, maxPages=4, signal){
   if(!key && !USE_BACKEND) throw new Error("Add your TikTok (RapidAPI) key in Settings first — that's what pulls their videos.");
   let res;
   try { res = await ttScrape(clean, key, maxPages, signal); }
-  catch(e){ if(e.name==="AbortError") throw e; throw new Error(e.status===404?`No public TikTok found for @${clean} — check the handle is exact (no spaces).`:ttErrMsg(e.status)); }
+  catch(e){ if(e.name==="AbortError") throw e; const base = e.status===404?`No public TikTok found for @${clean} — check the handle is exact (no spaces).`:ttErrMsg(e.status); throw new Error(base + (e.detail?` · ${String(e.detail).replace(/\s+/g," ").slice(0,220)}`:"")); }
   if(!res.videos.length) throw new Error(`No public videos found for @${clean} — check the handle is exact (no spaces).`);
   const videos = res.videos.map(tv=>({ id:"p_"+tv.video_id, title:tv.title||"", views:tv.play_count||0, likes:tv.digg_count||0, comments:tv.comment_count||0, shares:tv.share_count||0, created_at:new Date((tv.create_time||0)*1000).toISOString(), platform:"tiktok" }));
   return { handle:clean, nick:res.nick, followers:res.followers, videos };
