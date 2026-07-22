@@ -8863,18 +8863,32 @@ function ProspectAuditView({ WL, operator=false }){
   const [findBusy, setFindBusy] = useState(false);
   const [findErr, setFindErr] = useState("");
   const [findResults, setFindResults] = useState([]);
-  const runFinder = async () => {
+  const _normH = h => String(h||"").replace(/^@/,"").trim().toLowerCase();
+  const runFinder = async (more=false) => {
     const niche = findNiche.trim();
     if(!niche || findBusy) return;
-    setFindBusy(true); setFindErr(""); setFindResults([]);
+    setFindBusy(true); setFindErr(""); if(!more) setFindResults([]);
     try {
       const cfg = loadJSON("krapmaps_v1_config", {});
       if(!(cfg?.keys?.perplexity || BAKED_PERPLEXITY_KEY || USE_BACKEND)){ setFindErr("Add a Perplexity key in Settings to use live prospect search."); setFindBusy(false); return; }
       const wl = WL || loadWL();
-      const r = await callPerplexity(`Find 10 real TikTok creators in the "${niche}" niche who currently have roughly ${findBand} followers and post consistently, good outreach targets for a done-for-you content strategy service. Prefer creators whose views are inconsistent (some pop, most don't) and who clearly care about growth. For each give their EXACT current @handle, an approximate follower count, and one short reason they fit. Only include creators you are genuinely confident exist with that exact handle right now, never invent a handle. Return ONLY JSON: {"creators":[{"handle":"@...","followers":"~50k","why":"one line"}]}`, wl).catch((e)=>{ throw new Error(e?.message||"search failed"); });
-      const arr = Array.isArray(r?.creators) ? r.creators.filter(c=>c?.handle) : [];
-      if(!arr.length){ setFindErr("No candidates came back, try a more specific niche."); }
-      setFindResults(arr.slice(0,12));
+      // Exclude everyone already found this session AND everyone already audited, so every
+      // search returns FRESH names instead of the same famous handful.
+      const seen = new Set([ ...(more?findResults:[]).map(c=>_normH(c.handle)), ...prospects.map(p=>_normH(p.h)) ].filter(Boolean));
+      const exclude = [...seen].slice(0,40);
+      const r = await callPerplexity(`Find 12 real TikTok creators in the "${niche}" niche who currently have roughly ${findBand} followers. STRICT criteria, this is for cold outreach so fit matters more than fame:
+1. REACHABLE mid-tier only. Do NOT return household-name mega creators, big brands, or anyone clearly outside ${findBand}. The ones who read their own DMs.
+2. They post consistently but their views are INCONSISTENT (a few videos pop, most underperform). That gap is exactly what we help with, so prioritise it.
+3. Bonus if they sell something (course, coaching, newsletter, product) so they have budget.
+Give each creator's EXACT current @handle, an approximate follower count, and one short, specific reason they fit (name the signal). Only real handles you are genuinely confident exist right now, never invent or guess a handle.${exclude.length?`\nDo NOT include any of these already-known handles: ${exclude.map(h=>"@"+h).join(", ")}.`:""}
+Return ONLY JSON: {"creators":[{"handle":"@...","followers":"~50k","why":"one line"}]}`, wl).catch((e)=>{ throw new Error(e?.message||"search failed"); });
+      let arr = Array.isArray(r?.creators) ? r.creators.filter(c=>c?.handle && _normH(c.handle)) : [];
+      // Dedup against what's already shown and drop anything the search returned despite the exclude list.
+      const have = new Set((more?findResults:[]).map(c=>_normH(c.handle)));
+      arr = arr.filter(c=>{ const k=_normH(c.handle); if(have.has(k)||seen.has(k)) return false; have.add(k); return true; });
+      const merged = more ? [...findResults, ...arr] : arr;
+      if(!merged.length){ setFindErr("No fresh candidates came back. Try a more specific niche or a different band."); }
+      setFindResults(merged.slice(0,40));
     } catch(e){ setFindErr((e.message||"Search failed").slice(0,120)); }
     setFindBusy(false);
   };
@@ -9396,7 +9410,7 @@ Return ONLY JSON:
                 <select value={findBand} onChange={e=>setFindBand(e.target.value)} style={{ padding:"11px 12px", borderRadius:10, border:"1px solid rgba(255,255,255,0.12)", background:"rgba(20,14,30,0.9)", color:"#fff", fontSize:13, outline:"none" }}>
                   {["5k-50k","20k-250k","50k-500k","100k-1M"].map(b=><option key={b} value={b}>{b} followers</option>)}
                 </select>
-                <button onClick={runFinder} disabled={findBusy||!findNiche.trim()} style={{ padding:"11px 20px", borderRadius:10, border:"none", background:findBusy?"rgba(255,255,255,0.1)":`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:findBusy?"wait":"pointer", opacity:findNiche.trim()?1:0.5, whiteSpace:"nowrap" }}>{findBusy?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={12}/> SEARCHING</span>:"FIND"}</button>
+                <button onClick={()=>runFinder(false)} disabled={findBusy||!findNiche.trim()} style={{ padding:"11px 20px", borderRadius:10, border:"none", background:findBusy?"rgba(255,255,255,0.1)":`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:findBusy?"wait":"pointer", opacity:findNiche.trim()?1:0.5, whiteSpace:"nowrap" }}>{findBusy?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={12}/> SEARCHING</span>:"FIND"}</button>
               </div>
               {findErr && <div style={{ fontSize:12.5, color:"#FF6B7D", lineHeight:1.5 }}>{findErr}</div>}
               {findResults.length>0 && (
@@ -9410,7 +9424,10 @@ Return ONLY JSON:
                       <button onClick={()=>loadHandle(hc)} style={{ padding:"5px 12px", borderRadius:8, border:`1px solid ${C.cyan}45`, background:`${C.cyan}14`, color:C.cyan, fontSize:10, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer", fontFamily:C.fontHead }}>LOAD →</button>
                     </div>
                   ); })}
-                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", lineHeight:1.5 }}>Live search, so double-check a handle exists before auditing (search is good, not perfect). Tap LOAD to drop one into the audit box above.</div>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, flexWrap:"wrap" }}>
+                    <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", lineHeight:1.5, flex:1, minWidth:isMobile?"100%":200 }}>{findResults.length} found. Live search, so double-check a handle exists before auditing (good, not perfect). Tap LOAD to drop one into the box above.</div>
+                    <button onClick={()=>runFinder(true)} disabled={findBusy} style={{ padding:"7px 14px", borderRadius:9, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.05)", color:"rgba(255,255,255,0.75)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:findBusy?"wait":"pointer", whiteSpace:"nowrap" }}>{findBusy?"…":"+ FIND MORE"}</button>
+                  </div>
                 </div>
               )}
             </div>
