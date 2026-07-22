@@ -7828,7 +7828,11 @@ const ttProfileFrom = (j) => {
   const stats = u.stats || u.statsV2 || user.stats || {};
   const a = j?.author || {};
   return {
-    followers: _num(stats.followerCount, stats.followers, j?.profile_followers, j?.followers, a.fans, a.followers, j?.author_followers),
+    // Prefer the UNAMBIGUOUS follower fields (TIKWM's followerCount, Bright Data's
+    // profile_followers) before the generic "followers"/"fans" fields, which some
+    // scrapers populate with the FOLLOWING count and read wildly wrong (e.g. 400 for
+    // a 121-follower account).
+    followers: _num(stats.followerCount, j?.profile_followers, u.followerCount, user.followerCount, stats.followers, j?.followers, a.followers, a.fans, j?.author_followers),
     likes: _num(stats.heartCount, stats.heart, j?.profile_likes, j?.likes_total, a.heart),
     nick: _pick(user.nickname, j?.profile_nickname, j?.nickname, j?.profile_name, a.nickname, j?.profile_username, j?.account_id) || "",
   };
