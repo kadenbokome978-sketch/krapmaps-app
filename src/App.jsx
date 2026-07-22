@@ -8895,12 +8895,13 @@ function ProspectAuditView({ WL, operator=false }){
       // search returns FRESH names instead of the same famous handful.
       const seen = new Set([ ...(more?findResults:[]).map(c=>_normH(c.handle)), ...prospects.map(p=>_normH(p.h)) ].filter(Boolean));
       const exclude = [...seen].slice(0,40);
-      const r = await callPerplexity(`Find 12 real TikTok creators in the "${niche}" niche who currently have roughly ${findBand} followers. STRICT criteria, this is for cold outreach so fit matters more than fame:
-1. REACHABLE mid-tier only. Do NOT return household-name mega creators, big brands, or anyone clearly outside ${findBand}. The ones who read their own DMs.
-2. They post consistently but their views are INCONSISTENT (a few videos pop, most underperform). That gap is exactly what we help with, so prioritise it.
-3. Bonus if they sell something (course, coaching, newsletter, product) so they have budget.
-Give each creator's EXACT current @handle, an approximate follower count, and one short, specific reason they fit (name the signal). Only real handles you are genuinely confident exist right now, never invent or guess a handle.${exclude.length?`\nDo NOT include any of these already-known handles: ${exclude.map(h=>"@"+h).join(", ")}.`:""}
-Return ONLY JSON: {"creators":[{"handle":"@...","followers":"~50k","why":"one line"}]}`, wl).catch((e)=>{ throw new Error(e?.message||"search failed"); });
+      const r = await callPerplexity(`Find real TikTok creators in the "${niche}" niche who currently have roughly ${findBand} followers, for cold outreach.
+CRITICAL ACCURACY RULE (most important): every handle must be a REAL account you actually found in your web search results, verified from an actual tiktok.com/@ profile URL. Do NOT guess a handle from a creator's display name, and do NOT invent handles. A wrong handle is useless and worse than no result. If you are not certain the exact @handle exists, LEAVE THAT CREATOR OUT. Quality over quantity: it is far better to return 5 you have genuinely verified than 12 with guesses. For each, also return the creator's real display NAME and the exact profile URL you found them at, so it can be checked.
+TARGETING:
+1. REACHABLE mid-tier only, no household-name mega creators or anyone clearly outside ${findBand}. The ones who read their own DMs.
+2. Consistent posters whose views are INCONSISTENT (a few pop, most underperform), that gap is what we help with.
+3. Bonus if they sell something (course, coaching, product) so they have budget.${exclude.length?`\nExclude these already-known handles: ${exclude.map(h=>"@"+h).join(", ")}.`:""}
+Return ONLY JSON: {"creators":[{"handle":"@exacthandle","name":"Display Name","url":"https://www.tiktok.com/@exacthandle","followers":"~50k","why":"one line"}]}`, wl).catch((e)=>{ throw new Error(e?.message||"search failed"); });
       let arr = Array.isArray(r?.creators) ? r.creators.filter(c=>c?.handle && _normH(c.handle)) : [];
       // Dedup against what's already shown and drop anything the search returned despite the exclude list.
       const have = new Set((more?findResults:[]).map(c=>_normH(c.handle)));
@@ -9438,13 +9439,17 @@ Return ONLY JSON:
                     <div key={i} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"9px 12px", flexWrap:"wrap" }}>
                       <div style={{ flex:1, minWidth:isMobile?"60%":140 }}>
                         <div style={{ fontSize:14, fontWeight:700, color:"#fff" }}>@{hc} {c.followers&&<span style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:500 }}>· {c.followers}</span>}{already&&<span style={{ fontSize:9.5, color:C.green, fontWeight:700, marginLeft:6 }}>✓ AUDITED</span>}</div>
+                        {c.name && <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.55)" }}>{c.name}</div>}
                         {c.why && <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.45)", marginTop:2 }}>{c.why}</div>}
                       </div>
-                      <button onClick={()=>loadHandle(hc)} style={{ padding:"5px 12px", borderRadius:8, border:`1px solid ${C.cyan}45`, background:`${C.cyan}14`, color:C.cyan, fontSize:10, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer", fontFamily:C.fontHead }}>LOAD →</button>
+                      <div style={{ display:"flex", gap:6 }}>
+                        <a href={c.url || `https://www.tiktok.com/@${hc}`} target="_blank" rel="noreferrer" title="Open on TikTok to check it's real" style={{ padding:"5px 10px", borderRadius:8, border:"1px solid rgba(255,255,255,0.18)", background:"transparent", color:"rgba(255,255,255,0.7)", fontSize:10, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer", fontFamily:C.fontHead, textDecoration:"none" }}>CHECK ↗</a>
+                        <button onClick={()=>loadHandle(hc)} style={{ padding:"5px 12px", borderRadius:8, border:`1px solid ${C.cyan}45`, background:`${C.cyan}14`, color:C.cyan, fontSize:10, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer", fontFamily:C.fontHead }}>LOAD →</button>
+                      </div>
                     </div>
                   ); })}
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, flexWrap:"wrap" }}>
-                    <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", lineHeight:1.5, flex:1, minWidth:isMobile?"100%":200 }}>{findResults.length} found. Live search, so double-check a handle exists before auditing (good, not perfect). Tap LOAD to drop one into the box above.</div>
+                    <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", lineHeight:1.5, flex:1, minWidth:isMobile?"100%":200 }}>{findResults.length} found. Tap <b style={{color:"rgba(255,255,255,0.55)"}}>CHECK ↗</b> to confirm a handle is real on TikTok before you audit (search can still miss). Then <b style={{color:"rgba(255,255,255,0.55)"}}>LOAD</b> it.</div>
                     <button onClick={()=>runFinder(true)} disabled={findBusy} style={{ padding:"7px 14px", borderRadius:9, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.05)", color:"rgba(255,255,255,0.75)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:findBusy?"wait":"pointer", whiteSpace:"nowrap" }}>{findBusy?"…":"+ FIND MORE"}</button>
                   </div>
                 </div>
