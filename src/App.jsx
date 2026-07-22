@@ -4861,9 +4861,10 @@ This account has NO posted view history, so do NOT invent a view number — retu
 Judge this video idea for the account above. Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand","score":0-100,"estViews":"— or a range","reason":"one short line"}
 IDEA — Title: "${c.title}" | Hook: "${c.hook}"`;
     let r=null, err=null;
-    try { r = await callAI(prompt, 400, EVAL_SYS); } catch(e){ err = e.message||"failed"; }
+    try { r = await callAI(prompt, 400, EVAL_SYS); } catch(e){ err = (typeof e?.message==="string" && e.message) || String(e?.message||e) || "failed"; }
     out.push({ id:c.id, label:c.label, expect:c.expect, r, err, pass: !err && _gradeEvalCase(c, r) });
     onProgress && onProgress(out.length);
+    await new Promise(res=>setTimeout(res, 700)); // small gap so 8 rapid calls don't rate-limit
   }
   return out;
 }
@@ -7808,7 +7809,16 @@ async function _postProxy(endpoint, body, byoKey) {
   if(byoKey) headers["X-BYO-Key"] = byoKey;
   const r = await fetch(endpoint, { method:"POST", headers, body:JSON.stringify(body) });
   if(r.status===401 && !byoKey) { _signalSignedOut(); throw new Error("Your session expired — please sign in again."); }
-  if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e.error || ("Proxy error "+r.status)); }
+  if(!r.ok){
+    const e = await r.json().catch(()=>({}));
+    // The proxy forwards providers' NATIVE error bodies, so e.error is often an OBJECT
+    // ({type, message}) not a string. Pull the real message out instead of letting
+    // new Error(object) collapse to "[object Object]" and hide the actual cause.
+    const raw = e.error ?? e.message ?? e;
+    const msg = typeof raw === "string" ? raw
+      : (raw?.message || raw?.error?.message || raw?.type || (()=>{ try { return JSON.stringify(raw); } catch { return ""; } })());
+    throw new Error((msg || ("Proxy error "+r.status)) + (r.status?` (${r.status})`:""));
+  }
   return r.json();
 }
 // ── TikTok scraper: Bright Data (server-callable, reliable) ───────
