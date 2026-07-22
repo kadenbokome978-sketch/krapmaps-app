@@ -72,7 +72,12 @@ export default async function handler(req, res) {
   const provider = String(body.provider || "anthropic").toLowerCase();
   const prompt = body.prompt || "";
   const system = body.system || "You are an expert TikTok content strategist. Return ONLY valid JSON.";
-  const maxTokens = body.maxTokens || 2000;
+  // HARD CAP: never trust the caller's maxTokens. The app's own calls never
+  // exceed ~4k output; anything larger is abuse (a leaked key or a crafted
+  // request asking for 64k output = ~$1.60/call on Opus). Clamp it so no single
+  // request can run up a huge output bill even if the endpoint is reached.
+  const MAX_OUTPUT_CAP = 4096;
+  const maxTokens = Math.min(Math.max(1, body.maxTokens || 2000), MAX_OUTPUT_CAP);
   if (!prompt && !body.messages && !body.contents) return res.status(400).json({ error: "prompt, messages, or contents required" });
 
   const send = async (r) => {
@@ -85,7 +90,10 @@ export default async function handler(req, res) {
     if (provider === "anthropic" || provider === "claude") {
       const key = resolveKey(req, "ANTHROPIC_KEY");
       if (!key) return res.status(400).json({ error: "No Anthropic key configured on server" });
-      const models = body.model ? [body.model, ...CLAUDE_MODELS.filter(m => m !== body.model)] : CLAUDE_MODELS;
+      // Only allow models on our known list — never let a caller pick an
+      // arbitrary (or pricier) model to run up on our key.
+      const reqModel = CLAUDE_MODELS.includes(body.model) ? body.model : null;
+      const models = reqModel ? [reqModel, ...CLAUDE_MODELS.filter(m => m !== reqModel)] : CLAUDE_MODELS;
       const r = await tryModels(models, (model) => {
         // body.messages allows rich payloads (multimodal, chat history); prompt is the simple path.
         const payload = { model, max_tokens: maxTokens, messages: body.messages || [{ role: "user", content: prompt }] };
