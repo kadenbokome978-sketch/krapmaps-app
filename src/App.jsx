@@ -8931,7 +8931,7 @@ function ProspectAuditView({ WL, operator=false }){
     const FU_SYS = "You write short, natural creator-outreach follow-up DMs. You sound like a real person, never a marketer or an AI. " + HERO_FRAMING + " " + TACTICAL_EMPATHY + " " + PERSUASION_RULES + " " + NO_EMDASH;
     const prompt = kind==="bump"
       ? `Write ONE short, low-pressure follow-up DM to ${first} (@${p.h}). You messaged a few days ago offering a free content audit and got no reply. Use the reciprocity + takeaway angle: warmly offer to just send the audit over anyway since it is already done and free, and take the pressure fully off (no worries if the timing is off). Do NOT chase or guilt. A tiny generous nudge that reopens the door. 2 to 3 sentences max. No hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"dm":"the message"}`
-      : `Write ONE short DM to ${first} (@${p.h}) who reacted well to the free audit you sent. Softly offer the done-for-you service: you run their whole content engine for 30 days, every idea scored before they film, a 30-day plan, weekly check-ins.
+      : `Write ONE short DM to ${first} (@${p.h}) who reacted well to the free audit you sent. Softly offer the done-for-you service: you run their whole content engine week to week, every idea scored before they film, fresh ideas each week that ride what is working RIGHT NOW (never a stale plan written weeks ahead, because trends move), pre-post checks, and a weekly review of what hit so you double down.
 Apply these sales principles naturally, not as a hard pitch:
 - ANCHOR then land: the full done-for-you service normally runs much higher, but the founding rate right now is 297 pounds for the month. Mention it is a founding rate so 297 lands as a deal, not the ceiling.
 - LOSS AVERSION over hype: frame what they keep losing by posting on guesswork (wasted posts, reach left on the table) more than what they gain.
@@ -9480,8 +9480,8 @@ Return ONLY JSON:
           )}
           {/* CTA footer — sells the OUTCOME and asks for the reply (this is the sales artifact) */}
           <div style={{ marginTop:22, paddingTop:18, borderTop:"1px solid rgba(255,255,255,0.08)", textAlign:"center" }}>
-            <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.55)", lineHeight:1.5 }}>Those 5 ideas are scored the exact way I'd score <em>every</em> idea for your page, before you film, so you stop wasting posts and double down on what actually hits. This free read is just the surface. The real thing runs your whole content engine for 30 days.</div>
-            <div style={{ fontSize:16, color:"#fff", fontWeight:800, fontFamily:C.fontHead, marginTop:10, letterSpacing:"-0.01em" }}>Want me to run this for @{report.h}? Reply and I'll show you what 30 days looks like 👇</div>
+            <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.55)", lineHeight:1.5 }}>Those 5 ideas are scored the exact way I'd score <em>every</em> idea for your page, before you film, so you stop wasting posts and double down on what actually hits. This free read is just the surface. The real thing runs your whole content engine week to week, fresh ideas that ride what's working right now.</div>
+            <div style={{ fontSize:16, color:"#fff", fontWeight:800, fontFamily:C.fontHead, marginTop:10, letterSpacing:"-0.01em" }}>Want me to run this for @{report.h}? Reply and I'll show you how it works 👇</div>
           </div>
           {/* Branded footer — rides along in the saved/shared image so every audit is an ad */}
           <div style={{ marginTop:20, paddingTop:14, borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center", gap:8, opacity:0.75 }}>

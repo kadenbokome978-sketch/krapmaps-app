@@ -47,7 +47,7 @@ Not the mega-creators (they have teams and won't reply). Not sub-1k (no budget).
 
 **Step 4 — The soft Sprint offer** (only after they've reacted well):
 
-> Glad it's useful. If you ever want this run *for* you every week — every idea scored before you film, a 30-day plan, and me tracking what hits — that's the thing I actually do. First few founding spots are £297 for the month. No pressure either way.
+> Glad it's useful. If you ever want this run *for* you week to week, every idea scored before you film, fresh ideas that ride what's working right now, and me tracking what hits so we double down, that's the thing I actually do. First few founding spots are £297 for the month. No pressure either way.
 
 ## 4. Follow-up rules
 
