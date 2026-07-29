@@ -7720,11 +7720,33 @@ async function authSignIn(email, password) {
   if(!r.ok) throw new Error(d.error_description || d.msg || d.error || "Sign in failed");
   const s=_mkSession(d); saveSession(s); return s;
 }
+// Supabase refresh tokens are single-use (rotated on every refresh). If several
+// requests refresh at once, all but the first reuse a now-spent token and get a
+// 401, which used to clearSession() and boot the user to the login screen every
+// few minutes. Coalesce concurrent refreshes into ONE in-flight promise so they
+// all await the same result, and only log out on a real auth rejection — never
+// on a transient network error.
+let _refreshInFlight = null;
 async function authRefresh() {
-  const s = loadSession(); if(!s?.refresh_token) return null;
-  const r = await fetch(`${getSbUrl()}/auth/v1/token?grant_type=refresh_token`, { method:"POST", headers:{ apikey:getSbKey(), "Content-Type":"application/json" }, body:JSON.stringify({ refresh_token:s.refresh_token }) });
-  if(!r.ok) { clearSession(); return null; }
-  const d = await r.json(); const ns=_mkSession(d); saveSession(ns); return ns;
+  if(_refreshInFlight) return _refreshInFlight;
+  _refreshInFlight = (async () => {
+    const s = loadSession(); if(!s?.refresh_token) return null;
+    let r;
+    try {
+      r = await fetch(`${getSbUrl()}/auth/v1/token?grant_type=refresh_token`, { method:"POST", headers:{ apikey:getSbKey(), "Content-Type":"application/json" }, body:JSON.stringify({ refresh_token:s.refresh_token }) });
+    } catch(netErr) {
+      // Network blip — keep the existing session; the next call will retry.
+      console.warn("[auth] refresh network error, keeping session:", netErr?.message);
+      return loadSession();
+    }
+    if(!r.ok) {
+      // Only a genuine auth rejection (bad/expired refresh token) should sign out.
+      if(r.status===400 || r.status===401) clearSession();
+      return null;
+    }
+    const d = await r.json(); const ns=_mkSession(d); saveSession(ns); return ns;
+  })();
+  try { return await _refreshInFlight; } finally { _refreshInFlight = null; }
 }
 // Valid access token, refreshing if within 60s of expiry. null if not signed in.
 async function getAccessToken() {
