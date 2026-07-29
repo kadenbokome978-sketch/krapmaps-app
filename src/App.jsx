@@ -7176,21 +7176,22 @@ async function _geminiGenerate(apiKey, body) {
   throw lastErr || new Error("Gemini: no model available");
 }
 
+const GPT_MODEL = "gpt-5.6";
 async function callGPT(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.", maxTokens=2000) {
   const storedCfg = loadJSON(KEYS_KEY,{});
   if(USE_BACKEND) {
     const byo = (storedCfg?.keys?.gpt4o||"").trim();
-    const d = await _postProxy("/api/ai", { provider:"openai", prompt, system:systemMsg, maxTokens }, byo);
+    const d = await _postProxy("/api/ai", { provider:"openai", prompt, system:systemMsg, maxTokens, model:GPT_MODEL }, byo);
     const text = d.choices?.[0]?.message?.content||"{}";
     return _extractJSON(text) ?? {};
   }
   const apiKey = storedCfg?.keys?.gpt4o || BAKED_GPT_KEY;
-  if(!apiKey) throw new Error("NO GPT-4O KEY — add it in Settings");
+  if(!apiKey) throw new Error("NO GPT KEY — add it in Settings");
   const r = await fetch("https://api.openai.com/v1/chat/completions", {
     method:"POST",
     headers:{ "Authorization":`Bearer ${apiKey}`, "Content-Type":"application/json" },
     body: JSON.stringify({
-      model:"gpt-4o",
+      model:GPT_MODEL,
       messages:[
         { role:"system", content:systemMsg },
         { role:"user", content:prompt }
