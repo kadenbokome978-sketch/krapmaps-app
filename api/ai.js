@@ -130,7 +130,8 @@ export default async function handler(req, res) {
       const r = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: body.model || "gpt-5.6-luna", messages: msgs, ...(mentionsJson ? { response_format: { type: "json_object" } } : {}), max_tokens: maxTokens }),
+        // GPT-5.x rejects `max_tokens` — it requires `max_completion_tokens`.
+        body: JSON.stringify({ model: body.model || "gpt-5.6-luna", messages: msgs, ...(mentionsJson ? { response_format: { type: "json_object" } } : {}), max_completion_tokens: maxTokens }),
       });
       return send(r);
     }
