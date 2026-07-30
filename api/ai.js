@@ -19,8 +19,13 @@ function freeScoreOk(ip) {
   if (e.c >= 3) return false; e.c++; return true;
 }
 async function handleFreeScore(req, res) {
-  const key = process.env.GEMINI_KEY;
-  if (!key) return res.status(500).json({ error: "AI not configured" });
+  // The public landing-page hook. Prefer Gemini (free tier) but fall back to
+  // OpenAI so the tool still works when only OPENAI_KEY is configured — a dead
+  // "score your idea" CTA kills top-of-funnel conversion. Rate-limited to
+  // 3/hour/IP, so the OpenAI fallback cost is bounded and tiny (Luna).
+  const geminiKey = process.env.GEMINI_KEY;
+  const openaiKey = process.env.OPENAI_KEY || process.env.VITE_OPENAI_KEY;
+  if (!geminiKey && !openaiKey) return res.status(500).json({ error: "AI not configured" });
   const ip = clientIp(req); // trusted platform IP, not the spoofable XFF chain
   if (!freeScoreOk(ip)) return res.status(429).json({ error: "You've used your free scores for this hour. Sign up for unlimited scoring." });
   let body; try { body = await readJson(req); } catch { return res.status(400).json({ error: "Bad JSON" }); }
@@ -28,20 +33,36 @@ async function handleFreeScore(req, res) {
   if (!idea || idea.length < 5) return res.status(400).json({ error: "Describe your video idea (at least 5 characters)." });
   if (idea.length > 500) return res.status(400).json({ error: "Keep it under 500 characters." });
   const prompt = `You are an expert TikTok content strategist. A creator wants to know if this video idea will go viral BEFORE they film it.\n\nVideo idea: "${idea}"\n\nScore this idea out of 100 and give a brief verdict. Return ONLY valid JSON:\n{"score":<0-100>,"verdict":"<one punchy sentence>","hook":<0-100>,"retention":<0-100>,"share":<0-100>,"hookTip":"<one sentence to improve the hook>","bestTimeToPost":"<e.g. Tuesday 7pm>"}\n\nBe honest and specific. Don't be generous — most ideas are 40-65. Only truly viral concepts score 80+.`;
-  for (const model of ["gemini-2.5-flash","gemini-2.0-flash"]) {
-    try {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{temperature:0.7,maxOutputTokens:300} }),
-      });
-      if (r.status === 404) continue;
-      const data = await r.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      const m = text.match(/\{[\s\S]*\}/);
-      if (!m) return res.status(502).json({ error: "AI returned unexpected format" });
-      return res.status(200).json(JSON.parse(m[0]));
-    } catch { if (model === "gemini-2.0-flash") return res.status(502).json({ error: "AI service unavailable" }); }
+  const parseOut = (text) => { const m = (text||"").match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : null; };
+
+  if (geminiKey) {
+    for (const model of ["gemini-2.5-flash","gemini-2.0-flash"]) {
+      try {
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{temperature:0.7,maxOutputTokens:300} }),
+        });
+        if (r.status === 404) continue;
+        const data = await r.json();
+        const out = parseOut(data?.candidates?.[0]?.content?.parts?.[0]?.text);
+        if (out) return res.status(200).json(out);
+        break; // parsed nothing usable — try OpenAI if we have it
+      } catch { break; }
+    }
   }
+
+  if (openaiKey) {
+    try {
+      const r = await fetch("https://api.openai.com/v1/chat/completions", {
+        method:"POST", headers:{ Authorization:`Bearer ${openaiKey}`, "Content-Type":"application/json" },
+        body: JSON.stringify({ model:"gpt-5.6-luna", messages:[{ role:"user", content:prompt }], response_format:{ type:"json_object" }, max_completion_tokens:300 }),
+      });
+      const data = await r.json();
+      const out = parseOut(data?.choices?.[0]?.message?.content);
+      if (out) return res.status(200).json(out);
+    } catch {}
+  }
+
   return res.status(502).json({ error: "AI service unavailable" });
 }
 
