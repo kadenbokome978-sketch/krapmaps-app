@@ -9748,10 +9748,33 @@ Return ONLY JSON:
               </div>
               <div style={{ fontSize:15, color:"#fff", lineHeight:1.5, fontWeight:600 }}>{g.headline}</div>
               <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)", lineHeight:1.55, marginTop:7 }}>{g.why}</div>
-              <div style={{ display:"flex", gap:14, marginTop:12, flexWrap:"wrap" }}>
-                <div><div style={{ fontSize:9.5, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700 }}>ENGAGEMENT</div><div style={{ fontSize:15, fontWeight:800, fontFamily:C.fontHead, color:g.engVsCohort>=1?C.green:C.orange }}>{g.engRate}%<span style={{ fontSize:10.5, color:"rgba(255,255,255,0.4)", fontWeight:600 }}> vs ~{g.cohortEng}% for your size</span></div></div>
-                {g.escapeRatio!=null && <div><div style={{ fontSize:9.5, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700 }}>REACH PAST FOLLOWERS</div><div style={{ fontSize:15, fontWeight:800, fontFamily:C.fontHead, color:g.escapeRatio>=1.3?C.green:C.orange }}>{g.escapeRatio}×<span style={{ fontSize:10.5, color:"rgba(255,255,255,0.4)", fontWeight:600 }}> your follower count</span></div></div>}
-              </div>
+              {/* Engagement-vs-cohort meter — one honest magnitude visual: where they
+                  sit against the typical rate for their follower size. Fill = their
+                  rate; the tick marks the cohort benchmark. Deterministic, image-safe. */}
+              {(()=>{ const good=g.engVsCohort>=1; const fillC=good?C.green:C.orange; const scaleMax=Math.max(g.cohortEng,g.engRate)*1.35||1; const engPct=Math.max(3,Math.min(100,(g.engRate/scaleMax)*100)); const benchPct=Math.max(0,Math.min(100,(g.cohortEng/scaleMax)*100)); return (
+                <div style={{ marginTop:14 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:7 }}>
+                    <span style={{ fontSize:9.5, color:"rgba(255,255,255,0.45)", letterSpacing:"0.1em", fontWeight:700 }}>ENGAGEMENT RATE</span>
+                    <span style={{ fontSize:16, fontWeight:800, fontFamily:C.fontHead, color:fillC }}>{g.engRate}%<span style={{ fontSize:10.5, color:"rgba(255,255,255,0.4)", fontWeight:600 }}> · {good?"above":"below"} typical</span></span>
+                  </div>
+                  <div style={{ position:"relative", height:10, borderRadius:6, background:"rgba(255,255,255,0.07)", overflow:"visible" }}>
+                    <div style={{ position:"absolute", left:0, top:0, bottom:0, width:`${engPct}%`, borderRadius:6, background:`linear-gradient(90deg,${fillC}bb,${fillC})` }}/>
+                    {/* benchmark tick */}
+                    <div style={{ position:"absolute", left:`${benchPct}%`, top:-3, bottom:-3, width:2, background:"rgba(255,255,255,0.85)", borderRadius:2 }}/>
+                  </div>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginTop:6 }}>
+                    <span style={{ fontSize:10.5, color:"rgba(255,255,255,0.4)", fontWeight:600 }}>{good?"you're clearing the bar for your size":"room to the bar for your size"}</span>
+                    <span style={{ fontSize:10.5, color:"rgba(255,255,255,0.55)", fontWeight:700 }}>│ typical ~{g.cohortEng}% for {fmtN(g.followers)} followers</span>
+                  </div>
+                  {g.escapeRatio!=null && (
+                    <div style={{ marginTop:12, display:"flex", alignItems:"center", gap:9, flexWrap:"wrap" }}>
+                      <span style={{ fontSize:9.5, color:"rgba(255,255,255,0.45)", letterSpacing:"0.1em", fontWeight:700 }}>REACH PAST FOLLOWERS</span>
+                      <span style={{ fontSize:15, fontWeight:800, fontFamily:C.fontHead, color:g.escapeRatio>=1.3?C.green:C.orange }}>{g.escapeRatio}×</span>
+                      <span style={{ fontSize:10.5, color:"rgba(255,255,255,0.4)", fontWeight:600 }}>a typical video vs your follower count {g.escapeRatio>=1.3?"(escaping to new viewers)":"(barely reaching non-followers)"}</span>
+                    </div>
+                  )}
+                </div>
+              ); })()}
             </div>
           ); })()}
           {/* Voice */}
