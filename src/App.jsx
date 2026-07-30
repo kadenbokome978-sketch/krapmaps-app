@@ -9322,7 +9322,7 @@ Keep it 3 to 5 sentences, casual and human. No hashtags, no emojis, no em-dashes
       .filter(p=>p.dm && (p.stage==="replied"||p.stage==="client") && p.h.toLowerCase()!==rep.h.toLowerCase())
       .slice(0,3);
     const winBlock = wins.length ? `\nOPENERS THAT ALREADY EARNED REPLIES for this exact sender (match their tone, rhythm and length, do NOT copy their specifics):\n${wins.map((w,i)=>`Example ${i+1}:\n"""${w.dm}"""`).join("\n")}\n` : "";
-    const prompt = `Write ONE cold DM to open a conversation with a TikTok/Instagram creator. It offers them a free content audit that is ALREADY done (their numbers, voice, what's working, and 5 scored video ideas). You will send that audit once they say yes, so the DM's only job is to earn a "yeah send it".
+    const prompt = `Write ONE cold DM to open a conversation with a TikTok/Instagram creator. It offers them a free content audit that is ALREADY done (their numbers, voice, what's working, and 5 scored video ideas). You send that audit once they reply, so the DM's only job is to earn a reply / a "yeah send it".
 
 CREATOR: ${first}${rep.nick&&rep.nick!==first?` (${rep.nick})`:""}, handle @${rep.h}.
 THEIR NUMBERS: typical video ~${fmtN(rep.median)} views, best video ${fmtN(rep.ceiling)} views${mult>1?` (about ${mult}x their normal)`:""}.
@@ -9330,14 +9330,14 @@ THEIR BREAKOUT (paraphrase naturally, do not quote a wrong number): ${bestTopic|
 ${rep.ceilingAge!=null && rep.ceilingAge>180 ? `RECENCY: their best video is about ${rep.ceilingAge<365?Math.round(rep.ceilingAge/30)+" months":(rep.ceilingAge/365).toFixed(1)+" years"} old${rep.recentMed?`, and recently they average around ${fmtN(rep.recentMed)}`:""}. Do NOT imply that old number is easy to hit again. Frame it as proof they've done it before and you can help them get back there. Stay honest.` : ""}
 ${winBlock}
 RULES:
-- Open with a specific, genuine observation about THEIR channel built on the real gap (${fmtN(rep.median)} typical vs ${fmtN(rep.ceiling)} best). Make them curious about their own channel.
-- Use their first name "${first}".
-- Then offer to send the breakdown plus 5 ideas in their voice. Free, no catch.
-- 3 to 5 sentences, at most two short paragraphs. Casual, contractions, texting tone.
-- No hashtags. No emojis. No em-dashes or semicolons. Do not sound like a template.
-- Do not pitch a price or the paid service. Just get the yes.
+- CRITICAL — the FIRST line decides everything. On TikTok/IG the creator only sees the first few words as a notification preview and decides whether to even open it from that. So the first line MUST be the hook: lead with the single most striking specific thing about THEIR channel (the gap between their ${fmtN(rep.median)} typical and their ${fmtN(rep.ceiling)} best, or the breakout). Do NOT open with their name, "hey", "hi", or any greeting — that wastes the one line that earns the open.
+- Work their first name "${first}" in naturally somewhere AFTER the hook (a word or two in), never as the opening token.
+- Then offer to send the breakdown plus 5 ideas in their voice. Free, no catch. End on a low-friction ask ("want it?" / "want me to send it over?").
+- Keep it SHORT: 2 to 4 sentences, one short paragraph or two. The job is the reply, not to explain everything. Casual, contractions, texting tone.
+- No hashtags. No emojis. No em-dashes or semicolons. Do not sound like a template or a marketer.
+- Do not pitch a price or the paid service. Just get the reply.
 
-Return ONLY JSON: {"dm":"the message, with a line break between the two paragraphs as \\n\\n"}`;
+Return ONLY JSON: {"dm":"the message, with a line break between paragraphs as \\n\\n if you use two"}`;
     try {
       const r = await callAI(prompt, 500, DM_SYS, SONNET_MODEL, GPT_AUDIT_MODEL);
       const msg = (r?.dm || "").trim();
