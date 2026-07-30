@@ -7197,7 +7197,7 @@ async function callGPT(prompt, systemMsg="You are an expert TikTok content strat
         { role:"user", content:prompt }
       ],
       response_format:{ type:"json_object" },
-      max_tokens:maxTokens
+      max_completion_tokens:maxTokens
     })
   });
   if(!r.ok) {
