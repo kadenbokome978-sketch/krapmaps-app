@@ -114,6 +114,10 @@ const DS = {
 };
 
 const fmt = n => n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n||0);
+// Module-scope number formatter (mirrors the per-component fmtN) so module-level
+// helpers like buildGrowthDiagnosis can format counts. Components define their own
+// local fmtN which harmlessly shadows this within their scope.
+const fmtN = n => n>=1000000?`${(n/1000000).toFixed(1)}M`:n>=1000?`${(n/1000).toFixed(1)}k`:String(Math.round(n||0));
 const perfLabel = s => s>=80?"VIRAL":s>=65?"STRONG":s>=50?"DECENT":s>=35?"WEAK":"FLOPPED";
 const perfColor = s => s>=80?C.green:s>=65?C.yellow:s>=50?C.orange:"#FF4D4D";
 // Median views across a set of videos (ignores 0-view items). Used by the audit.
