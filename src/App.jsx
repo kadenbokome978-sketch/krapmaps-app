@@ -7176,7 +7176,7 @@ async function _geminiGenerate(apiKey, body) {
   throw lastErr || new Error("Gemini: no model available");
 }
 
-const GPT_MODEL = "gpt-5.6";
+const GPT_MODEL = "gpt-5.6-luna";
 async function callGPT(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.", maxTokens=2000) {
   const storedCfg = loadJSON(KEYS_KEY,{});
   if(USE_BACKEND) {
@@ -8278,7 +8278,18 @@ async function anthropicMessages(payload, keyOverride) {
   const storedCfg = loadJSON(KEYS_KEY,{});
   const byo = (keyOverride || storedCfg?.keys?.anthropic || "").trim();
   if(USE_BACKEND) {
-    return _postProxy("/api/ai", { provider:"anthropic", messages:payload.messages, system:payload.system, maxTokens:payload.max_tokens||1024, tools:payload.tools, model:payload.model }, byo);
+    try {
+      return await _postProxy("/api/ai", { provider:"anthropic", messages:payload.messages, system:payload.system, maxTokens:payload.max_tokens||1024, tools:payload.tools, model:payload.model }, byo);
+    } catch(e) {
+      // Anthropic down — fall back to GPT (no tool_use support, but returns text).
+      if(payload.tools) throw e;
+      const gptByo = (storedCfg?.keys?.gpt4o||"").trim();
+      const msgs = (payload.messages||[]).map(m=>({ role:m.role, content: typeof m.content==="string" ? m.content : (m.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n") }));
+      if(payload.system) msgs.unshift({ role:"system", content: typeof payload.system==="string" ? payload.system : (payload.system||[]).map(b=>b.text||"").join("\n") });
+      const d = await _postProxy("/api/ai", { provider:"openai", messages:msgs, maxTokens:payload.max_tokens||1024, model:GPT_MODEL }, gptByo);
+      const txt = d.choices?.[0]?.message?.content||"";
+      return { content:[{ type:"text", text:txt }], stop_reason:"end_turn" };
+    }
   }
   const apiKey = byo || BAKED_ANTHROPIC_KEY;
   if(!apiKey) throw new Error("No Anthropic key set — add one in Settings");
