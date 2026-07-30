@@ -6137,6 +6137,81 @@ const formatEngagementSignals = (eng) => {
   return out;
 };
 
+// ── GROWTH BOTTLENECK DIAGNOSIS ───────────────────────────────────
+// Turns raw public counts (views, likes, comments, shares, followers) into the
+// ONE thing most limiting this channel's growth — the "how did they know that"
+// centrepiece of a prospect audit. Grounded in 2026 short-form reality:
+//   • Reach to NON-followers is the growth engine; a video that never exceeds the
+//     follower count isn't escaping the follower graph (a hook/scroll-stop failure).
+//   • SHARES (sends) are what unlock cold reach — weighted ~7x a like; likes are
+//     near-noise as a ranking signal. High likes + low shares = passive content
+//     that's capped to followers (a shareability failure).
+//   • Getting cold reach but weak engagement-per-view = people arrive but leave
+//     mid-video (a retention failure).
+// Everything here is an INFERENCE from public ratios — we never see the real
+// per-second retention graph, so the prompt must frame it as inference, not fact.
+const COHORT_ENG = (followers=0) => // approx TikTok engagement-rate benchmark by size cohort (research-backed)
+  followers<10000?8.0:followers<100000?7.0:followers<500000?5.0:followers<1000000?4.0:followers<10000000?3.3:2.9;
+const buildGrowthDiagnosis = (videos=[], followers=0) => {
+  const v = videos.filter(vid => vid.views > 0);
+  if(v.length < 3) return null;
+  const sum = (f) => v.reduce((s,vid)=>s+f(vid),0);
+  const mean = (f) => sum(f)/v.length;
+  const median = medianViews(v);
+  // Standard engagement rate (likes+comments+shares)/views — matches what the report shows.
+  const engRate = mean(vid => ((vid.likes||0)+(vid.comments||0)+(vid.shares||0))/Math.max(vid.views,1)) * 100;
+  // Weighted engagement (2026 signal hierarchy): shares≫comments≫likes. Saves aren't scrapeable.
+  const weighted = mean(vid => ((vid.likes||0)*1 + (vid.comments||0)*5 + (vid.shares||0)*7)/Math.max(vid.views,1)) * 100;
+  const likeRate  = mean(vid => (vid.likes||0)/Math.max(vid.views,1)) * 100;
+  const shareRate = mean(vid => (vid.shares||0)/Math.max(vid.views,1)) * 100;
+  const commentRate = mean(vid => (vid.comments||0)/Math.max(vid.views,1)) * 100;
+  const hasShareData = v.some(vid => (vid.shares||0) > 0);
+  // Share of engagement that is a SEND vs a like — the shareability tell.
+  const shareOfLikes = likeRate>0 ? shareRate/likeRate : 0;
+  // Follower-graph escape: does a typical video reach beyond the existing audience?
+  const escapeRatio = followers>0 ? median/followers : null;
+  const cohortEng = COHORT_ENG(followers);
+  const engVsCohort = engRate/cohortEng; // >1 = above their size cohort, <1 below
+  // ── Classify the PRIMARY bottleneck honestly. ──
+  let bottleneck, headline, why, fix;
+  if(escapeRatio!=null && escapeRatio < 1.3) {
+    // Videos rarely out-reach the follower count → not escaping the follower graph.
+    if(hasShareData && shareOfLikes < 0.02 && likeRate > 2) {
+      bottleneck = "shareability";
+      headline = "Your videos aren't being shared, so they stay stuck with your existing followers.";
+      why = `People like your content (${likeRate.toFixed(1)}% like rate) but almost never send it (${shareRate.toFixed(2)}% share rate). Sends are what the algorithm uses to push a video to non-followers — without them, a typical post (${fmtN(median)} views) barely reaches past your ${fmtN(followers)} followers.`;
+      fix = "engineer a clear 'send this to a friend' reason into each video — a relatable call-out, a strong opinion, or a genuinely useful takeaway someone wants a specific mate to see.";
+    } else {
+      bottleneck = "hook";
+      headline = "Your videos aren't escaping your own follower graph — the first 2 seconds aren't stopping cold viewers.";
+      why = `A typical post (${fmtN(median)} views) sits at ${escapeRatio.toFixed(2)}x your follower count, so it's barely reaching anyone who doesn't already follow you. That pattern almost always means the opening beat isn't hooking a cold scroller fast enough to earn wider distribution.`;
+      fix = "front-load a pattern-interrupt in the first 1-2 seconds (a face, a bold claim, mid-action start) and kill any slow intro before it.";
+    }
+  } else if(engVsCohort < 0.8) {
+    bottleneck = "retention";
+    headline = "You're reaching new people, but losing them mid-video before they engage.";
+    why = `Your posts do reach past your follower base, but engagement per view (${engRate.toFixed(1)}%) is below the ~${cohortEng.toFixed(1)}% typical for a ${fmtN(followers)}-follower account. When reach is fine but engagement lags, viewers are arriving and dropping off after the hook.`;
+    fix = "tighten the middle — deliver the promised payoff faster, add a pattern-interrupt every few seconds, and end on a loop instead of a wind-down.";
+  } else {
+    bottleneck = "consistency";
+    headline = "The fundamentals are healthy — the lever now is a repeatable format posted consistently.";
+    why = `Reach and engagement (${engRate.toFixed(1)}%, at or above the ~${cohortEng.toFixed(1)}% norm for your size) are both solid. The cap on channels like this is usually a lack of a recognisable, repeatable format the audience and the algorithm can lock onto.`;
+    fix = "identify the 1-2 formats that already beat your median and turn them into a named, recurring series.";
+  }
+  return { median, followers, engRate:+engRate.toFixed(1), weighted:+weighted.toFixed(1), likeRate:+likeRate.toFixed(2), shareRate:+shareRate.toFixed(2), commentRate:+commentRate.toFixed(2), escapeRatio:escapeRatio!=null?+escapeRatio.toFixed(2):null, cohortEng, engVsCohort:+engVsCohort.toFixed(2), hasShareData, bottleneck, headline, why, fix, sampleSize:v.length };
+};
+const formatGrowthDiagnosis = (g) => {
+  if(!g) return "";
+  let out = `GROWTH BOTTLENECK (inferred from public ratios — do NOT claim to have seen a retention graph; frame as inference):\n`;
+  out += `• Primary bottleneck: ${g.bottleneck.toUpperCase()} — ${g.headline}\n`;
+  out += `• Reasoning: ${g.why}\n`;
+  out += `• Engagement ${g.engRate}% vs ~${g.cohortEng}% typical for a ${fmtN(g.followers)}-follower account (${g.engVsCohort>=1?"above":"below"} cohort). Weighted engagement (shares×7+comments×5+likes) ${g.weighted}.\n`;
+  if(g.escapeRatio!=null) out += `• Follower-graph escape: a typical video reaches ${g.escapeRatio}x the follower count ${g.escapeRatio<1.3?"(NOT reliably escaping to non-followers)":"(reaching beyond followers)"}.\n`;
+  out += `• The single highest-leverage fix: ${g.fix}\n`;
+  out += `→ Build the VERDICT and the biggest "what's costing views" point around this bottleneck. Be specific and honest; this is the insight the creator can't see themselves.\n`;
+  return out;
+};
+
 // ── COMBINATION MATRIX ────────────────────────────────────────────
 // Finds winning Hook+Type+Pillar combos — individual factors alone don't predict virality
 const buildComboMatrix = (videos=[]) => {
@@ -9348,6 +9423,10 @@ Return ONLY JSON: {"dm":"the message, with a line break between the two paragrap
       const insightsBlock = insights ? formatChannelInsights(insights) : "";
       const engSignals = buildEngagementSignals(videos);
       const engBlock = engSignals ? formatEngagementSignals(engSignals) : "";
+      // Growth-bottleneck diagnosis — the "how did they know" centrepiece. Inferred
+      // purely from public counts; drives the verdict and the biggest fix.
+      const growth = buildGrowthDiagnosis(videos, followers);
+      const growthBlock = growth ? formatGrowthDiagnosis(growth) : "";
       // Score every video with the engine (median-benchmarked) to find genuine hits vs typical.
       const scored = withV.map(v=>({ v, s:calcVideoScore(v, withV) })).filter(x=>x.s);
       // ── DATA FARM runs AFTER the AI call — we tag the corpus with the PROSPECT'S
@@ -9391,6 +9470,7 @@ ${recencyBlock}
 ${varianceBlock}
 ${trendsBlock?`\n${trendsBlock}\n`:""}
 ━━ ENGINE ANALYSIS (computed from their real numbers — the same engine the paid app runs) ━━
+${growthBlock}
 ${insightsBlock}
 ${engBlock}
 BIGGEST HITS (by our median-benchmarked scoring):
@@ -9402,6 +9482,18 @@ RECENT CAPTIONS (quote these exactly, don't invent beyond them):
 ${withV.slice(0,15).map(v=>`• "${cap(v)}" — ${fmtN(v.views)} views`).join("\n")}
 ${voice?`\n${formatVoiceDNA(voice,"")}NOTE: this voice is read from their CAPTIONS — so the 5 ideas' titles/hooks should match how they WRITE. Don't claim to know their on-camera personality.\n`:""}
 Be concrete and reference THEIR actual captions + numbers. No generic advice, no invented footage.
+
+━━ 2026 GROWTH REALITY (reason with this — it's how reach actually works now) ━━
+- SHARES/SENDS are the growth engine: they're what push a video to NON-followers (weighted far above likes). LIKES are near-noise as a distribution signal. COMMENTS and SAVES sit in between. Completion and rewatch/loops keep a video alive. Follower count no longer gates reach — each video is judged on its own.
+- So when you diagnose "what's costing views", think in terms of the GROWTH BOTTLENECK block above: a hook problem (not stopping cold scrollers), a retention problem (reach but drop-off), or a shareability problem (liked but not sent). Name which one and build the verdict around it.
+
+━━ HOW TO WRITE IT SO IT CONVERTS (this is a free audit that must feel worth paying for) ━━
+- Lead the headline with EXTREME SPECIFICITY built on a real number, and open one honest curiosity loop the rest of the audit closes. No vague "you could grow".
+- Include ONE genuinely critical finding — the thing a flatterer would never say. Precise, not vague ("your captions bury the point" not "could be stronger"). Honest critique is what proves a real human strategist looked, not a bot. Never flatter everything.
+- Use loss-aversion HONESTLY on the biggest leak — frame it as reach they're currently leaking every post (only for a real, evidenced problem), which lands harder than the same point framed as upside.
+- Externalise the gap onto MECHANICS, not the person's talent: "the difference between your ${fmtN(median)} and your ${fmtN(ceiling)} is a few fixable techniques, not talent." Praise the effort/content, critique the structure. Never make them feel stupid.
+- Give them enough to fix ONE video themselves (proves competence, triggers reciprocity) while making clear that doing it consistently across every post is a real system — don't hand over a whole repeatable playbook.
+- BANNED words (they read as AI/marketer and kill trust): amazing, unlock, supercharge, game-changing, elevate, leverage, harness, skyrocket, crush it, next-level. Write like a sharp friend texting one person.
 
 ${COACH_PRINCIPLES}
 
@@ -9439,7 +9531,7 @@ Return ONLY JSON:
         }
       } catch {}
       if(!r) setErr("AI write-up failed — showing raw data. Reason: " + (aiErrMsg||"unknown error"));
-      const rep = { h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit", ceilingAge, recentMed, trend, trendsUsed };
+      const rep = { h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit", ceilingAge, recentMed, trend, trendsUsed, growth };
       setReport(rep);
       saveJSON("km_last_audit", { at:Date.now(), rep }); // survives a page refresh
       if(operator){ logProspect(rep); if(r) genDM(rep); setTimeout(loadCorpusStat, 2500); } // auto-log + DM + refresh memory count
@@ -9614,6 +9706,23 @@ Return ONLY JSON:
               {report.ai.potential && <div style={{ fontSize:13.5, color:C.green, marginTop:8, fontWeight:600 }}>↗ {report.ai.potential}</div>}
             </div>
           )}
+          {/* #1 Growth bottleneck — the computed "how did they know" centrepiece.
+              Deterministic (from their public numbers), so it renders even if the AI
+              write-up fails. This is the specific, credible insight that earns the reply. */}
+          {report.growth && (()=>{ const g=report.growth; const label={hook:"THE HOOK",retention:"RETENTION",shareability:"SHAREABILITY",consistency:"CONSISTENCY"}[g.bottleneck]||g.bottleneck.toUpperCase(); return (
+            <div style={{ background:`linear-gradient(160deg,${C.orange}12,rgba(255,255,255,0.02))`, border:`1px solid ${C.orange}30`, borderRadius:12, padding:"16px 18px", marginBottom:18 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:7, flexWrap:"wrap" }}>
+                <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.orange, fontWeight:700 }}>YOUR #1 GROWTH BOTTLENECK</div>
+                <span style={{ fontSize:9.5, fontWeight:800, letterSpacing:"0.08em", color:C.orange, background:`${C.orange}18`, border:`1px solid ${C.orange}3a`, borderRadius:6, padding:"2px 7px" }}>{label}</span>
+              </div>
+              <div style={{ fontSize:15, color:"#fff", lineHeight:1.5, fontWeight:600 }}>{g.headline}</div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)", lineHeight:1.55, marginTop:7 }}>{g.why}</div>
+              <div style={{ display:"flex", gap:14, marginTop:12, flexWrap:"wrap" }}>
+                <div><div style={{ fontSize:9.5, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700 }}>ENGAGEMENT</div><div style={{ fontSize:15, fontWeight:800, fontFamily:C.fontHead, color:g.engVsCohort>=1?C.green:C.orange }}>{g.engRate}%<span style={{ fontSize:10.5, color:"rgba(255,255,255,0.4)", fontWeight:600 }}> vs ~{g.cohortEng}% for your size</span></div></div>
+                {g.escapeRatio!=null && <div><div style={{ fontSize:9.5, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em", fontWeight:700 }}>REACH PAST FOLLOWERS</div><div style={{ fontSize:15, fontWeight:800, fontFamily:C.fontHead, color:g.escapeRatio>=1.3?C.green:C.orange }}>{g.escapeRatio}×<span style={{ fontSize:10.5, color:"rgba(255,255,255,0.4)", fontWeight:600 }}> your follower count</span></div></div>}
+              </div>
+            </div>
+          ); })()}
           {/* Voice */}
           {report.voice && (
             <div style={{ marginBottom:18 }}>
