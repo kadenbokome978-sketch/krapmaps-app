@@ -10204,33 +10204,45 @@ ${memCtx ? `━━ CHANNEL MEMORY ━━\n${memCtx}` : ""}`;
 
       let conversationMsgs = newMsgs.slice(1); // skip the initial assistant greeting
       const hasClaude = !!anthropicKey || USE_BACKEND;
-      if(hasClaude){
-        // Full tool-enabled chat (Claude's tool-calling — can add tasks, pull stats, etc.)
-        let data = await anthropicMessages({ model:"claude-opus-4-8", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:conversationMsgs }, anthropicKey);
-        let assistantContent = data.content;
-        let allMsgs = [...conversationMsgs, { role:"assistant", content:assistantContent }];
-        // Handle tool use in a loop
-        while(data.stop_reason === "tool_use") {
-          const toolUses = assistantContent.filter(b=>b.type==="tool_use");
-          const toolResults = toolUses.map(tu => ({
-            type:"tool_result",
-            tool_use_id: tu.id,
-            content: executeTool(tu.name, tu.input)
-          }));
-          allMsgs = [...allMsgs, { role:"user", content:toolResults }];
-          data = await anthropicMessages({ model:"claude-opus-4-8", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:allMsgs }, anthropicKey);
-          assistantContent = data.content;
-          allMsgs = [...allMsgs, { role:"assistant", content:assistantContent }];
-        }
-        const textContent = assistantContent.filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
-        setMsgs(m=>[...m, { role:"assistant", content:textContent||"Done!" }]);
-      } else {
-        // Text-only fallback for GPT-4o / Gemini users (no tool execution — different
-        // providers, different tool formats — but the tab still fully works for advice).
+      // Text-only reply (no tool execution) — used for GPT/Gemini and as the
+      // fallback when the tool-enabled Claude path is unavailable (e.g. Anthropic
+      // has no credits). The tab still fully works for advice in this mode.
+      const textOnlyReply = async () => {
         const convo = conversationMsgs.slice(-8).map(m=>`${m.role==="user"?"User":"Assistant"}: ${msgText(m)}`).join("\n");
         const fbPrompt = `${systemPrompt}\n\n━━ CONVERSATION ━━\n${convo}\n\nReply to the latest user message as the assistant — concise, specific, actionable. (Auto-actions like adding tasks aren't available in this mode; if they ask for one, tell them the exact step to do it.) Return ONLY JSON: {"reply":"your reply as plain text"}`;
         const j = await callAI(fbPrompt, 1200);
         setMsgs(m=>[...m, { role:"assistant", content:(j&&(j.reply||j.message||j.text))||"I couldn't generate a reply — try rephrasing." }]);
+      };
+      if(hasClaude){
+        try {
+          // Full tool-enabled chat (Claude's tool-calling — can add tasks, pull stats, etc.)
+          let data = await anthropicMessages({ model:"claude-opus-4-8", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:conversationMsgs }, anthropicKey);
+          let assistantContent = data.content;
+          let allMsgs = [...conversationMsgs, { role:"assistant", content:assistantContent }];
+          // Handle tool use in a loop
+          while(data.stop_reason === "tool_use") {
+            const toolUses = assistantContent.filter(b=>b.type==="tool_use");
+            const toolResults = toolUses.map(tu => ({
+              type:"tool_result",
+              tool_use_id: tu.id,
+              content: executeTool(tu.name, tu.input)
+            }));
+            allMsgs = [...allMsgs, { role:"user", content:toolResults }];
+            data = await anthropicMessages({ model:"claude-opus-4-8", max_tokens:1024, system:systemPrompt, tools:TOOLS, messages:allMsgs }, anthropicKey);
+            assistantContent = data.content;
+            allMsgs = [...allMsgs, { role:"assistant", content:assistantContent }];
+          }
+          const textContent = assistantContent.filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+          setMsgs(m=>[...m, { role:"assistant", content:textContent||"Done!" }]);
+        } catch(toolErr) {
+          // Tool-enabled path unavailable (Anthropic down/no credits, and GPT
+          // can't run Claude's tool format) — degrade to a text-only reply on
+          // whatever provider is funded, so the assistant still answers.
+          console.warn("[assistant] tool path failed, falling back to text-only:", toolErr?.message);
+          await textOnlyReply();
+        }
+      } else {
+        await textOnlyReply();
       }
     } catch(e) {
       setMsgs(m=>[...m, { role:"assistant", content:`Error: ${e.message}` }]);
