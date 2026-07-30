@@ -6180,16 +6180,22 @@ const COHORT_ENG = (followers=0) => // approx TikTok engagement-rate benchmark b
 const buildGrowthDiagnosis = (videos=[], followers=0) => {
   const v = videos.filter(vid => vid.views > 0);
   if(v.length < 3) return null;
-  const sum = (f) => v.reduce((s,vid)=>s+f(vid),0);
-  const mean = (f) => sum(f)/v.length;
   const median = medianViews(v);
-  // Standard engagement rate (likes+comments+shares)/views — matches what the report shows.
-  const engRate = mean(vid => ((vid.likes||0)+(vid.comments||0)+(vid.shares||0))/Math.max(vid.views,1)) * 100;
+  // RATES via WEIGHTED AGGREGATE (Σengagement / Σviews), NOT the mean of per-video
+  // ratios: averaging ratios over-weights low-view videos, where a handful of extra
+  // likes on a 200-view post produces a wild rate. We also drop videos below a
+  // denominator floor (views<500) from the rate pool so a tiny-view fluke can't move
+  // the number — unless that leaves too few, in which case we keep them all.
+  const ratioPool = v.filter(vid => vid.views >= 500);
+  const pool = ratioPool.length >= 3 ? ratioPool : v;
+  const T = (f) => pool.reduce((s,vid)=>s+(f(vid)||0), 0);
+  const totV = T(vid=>vid.views) || 1;
+  const likeRate    = T(vid=>vid.likes)    / totV * 100;
+  const commentRate = T(vid=>vid.comments) / totV * 100;
+  const shareRate   = T(vid=>vid.shares)   / totV * 100;
+  const engRate  = likeRate + commentRate + shareRate; // same denominator, so additive
   // Weighted engagement (2026 signal hierarchy): shares≫comments≫likes. Saves aren't scrapeable.
-  const weighted = mean(vid => ((vid.likes||0)*1 + (vid.comments||0)*5 + (vid.shares||0)*7)/Math.max(vid.views,1)) * 100;
-  const likeRate  = mean(vid => (vid.likes||0)/Math.max(vid.views,1)) * 100;
-  const shareRate = mean(vid => (vid.shares||0)/Math.max(vid.views,1)) * 100;
-  const commentRate = mean(vid => (vid.comments||0)/Math.max(vid.views,1)) * 100;
+  const weighted = (T(vid=>vid.likes)*1 + T(vid=>vid.comments)*5 + T(vid=>vid.shares)*7) / totV * 100;
   const hasShareData = v.some(vid => (vid.shares||0) > 0);
   // Share of engagement that is a SEND vs a like — the shareability tell.
   const shareOfLikes = likeRate>0 ? shareRate/likeRate : 0;
@@ -9441,7 +9447,12 @@ Return ONLY JSON: {"dm":"the message, with a line break between the two paragrap
 - Think about the WHOLE account, not each idea in isolation. Some winning formats depend on external timing (a live opportunity, a season, a news moment) and are NOT always available. Do not stack all 5 ideas on the same event-dependent format. Balance opportunity-dependent ideas with evergreen ones the creator can genuinely post any week.
 - Use what you genuinely know about how THIS niche works in the real world. If their biggest format depends on a calendar or cycle (e.g. opportunities/launches/demand that only spike at certain times of year), say so plainly, tell them roughly when those windows are, and treat that format as a "go big in-window" play rather than an always-on one. If you are not sure of the exact timing, say it depends on the window rather than pretending it is always available. Never invent a number, but do bring real-world context the raw stats cannot show.`;
       // STANDARD engagement rate — what a creator actually recognises: (likes+comments+shares)/views.
-      const engRate = withV.length ? (withV.reduce((s,v)=>s+((v.likes+v.comments+v.shares)/Math.max(v.views,1)),0)/withV.length*100) : 0;
+      // Weighted-aggregate engagement rate (Σengagement/Σviews) over videos above a
+      // 500-view floor — matches the growth-diagnosis meter and avoids the mean-of-
+      // ratios distortion where tiny-view posts skew the number.
+      const _engPool = (()=>{ const p=withV.filter(v=>v.views>=500); return p.length>=3?p:withV; })();
+      const _engTotV = _engPool.reduce((s,v)=>s+v.views,0)||1;
+      const engRate = _engPool.length ? (_engPool.reduce((s,v)=>s+((v.likes||0)+(v.comments||0)+(v.shares||0)),0)/_engTotV*100) : 0;
       // Run the SAME engine the paid app uses internally, on their scraped videos —
       // the audit is now first-class, not a lighter separate path. Scraped videos
       // carry no hook tag, so infer a hook TYPE from each caption's phrasing; that
@@ -9516,6 +9527,13 @@ Be concrete and reference THEIR actual captions + numbers. No generic advice, no
 ━━ 2026 GROWTH REALITY (reason with this — it's how reach actually works now) ━━
 - SHARES/SENDS are the growth engine: they're what push a video to NON-followers (weighted far above likes). LIKES are near-noise as a distribution signal. COMMENTS and SAVES sit in between. Completion and rewatch/loops keep a video alive. Follower count no longer gates reach — each video is judged on its own.
 - So when you diagnose "what's costing views", think in terms of the GROWTH BOTTLENECK block above: a hook problem (not stopping cold scrollers), a retention problem (reach but drop-off), or a shareability problem (liked but not sent). Name which one and build the verdict around it.
+
+━━ REASONING RIGOR (a sharp creator will try to poke holes — leave none) ━━
+- You are working from ${withV.length} recent videos. That is a SMALL sample. State findings at the honest confidence the data supports: use "clear/consistent" ONLY for a pattern that holds across many of their videos and survives ignoring their single biggest hit; use "early signal / worth testing / leans toward" for anything resting on a handful of videos; if it rests on fewer than ~5 videos, don't assert it — frame it as a test to run.
+- CORRELATION IS NOT CAUSATION. You cannot prove a hook style or topic CAUSED more views (topic, trending audio, timing and luck are tangled together). Say "tends to go with / is associated with", never "X causes/guarantees Y". When you flag a pattern, name the most likely alternative explanation in the same breath (e.g. "though those were also your trending-audio posts, so the audio may be doing the work").
+- A single viral video is a draw from the tail, largely luck, NOT a repeatable baseline. Never imply they can hit their peak on demand, and never forecast a number at or above their best video. Anchor "potential" on lifting their TYPICAL (median) views, not on repeating the ceiling.
+- Attach the count when you cite a pattern ("across your 7 tutorial posts…") — a number with its sample shown is far more credible than a bald claim.
+- Hook types here are grouped from small buckets; treat any "hook X beats hook Y" as directional, not proven, and say so.
 
 ━━ HOW TO WRITE IT SO IT CONVERTS (this is a free audit that must feel worth paying for) ━━
 - Lead the headline with EXTREME SPECIFICITY built on a real number, and open one honest curiosity loop the rest of the audit closes. No vague "you could grow".
