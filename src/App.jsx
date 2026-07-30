@@ -7176,7 +7176,13 @@ async function _geminiGenerate(apiKey, body) {
   throw lastErr || new Error("Gemini: no model available");
 }
 
+// Luna: cheapest GPT-5.6 tier — the default for internal scoring, chat, and
+// background work where quality is fungible. Terra: the balanced tier, ~2.5x
+// the cost, reserved for the two PROSPECT-FACING outputs (the audit write-up
+// and the opener DM) where copy quality directly drives whether a creator
+// replies and converts. Dial GPT_AUDIT_MODEL back to Luna if credit is tight.
 const GPT_MODEL = "gpt-5.6-luna";
+const GPT_AUDIT_MODEL = "gpt-5.6-terra";
 async function callGPT(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.", maxTokens=2000) {
   const storedCfg = loadJSON(KEYS_KEY,{});
   if(USE_BACKEND) {
@@ -8148,7 +8154,7 @@ const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 // objection) where persuasive quality matters but full Opus is overkill. The audit itself
 // and the self-test stay on the default Opus chain.
 const SONNET_MODEL = "claude-sonnet-5";
-async function callAI(prompt, maxTokens=2000, systemOverride=null, model=null) {
+async function callAI(prompt, maxTokens=2000, systemOverride=null, model=null, gptModel=GPT_MODEL) {
   const storedCfg = loadJSON(KEYS_KEY,{});
   const currentWL = loadWL();
   const sys = systemOverride || buildSystem(currentWL);
@@ -8160,11 +8166,13 @@ async function callAI(prompt, maxTokens=2000, systemOverride=null, model=null) {
       const d = await _postProxy("/api/ai", { provider:"anthropic", prompt, maxTokens, system:sys, ...(model?{model}:{}) }, byo);
       return _parseClaude(d);
     } catch(anthropicErr) {
-      // Anthropic unavailable — cascade: GPT first (funded), then Gemini.
+      // Anthropic unavailable — cascade: GPT first (funded), then Gemini. The GPT
+      // tier is caller-selectable (gptModel): prospect-facing work (audit, DM) runs
+      // on a stronger tier, cheap internal work stays on the default.
       const gptByo = (storedCfg?.keys?.gpt4o||"").trim();
       let gptErr;
       try {
-        const d = await _postProxy("/api/ai", { provider:"openai", prompt, system:sys, maxTokens, model:GPT_MODEL }, gptByo);
+        const d = await _postProxy("/api/ai", { provider:"openai", prompt, system:sys, maxTokens, model:gptModel }, gptByo);
         const txt = d.choices?.[0]?.message?.content||"";
         const j = _extractJSON(txt);
         if(j) return j;
@@ -9169,7 +9177,7 @@ RULES:
 
 Return ONLY JSON: {"dm":"the message, with a line break between the two paragraphs as \\n\\n"}`;
     try {
-      const r = await callAI(prompt, 500, DM_SYS, SONNET_MODEL);
+      const r = await callAI(prompt, 500, DM_SYS, SONNET_MODEL, GPT_AUDIT_MODEL);
       const msg = (r?.dm || "").trim();
       if(msg){ setDm(msg); saveProspects((loadJSON(PROSPECTS_KEY,[])).map(p=>p.h===rep.h?{...p, dm:msg}:p)); }
       else setDm("");
@@ -9409,8 +9417,8 @@ Return ONLY JSON:
       // parse, leaving an empty write-up. Give it room, and retry once on a transient
       // failure (parse slip / model overload) before giving up.
       let aiErrMsg = "";
-      let r = await callAI(prompt, 3200, AUDIT_SYS).catch(e=>{console.error("[audit AI]",e);aiErrMsg=e?.message||"";return null;});
-      if(!r || !r.ideas?.length){ r = await callAI(prompt, 3200, AUDIT_SYS).catch(e=>{console.error("[audit AI retry]",e);aiErrMsg=e?.message||aiErrMsg;return r;}); }
+      let r = await callAI(prompt, 3200, AUDIT_SYS, null, GPT_AUDIT_MODEL).catch(e=>{console.error("[audit AI]",e);aiErrMsg=e?.message||"";return null;});
+      if(!r || !r.ideas?.length){ r = await callAI(prompt, 3200, AUDIT_SYS, null, GPT_AUDIT_MODEL).catch(e=>{console.error("[audit AI retry]",e);aiErrMsg=e?.message||aiErrMsg;return r;}); }
       // DATA FARM — now tag the corpus with the PROSPECT'S real niche (from the audit),
       // never the operator's. Anonymised, fire-and-forget; fattens the data moat.
       try {
