@@ -9402,8 +9402,8 @@ Return ONLY JSON:
       // 3 working + 3 fixing + 5 full ideas + niche) truncated mid-array and failed to
       // parse, leaving an empty write-up. Give it room, and retry once on a transient
       // failure (parse slip / model overload) before giving up.
-      let r = await callAI(prompt, 3200, AUDIT_SYS).catch(()=>null);
-      if(!r || !r.ideas?.length){ r = await callAI(prompt, 3200, AUDIT_SYS).catch(()=>r); }
+      let r = await callAI(prompt, 3200, AUDIT_SYS).catch(e=>{console.error("[audit AI]",e);return null;});
+      if(!r || !r.ideas?.length){ r = await callAI(prompt, 3200, AUDIT_SYS).catch(e=>{console.error("[audit AI retry]",e);return r;}); }
       // DATA FARM — now tag the corpus with the PROSPECT'S real niche (from the audit),
       // never the operator's. Anonymised, fire-and-forget; fattens the data moat.
       try {
@@ -9413,7 +9413,7 @@ Return ONLY JSON:
           scored.forEach(x=>{ if((x.v.views||0) > 0) corpusWrite({ niche:_pn, hook:x.v.hook||"unknown", type:x.v.type||"unknown", score:x.s.score, views:x.v.views, mult:+(x.v.views/_median).toFixed(2), platform:"tiktok" }); });
         }
       } catch {}
-      if(!r) setErr("The AI couldn't generate the write-up (check your AI key) — showing the data we pulled.");
+      if(!r) setErr("AI write-up failed — showing the raw data we pulled. Check browser console for the error.");
       const rep = { h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit", ceilingAge, recentMed, trend, trendsUsed };
       setReport(rep);
       saveJSON("km_last_audit", { at:Date.now(), rep }); // survives a page refresh
