@@ -8069,7 +8069,7 @@ async function scrapeProspectTikTok(handle, maxPages=4, signal){
   try { res = await ttScrape(clean, key, maxPages, signal); }
   catch(e){ if(e.name==="AbortError") throw e; const base = e.status===404?`No public TikTok found for @${clean} — check the handle is exact (no spaces).`:ttErrMsg(e.status); throw new Error(base + (e.detail?` · ${String(e.detail).replace(/\s+/g," ").slice(0,220)}`:"")); }
   if(!res.videos.length) throw new Error(`No public videos found for @${clean} — check the handle is exact (no spaces).`);
-  const videos = res.videos.map(tv=>({ id:"p_"+tv.video_id, title:tv.title||"", views:tv.play_count||0, likes:tv.digg_count||0, comments:tv.comment_count||0, shares:tv.share_count||0, created_at:new Date((tv.create_time||0)*1000).toISOString(), platform:"tiktok" }));
+  const videos = res.videos.map(tv=>({ id:"p_"+tv.video_id, title:tv.title||"", views:tv.play_count||0, likes:tv.digg_count||0, comments:tv.comment_count||0, shares:tv.share_count||0, created_at:new Date((tv.create_time||0)*1000).toISOString(), platform:"tiktok", videoUrl:tv.play||"", cover:tv.cover||"" }));
   return { handle:clean, nick:res.nick, followers:res.followers, videos };
 }
 
@@ -9493,14 +9493,40 @@ Return ONLY JSON: {"dm":"the message, with a line break between the two paragrap
           setPhase("analysing");
         }
       } catch(e){ console.warn("[trends] error:", e?.message); }
+      // ── REAL VIDEO SIGHT (opt-in) ── If a Gemini key is configured, actually WATCH
+      // the top few videos so the audit can judge the on-screen hook and pacing — not
+      // just the caption. Strictly gated: fires ONLY when the operator has set a Gemini
+      // key (so it can never surprise-charge), capped at 3 videos, and fully graceful —
+      // any failure silently falls back to the captions-only audit exactly as before.
+      let watchedBlock = "", watchedHandles = [];
+      try {
+        const gemKey = (loadJSON("krapmaps_v1_config", {})?.keys?.gemini || "").trim();
+        if(gemKey){
+          const toWatch = [...withV].filter(v=>v.videoUrl).sort((a,b)=>b.views-a.views).slice(0,3);
+          if(toWatch.length){
+            setPhase("watching");
+            const obs = [];
+            for(const vd of toWatch){
+              if(ac.signal.aborted) break;
+              const gr = await callGeminiVideo(vd.videoUrl, `Watch this short video. Describe ONLY what is actually on screen, in 2 short factual sentences: (1) the opening hook in the first 3 seconds (what's shown/said), (2) the pacing and edit style (cut speed, on-screen text, energy). No praise, no advice. Return ONLY JSON: {"hook":"","pacing":""}`).catch(e=>{ console.warn("[watch] failed:", e?.message); return null; });
+              if(gr && (gr.hook || gr.pacing)) obs.push(`• "${cap(vd)}" (${fmtN(vd.views)} views) — HOOK: ${gr.hook||"?"} · PACING: ${gr.pacing||"?"}`);
+            }
+            if(obs.length){
+              watchedHandles = obs;
+              watchedBlock = `━━ VIDEOS WE ACTUALLY WATCHED (Gemini viewed these ${obs.length} — for THESE you MAY reference the real on-screen hook and pacing as fact; for every OTHER video the caption-only rule below still holds) ━━\n${obs.join("\n")}`;
+            }
+            setPhase("analysing");
+          }
+        }
+      } catch(e){ console.warn("[watch] error:", e?.message); }
       const prompt = `You are the sharpest short-form strategist alive. Audit this TikTok creator using ONLY the data below — this is a real free audit that must feel worth paying for.
 
 ━━ WHAT YOU CAN AND CANNOT SEE (critical — read first) ━━
-You have their video CAPTIONS and the real numbers (views, likes, comments, shares, dates). You have NOT watched the videos.
+You have their video CAPTIONS and the real numbers (views, likes, comments, shares, dates)${watchedBlock?", and you WATCHED the handful of videos listed in the 'VIDEOS WE ACTUALLY WATCHED' section below":". You have NOT watched the videos"}.
 - Reference their captions and numbers EXACTLY — quote real caption text and real view counts, never approximate.
-- NEVER invent anything visual or editorial you can't actually see: no "your jump cut", "the reaction shot at 3s", "your lighting", "the b-roll". You have no idea what's on screen. If you infer something, frame it as an inference from the CAPTION ("your caption suggests…"), never state it as fact about the footage.
+- NEVER invent anything visual or editorial you can't actually see: no "your jump cut", "the reaction shot at 3s", "your lighting", "the b-roll"${watchedBlock?" — EXCEPT for the specific videos in the WATCHED section, where the on-screen detail given IS real and you may cite it as fact":". You have no idea what's on screen. If you infer something, frame it as an inference from the CAPTION (\"your caption suggests…\"), never state it as fact about the footage"}.
 - A creator will distrust the ENTIRE audit the moment you describe one of their videos wrong. Accuracy beats cleverness every time.
-
+${watchedBlock?`\n${watchedBlock}\n`:""}
 CREATOR: @${h}${nick?` (${nick})`:""} — ${fmtN(followers)} followers, ${withV.length} recent videos analysed, engagement ~${engRate.toFixed(1)}% (likes+comments+shares ÷ views).
 PERFORMANCE (TikTok is heavy-tailed — ANCHOR everything to the MEDIAN, not the average):
 - Typical video (median): ${fmtN(median)} views — their real "normal". Judge ideas against THIS.
@@ -9590,7 +9616,7 @@ Return ONLY JSON:
   };
 
   const card = { background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16 };
-  const busy = phase==="scraping"||phase==="analysing"||phase==="trends";
+  const busy = phase==="scraping"||phase==="analysing"||phase==="trends"||phase==="watching";
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20, maxWidth:760, margin:"0 auto" }}>
@@ -9629,7 +9655,7 @@ Return ONLY JSON:
           </div>
           {busy ? (
             <button onClick={cancelRun} style={{ padding:"13px 24px", borderRadius:12, border:"1px solid #FF4D4D40", background:"#FF4D4D14", color:"#FF4D4D", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", whiteSpace:"nowrap" }}>
-              <span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={13}/> {phase==="scraping"?"PULLING":phase==="trends"?"TRENDS":"ANALYSING"} · STOP</span>
+              <span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={13}/> {phase==="scraping"?"PULLING":phase==="trends"?"TRENDS":phase==="watching"?"WATCHING":"ANALYSING"} · STOP</span>
             </button>
           ) : (
           <button onClick={run} disabled={!handle.trim()} style={{ padding:"13px 24px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${C.cyan},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:14, cursor:"pointer", opacity:(!handle.trim())?0.5:1, whiteSpace:"nowrap" }}>
