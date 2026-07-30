@@ -6137,6 +6137,31 @@ const formatEngagementSignals = (eng) => {
   return out;
 };
 
+// ── CAPTION → HOOK TYPE (for un-tagged scraped prospect videos) ───
+// The operator's own videos carry a `hook` tag (set at idea creation); scraped
+// prospect videos don't, so the engine's hook-performance table was blank for
+// prospects. This infers a hook TYPE from the caption's PHRASING (the app's
+// taxonomy) so the table populates. It is an inference from caption text, NOT a
+// claim about the on-screen hook — the audit prompt frames it as such.
+const classifyCaptionHook = (caption="") => {
+  const c = String(caption||"").toLowerCase().trim();
+  if(!c) return "story";
+  const has = (re) => re.test(c);
+  if(has(/\b(day \d+|24 ?hours?|i tried|can i |attempt|challenge|\d+ days? of|last (person|one) to|survive|for \d+ days)\b/)) return "challenge";
+  if(has(/(£|\$|€)\s?\d|\b\d+k\b|\b\d{4,}\b|\bmade \$?\d|\bearn|\bhit \d|\breached|\bgrew|\bmillion|\bthousand|\bfrom .+ to .+|\bmy first\b|\b\d+ (subs|followers|views|clients|sales)\b/)) return "achievement";
+  if(has(/\bsecret|\bnobody tells|\bhack\b|\bthe reason|\bhere'?s (how|why|what)|\bthis is why|\btrick\b|\?|\bhow (to|i|you)\b|\bwhy\b|\bwhat (happens|nobody)|\breally works\b/)) return "curiosity";
+  if(has(/\b(vs\.?|versus|instead of|stop |don'?t |everyone (thinks|says)|the truth about|myth|you'?re (doing|wrong)|worst|mistakes?|before .+ after)\b/)) return "contrast";
+  if(has(/\b(insane|crazy|obsessed|heartbreaking|crying|emotional|grateful|blessed|shocked|can'?t believe|terrifying|scary|proud)\b|[😭😍🥹😱🥺]/)) return "emotion";
+  if(has(/\blocal\b|\bnear me\b|\bmy (city|town|area|ends)\b/)) return "local";
+  if(has(/\b(in|at) (london|new york|nyc|paris|dubai|tokyo|manchester|birmingham|leeds)\b|abroad|travel/)) return "location";
+  if(has(/\b(so |when i|the time|once|story|how i |i was|back when|let me tell)\b/)) return "story";
+  return "story";
+};
+// Tag any videos missing a `hook` with a caption-inferred type, so the engine's
+// hook-performance tables work for prospects. Non-destructive (returns a copy);
+// videos that already have a hook keep theirs.
+const withInferredHooks = (videos=[]) => videos.map(v => v.hook ? v : { ...v, hook: classifyCaptionHook(v.title), hookInferred: true });
+
 // ── GROWTH BOTTLENECK DIAGNOSIS ───────────────────────────────────
 // Turns raw public counts (views, likes, comments, shares, followers) into the
 // ONE thing most limiting this channel's growth — the "how did they know that"
@@ -9418,10 +9443,15 @@ Return ONLY JSON: {"dm":"the message, with a line break between the two paragrap
       // STANDARD engagement rate — what a creator actually recognises: (likes+comments+shares)/views.
       const engRate = withV.length ? (withV.reduce((s,v)=>s+((v.likes+v.comments+v.shares)/Math.max(v.views,1)),0)/withV.length*100) : 0;
       // Run the SAME engine the paid app uses internally, on their scraped videos —
-      // the audit is now first-class, not a lighter separate path.
-      const insights = buildChannelInsights(videos);
+      // the audit is now first-class, not a lighter separate path. Scraped videos
+      // carry no hook tag, so infer a hook TYPE from each caption's phrasing; that
+      // makes the hook-performance table (which hook styles pull more views) work
+      // for prospects, not just the operator's own classified channel.
+      const hookTagged = withInferredHooks(videos);
+      const hooksAreInferred = hookTagged.some(v=>v.hookInferred);
+      const insights = buildChannelInsights(hookTagged);
       const insightsBlock = insights ? formatChannelInsights(insights) : "";
-      const engSignals = buildEngagementSignals(videos);
+      const engSignals = buildEngagementSignals(hookTagged);
       const engBlock = engSignals ? formatEngagementSignals(engSignals) : "";
       // Growth-bottleneck diagnosis — the "how did they know" centrepiece. Inferred
       // purely from public counts; drives the verdict and the biggest fix.
@@ -9470,7 +9500,7 @@ ${recencyBlock}
 ${varianceBlock}
 ${trendsBlock?`\n${trendsBlock}\n`:""}
 ━━ ENGINE ANALYSIS (computed from their real numbers — the same engine the paid app runs) ━━
-${growthBlock}
+${hooksAreInferred?"NOTE: hook types below are INFERRED from caption phrasing (we haven't watched the videos), so treat the hook-performance table as directional — frame any point about it as 'your captions phrased as X tend to…', never as a claim about their on-screen hook.\n":""}${growthBlock}
 ${insightsBlock}
 ${engBlock}
 BIGGEST HITS (by our median-benchmarked scoring):
