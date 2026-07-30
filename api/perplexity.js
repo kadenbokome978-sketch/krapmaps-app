@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     const r = await fetch("https://api.perplexity.ai/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: body.model || "sonar-pro", messages: [{ role: "system", content: system }, { role: "user", content: prompt }] }),
+      body: JSON.stringify({ model: body.model || "sonar-reasoning-pro", messages: [{ role: "system", content: system }, { role: "user", content: prompt }] }),
     });
     const text = await r.text();
     res.setHeader("Content-Type", "application/json");

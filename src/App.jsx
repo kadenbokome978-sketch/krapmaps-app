@@ -8192,13 +8192,19 @@ ${NO_EMDASH}
 Respond ONLY with valid JSON.`;
 const SYSTEM = buildSystem(WL);
 
+// sonar-reasoning-pro (vs sonar-pro): cheaper tokens ($2/$8 vs $3/$15), and
+// reasoning-on measurably lowers hallucination and separates "trending THIS week"
+// from evergreen — the exact weakness of the live-trends call. Reasoning models
+// prepend a <think>…</think> block before the JSON, so strip it before parsing.
+const PERPLEXITY_MODEL = "sonar-reasoning-pro";
+const _stripThink = (t="") => t.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 async function callPerplexity(prompt, wl=WL) {
   const storedCfg = loadJSON(KEYS_KEY,{});
   const ppxSystem = `You are a niche content strategist for ${wl.appName}. Niche: ${wl.niche}. Target audience: ${wl.targetAudience}. Platforms: ${wl.platforms}. Return ONLY valid JSON.`;
   if(USE_BACKEND) {
     const byo = (storedCfg?.keys?.perplexity||"").trim();
-    const d = await _postProxy("/api/perplexity", { prompt, system:ppxSystem, model:"sonar-pro" }, byo);
-    const text = d.choices?.[0]?.message?.content||"";
+    const d = await _postProxy("/api/perplexity", { prompt, system:ppxSystem, model:PERPLEXITY_MODEL }, byo);
+    const text = _stripThink(d.choices?.[0]?.message?.content||"");
     const clean = text.replace(/```json/g,"").replace(/```/g,"").trim();
     try { return JSON.parse(clean); } catch { const m=clean.match(/\{[\s\S]*\}/); if(m){ try { return JSON.parse(m[0]); } catch {} } throw new Error("Could not parse Perplexity response"); }
   }
@@ -8211,7 +8217,7 @@ async function callPerplexity(prompt, wl=WL) {
     const r = await fetch("/api/perplexity", {
       method:"POST",
       headers:{ "Content-Type":"application/json", "X-BYO-Key":apiKey },
-      body: JSON.stringify({ prompt, system:ppxSystem, model:"sonar-pro" })
+      body: JSON.stringify({ prompt, system:ppxSystem, model:PERPLEXITY_MODEL })
     });
     const ct = r.headers.get("content-type")||"";
     if(ct.includes("application/json")) {
@@ -8220,7 +8226,7 @@ async function callPerplexity(prompt, wl=WL) {
         if(r.status===401 && /perplexity/i.test(d.error||"")) throw new Error("Invalid Perplexity key -- check Settings");
         throw new Error(d.error || ("Perplexity error "+r.status));
       }
-      const parsed = _extractJSON(d.choices?.[0]?.message?.content||"");
+      const parsed = _extractJSON(_stripThink(d.choices?.[0]?.message?.content||""));
       if(parsed) return parsed;
       throw new Error("Could not parse Perplexity response");
     }
@@ -8233,7 +8239,7 @@ async function callPerplexity(prompt, wl=WL) {
     method:"POST",
     headers:{ "Authorization":`Bearer ${apiKey}`, "Content-Type":"application/json" },
     body: JSON.stringify({
-      model:"sonar-pro",
+      model:PERPLEXITY_MODEL,
       messages:[ { role:"system", content:ppxSystem }, { role:"user", content:prompt } ]
     })
   });
@@ -8242,7 +8248,7 @@ async function callPerplexity(prompt, wl=WL) {
     throw new Error(`Perplexity error ${r2.status}`);
   }
   const d2 = await r2.json();
-  const parsed2 = _extractJSON(d2.choices?.[0]?.message?.content||"");
+  const parsed2 = _extractJSON(_stripThink(d2.choices?.[0]?.message?.content||""));
   if(parsed2) return parsed2;
   throw new Error("Could not parse Perplexity response");
 }
