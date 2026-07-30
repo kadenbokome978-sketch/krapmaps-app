@@ -8162,22 +8162,28 @@ async function callAI(prompt, maxTokens=2000, systemOverride=null, model=null) {
     } catch(anthropicErr) {
       // Anthropic unavailable — cascade: GPT first (funded), then Gemini.
       const gptByo = (storedCfg?.keys?.gpt4o||"").trim();
+      let gptErr;
       try {
         const d = await _postProxy("/api/ai", { provider:"openai", prompt, system:sys, maxTokens, model:GPT_MODEL }, gptByo);
         const txt = d.choices?.[0]?.message?.content||"";
         const j = _extractJSON(txt);
         if(j) return j;
-        throw new Error("GPT fallback returned no usable content");
-      } catch(gptErr) {
+        throw new Error("GPT returned no usable content");
+      } catch(e) {
+        gptErr = e;
         try {
           const gbyo = (storedCfg?.keys?.gemini||"").trim();
           const d = await _postProxy("/api/ai", { provider:"gemini", prompt, system:sys, maxTokens }, gbyo);
           const txt = d?.candidates?.[0]?.content?.parts?.[0]?.text || "";
           const j = _extractJSON(txt);
           if(j) return j;
-          throw new Error("Gemini fallback returned no usable content");
+          throw new Error("Gemini returned no usable content");
         } catch(geminiErr) {
-          throw anthropicErr;
+          // Surface the GPT error (the funded, primary fallback) so the real
+          // blocker — invalid key, no credits, spend limit — is visible, not
+          // the masked Anthropic error. Log the full chain for debugging.
+          console.error("[callAI] all providers failed", { anthropic:anthropicErr?.message, gpt:gptErr?.message, gemini:geminiErr?.message });
+          throw new Error("AI failed. GPT: " + (gptErr?.message||"unknown") + " | Claude: " + (anthropicErr?.message||"unknown"));
         }
       }
     }
@@ -9402,8 +9408,9 @@ Return ONLY JSON:
       // 3 working + 3 fixing + 5 full ideas + niche) truncated mid-array and failed to
       // parse, leaving an empty write-up. Give it room, and retry once on a transient
       // failure (parse slip / model overload) before giving up.
-      let r = await callAI(prompt, 3200, AUDIT_SYS).catch(e=>{console.error("[audit AI]",e);return null;});
-      if(!r || !r.ideas?.length){ r = await callAI(prompt, 3200, AUDIT_SYS).catch(e=>{console.error("[audit AI retry]",e);return r;}); }
+      let aiErrMsg = "";
+      let r = await callAI(prompt, 3200, AUDIT_SYS).catch(e=>{console.error("[audit AI]",e);aiErrMsg=e?.message||"";return null;});
+      if(!r || !r.ideas?.length){ r = await callAI(prompt, 3200, AUDIT_SYS).catch(e=>{console.error("[audit AI retry]",e);aiErrMsg=e?.message||aiErrMsg;return r;}); }
       // DATA FARM — now tag the corpus with the PROSPECT'S real niche (from the audit),
       // never the operator's. Anonymised, fire-and-forget; fattens the data moat.
       try {
@@ -9413,7 +9420,7 @@ Return ONLY JSON:
           scored.forEach(x=>{ if((x.v.views||0) > 0) corpusWrite({ niche:_pn, hook:x.v.hook||"unknown", type:x.v.type||"unknown", score:x.s.score, views:x.v.views, mult:+(x.v.views/_median).toFixed(2), platform:"tiktok" }); });
         }
       } catch {}
-      if(!r) setErr("AI write-up failed — showing the raw data we pulled. Check browser console for the error.");
+      if(!r) setErr("AI write-up failed — showing raw data. Reason: " + (aiErrMsg||"unknown error"));
       const rep = { h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit", ceilingAge, recentMed, trend, trendsUsed };
       setReport(rep);
       saveJSON("km_last_audit", { at:Date.now(), rep }); // survives a page refresh
