@@ -7937,7 +7937,7 @@ async function ttScrape(handle, byoKey, maxPages=4, signal){
   const prof = ttProfileFrom(items[0]||{});
   return { ...prof, videos };
 }
-const ttErrMsg = (status) => status===429?"Rate limited — wait ~30s and retry":status===401||status===403?"Scraper auth failed — check BRIGHTDATA_TOKEN is set in Vercel":status===404?"No public TikTok found — check the handle is exact (no spaces)":status===504||status===408?"Scraper timed out — try again in a moment":`Scraper error ${status||""} — try again shortly`;
+const ttErrMsg = (status) => status===429?"Rate limited — wait ~30s and retry":status===401||status===403?"Scraper auth failed — check BRIGHTDATA_TOKEN is set in Vercel":status===402?"Scraper is out of funds — top up your Bright Data balance to keep pulling videos":status===404?"No public TikTok found — check the handle is exact (no spaces)":status===504||status===408?"Scraper timed out — try again in a moment":`Scraper error ${status||""} — try again shortly`;
 
 // GET proxy for RapidAPI scraper calls — returns the native response.
 async function rapidFetch(targetUrl, byoKey) {
