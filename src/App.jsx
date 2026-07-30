@@ -7671,7 +7671,14 @@ const corpusWrite = async (rec) => {
       ts: new Date().toISOString(),
     };
     await sbUpsert(CORPUS_TABLE, [row]);
-  } catch { /* corpus is best-effort — never blocks the outcome flow */ }
+    try { localStorage.removeItem("km_corpus_lasterr"); } catch {}  // a success clears any stale failure flag
+  } catch(e) {
+    // Corpus is best-effort — never blocks the outcome flow — but record WHY it
+    // failed so the operator can see it in the System Memory banner instead of
+    // the write vanishing silently (the usual cause is the km_corpus table not
+    // existing yet, or an RLS policy blocking inserts).
+    try { saveJSON("km_corpus_lasterr", (e?.message||"write failed").slice(0,140)); } catch {}
+  }
 };
 // Aggregate the corpus for a niche into a compact base-rate block for scoring.
 // Cached ~6h so it doesn't refetch on every score.
@@ -9018,9 +9025,12 @@ Return ONLY JSON: {"creators":[{"handle":"@exacthandle","name":"Display Name","u
       const rows = await sbFetch(CORPUS_TABLE, "select=niche");
       if(Array.isArray(rows)){
         const niches = [...new Set(rows.map(r=>r.niche).filter(Boolean))];
-        setCorpusStat({ patterns: rows.length, capped: rows.length>=1000, niches });
+        // Capture the last write error (if any) so a "0 patterns" state can tell
+        // the operator whether the corpus is genuinely empty or actually broken
+        // (missing table / RLS blocking inserts), instead of silently showing nothing.
+        setCorpusStat({ patterns: rows.length, capped: rows.length>=1000, niches, writeErr: loadJSON("km_corpus_lasterr", null) });
       }
-    } catch {}
+    } catch(e){ setCorpusStat({ patterns:0, capped:false, niches:[], readErr: e?.message||"read failed", writeErr: loadJSON("km_corpus_lasterr", null) }); }
   };
   useEffect(() => { if(operator) loadCorpusStat(); }, []);
   // Reopen a stored audit instantly (no scrape, no AI, no credits) so you can review it
@@ -9450,6 +9460,20 @@ Return ONLY JSON:
             <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.purple, fontWeight:700 }}>SYSTEM MEMORY</div>
             <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.7)", marginTop:2 }}>
               <b style={{ color:"#fff" }}>{corpusStat.capped?"1,000+":corpusStat.patterns.toLocaleString()}</b> performance patterns banked across <b style={{ color:"#fff" }}>{corpusStat.niches.length}</b> niche{corpusStat.niches.length===1?"":"s"}. Every audit makes predictions in that niche sharper.
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Diagnostic: corpus reachable but empty AND a write has failed, or the
+          read itself failed. Tells the operator the memory isn't saving and why,
+          instead of the banner just never appearing. */}
+      {operator && corpusStat && corpusStat.patterns===0 && (corpusStat.writeErr || corpusStat.readErr) && (
+        <div style={{ ...card, padding:isMobile?"13px 16px":"14px 20px", display:"flex", alignItems:"flex-start", gap:12, background:"linear-gradient(160deg,#FF4D4D0d,rgba(10,6,20,0.5))", border:"1px solid #FF4D4D33", flexWrap:"wrap" }}>
+          <span style={{ fontSize:18 }}>⚠️</span>
+          <div style={{ flex:1, minWidth:isMobile?"100%":200 }}>
+            <div style={{ fontSize:11, letterSpacing:"0.1em", color:"#FF7A7A", fontWeight:700 }}>SYSTEM MEMORY NOT SAVING</div>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)", marginTop:2 }}>
+              Audits aren't banking to the shared corpus. Likely the <b style={{color:"#fff"}}>km_corpus</b> table doesn't exist yet or a Supabase RLS policy is blocking inserts. Reason: <span style={{ color:"#FFA0A0" }}>{corpusStat.readErr||corpusStat.writeErr}</span>. Run the data-setup SQL in Settings.
             </div>
           </div>
         </div>
