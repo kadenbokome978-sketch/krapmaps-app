@@ -8198,6 +8198,10 @@ const SYSTEM = buildSystem(WL);
 // prepend a <think>…</think> block before the JSON, so strip it before parsing.
 const PERPLEXITY_MODEL = "sonar-reasoning-pro";
 const _stripThink = (t="") => t.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+// Race a promise against a timeout so one slow/hung provider (a stalled trends or
+// video call) can't freeze a whole flow. The abandoned call keeps running
+// harmlessly in the background; we just stop waiting on it and move on.
+const withTimeout = (p, ms, label="op") => Promise.race([ p, new Promise((_,rej)=>setTimeout(()=>rej(new Error(label+" timed out")), ms)) ]);
 // Exa live retrieval — returns REAL indexed pages (real URLs), not generated text.
 // Used by the prospect finder so handles come from actual TikTok profile URLs and
 // can't be hallucinated. Returns the native { results:[{title,url,highlights}] }.
@@ -9527,44 +9531,47 @@ Return ONLY JSON: {"dm":"the message, with a line break between paragraphs as \\
       // and timeless. Pull what is ACTUALLY working on short-form right now for this kind
       // of creator, so at least a couple of ideas ride a live format instead of an
       // evergreen guess. Graceful no-op if no Perplexity key is configured.
-      let trendsBlock = "", trendsUsed = null;
-      try {
+      // ── ENRICHMENT (live trends + optional video sight) ── these two are independent,
+      // and the write-up waits on both, so run them CONCURRENTLY instead of back-to-back.
+      // Each call is behind a timeout so a slow/hung provider can't stall the audit; both
+      // stay best-effort — any failure or timeout just drops that block and we proceed.
+      let trendsBlock = "", trendsUsed = null, watchedBlock = "", watchedHandles = [];
+      {
         const cfg = loadJSON("krapmaps_v1_config", {});
-        if(cfg?.keys?.perplexity || BAKED_PERPLEXITY_KEY || USE_BACKEND){
-          setPhase("trends");
-          const topCaps = engineTop.slice(0,3).map(x=>`"${cap(x.v)}"`).join(", ");
-          const tr = await callPerplexity(`A short-form creator posts content like: ${topCaps}. Search for what is working on TikTok/Reels RIGHT NOW in the last 3-4 weeks for this kind of content. List 4-6 SPECIFIC current video formats, hooks, angles, or trends that are getting real reach right now (not generic timeless advice, actual current formats a creator could ride this month). Return ONLY JSON: {"trends":["short specific format or hook that's working now", ...]}`, wl).catch((e)=>{ console.warn("[trends] perplexity failed:", e?.message); return null; });
-          const arr = Array.isArray(tr?.trends) ? tr.trends.filter(Boolean).slice(0,6) : [];
-          if(arr.length){ trendsUsed = arr; trendsBlock = `LIVE TRENDS (what is actually working on short-form RIGHT NOW for this kind of creator — use these to make at least 1-2 of the 5 ideas ride a CURRENT format, not a timeless-but-obvious one):\n${arr.map(t=>`- ${t}`).join("\n")}`; }
-          setPhase("analysing");
-        }
-      } catch(e){ console.warn("[trends] error:", e?.message); }
-      // ── REAL VIDEO SIGHT (opt-in) ── If a Gemini key is configured, actually WATCH
-      // the top few videos so the audit can judge the on-screen hook and pacing — not
-      // just the caption. Strictly gated: fires ONLY when the operator has set a Gemini
-      // key (so it can never surprise-charge), capped at 3 videos, and fully graceful —
-      // any failure silently falls back to the captions-only audit exactly as before.
-      let watchedBlock = "", watchedHandles = [];
-      try {
-        const gemKey = (loadJSON("krapmaps_v1_config", {})?.keys?.gemini || "").trim();
-        if(gemKey){
-          const toWatch = [...withV].filter(v=>v.videoUrl).sort((a,b)=>b.views-a.views).slice(0,3);
-          if(toWatch.length){
-            setPhase("watching");
-            const obs = [];
-            for(const vd of toWatch){
-              if(ac.signal.aborted) break;
-              const gr = await callGeminiVideo(vd.videoUrl, `Watch this short video. Describe ONLY what is actually on screen, in 2 short factual sentences: (1) the opening hook in the first 3 seconds (what's shown/said), (2) the pacing and edit style (cut speed, on-screen text, energy). No praise, no advice. Return ONLY JSON: {"hook":"","pacing":""}`).catch(e=>{ console.warn("[watch] failed:", e?.message); return null; });
-              if(gr && (gr.hook || gr.pacing)) obs.push(`• "${cap(vd)}" (${fmtN(vd.views)} views) — HOOK: ${gr.hook||"?"} · PACING: ${gr.pacing||"?"}`);
-            }
+        const wantTrends = !!(cfg?.keys?.perplexity || BAKED_PERPLEXITY_KEY || USE_BACKEND);
+        const gemKey = (cfg?.keys?.gemini || "").trim();
+        const toWatch = gemKey ? [...withV].filter(v=>v.videoUrl).sort((a,b)=>b.views-a.views).slice(0,3) : [];
+        if(wantTrends || toWatch.length) setPhase(toWatch.length ? "watching" : "trends");
+
+        const trendsJob = wantTrends ? (async()=>{
+          try {
+            const topCaps = engineTop.slice(0,3).map(x=>`"${cap(x.v)}"`).join(", ");
+            const tr = await withTimeout(callPerplexity(`A short-form creator posts content like: ${topCaps}. Search for what is working on TikTok/Reels RIGHT NOW in the last 3-4 weeks for this kind of content. List 4-6 SPECIFIC current video formats, hooks, angles, or trends that are getting real reach right now (not generic timeless advice, actual current formats a creator could ride this month). Return ONLY JSON: {"trends":["short specific format or hook that's working now", ...]}`, wl), 22000, "trends");
+            const arr = Array.isArray(tr?.trends) ? tr.trends.filter(Boolean).slice(0,6) : [];
+            if(arr.length){ trendsUsed = arr; trendsBlock = `LIVE TRENDS (what is actually working on short-form RIGHT NOW for this kind of creator — use these to make at least 1-2 of the 5 ideas ride a CURRENT format, not a timeless-but-obvious one):\n${arr.map(t=>`- ${t}`).join("\n")}`; }
+          } catch(e){ console.warn("[trends] skipped:", e?.message); }
+        })() : Promise.resolve();
+
+        // ── REAL VIDEO SIGHT (opt-in, Gemini key required) ── watch the top clips so the
+        // audit can judge the real on-screen hook/pacing. The 3 clips are watched
+        // CONCURRENTLY (was a sequential loop → ~1 call's latency, not 3x), each timed out.
+        const watchJob = toWatch.length ? (async()=>{
+          try {
+            const results = await Promise.all(toWatch.map(vd =>
+              withTimeout(callGeminiVideo(vd.videoUrl, `Watch this short video. Describe ONLY what is actually on screen, in 2 short factual sentences: (1) the opening hook in the first 3 seconds (what's shown/said), (2) the pacing and edit style (cut speed, on-screen text, energy). No praise, no advice. Return ONLY JSON: {"hook":"","pacing":""}`), 25000, "watch")
+                .then(gr=>({vd,gr})).catch(e=>{ console.warn("[watch] clip failed:", e?.message); return {vd,gr:null}; })
+            ));
+            const obs = results.filter(r=>r.gr && (r.gr.hook || r.gr.pacing)).map(r=>`• "${cap(r.vd)}" (${fmtN(r.vd.views)} views) — HOOK: ${r.gr.hook||"?"} · PACING: ${r.gr.pacing||"?"}`);
             if(obs.length){
               watchedHandles = obs;
               watchedBlock = `━━ VIDEOS WE ACTUALLY WATCHED (Gemini viewed these ${obs.length} — for THESE you MAY reference the real on-screen hook and pacing as fact; for every OTHER video the caption-only rule below still holds) ━━\n${obs.join("\n")}`;
             }
-            setPhase("analysing");
-          }
-        }
-      } catch(e){ console.warn("[watch] error:", e?.message); }
+          } catch(e){ console.warn("[watch] skipped:", e?.message); }
+        })() : Promise.resolve();
+
+        await Promise.all([trendsJob, watchJob]);
+        setPhase("analysing");
+      }
       const prompt = `You are the sharpest short-form strategist alive. Audit this TikTok creator using ONLY the data below — this is a real free audit that must feel worth paying for.
 
 ━━ WHAT YOU CAN AND CANNOT SEE (critical — read first) ━━
@@ -9640,8 +9647,11 @@ Return ONLY JSON:
       // parse, leaving an empty write-up. Give it room, and retry once on a transient
       // failure (parse slip / model overload) before giving up.
       let aiErrMsg = "";
-      let r = await callAI(prompt, 3200, AUDIT_SYS, null, GPT_AUDIT_MODEL).catch(e=>{console.error("[audit AI]",e);aiErrMsg=e?.message||"";return null;});
-      if(!r || !r.ideas?.length){ r = await callAI(prompt, 3200, AUDIT_SYS, null, GPT_AUDIT_MODEL).catch(e=>{console.error("[audit AI retry]",e);aiErrMsg=e?.message||aiErrMsg;return r;}); }
+      // Timeout-guard the write-up so a hung model call falls to the graceful
+      // "raw data + re-run" state instead of freezing the audit on ANALYSING.
+      const _writeUp = () => withTimeout(callAI(prompt, 3200, AUDIT_SYS, null, GPT_AUDIT_MODEL), 55000, "write-up");
+      let r = await _writeUp().catch(e=>{console.error("[audit AI]",e);aiErrMsg=e?.message||"";return null;});
+      if(!r || !r.ideas?.length){ r = await _writeUp().catch(e=>{console.error("[audit AI retry]",e);aiErrMsg=e?.message||aiErrMsg;return r;}); }
       // DATA FARM — now tag the corpus with the PROSPECT'S real niche (from the audit),
       // never the operator's. Anonymised, fire-and-forget; fattens the data moat.
       try {
