@@ -8198,6 +8198,13 @@ const SYSTEM = buildSystem(WL);
 // prepend a <think>…</think> block before the JSON, so strip it before parsing.
 const PERPLEXITY_MODEL = "sonar-reasoning-pro";
 const _stripThink = (t="") => t.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+// Exa live retrieval — returns REAL indexed pages (real URLs), not generated text.
+// Used by the prospect finder so handles come from actual TikTok profile URLs and
+// can't be hallucinated. Returns the native { results:[{title,url,highlights}] }.
+async function callExaSearch(query, { numResults=10, type="auto", includeDomains, contents } = {}) {
+  const byo = (loadJSON(KEYS_KEY,{})?.keys?.exa||"").trim();
+  return _postProxy("/api/exa", { query, numResults, type, ...(includeDomains?{includeDomains}:{}), contents: contents||{ highlights:true } }, byo);
+}
 async function callPerplexity(prompt, wl=WL) {
   const storedCfg = loadJSON(KEYS_KEY,{});
   const ppxSystem = `You are a niche content strategist for ${wl.appName}. Niche: ${wl.niche}. Target audience: ${wl.targetAudience}. Platforms: ${wl.platforms}. Return ONLY valid JSON.`;
@@ -9092,6 +9099,35 @@ function ProspectAuditView({ WL, operator=false }){
       // search returns FRESH names instead of the same famous handful.
       const seen = new Set([ ...(more?findResults:[]).map(c=>_normH(c.handle)), ...prospects.map(p=>_normH(p.h)) ].filter(Boolean));
       const exclude = [...seen].slice(0,40);
+      // ── EXA FIRST (retrieval-first, hallucination-proof) ── Exa returns REAL indexed
+      // TikTok profile pages, so every handle is parsed from an actual URL and cannot
+      // be invented. If Exa is unconfigured / errors / returns nothing, fall through to
+      // the Perplexity generative search below (which can hallucinate, hence the order).
+      let exaArr = [];
+      try {
+        const ex = await callExaSearch(`${niche} creators on TikTok`, { numResults:25, type:"auto", includeDomains:["tiktok.com"], contents:{ highlights:true } });
+        const results = Array.isArray(ex?.results) ? ex.results : [];
+        const got = new Set();
+        for(const rs of results){
+          const m = String(rs.url||"").match(/tiktok\.com\/@([a-z0-9._-]+)/i);
+          if(!m) continue;
+          const handle = m[1].toLowerCase();
+          if(!handle || got.has(handle) || seen.has(handle)) continue;
+          got.add(handle);
+          const name = String(rs.title||"").replace(/\s*[|(].*$/,"").replace(/\bon TikTok\b.*$/i,"").trim();
+          const why = (Array.isArray(rs.highlights) ? (rs.highlights[0]||"") : "").replace(/\s+/g," ").trim().slice(0,120);
+          exaArr.push({ handle:"@"+handle, name: name||("@"+handle), url:`https://www.tiktok.com/@${handle}`, followers:"", why: why||"Real profile from live search — run the audit to confirm the fit.", src:"exa" });
+        }
+      } catch(e){ console.warn("[finder] Exa unavailable, falling back to Perplexity:", e?.message); }
+      if(exaArr.length){
+        const have = new Set((more?findResults:[]).map(c=>_normH(c.handle)));
+        const fresh = exaArr.filter(c=>{ const k=_normH(c.handle); if(have.has(k)) return false; have.add(k); return true; });
+        const merged = more ? [...findResults, ...fresh] : fresh;
+        setFindResults(merged.slice(0,40));
+        if(!merged.length) setFindErr("No fresh candidates came back. Try a more specific niche.");
+        setFindBusy(false);
+        return;
+      }
       const r = await callPerplexity(`Find real TikTok creators in the "${niche}" niche who currently have roughly ${findBand} followers, for cold outreach.
 CRITICAL ACCURACY RULE (most important): every handle must be a REAL account you actually found in your web search results, verified from an actual tiktok.com/@ profile URL. Do NOT guess a handle from a creator's display name, and do NOT invent handles. A wrong handle is useless and worse than no result. If you are not certain the exact @handle exists, LEAVE THAT CREATOR OUT. Quality over quantity: it is far better to return 5 you have genuinely verified than 12 with guesses. For each, also return the creator's real display NAME and the exact profile URL you found them at, so it can be checked.
 TARGETING:
