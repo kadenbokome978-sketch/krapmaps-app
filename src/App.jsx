@@ -8209,6 +8209,57 @@ async function callExaSearch(query, { numResults=10, type="auto", includeDomains
   const byo = (loadJSON(KEYS_KEY,{})?.keys?.exa||"").trim();
   return _postProxy("/api/exa", { query, numResults, type, ...(includeDomains?{includeDomains}:{}), contents: contents||{ highlights:true } }, byo);
 }
+// Find REAL TikTok creator handles for a niche via Exa — hallucination-proof because
+// every handle is parsed out of an actual URL, never generated. Two passes:
+//   1) search WITHIN tiktok.com and read @handle from each real profile URL.
+//   2) only if pass 1 is thin, widen to the open web (creator round-ups / listicles)
+//      and extract tiktok.com/@handle mentions from the returned article text — still
+//      real, published handles, just sourced from articles instead of direct crawl.
+// Returns { candidates, diag } so the caller can show coverage (self-test signal).
+const _TT_HANDLE = /tiktok\.com\/@([a-z0-9._-]{2,24})/i;
+const _TT_HANDLE_G = /tiktok\.com\/@([a-z0-9._-]{2,24})/gi;
+async function exaFindTikTokHandles(niche, excludeSet=new Set()) {
+  const out = new Map();
+  const diag = { pass1Results:0, pass2Results:0, pass2Used:false };
+  const add = (handle, name, why) => {
+    const h = String(handle||"").toLowerCase().replace(/[.]+$/,"");
+    if(!h || out.has(h) || excludeSet.has(h)) return;
+    out.set(h, { handle:"@"+h, name: name||("@"+h), url:`https://www.tiktok.com/@${h}`, followers:"", why: why||"Real profile from live search — audit to confirm the fit.", src:"exa" });
+  };
+  // Pass 1 — direct TikTok profile pages
+  try {
+    const d = await withTimeout(callExaSearch(`${niche} creators on TikTok`, { numResults:25, type:"auto", includeDomains:["tiktok.com"], contents:{ highlights:true } }), 20000, "exa1");
+    const results = Array.isArray(d?.results) ? d.results : [];
+    diag.pass1Results = results.length;
+    for(const rs of results){
+      const m = String(rs.url||"").match(_TT_HANDLE);
+      if(!m) continue;
+      const name = String(rs.title||"").replace(/\s*[|(].*$/,"").replace(/\bon TikTok\b.*$/i,"").trim();
+      const why = (Array.isArray(rs.highlights) ? (rs.highlights[0]||"") : "").replace(/\s+/g," ").trim().slice(0,120);
+      add(m[1], name, why);
+    }
+  } catch(e){ console.warn("[finder] exa pass1:", e?.message); }
+  // Pass 2 — widen to round-up articles only if direct coverage was thin
+  if(out.size < 8){
+    diag.pass2Used = true;
+    try {
+      const d = await withTimeout(callExaSearch(`best ${niche} creators to follow on TikTok`, { numResults:12, type:"auto", contents:{ text:{ maxCharacters:3000 } } }), 22000, "exa2");
+      const results = Array.isArray(d?.results) ? d.results : [];
+      diag.pass2Results = results.length;
+      for(const rs of results){
+        const text = String(rs.text||"");
+        let m; const seenHere = new Set();
+        while((m = _TT_HANDLE_G.exec(text))){
+          const h = m[1].toLowerCase();
+          if(seenHere.has(h)) continue; seenHere.add(h);
+          add(h, "@"+h, `Named in a "${(rs.title||"top creators").replace(/\s+/g," ").slice(0,50)}" round-up — audit to confirm.`);
+        }
+        _TT_HANDLE_G.lastIndex = 0;
+      }
+    } catch(e){ console.warn("[finder] exa pass2:", e?.message); }
+  }
+  return { candidates:[...out.values()], diag };
+}
 async function callPerplexity(prompt, wl=WL) {
   const storedCfg = loadJSON(KEYS_KEY,{});
   const ppxSystem = `You are a niche content strategist for ${wl.appName}. Niche: ${wl.niche}. Target audience: ${wl.targetAudience}. Platforms: ${wl.platforms}. Return ONLY valid JSON.`;
@@ -9103,32 +9154,24 @@ function ProspectAuditView({ WL, operator=false }){
       // search returns FRESH names instead of the same famous handful.
       const seen = new Set([ ...(more?findResults:[]).map(c=>_normH(c.handle)), ...prospects.map(p=>_normH(p.h)) ].filter(Boolean));
       const exclude = [...seen].slice(0,40);
-      // ── EXA FIRST (retrieval-first, hallucination-proof) ── Exa returns REAL indexed
-      // TikTok profile pages, so every handle is parsed from an actual URL and cannot
-      // be invented. If Exa is unconfigured / errors / returns nothing, fall through to
-      // the Perplexity generative search below (which can hallucinate, hence the order).
-      let exaArr = [];
+      // ── EXA FIRST (retrieval-first, hallucination-proof) ── every handle is parsed
+      // from a REAL URL (direct profile or a round-up article), never generated. Only
+      // if Exa is unconfigured / errors / returns nothing do we fall through to the
+      // Perplexity generative search below (which can hallucinate, hence the order).
+      let exaArr = [], exaDiag = null;
       try {
-        const ex = await callExaSearch(`${niche} creators on TikTok`, { numResults:25, type:"auto", includeDomains:["tiktok.com"], contents:{ highlights:true } });
-        const results = Array.isArray(ex?.results) ? ex.results : [];
-        const got = new Set();
-        for(const rs of results){
-          const m = String(rs.url||"").match(/tiktok\.com\/@([a-z0-9._-]+)/i);
-          if(!m) continue;
-          const handle = m[1].toLowerCase();
-          if(!handle || got.has(handle) || seen.has(handle)) continue;
-          got.add(handle);
-          const name = String(rs.title||"").replace(/\s*[|(].*$/,"").replace(/\bon TikTok\b.*$/i,"").trim();
-          const why = (Array.isArray(rs.highlights) ? (rs.highlights[0]||"") : "").replace(/\s+/g," ").trim().slice(0,120);
-          exaArr.push({ handle:"@"+handle, name: name||("@"+handle), url:`https://www.tiktok.com/@${handle}`, followers:"", why: why||"Real profile from live search — run the audit to confirm the fit.", src:"exa" });
-        }
+        const res = await exaFindTikTokHandles(niche, seen);
+        exaArr = res.candidates; exaDiag = res.diag;
       } catch(e){ console.warn("[finder] Exa unavailable, falling back to Perplexity:", e?.message); }
       if(exaArr.length){
         const have = new Set((more?findResults:[]).map(c=>_normH(c.handle)));
         const fresh = exaArr.filter(c=>{ const k=_normH(c.handle); if(have.has(k)) return false; have.add(k); return true; });
         const merged = more ? [...findResults, ...fresh] : fresh;
         setFindResults(merged.slice(0,40));
+        // Self-test signal: tell the operator how good Exa's coverage was this run, so
+        // "is the finder reliable?" is answerable from the UI, not a black box.
         if(!merged.length) setFindErr("No fresh candidates came back. Try a more specific niche.");
+        else if(fresh.length < 5) setFindErr(`Exa found ${fresh.length} real ${fresh.length===1?"handle":"handles"} for this niche${exaDiag?.pass2Used?" (thin direct coverage, widened to round-ups)":""}. Try a more specific niche for more.`);
         setFindBusy(false);
         return;
       }
