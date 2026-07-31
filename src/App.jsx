@@ -8218,46 +8218,63 @@ async function callExaSearch(query, { numResults=10, type="auto", includeDomains
 // Returns { candidates, diag } so the caller can show coverage (self-test signal).
 const _TT_HANDLE = /tiktok\.com\/@([a-z0-9._-]{2,24})/i;
 const _TT_HANDLE_G = /tiktok\.com\/@([a-z0-9._-]{2,24})/gi;
+// Conservative "too big for outreach" guard. The target is mid-tier (~20k-250k) who
+// read their own DMs; a mega-creator (300k+ / millions) is a bad lead. We can only act
+// when the SOURCE TEXT clearly states the size near the handle — and we only ever DROP
+// on a clear signal, never display a parsed count (a wrong number is worse than none).
+const _megaFollowers = (snippet="") => {
+  const s = String(snippet).toLowerCase();
+  if(/\b\d[\d.,]*\s*m(illion)?\b[^.]{0,18}follow/.test(s)) return true;               // "1.2M followers"
+  const km = s.match(/\b(\d[\d.,]*)\s*k\b[^.]{0,18}follow/);                           // "500k followers"
+  if(km && parseFloat(km[1].replace(/,/g,"")) >= 300) return true;                     // 300k+ = out of band
+  const raw = s.match(/\b(\d[\d,]{4,}\d)\b[^.]{0,18}follow/);                          // "1,200,000 followers"
+  if(raw && parseInt(raw[1].replace(/,/g,""),10) >= 300000) return true;
+  return false;
+};
 async function exaFindTikTokHandles(niche, excludeSet=new Set()) {
   const out = new Map();
-  const diag = { pass1Results:0, pass2Results:0, pass2Used:false };
+  const diag = { pass1Results:0, pass2Results:0, dropped:0 };
   const add = (handle, name, why) => {
     const h = String(handle||"").toLowerCase().replace(/[.]+$/,"");
     if(!h || out.has(h) || excludeSet.has(h)) return;
     out.set(h, { handle:"@"+h, name: name||("@"+h), url:`https://www.tiktok.com/@${h}`, followers:"", why: why||"Real profile from live search — audit to confirm the fit.", src:"exa" });
   };
-  // Pass 1 — direct TikTok profile pages
+  // Pass 1 — direct TikTok profile pages. Query biased toward SMALLER/rising creators
+  // (Exa still ranks big accounts high, so this is a nudge, not a filter).
   try {
-    const d = await withTimeout(callExaSearch(`${niche} creators on TikTok`, { numResults:25, type:"auto", includeDomains:["tiktok.com"], contents:{ highlights:true } }), 20000, "exa1");
+    const d = await withTimeout(callExaSearch(`up and coming smaller ${niche} creators on TikTok`, { numResults:25, type:"auto", includeDomains:["tiktok.com"], contents:{ highlights:true } }), 20000, "exa1");
     const results = Array.isArray(d?.results) ? d.results : [];
     diag.pass1Results = results.length;
     for(const rs of results){
       const m = String(rs.url||"").match(_TT_HANDLE);
       if(!m) continue;
+      const hl = (Array.isArray(rs.highlights) ? (rs.highlights[0]||"") : "").replace(/\s+/g," ").trim();
+      if(_megaFollowers(rs.title+" "+hl)){ diag.dropped++; continue; } // clearly a mega account
       const name = String(rs.title||"").replace(/\s*[|(].*$/,"").replace(/\bon TikTok\b.*$/i,"").trim();
-      const why = (Array.isArray(rs.highlights) ? (rs.highlights[0]||"") : "").replace(/\s+/g," ").trim().slice(0,120);
-      add(m[1], name, why);
+      add(m[1], name, hl.slice(0,120));
     }
   } catch(e){ console.warn("[finder] exa pass1:", e?.message); }
-  // Pass 2 — widen to round-up articles only if direct coverage was thin
-  if(out.size < 8){
-    diag.pass2Used = true;
-    try {
-      const d = await withTimeout(callExaSearch(`best ${niche} creators to follow on TikTok`, { numResults:12, type:"auto", contents:{ text:{ maxCharacters:3000 } } }), 22000, "exa2");
-      const results = Array.isArray(d?.results) ? d.results : [];
-      diag.pass2Results = results.length;
-      for(const rs of results){
-        const text = String(rs.text||"");
-        let m; const seenHere = new Set();
-        while((m = _TT_HANDLE_G.exec(text))){
-          const h = m[1].toLowerCase();
-          if(seenHere.has(h)) continue; seenHere.add(h);
-          add(h, "@"+h, `Named in a "${(rs.title||"top creators").replace(/\s+/g," ").slice(0,50)}" round-up — audit to confirm.`);
-        }
-        _TT_HANDLE_G.lastIndex = 0;
+  // Pass 2 — ALWAYS run: round-up articles targeting UNDERRATED / up-and-coming creators,
+  // which is where mid-tier (band-appropriate) creators actually get listed. Extract real
+  // handles from the article text, and drop any the article flags as mega right beside them.
+  try {
+    const d = await withTimeout(callExaSearch(`underrated up-and-coming ${niche} creators on TikTok worth following (smaller accounts)`, { numResults:12, type:"auto", contents:{ text:{ maxCharacters:3500 } } }), 22000, "exa2");
+    const results = Array.isArray(d?.results) ? d.results : [];
+    diag.pass2Results = results.length;
+    for(const rs of results){
+      const text = String(rs.text||"");
+      let m; const seenHere = new Set();
+      while((m = _TT_HANDLE_G.exec(text))){
+        const h = m[1].toLowerCase();
+        if(seenHere.has(h)) continue; seenHere.add(h);
+        // Size-check the window right around this handle mention, not the whole article
+        // (which may cite millions for a DIFFERENT creator).
+        if(_megaFollowers(text.slice(Math.max(0,m.index-12), m.index+80))){ diag.dropped++; continue; }
+        add(h, "@"+h, `Named in a "${(rs.title||"creator round-up").replace(/\s+/g," ").slice(0,50)}" list — audit to confirm size + fit.`);
       }
-    } catch(e){ console.warn("[finder] exa pass2:", e?.message); }
-  }
+      _TT_HANDLE_G.lastIndex = 0;
+    }
+  } catch(e){ console.warn("[finder] exa pass2:", e?.message); }
   return { candidates:[...out.values()], diag };
 }
 async function callPerplexity(prompt, wl=WL) {
@@ -9170,8 +9187,9 @@ function ProspectAuditView({ WL, operator=false }){
         setFindResults(merged.slice(0,40));
         // Self-test signal: tell the operator how good Exa's coverage was this run, so
         // "is the finder reliable?" is answerable from the UI, not a black box.
-        if(!merged.length) setFindErr("No fresh candidates came back. Try a more specific niche.");
-        else if(fresh.length < 5) setFindErr(`Exa found ${fresh.length} real ${fresh.length===1?"handle":"handles"} for this niche${exaDiag?.pass2Used?" (thin direct coverage, widened to round-ups)":""}. Try a more specific niche for more.`);
+        const droppedNote = exaDiag?.dropped ? ` (${exaDiag.dropped} too-big skipped)` : "";
+        if(!merged.length) setFindErr(`No mid-tier candidates came back${droppedNote}. Try a more specific niche.`);
+        else if(fresh.length < 5) setFindErr(`Exa found ${fresh.length} real mid-tier ${fresh.length===1?"handle":"handles"}${droppedNote}. Try a more specific niche for more.`);
         setFindBusy(false);
         return;
       }
