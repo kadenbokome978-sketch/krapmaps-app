@@ -8231,9 +8231,13 @@ const _megaFollowers = (snippet="") => {
   if(raw && parseInt(raw[1].replace(/,/g,""),10) >= 300000) return true;
   return false;
 };
-async function exaFindTikTokHandles(niche, excludeSet=new Set()) {
+async function exaFindTikTokHandles(niche, excludeSet=new Set(), { courseSellers=true } = {}) {
   const out = new Map();
   const diag = { pass1Results:0, pass2Results:0, dropped:0 };
+  // Course/coaching sellers are the best prospects (they have budget and feel the
+  // reach-to-revenue link directly). When on, bias both queries toward them.
+  const sells = courseSellers ? " who sell a course or coaching" : "";
+  const sells2 = courseSellers ? " who sell courses or coaching programs" : "";
   const add = (handle, name, why) => {
     const h = String(handle||"").toLowerCase().replace(/[.]+$/,"");
     if(!h || out.has(h) || excludeSet.has(h)) return;
@@ -8242,7 +8246,7 @@ async function exaFindTikTokHandles(niche, excludeSet=new Set()) {
   // Pass 1 — direct TikTok profile pages. Query biased toward SMALLER/rising creators
   // (Exa still ranks big accounts high, so this is a nudge, not a filter).
   try {
-    const d = await withTimeout(callExaSearch(`up and coming smaller ${niche} creators on TikTok`, { numResults:25, type:"auto", includeDomains:["tiktok.com"], contents:{ highlights:true } }), 20000, "exa1");
+    const d = await withTimeout(callExaSearch(`up and coming smaller ${niche} creators on TikTok${sells}`, { numResults:25, type:"auto", includeDomains:["tiktok.com"], contents:{ highlights:true } }), 20000, "exa1");
     const results = Array.isArray(d?.results) ? d.results : [];
     diag.pass1Results = results.length;
     for(const rs of results){
@@ -8258,7 +8262,7 @@ async function exaFindTikTokHandles(niche, excludeSet=new Set()) {
   // which is where mid-tier (band-appropriate) creators actually get listed. Extract real
   // handles from the article text, and drop any the article flags as mega right beside them.
   try {
-    const d = await withTimeout(callExaSearch(`underrated up-and-coming ${niche} creators on TikTok worth following (smaller accounts)`, { numResults:12, type:"auto", contents:{ text:{ maxCharacters:3500 } } }), 22000, "exa2");
+    const d = await withTimeout(callExaSearch(`underrated up-and-coming ${niche} creators on TikTok${sells2} worth following (smaller accounts)`, { numResults:12, type:"auto", contents:{ text:{ maxCharacters:3500 } } }), 22000, "exa2");
     const results = Array.isArray(d?.results) ? d.results : [];
     diag.pass2Results = results.length;
     for(const rs of results){
@@ -9155,6 +9159,7 @@ function ProspectAuditView({ WL, operator=false }){
   const [findOpen, setFindOpen] = useState(false);
   const [findNiche, setFindNiche] = useState("");
   const [findBand, setFindBand] = useState("20k-250k");
+  const [findCourse, setFindCourse] = useState(true); // bias to creators who sell a course/coaching (best budget)
   const [findBusy, setFindBusy] = useState(false);
   const [findErr, setFindErr] = useState("");
   const [findResults, setFindResults] = useState([]);
@@ -9177,7 +9182,7 @@ function ProspectAuditView({ WL, operator=false }){
       // Perplexity generative search below (which can hallucinate, hence the order).
       let exaArr = [], exaDiag = null;
       try {
-        const res = await exaFindTikTokHandles(niche, seen);
+        const res = await exaFindTikTokHandles(niche, seen, { courseSellers: findCourse });
         exaArr = res.candidates; exaDiag = res.diag;
       } catch(e){ console.warn("[finder] Exa unavailable, falling back to Perplexity:", e?.message); }
       if(exaArr.length){
@@ -9816,6 +9821,11 @@ Return ONLY JSON:
                 </select>
                 <button onClick={()=>runFinder(false)} disabled={findBusy||!findNiche.trim()} style={{ padding:"11px 20px", borderRadius:10, border:"none", background:findBusy?"rgba(255,255,255,0.1)":`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:700, fontSize:13, cursor:findBusy?"wait":"pointer", opacity:findNiche.trim()?1:0.5, whiteSpace:"nowrap" }}>{findBusy?<span style={{display:"inline-flex",alignItems:"center",gap:7}}><Spin s={12}/> SEARCHING</span>:"FIND"}</button>
               </div>
+              <button onClick={()=>setFindCourse(v=>!v)} style={{ alignSelf:"flex-start", display:"inline-flex", alignItems:"center", gap:8, padding:"6px 10px", borderRadius:9, border:`1px solid ${findCourse?C.green:"rgba(255,255,255,0.14)"}`, background:findCourse?`${C.green}12`:"transparent", color:findCourse?C.green:"rgba(255,255,255,0.55)", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:C.fontHead }}>
+                <span style={{ width:15, height:15, borderRadius:4, border:`1.5px solid ${findCourse?C.green:"rgba(255,255,255,0.35)"}`, background:findCourse?C.green:"transparent", display:"inline-flex", alignItems:"center", justifyContent:"center", color:"#0a0614", fontSize:11 }}>{findCourse?"✓":""}</span>
+                Prefer creators who sell a course / coaching
+              </button>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", marginTop:-2 }}>Course sellers have budget and feel the reach-to-sales link directly — best prospects. Turn off to widen.</div>
               {findErr && <div style={{ fontSize:12.5, color:"#FF6B7D", lineHeight:1.5 }}>{findErr}</div>}
               {findResults.length>0 && (
                 <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
