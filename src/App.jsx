@@ -14199,7 +14199,8 @@ function AuthGate({ onAuthed }) {
         <div style={{ textAlign:"center", marginBottom:32 }}>
           <img src="/icon-512.png" alt={appName} style={{ width:56, height:56, borderRadius:16, boxShadow:`0 0 28px ${accent}44`, marginBottom:16 }} />
           <div style={{ fontSize:isMobile?28:34, fontWeight:800, letterSpacing:"-0.02em" }}><span style={{ color:"#fff" }}>Green</span><span style={{ color:accent }}>lit</span></div>
-          <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginTop:8 }}>{mode==="signin" ? "Sign in to your account" : mode==="reset" ? "Choose a new password" : "Create your account"}</div>
+          {mode!=="reset" && <div style={{ fontSize:isMobile?17:19, color:"#fff", fontWeight:700, marginTop:12, lineHeight:1.3, letterSpacing:"-0.01em" }}>Know what to film<br/>before you hit record.</div>}
+          <div style={{ fontSize:13.5, color:"rgba(255,255,255,0.5)", marginTop:mode==="reset"?8:10, lineHeight:1.5 }}>{mode==="signin" ? "Welcome back — sign in to your content engine." : mode==="reset" ? "Choose a new password" : "Ranked, personalised video ideas for your account — updated every week."}</div>
         </div>
         {mode!=="reset" && <button onClick={()=>{ window.location.href=`${getSbUrl()}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(window.location.origin+'/dashboard')}`; }}
           style={{ width:"100%", padding:"14px", borderRadius:12, border:"1px solid rgba(255,255,255,0.12)", background:"rgba(255,255,255,0.04)", color:"#fff", fontWeight:600, fontSize:15, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:6 }}>
