@@ -6247,6 +6247,85 @@ const formatGrowthDiagnosis = (g) => {
   return out;
 };
 
+// ── DEEP INSIGHTS (best-in-class, deterministic) ──────────────────
+// Three strategist-grade findings a creator can't self-generate, computed from
+// public counts only. All done median-anchored, with age-censoring so we never
+// diagnose a healthy creator as declining just because their newest posts haven't
+// finished accumulating views.
+//   • RE-CUT: reach × resonance. A video with strong per-view engagement but
+//     below-median reach is an algorithm-starved gem → repost / re-cut it.
+//   • ENGINE MAP: group by (inferred) hook style; classify each as a reliable
+//     engine (high floor), a lottery (high ceiling, low hit-rate) or dead weight.
+//   • TRAJECTORY: age-adjusted recent-vs-prior median → accelerating / flat /
+//     cooling, stated honestly with the censoring caveat.
+const _ageDays = (v) => { if(!v?.created_at) return null; const t=new Date(v.created_at).getTime(); return isFinite(t) ? Math.floor((Date.now()-t)/86400000) : null; };
+const buildDeepInsights = (videos=[]) => {
+  const v = videos.filter(x=>x.views>0);
+  if(v.length < 6) return null;
+  const med = medianViews(v) || 1;
+  // Mature set: drop videos < 14 days old from performance comparisons (still maturing).
+  const mature = v.filter(x=>{ const a=_ageDays(x); return a==null || a>=14; });
+  const pool = mature.length >= 5 ? mature : v;
+  const immatureCount = v.length - mature.length;
+
+  // ── RE-CUT: resonance (per-view engagement, weighted to sends/comments) vs reach.
+  const withRes = pool.filter(x=>(x.likes||x.comments||x.shares)).map(x=>({
+    x, resonance: ((x.likes||0)*0.2 + (x.comments||0)*3 + (x.shares||0)*5)/Math.max(x.views,1), reach: x.views/med,
+  }));
+  let recut = [];
+  if(withRes.length >= 5){
+    const sorted = [...withRes].sort((a,b)=>a.resonance-b.resonance);
+    const pct = new Map(sorted.map((r,i)=>[r, i/Math.max(sorted.length-1,1)]));
+    recut = withRes.filter(r=> r.reach < 0.9 && (pct.get(r)>=0.7))   // below-median reach, top-30% resonance
+                   .sort((a,b)=>b.resonance-a.resonance).slice(0,3)
+                   .map(r=>({ title:r.x.title||"(no caption)", views:r.x.views, mult:+(r.reach).toFixed(2) }));
+  }
+
+  // ── ENGINE MAP: cluster by hook style, need >=3 per cluster to classify.
+  const byHook = {};
+  pool.forEach(x=>{ const h=x.hook||"untagged"; (byHook[h]=byHook[h]||[]).push(x.views); });
+  const engines = Object.entries(byHook).filter(([,a])=>a.length>=3).map(([hook,views])=>{
+    const s=[...views].sort((a,b)=>a-b);
+    const floor = s[Math.floor(s.length/2)];                 // cluster median (the reliable base)
+    const ceiling = s[s.length-1];
+    const hitRate = views.filter(x=>x>=med*1.5).length/views.length; // % beating 1.5x channel median
+    const kind = floor>=med && hitRate>=0.4 ? "reliable" : ceiling>=med*3 && hitRate<0.3 ? "lottery" : floor<med*0.6 ? "deadweight" : "mixed";
+    return { hook, n:views.length, floor, ceiling, hitRate:+(hitRate*100).toFixed(0), kind };
+  }).sort((a,b)=>b.floor-a.floor);
+
+  // ── TRAJECTORY: age-adjusted recent vs prior median (mature only, log-safe via medians).
+  const dated = [...pool].filter(x=>x.created_at).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  let trajectory = null;
+  if(dated.length >= 10){
+    const half = Math.floor(dated.length/2);
+    const recentMed = medianViews(dated.slice(0,half));
+    const priorMed  = medianViews(dated.slice(half));
+    if(recentMed && priorMed){
+      const ratio = recentMed/priorMed;
+      trajectory = { ratio:+ratio.toFixed(2), recentMed, priorMed,
+        verdict: ratio>=1.25?"accelerating":ratio<=0.8?"cooling":"steady" };
+    }
+  }
+  return { recut, engines, trajectory, immatureCount, sampleSize:pool.length };
+};
+const formatDeepInsights = (d) => {
+  if(!d) return "";
+  let out = "DEEP INSIGHTS (deterministic, computed from their real numbers — use these for the smartest findings; they are the 'how did they know that' moments):\n";
+  if(d.immatureCount>0) out += `• Note: ${d.immatureCount} of their newest videos are under 14 days old and still accumulating — EXCLUDED from trend/performance math so we don't wrongly call a healthy creator 'declining'. Do not treat recent posts' current view counts as final.\n`;
+  if(d.trajectory) out += `• Trajectory (age-adjusted): recent median ${fmtN(d.trajectory.recentMed)} vs earlier ${fmtN(d.trajectory.priorMed)} = ${d.trajectory.verdict} (${d.trajectory.ratio}x). State this honestly, it's mature-video only.\n`;
+  if(d.engines.length){
+    out += `• Format engine map (grouped by hook style, n>=3):\n`;
+    d.engines.forEach(e=>{ out += `   - "${e.hook}" (n=${e.n}): floor ${fmtN(e.floor)}, ceiling ${fmtN(e.ceiling)}, ${e.hitRate}% beat 1.5x median → ${e.kind.toUpperCase()}\n`; });
+    out += `   → RELIABLE = high dependable floor, tell them to post MORE of it. LOTTERY = big ceiling but rarely hits, tell them to keep it occasional not core. DEADWEIGHT = low floor and ceiling, gently retire. Creators usually over-post their lottery format (they remember the one hit) and under-post their reliable engine — surface that if it's true here.\n`;
+  }
+  if(d.recut.length){
+    out += `• RE-CUT candidates (strong per-view engagement but the algorithm under-distributed them — starved gems worth reposting or re-cutting with a stronger first frame):\n`;
+    d.recut.forEach(r=>{ out += `   - "${(r.title||'').replace(/\\s+/g,' ').slice(0,70)}" — only ${fmtN(r.views)} views (${r.mult}x median) but high engagement per view.\n`; });
+    out += `   → Make ONE of the 5 ideas a "re-cut/repost THIS specific video" play — it's the highest-converting idea type because it mines an asset they already own, no creation risk.\n`;
+  }
+  return out;
+};
+
 // ── COMBINATION MATRIX ────────────────────────────────────────────
 // Finds winning Hook+Type+Pillar combos — individual factors alone don't predict virality
 const buildComboMatrix = (videos=[]) => {
@@ -9584,6 +9663,10 @@ Return ONLY JSON: {"dm":"the message, with a line break between paragraphs as \\
       // purely from public counts; drives the verdict and the biggest fix.
       const growth = buildGrowthDiagnosis(videos, followers);
       const growthBlock = growth ? formatGrowthDiagnosis(growth) : "";
+      // Deep insights — re-cut gems, format-engine map, age-adjusted trajectory. The
+      // "how did they know that" layer; runs on the hook-tagged set so engines cluster.
+      const deep = buildDeepInsights(hookTagged);
+      const deepBlock = deep ? formatDeepInsights(deep) : "";
       // Score every video with the engine (median-benchmarked) to find genuine hits vs typical.
       const scored = withV.map(v=>({ v, s:calcVideoScore(v, withV) })).filter(x=>x.s);
       // ── DATA FARM runs AFTER the AI call — we tag the corpus with the PROSPECT'S
@@ -9656,6 +9739,7 @@ ${recencyBlock}
 ${varianceBlock}
 ${trendsBlock?`\n${trendsBlock}\n`:""}
 ━━ ENGINE ANALYSIS (computed from their real numbers — the same engine the paid app runs) ━━
+${deepBlock}
 ${hooksAreInferred?"NOTE: hook types below are INFERRED from caption phrasing (we haven't watched the videos), so treat the hook-performance table as directional — frame any point about it as 'your captions phrased as X tend to…', never as a claim about their on-screen hook.\n":""}${growthBlock}
 ${insightsBlock}
 ${engBlock}
@@ -9728,7 +9812,7 @@ Return ONLY JSON:
         }
       } catch {}
       if(!r) setErr("AI write-up failed — showing raw data. Reason: " + (aiErrMsg||"unknown error"));
-      const rep = { h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit", ceilingAge, recentMed, trend, trendsUsed, growth };
+      const rep = { h, nick, followers, count:withV.length, avg, median, ceiling, engRate, top:top.slice(0,3), voice, ai:r||{}, app:wl.appName||"Greenlit", ceilingAge, recentMed, trend, trendsUsed, growth, deep };
       setReport(rep);
       saveJSON("km_last_audit", { at:Date.now(), rep }); // survives a page refresh
       if(operator){ logProspect(rep); if(r) genDM(rep); setTimeout(loadCorpusStat, 2500); } // auto-log + DM + refresh memory count
@@ -9948,6 +10032,34 @@ Return ONLY JSON:
               ); })()}
             </div>
           ); })()}
+          {/* Engine map + re-cut gem — deterministic deep insights, so they render even
+              if the AI write-up fails. The "how did they know that" strategist layer. */}
+          {report.deep && (report.deep.engines?.length>0 || report.deep.recut?.length>0) && (
+            <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":(report.deep.engines?.length && report.deep.recut?.length ? "1fr 1fr" : "1fr"), gap:12, marginBottom:18 }}>
+              {report.deep.engines?.length>0 && (()=>{ const kc={reliable:C.green,lottery:C.yellow,deadweight:"#FF6B7D",mixed:"rgba(255,255,255,0.5)"}; const kl={reliable:"RELIABLE ENGINE",lottery:"LOTTERY",deadweight:"DEAD WEIGHT",mixed:"MIXED"}; return (
+                <div style={{ background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, padding:"14px 16px" }}>
+                  <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.purple, fontWeight:700, marginBottom:10 }}>YOUR FORMAT ENGINES</div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    {report.deep.engines.slice(0,4).map((e,i)=>(
+                      <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+                        <span style={{ fontSize:13, color:"#fff", fontWeight:600, textTransform:"capitalize" }}>{e.hook}<span style={{ fontSize:10.5, color:"rgba(255,255,255,0.35)", fontWeight:500, marginLeft:6 }}>{fmtN(e.floor)} typical</span></span>
+                        <span style={{ fontSize:8.5, fontWeight:800, letterSpacing:"0.06em", color:kc[e.kind], background:`${kc[e.kind]}18`, border:`1px solid ${kc[e.kind]}3a`, borderRadius:6, padding:"2px 7px", whiteSpace:"nowrap" }}>{kl[e.kind]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ); })()}
+              {report.deep.recut?.length>0 && (
+                <div style={{ background:`linear-gradient(160deg,${C.green}0d,rgba(255,255,255,0.02))`, border:`1px solid ${C.green}2a`, borderRadius:12, padding:"14px 16px" }}>
+                  <div style={{ fontSize:11, letterSpacing:"0.1em", color:C.green, fontWeight:700, marginBottom:8 }}>↻ RE-CUT THIS ONE FIRST</div>
+                  <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.75)", lineHeight:1.5, marginBottom:8 }}>Strong engagement but the algorithm starved it of reach — a buried win worth reposting:</div>
+                  {report.deep.recut.slice(0,2).map((r,i)=>(
+                    <div key={i} style={{ fontSize:12.5, color:"#fff", lineHeight:1.45, marginTop:i?6:0, paddingLeft:12, position:"relative" }}><span style={{ position:"absolute", left:0, top:6, width:6, height:6, borderRadius:2, background:C.green }}/>"{(r.title||'').replace(/\s+/g,' ').slice(0,60)}" — only {fmtN(r.views)} views</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {/* Voice */}
           {report.voice && (
             <div style={{ marginBottom:18 }}>
