@@ -1894,6 +1894,43 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                     </div>
                   )}
 
+                  {/* ── PREDICTION vs ACTUAL — shows after posting with a score ── */}
+                  {idea.status==="posted" && (idea.postedViews>0) && (idea.viral>0) && (() => {
+                    const organicAvg = videoScores ? Object.values(videoScores).reduce((s,x)=>s+(x?.score||0),0)/Math.max(1,Object.values(videoScores).length) : 0;
+                    // Use channel avg views from videos array (passed via videoScores context) — best-effort
+                    const estV = idea.aiScore?.estimated_views;
+                    const actual = idea.postedViews;
+                    // Parse estimated_views like "80k–120k" or "50k" to a number for comparison
+                    const parseEst = (s) => { if(!s) return 0; const m=String(s).replace(/,/g,"").match(/(\d+(?:\.\d+)?)\s*[kK]/); if(m) return parseFloat(m[1])*1000; const m2=String(s).replace(/,/g,"").match(/(\d+(?:\.\d+)?)\s*[mM]/); if(m2) return parseFloat(m2[1])*1e6; const m3=String(s).replace(/,/g,"").match(/(\d+)/); return m3?parseFloat(m3[1]):0; };
+                    const estNum = parseEst(estV);
+                    const hitRate = estNum>0 ? actual/estNum : null;
+                    const verdict = hitRate==null ? null : hitRate>=1.3?"OVERPERFORMED":hitRate>=0.7?"ON TRACK":"UNDERPERFORMED";
+                    const verdictC = verdict==="OVERPERFORMED"?C.green:verdict==="ON TRACK"?C.cyan:"#FF6B6B";
+                    return (
+                      <div style={{ margin:"0 14px 10px", padding:"10px 14px", borderRadius:10, background: verdict==="OVERPERFORMED"?`${C.green}0a`:verdict==="ON TRACK"?`${C.cyan}08`:`rgba(255,107,107,0.06)`, border:`1px solid ${verdictC||C.cyan}22` }}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, flexWrap:"wrap" }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+                            {/* Prediction */}
+                            <div style={{ display:"flex", flexDirection:"column" }}>
+                              <span style={{ fontSize:9, fontWeight:800, letterSpacing:"0.1em", color:"rgba(255,255,255,0.3)", textTransform:"uppercase" }}>Predicted</span>
+                              <span style={{ fontSize:14, fontWeight:800, fontFamily:C.fontHead, color:"rgba(255,255,255,0.55)" }}>{idea.viral}/100{estV?<span style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.3)"}}> · ~{showEst(estV)}</span>:null}</span>
+                            </div>
+                            <span style={{ fontSize:16, color:"rgba(255,255,255,0.2)", fontWeight:300 }}>→</span>
+                            {/* Actual */}
+                            <div style={{ display:"flex", flexDirection:"column" }}>
+                              <span style={{ fontSize:9, fontWeight:800, letterSpacing:"0.1em", color:"rgba(255,255,255,0.3)", textTransform:"uppercase" }}>Actual</span>
+                              <span style={{ fontSize:14, fontWeight:800, fontFamily:C.fontHead, color:verdictC||"#fff" }}>{fmt(actual)} views</span>
+                            </div>
+                          </div>
+                          {verdict && <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.1em", color:verdictC, background:`${verdictC}18`, border:`1px solid ${verdictC}30`, borderRadius:6, padding:"3px 8px" }}>{verdict}</span>}
+                        </div>
+                        <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:6, fontFamily:C.fontBody }}>
+                          {verdict==="OVERPERFORMED" ? "Result banked — system learned what made this work." : verdict==="ON TRACK" ? "Result banked — system is calibrating to your channel." : "Result banked — system noted what to improve next time."}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* ── ACTIONS — clear hierarchy ── */}
                   <div style={{ padding:isMobile?"13px 16px":"10px 14px", borderTop:"1px solid rgba(255,255,255,0.05)", display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
 
