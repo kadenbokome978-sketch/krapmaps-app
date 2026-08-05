@@ -14,6 +14,16 @@ const _activeCfg = (()=>{ try { const s=localStorage.getItem("krapmaps_v1_client
 const _isThiernoClient = _activeCfg.clientId === "thierno";
 if(typeof document !== "undefined") {
   document.title = _activeCfg.appName || "Greenlit";
+  // Global a11y/polish injected once: honour prefers-reduced-motion (kills the
+  // decorative animation for users who ask for less), and give keyboard users a
+  // visible focus ring the inline-styled app otherwise lacks. :focus-visible is
+  // keyboard-only, so mouse users see no change — both are low-risk, app-wide wins.
+  try {
+    const _gs = document.createElement("style");
+    _gs.textContent = `@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}`
+      + `:focus-visible{outline:2px solid ${_activeCfg.accentColor||"#22E06B"};outline-offset:2px;border-radius:4px}`;
+    document.head.appendChild(_gs);
+  } catch {}
   // Whitelabel the PWA install: iOS reads the apple title meta and browsers read
   // the manifest at add-to-home-screen time, so runtime rebranding sticks.
   try {
