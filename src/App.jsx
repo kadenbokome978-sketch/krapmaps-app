@@ -9491,6 +9491,35 @@ const _fallbackTest = (idea, avgViews=60000) => {
   };
 };
 
+// The panel — 6 specialist agents, each hunting ONE factor that makes videos travel.
+const PANEL_LENSES = [
+  { key:"hook",            label:"Hook",            color:"#00E5FF", weight:0.28, ask:"Does the first 1 second stop the thumb? Judge the opening line / visual purely as a scroll-stopper." },
+  { key:"retention",       label:"Retention",       color:"#39FF14", weight:0.22, ask:"Is there an open loop that holds attention past 3 seconds? Where exactly will viewers drop off?" },
+  { key:"share",           label:"Share Trigger",   color:"#FFD50A", weight:0.20, ask:"Is there a concrete reason to send this to a friend (identity, utility, 'you HAVE to see this')? Share rate is the #1 cold-distribution lever." },
+  { key:"emotion",         label:"Emotional Spike", color:"#FF3D8B", weight:0.12, ask:"Does it trigger a strong emotion — surprise, awe, outrage, 'I knew it'? Flat feeling = no spread." },
+  { key:"fit",             label:"Audience Fit",    color:"#C566FF", weight:0.10, ask:"Does it match what THIS channel's real followers actually ask for and engage with?" },
+  { key:"differentiation", label:"Differentiation", color:"#FF6B1A", weight:0.08, ask:"Is this fresh, or has the niche done it to death? Overdone angles cap reach." },
+];
+const _lensScore = (panel,key)=>{ const p=(panel||[]).find(x=>x.key===key); return p?Math.max(0,Math.min(10,Number(p.score)||0)):5; };
+// Turn the panel's dimension scores into grounded, explainable telemetry.
+const _synthFromPanel = (panel, avgViews=60000) => {
+  const sh=_lensScore(panel,"hook"), sr=_lensScore(panel,"retention"), ss=_lensScore(panel,"share"),
+        se=_lensScore(panel,"emotion"), sf=_lensScore(panel,"fit"), sd=_lensScore(panel,"differentiation");
+  const verdict = Math.round(PANEL_LENSES.reduce((s,l)=>s+_lensScore(panel,l.key)*l.weight,0)*10);
+  const thumbStop = Math.round(34+sh*6);
+  const retention3s = Math.round(28+sr*6.5);
+  const completion = Math.round(18+Math.min(sr,se+2)*5);
+  const shareRate = +(Math.max(0.4,(ss*0.85+se*0.15))).toFixed(1);
+  const saveRate = +(2+se*1.4).toFixed(1);
+  const newFollows = Math.round(sf*40 + verdict*0.6);
+  const diffMod = 0.7+sd*0.06;
+  const estViews = fmt(Math.round(avgViews*(0.45+verdict/100*1.55)*diffMod));
+  const retLens = (panel||[]).find(x=>x.key==="retention");
+  const bounce = { atSec: sr>=7?4:3, pct: Math.max(12,100-retention3s), reason: (retLens&&retLens.fix)||"The hook pays off too late — front-load the reveal." };
+  const curve = [100,96,88, retention3s+8, retention3s+4, Math.round((retention3s+completion)/2), completion+6, completion+2, completion].map(v=>Math.max(24,Math.min(100,Math.round(v))));
+  return { thumbStop, retention3s, completion, shareRate, saveRate, newFollows, verdict, estViews, swipedPct:100-thumbStop, bounce, curve };
+};
+
 function TestAudienceView({ ideas=[], videos=[], commentInsights=null, WL={} }){
   const isMobile = typeof window !== "undefined" && window.innerWidth < 900;
   const testable = (ideas||[]).filter(i=>i.title);
@@ -9538,19 +9567,41 @@ function TestAudienceView({ ideas=[], videos=[], commentInsights=null, WL={} }){
   const run = async () => {
     if(busy) return;
     setBusy(true); setErr(""); setProg(0);
-    let r=null;
+    const audCtx = commentInsights ? `THIS channel's real audience — themes they obsess over: ${(commentInsights.top_themes||[]).slice(0,4).join(", ")}; what they ask for: ${(commentInsights.audience_requests||[]).slice(0,3).join(", ")}; their exact words: ${(commentInsights.language_patterns||[]).slice(0,4).join(", ")}.` : "";
+    const ideaBlock = `Niche: ${WL.niche||"general"} | Audience: ${WL.targetAudience||"general"} | Channel avg views: ${avgViews}\n${audCtx}\nVIDEO IDEA — Title: "${activeIdea.title}" | Hook: "${activeIdea.hook||"(infer the likely opening line)"}"`;
+    const fb = _fallbackTest(activeIdea, avgViews);
+
+    // ── Panel of expert agents — each hunts ONE viral factor, all in parallel ──
+    const lensTasks = PANEL_LENSES.map(async (l)=>{
+      try {
+        const p = `You are a short-form virality analyst evaluating ONE dimension only: ${l.label.toUpperCase()}. ${l.ask}\n\n${ideaBlock}\n\nScore ONLY this dimension for THIS specific audience. Be honest — most ideas are average, reserve 8+ for genuinely strong. Return ONLY JSON: {"score":<0-10>,"headline":"<≤6 word verdict>","evidence":"<one sentence, reference the actual idea>","fix":"<one specific improvement>"}`;
+        const raw = await callAI(p, 400);
+        const j = typeof raw==="string" ? JSON.parse(_stripThink(raw)) : raw;
+        return { key:l.key, label:l.label, color:l.color, score:Math.max(0,Math.min(10,Number(j.score)||5)), headline:j.headline||l.label, evidence:j.evidence||"", fix:j.fix||"" };
+      } catch(e){
+        return { key:l.key, label:l.label, color:l.color, score:Math.round(fb.verdict/10), headline:l.label, evidence:"Estimated offline.", fix:"Add an AI key for a live expert read.", offline:true };
+      }
+    });
+    // Voice agent — the visible comments, in parallel with the panel
+    const voiceTask = (async ()=>{
+      try {
+        const p = `${ideaBlock}\n\nWrite 5 comments THIS channel's real followers would actually leave, in their exact voice and slang. Return ONLY JSON: {"comments":[{"handle":"@...","initials":"XY","text":"...","tag":"<why it matters for reach>","color":"#hex"}]}`;
+        const raw = await callAI(p, 700);
+        const j = typeof raw==="string" ? JSON.parse(_stripThink(raw)) : raw;
+        return Array.isArray(j.comments)&&j.comments.length ? j.comments : fb.comments;
+      } catch(e){ return fb.comments; }
+    })();
+
+    let panel, comments;
     try {
-      const ctx = commentInsights ? `Real audience voice — themes: ${(commentInsights.top_themes||[]).slice(0,4).join(", ")}; they ask for: ${(commentInsights.audience_requests||[]).slice(0,3).join(", ")}; their exact words: ${(commentInsights.language_patterns||[]).slice(0,4).join(", ")}.` : "";
-      const prompt = `You simulate a focus group of ${WL.targetAudience||"this creator's"} followers reacting to a short-form video BEFORE it's filmed. Channel niche: ${WL.niche||"general"}. Channel avg views: ${avgViews}. ${ctx}\n\nVIDEO IDEA:\nTitle: ${activeIdea.title}\nHook: ${activeIdea.hook||"(none given — infer the likely opening line)"}\n\nPredict realistic performance for THIS specific audience. Comments must sound exactly like real followers of this niche (their slang, their obsessions). Return ONLY JSON:\n{"thumbStop":<0-100 % who stop scrolling>,"retention3s":<0-100 % of stoppers still watching at 3s>,"completion":<0-100 % who finish>,"shareRate":<0-15 number>,"newFollows":<integer>,"saveRate":<0-20 number>,"verdict":<0-100 overall>,"estViews":"<e.g. 128K>","swipedPct":<0-100>,"bounce":{"atSec":<int 2-6>,"pct":<0-100 % lost at that moment>,"reason":"<one specific fixable reason>"},"curve":[<9 retention % values 100 down to ~30>],"comments":[{"handle":"@...","initials":"XY","text":"...","tag":"<why it matters>","color":"#hex"} x5]}`;
-      const raw = await callAI(prompt, 1400);
-      r = typeof raw === "string" ? JSON.parse(_stripThink(raw)) : raw;
-      if(!r || typeof r.verdict==="undefined") throw new Error("bad shape");
+      [panel, comments] = await Promise.all([Promise.all(lensTasks), voiceTask]);
     } catch(e){
-      r = _fallbackTest(activeIdea, avgViews);
+      panel = PANEL_LENSES.map(l=>({ key:l.key, label:l.label, color:l.color, score:Math.round(fb.verdict/10), headline:l.label, evidence:"Estimated offline.", fix:"", offline:true }));
+      comments = fb.comments;
     }
-    // normalise
-    if(!Array.isArray(r.curve)||r.curve.length<5) r.curve=_fallbackTest(activeIdea,avgViews).curve;
-    if(!Array.isArray(r.comments)||!r.comments.length) r.comments=_fallbackTest(activeIdea,avgViews).comments;
+    const r = _synthFromPanel(panel, avgViews);
+    r.panel = panel;
+    r.comments = (Array.isArray(comments)&&comments.length) ? comments : fb.comments;
     r.audience = _buildAudience(r);
     r.idea = { id: sel, title: activeIdea.title, hook: activeIdea.hook };
     r.at = new Date().toISOString();
@@ -9619,7 +9670,7 @@ function TestAudienceView({ ideas=[], videos=[], commentInsights=null, WL={} }){
           Watch your audience react <span style={{ background:`linear-gradient(92deg,${C.cyan},${C.yellow})`, WebkitBackgroundClip:"text", backgroundClip:"text", color:"transparent" }}>before you film it.</span>
         </h1>
         <p style={{ maxWidth:"60ch", color:C.dim, fontSize:15, margin:0, fontFamily:C.fontBody }}>
-          A living focus group built from your <b style={{color:C.text}}>real followers</b> — their comments, their swipe habits, their voice. Press run and watch them decide to stop, stay, or scroll.
+          A living focus group built from your <b style={{color:C.text}}>real followers</b>, scored by a <b style={{color:C.text}}>panel of 6 expert agents</b> — each hunting one factor that makes videos travel. Watch them react, then see exactly which factor decides it.
         </p>
       </div>
 
@@ -9774,6 +9825,38 @@ function TestAudienceView({ ideas=[], videos=[], commentInsights=null, WL={} }){
               {busy?"RUNNING…": done?(showVerdict>=75?"✓ GREENLIT":"⚠ NEEDS WORK"):"AWAITING TEST"}
             </div>
           </div>
+
+          {/* expert panel — the WHY */}
+          {result.panel && (
+            <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14, flexWrap:"wrap" }}>
+                {I.brain(15,C.purple)}
+                <span style={{ font:`700 11px/1 ${mono}`, letterSpacing:"0.2em", color:C.dim, textTransform:"uppercase" }}>Expert Panel — the why</span>
+                <span style={{ font:`500 11px/1 ${C.fontBody}`, color:"rgba(255,255,255,0.3)" }}>6 specialists, each hunting one viral factor</span>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:10 }}>
+                {result.panel.map((p,i)=>{
+                  const on = prog > (0.8 + i*0.028);
+                  const sc = Math.round(p.score*10*_easeOut(_win(prog,0.82,1)))/10;
+                  const tone = p.score>=7?C.green:p.score>=4.5?C.yellow:C.orange;
+                  return (
+                    <div key={p.key} style={{ opacity:on?1:0, transform:on?"none":"translateY(6px)", transition:".4s", padding:"12px 14px", borderRadius:13, border:`1px solid ${p.color}22`, background:`${p.color}08` }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                        <span style={{ font:`700 10px/1 ${mono}`, letterSpacing:"0.12em", color:p.color, textTransform:"uppercase", flex:1 }}>{p.label}</span>
+                        <span style={{ font:`800 15px/1 ${mono}`, color:tone, fontVariantNumeric:"tabular-nums" }}>{sc.toFixed(1)}<span style={{ fontSize:10, color:"rgba(255,255,255,0.3)" }}>/10</span></span>
+                      </div>
+                      <div style={{ height:5, borderRadius:3, background:"rgba(255,255,255,0.06)", overflow:"hidden", marginBottom:9 }}>
+                        <div style={{ height:"100%", width:`${sc*10}%`, background:tone, borderRadius:3, transition:"width .5s" }}/>
+                      </div>
+                      <div style={{ font:`700 12.5px/1.35 ${C.fontBody}`, color:C.text, marginBottom:4 }}>{p.headline}</div>
+                      {p.evidence && <div style={{ font:`500 12px/1.45 ${C.fontBody}`, color:C.dim, marginBottom:6 }}>{p.evidence}</div>}
+                      {p.fix && <div style={{ font:`600 11.5px/1.4 ${C.fontBody}`, color:tone, display:"flex", gap:6 }}><span>→</span><span>{p.fix}</span></div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
