@@ -9260,8 +9260,10 @@ Write today's briefing. Return ONLY JSON: {"headline":"one punchy line summarisi
 // The standout: upload your FINISHED (unposted) video, the AI watches it and
 // gives a GO / RISKY / NO verdict + predicted views + a retention heatmap +
 // timestamped fixes. The "don't post until you've checked it" habit.
-function PrePostCheck({ videos=[], WL={} }) {
+function PrePostCheck({ videos=[], WL={}, ideas=[], setIdeas=null }) {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  const scoredIdeas = (ideas||[]).filter(i=>i.title && (i.viral>0));
+  const [attachId, setAttachId] = useState(""); // scored idea this video belongs to
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
@@ -9291,7 +9293,14 @@ function PrePostCheck({ videos=[], WL={} }) {
       const organic = videos.filter(v=>!v.boosted);
       const avgV = organic.length ? Math.round(organic.reduce((s,v)=>s+(v.views||0),0)/organic.length) : 0;
       const niche = wl.niche || "";
-      const prompt = `You are the harshest, most accurate PRE-PUBLISH reviewer, deciding whether this video should be posted TO A SPECIFIC ACCOUNT — not in the abstract.
+      const attached = attachId ? scoredIdeas.find(i=>i.id===attachId) : null;
+      const ideaCtx = attached ? `
+
+THIS VIDEO IS THE EXECUTION OF A SCORED IDEA:
+- Idea: "${attached.title}"${attached.hook?` | Hook: "${attached.hook}"`:""}${attached.type?` | Type: ${attached.type}`:""}
+- That idea was pre-scored ${attached.viral}/100 before filming.
+Judge whether the FILMED video actually delivers on that idea's promise. If the execution drifts from the idea or the hook lands weaker than the concept implied, say so specifically.` : "";
+      const prompt = `You are the harshest, most accurate PRE-PUBLISH reviewer, deciding whether this video should be posted TO A SPECIFIC ACCOUNT — not in the abstract.${ideaCtx}
 
 THE ACCOUNT THIS WILL BE POSTED TO:
 - Handle: ${wl.handle||"(unknown)"}
@@ -9315,15 +9324,27 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
       const parsed = _extractJSON(text);
       if(!parsed || !parsed.verdict) throw new Error("Couldn't read the analysis — try a shorter MP4.");
       // Normalise the judges panel — guarantee all 6 lenses, in order, with styling fields.
+      // If the model omitted the panel (e.g. it bailed on an off-brand video), synthesise
+      // one from the verdict so the judges always render.
       if(Array.isArray(parsed.panel) && parsed.panel.length){
         parsed.panel = PANEL_LENSES.map(l=>{
           const j = parsed.panel.find(x=>x.key===l.key) || {};
           return { key:l.key, label:l.label, color:l.color,
             score:Math.max(0,Math.min(10,Number(j.score)||5)), headline:j.headline||l.label, evidence:j.evidence||"", fix:j.fix||"" };
         });
+      } else {
+        parsed.panel = _panelFromVerdict(parsed);
       }
+      if(attached) parsed.attachedTo = { id: attached.id, title: attached.title };
       setRes(parsed); setPprog(0);
-      if(parsed.panel) animatePanel();
+      animatePanel();
+      // Attach the check result back onto the scored idea for context/history.
+      if(attached && setIdeas){
+        setIdeas(is => is.map(i => i.id===attached.id ? { ...i, check: {
+          verdict: parsed.verdict, score: parsed.score, brandFit: parsed.brandFit,
+          yesCount: parsed.panel.filter(p=>p.score>=5.5).length, at: new Date().toISOString(),
+        } } : i));
+      }
     } catch(e){ setErr(e.message||"Check failed."); }
     setLoading(false); setStatus("");
   };
@@ -9338,7 +9359,18 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${C.purple}80 40%,${C.pink}80 70%,transparent)` }}/>
           <div style={{ width:52, height:52, borderRadius:16, background:`linear-gradient(135deg,${C.purple},${C.pink})`, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", boxShadow:`0 8px 24px ${C.purple}45` }}>{I.eye(24,"#fff")}</div>
           <div style={{ fontSize:isMobile?22:28, fontWeight:800, color:"#fff", marginBottom:8, fontFamily:C.fontHead, letterSpacing:"-0.02em" }}>Check it before you post</div>
-          <div style={{ fontSize:14, color:"rgba(255,255,255,0.55)", lineHeight:1.6, maxWidth:440, margin:"0 auto 22px" }}>Upload your finished video. The AI watches it and gives you a straight <span style={{color:C.green,fontWeight:700}}>GO</span> / <span style={{color:C.yellow,fontWeight:700}}>RISKY</span> / <span style={{color:"#FF4D4D",fontWeight:700}}>NO</span> — predicted views, a retention heatmap, and the exact fixes.</div>
+          <div style={{ fontSize:14, color:"rgba(255,255,255,0.55)", lineHeight:1.6, maxWidth:440, margin:"0 auto 22px" }}>Upload your finished video. The panel watches it and gives you a straight <span style={{color:C.green,fontWeight:700}}>GO</span> / <span style={{color:C.yellow,fontWeight:700}}>RISKY</span> / <span style={{color:"#FF4D4D",fontWeight:700}}>NO</span> — predicted views, a retention heatmap, and the exact fixes.</div>
+          {scoredIdeas.length>0 && (
+            <div style={{ maxWidth:440, margin:"0 auto 18px", textAlign:"left" }}>
+              <div style={{ font:`700 10px/1 ${C.fontMono}`, letterSpacing:"0.16em", color:C.dim, textTransform:"uppercase", marginBottom:8, textAlign:"center" }}>Is this a scored idea? Attach it for context (optional)</div>
+              <select value={attachId} onChange={e=>setAttachId(e.target.value)}
+                style={{ width:"100%", padding:"11px 12px", borderRadius:10, background:C.cardSolid, color:C.text, border:`1px solid ${attachId?C.pink+"55":C.border}`, font:`600 13px ${C.fontBody}`, cursor:"pointer" }}>
+                <option value="">— No idea attached —</option>
+                {scoredIdeas.map(i=><option key={i.id} value={i.id}>{i.viral}/100 · {i.title.slice(0,60)}</option>)}
+              </select>
+              {attachId && <div style={{ fontSize:11.5, color:C.pink, marginTop:7, textAlign:"center" }}>✓ The panel will judge whether your video delivers on this idea.</div>}
+            </div>
+          )}
           <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e=>{ if(e.target.files[0]) run(e.target.files[0]); }} />
           <button onClick={()=>{ const liveKey = (loadJSON(KEYS_KEY,{})?.keys?.gemini)||BAKED_GEMINI_KEY||USE_BACKEND; if(!liveKey){ setErr("No Gemini key found. Go to Settings → AI Keys → Gemini, paste your key and press save — then come back."); return; } setErr(null); fileRef.current?.click(); }}
             style={{ padding:isMobile?"14px 24px":"14px 30px", borderRadius:14, border:"none", background:`linear-gradient(135deg,${C.purple},${C.pink})`, color:"#fff", fontFamily:C.fontHead, fontWeight:800, fontSize:15, cursor:"pointer", letterSpacing:"0.02em", boxShadow:`0 10px 30px ${C.purple}40`, display:"inline-flex", alignItems:"center", gap:9 }}>
@@ -9357,6 +9389,12 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
       )}
 
       {res && !loading && (<>
+        {res.attachedTo && (
+          <div style={{ display:"flex", alignItems:"center", gap:9, padding:"10px 14px", borderRadius:12, background:`${C.pink}0e`, border:`1px solid ${C.pink}30` }}>
+            {I.idea(15,C.pink)}
+            <span style={{ fontSize:12.5, color:C.dim }}>Judging against your scored idea: <b style={{color:C.text}}>{res.attachedTo.title}</b></span>
+          </div>
+        )}
         {/* The panel — judges vote on the finished video */}
         {res.panel && (
           <div style={{ border:`1px solid ${C.border}`, borderRadius:20, overflow:"hidden", background:"linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.006))", boxShadow:DS.shadow.lg }}>
@@ -9483,6 +9521,21 @@ const PANEL_LENSES = [
   { key:"differentiation", label:"Differentiation", judge:"Elena",  color:"#FF6B1A", weight:0.08, person:{ skin:"#ffdbb4", hair:"#7a4a1e", style:"long",  top:"#4a2410" }, ask:"Is this fresh, or has the niche done it to death? Overdone angles cap reach." },
 ];
 const _lensCfg = (key) => PANEL_LENSES.find(l=>l.key===key) || {};
+// Fallback: build a judges panel from the verdict when the model didn't return one
+// (e.g. it short-circuited on an off-brand video). Keeps the panel always visible.
+const _panelFromVerdict = (res={}) => {
+  const clamp = v => Math.max(0, Math.min(10, Math.round(v)));
+  const s10 = clamp((Number(res.score)||0)/10);
+  const hook10 = clamp((Number(res.hookRating)||0)/10);
+  const fit10 = res.brandFit==="off-brand" ? 1 : res.brandFit==="borderline" ? 4 : Math.max(5, s10);
+  return PANEL_LENSES.map(l=>{
+    const score = l.key==="hook" ? hook10 : l.key==="fit" ? fit10 : s10;
+    return { key:l.key, label:l.label, color:l.color, score,
+      headline: l.key==="fit" && res.brandFit==="off-brand" ? "Off-brand for this page" : (score>=5.5?"Working":"Needs work"),
+      evidence: l.key==="fit" ? (res.fitNote||"") : (score>=5.5 ? (res.strongest||"") : (res.weakest||"")),
+      fix: res.action||"" };
+  });
+};
 
 // Illustrated human judge — flat SVG portrait, varied per person. Self-contained, crisp at any size.
 function JudgeAvatar({ cfg={}, size=60 }){
@@ -13427,7 +13480,7 @@ Return JSON:
         {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} markPosted={markPosted} />}
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} setIdeas={setIdeas} deepScanResult={deepScanResult} />}
         {nav==="autopilot" && <AutopilotView videos={videos} ideas={ideas} setIdeas={setIdeas} WL={WL} setNav={id=>{ setNav(id); setSub(null); }} copyText={copyText} copied={copied} />}
-        {nav==="check"     && <PrePostCheck videos={videos} WL={activeWL} />}
+        {nav==="check"     && <PrePostCheck videos={videos} WL={activeWL} ideas={ideas} setIdeas={setIdeas} />}
         {nav==="reader"    && <VideoReaderView videos={videos} WL={WL} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
