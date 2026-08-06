@@ -9493,13 +9493,14 @@ const _fallbackTest = (idea, avgViews=60000) => {
 
 // The panel — 6 specialist agents, each hunting ONE factor that makes videos travel.
 const PANEL_LENSES = [
-  { key:"hook",            label:"Hook",            color:"#00E5FF", weight:0.28, ask:"Does the first 1 second stop the thumb? Judge the opening line / visual purely as a scroll-stopper." },
-  { key:"retention",       label:"Retention",       color:"#39FF14", weight:0.22, ask:"Is there an open loop that holds attention past 3 seconds? Where exactly will viewers drop off?" },
-  { key:"share",           label:"Share Trigger",   color:"#FFD50A", weight:0.20, ask:"Is there a concrete reason to send this to a friend (identity, utility, 'you HAVE to see this')? Share rate is the #1 cold-distribution lever." },
-  { key:"emotion",         label:"Emotional Spike", color:"#FF3D8B", weight:0.12, ask:"Does it trigger a strong emotion — surprise, awe, outrage, 'I knew it'? Flat feeling = no spread." },
-  { key:"fit",             label:"Audience Fit",    color:"#C566FF", weight:0.10, ask:"Does it match what THIS channel's real followers actually ask for and engage with?" },
-  { key:"differentiation", label:"Differentiation", color:"#FF6B1A", weight:0.08, ask:"Is this fresh, or has the niche done it to death? Overdone angles cap reach." },
+  { key:"hook",            label:"Hook",            face:"🎯", color:"#00E5FF", weight:0.28, ask:"Does the first 1 second stop the thumb? Judge the opening line / visual purely as a scroll-stopper." },
+  { key:"retention",       label:"Retention",       face:"⏳", color:"#39FF14", weight:0.22, ask:"Is there an open loop that holds attention past 3 seconds? Where exactly will viewers drop off?" },
+  { key:"share",           label:"Share Trigger",   face:"🔁", color:"#FFD50A", weight:0.20, ask:"Is there a concrete reason to send this to a friend (identity, utility, 'you HAVE to see this')? Share rate is the #1 cold-distribution lever." },
+  { key:"emotion",         label:"Emotional Spike", face:"🔥", color:"#FF3D8B", weight:0.12, ask:"Does it trigger a strong emotion — surprise, awe, outrage, 'I knew it'? Flat feeling = no spread." },
+  { key:"fit",             label:"Audience Fit",    face:"🎧", color:"#C566FF", weight:0.10, ask:"Does it match what THIS channel's real followers actually ask for and engage with?" },
+  { key:"differentiation", label:"Differentiation", face:"✨", color:"#FF6B1A", weight:0.08, ask:"Is this fresh, or has the niche done it to death? Overdone angles cap reach." },
 ];
+const _lensFace = (key) => (PANEL_LENSES.find(l=>l.key===key)||{}).face || "🧑";
 const _lensScore = (panel,key)=>{ const p=(panel||[]).find(x=>x.key===key); return p?Math.max(0,Math.min(10,Number(p.score)||0)):5; };
 // Turn the panel's dimension scores into grounded, explainable telemetry.
 const _synthFromPanel = (panel, avgViews=60000) => {
@@ -9704,44 +9705,64 @@ function TestAudienceView({ ideas=[], videos=[], commentInsights=null, WL={} }){
       {!result ? (
         <div style={{ padding:"60px 20px", textAlign:"center", border:`1px dashed ${C.border}`, borderRadius:18, color:C.dim }}>
           <div style={{ fontSize:40, marginBottom:12 }}>🔮</div>
-          <div style={{ fontFamily:C.fontBody, fontSize:15 }}>Pick an idea and hit <b style={{color:C.cyan}}>Run Screen Test</b> to watch your synthetic audience react.</div>
+          <div style={{ fontFamily:C.fontBody, fontSize:15 }}>Pick an idea and hit <b style={{color:C.cyan}}>Run Screen Test</b> to put it in front of the panel.</div>
         </div>
       ) : (
         <div style={{ border:`1px solid ${C.border}`, borderRadius:20, overflow:"hidden", background:"linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.006))", boxShadow:DS.shadow.lg }}>
-          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1.15fr 1.5fr 1.35fr", gap:1, background:C.border }}>
-            {/* audience grid */}
-            <div style={{ background:C.bg, padding:"16px 16px 18px" }}>
-              <h3 style={{ margin:"0 0 3px", font:`700 10.5px/1 ${mono}`, letterSpacing:"0.2em", color:C.dim, textTransform:"uppercase" }}>Synthetic Audience</h3>
-              <p style={{ font:`500 11px/1.4 ${C.fontBody}`, color:"rgba(255,255,255,0.35)", margin:"0 0 13px" }}>24 personas sampled from your real followers &amp; comments.</p>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:7 }}>
-                {result.audience.map((a,i)=>{
-                  const revealed = prog > (0.02 + a.order*0.24);
-                  const isStop = a.behavior!=="scroll";
-                  const bounced = a.behavior==="bounce" && prog>0.62;
-                  const reacted = a.behavior==="react" && prog>0.78;
-                  const glow = reacted?C.green:(isStop&&revealed&&!bounced)?C.cyan:null;
+          {/* ── THE PANEL — X Factor judges stage ── */}
+          {result.panel && (
+            <div style={{ position:"relative", overflow:"hidden", padding:isMobile?"20px 10px 22px":"26px 20px 26px", borderBottom:`1px solid ${C.border}`,
+              background:"radial-gradient(120% 90% at 50% -10%, rgba(197,102,255,0.14), transparent 60%), linear-gradient(180deg,#0b0718,#07050f)" }}>
+              <div style={{ textAlign:"center", marginBottom:isMobile?16:20 }}>
+                <span style={{ font:`700 10.5px/1 ${mono}`, letterSpacing:"0.28em", color:C.dim, textTransform:"uppercase" }}>The Panel</span>
+                <div style={{ font:`500 11px/1.3 ${C.fontBody}`, color:"rgba(255,255,255,0.3)", marginTop:5 }}>6 experts. Each votes on one thing that makes a video travel.</div>
+              </div>
+              <div style={{ display:"flex", justifyContent:"center", gap:isMobile?"10px 4px":16, flexWrap:"wrap", maxWidth:820, margin:"0 auto" }}>
+                {result.panel.map((p,i)=>{
+                  const revealAt = 0.38 + i*0.075;
+                  const shown = prog > revealAt;
+                  const sc = Math.round(p.score*10*_easeOut(_win(prog, revealAt, revealAt+0.16)))/10;
+                  const yes = p.score>=5.5;
+                  const vC = yes?C.green:"#FF4D4D";
                   return (
-                    <div key={i} style={{ aspectRatio:"1", borderRadius:9, position:"relative", display:"flex", alignItems:"center", justifyContent:"center",
-                      font:`800 12px/1 ${C.fontBody}`, color:"#fff", background:a.color,
-                      opacity: revealed?(bounced?0.2:isStop?1:0.32):0.32,
-                      transform:`scale(${revealed?(bounced?0.82:1):0.9})`,
-                      filter: (isStop&&revealed&&!bounced)?"saturate(1)":"saturate(.45)",
-                      boxShadow: glow?`0 0 0 2px ${glow}bb, 0 0 15px ${glow}55`:"none",
-                      transition:"all .45s" }}>
-                      {a.initials}
-                      {(bounced||reacted) && <span style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, background:"rgba(6,4,12,0.5)", borderRadius:9 }}>{a.emoji}</span>}
+                    <div key={p.key} style={{ flex:isMobile?"0 0 30%":"0 0 118px", display:"flex", flexDirection:"column", alignItems:"center", gap:7, position:"relative", padding:"8px 2px" }}>
+                      {/* spotlight */}
+                      <div style={{ position:"absolute", top:-14, left:"50%", transform:"translateX(-50%)", width:100, height:130, pointerEvents:"none", transition:".5s",
+                        background: shown?`radial-gradient(60% 55% at 50% 0%, ${vC}30, transparent 72%)`:"transparent" }}/>
+                      {/* judge avatar */}
+                      <div style={{ width:isMobile?52:62, height:isMobile?52:62, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:isMobile?24:30, position:"relative", zIndex:1,
+                        background:`radial-gradient(circle at 35% 28%, ${p.color}55, #16102c)`,
+                        border:`2px solid ${shown?vC:C.border}`,
+                        boxShadow: shown?`0 0 0 3px ${vC}22, 0 0 22px ${vC}55`:"none",
+                        opacity: shown?1:0.4, transform:`scale(${shown?1:0.9})`, transition:"all .45s" }}>
+                        {p.face||_lensFace(p.key)}
+                        {shown && (
+                          <div style={{ position:"absolute", bottom:-5, right:-5, width:23, height:23, borderRadius:"50%", background:vC, display:"flex", alignItems:"center", justifyContent:"center", font:`900 13px/1 ${C.fontHead}`, color:"#04140a", boxShadow:`0 2px 8px ${vC}99` }}>{yes?"✓":"✕"}</div>
+                        )}
+                      </div>
+                      {/* name */}
+                      <div style={{ font:`800 9.5px/1.15 ${C.fontHead}`, letterSpacing:"0.06em", color: shown?"#fff":C.dim, textTransform:"uppercase", textAlign:"center", minHeight:22, display:"flex", alignItems:"center" }}>{p.label}</div>
+                      {/* verdict + score */}
+                      <div style={{ display:"flex", alignItems:"baseline", gap:5, opacity:shown?1:0.3, transition:".3s" }}>
+                        <span style={{ font:`900 12px/1 ${C.fontHead}`, letterSpacing:"0.06em", color:vC }}>{shown?(yes?"YES":"NO"):"…"}</span>
+                        <span style={{ font:`700 11px/1 ${mono}`, color:"rgba(255,255,255,0.4)", fontVariantNumeric:"tabular-nums" }}>{sc.toFixed(1)}</span>
+                      </div>
                     </div>
                   );
                 })}
               </div>
-              <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginTop:13 }}>
-                {[["Thumb-stopped",C.cyan],["Engaged",C.green],["Swiped away",C.pink]].map(([l,c])=>(
-                  <span key={l} style={{ font:`600 10px/1 ${mono}`, color:"rgba(255,255,255,0.4)", display:"flex", alignItems:"center", gap:5 }}>
-                    <i style={{ width:8, height:8, borderRadius:3, background:c, display:"inline-block" }}/>{l}
+              {/* tally */}
+              {prog>0.92 && (()=>{ const yc=result.panel.filter(p=>p.score>=5.5).length; const tC=yc>=4?C.green:yc>=3?C.yellow:"#FF4D4D"; return (
+                <div style={{ textAlign:"center", marginTop:isMobile?14:18 }}>
+                  <span style={{ font:`800 13px/1 ${C.fontHead}`, letterSpacing:"0.04em", color:tC, padding:"8px 16px", borderRadius:999, border:`1px solid ${tC}45`, background:`${tC}12` }}>
+                    {yc} of 6 judges said YES
                   </span>
-                ))}
-              </div>
+                </div>
+              );})()}
             </div>
+          )}
+
+          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1.4fr 1.35fr", gap:1, background:C.border }}>
 
             {/* phone + curve */}
             <div style={{ background:C.bg, padding:"16px 16px 18px" }}>
