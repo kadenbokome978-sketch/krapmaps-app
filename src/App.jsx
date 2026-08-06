@@ -881,7 +881,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
   })();
   const platformDonut = [
     { label:"TikTok", value:ttViewsDisplay||1, color:C.pink },
-    { label:"Instagram", value:(igData?.profile?.media_count||0)*100||0, color:C.purple },
+    { label:"Instagram", value:igViewsTotal||0, color:C.purple },
   ];
 
   return (
@@ -2201,11 +2201,26 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                     </button>
                   </div>
                   <div style={{ padding:"16px 18px" }}>
-                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", fontWeight:700, letterSpacing:"0.12em", marginBottom:8 }}>CAPTION</div>
+                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", fontWeight:700, letterSpacing:"0.12em", marginBottom:8 }}>PRIMARY CAPTION</div>
                     <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", lineHeight:1.75, fontFamily:C.fontBody, marginBottom:isMobile?8:10 }}>{captionResult.instagram?.caption}</div>
-                    <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                    <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom: captionResult.instagram?.variants?.length ? 14 : 0 }}>
                       {(captionResult.instagram?.hashtags||[]).map(h=><span key={h} style={{ fontSize:11, color:C.purple, background:`${C.purple}10`, borderRadius:5, padding:"2px 7px" }}>#{h}</span>)}
                     </div>
+                    {(captionResult.instagram?.variants||[]).map((v,vi)=>(
+                      <div key={vi} style={{ marginTop:10, padding:"12px 14px", borderRadius:10, background:`${C.purple}08`, border:`1px solid ${C.purple}20` }}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7 }}>
+                          <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.1em", color:C.purple }}>{v.hook_type?.toUpperCase()}</span>
+                          <button onClick={()=>copyText&&copyText("igV"+vi, v.caption+" "+(v.hashtags||[]).map(h=>"#"+h).join(" "))}
+                            style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${copied?.["igV"+vi]?C.green:C.purple}35`, background:copied?.["igV"+vi]?`${C.green}12`:`${C.purple}10`, color:copied?.["igV"+vi]?C.green:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:10, cursor:"pointer" }}>
+                            {copied?.["igV"+vi]?"COPIED":"COPY"}
+                          </button>
+                        </div>
+                        <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)", lineHeight:1.65, fontFamily:C.fontBody, marginBottom:6 }}>{v.caption}</div>
+                        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                          {(v.hashtags||[]).map(h=><span key={h} style={{ fontSize:10, color:C.purple, background:`${C.purple}10`, borderRadius:4, padding:"2px 6px" }}>#{h}</span>)}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -7419,6 +7434,9 @@ async function _geminiGenerate(apiKey, body) {
 // replies and converts. Dial GPT_AUDIT_MODEL back to Luna if credit is tight.
 const GPT_MODEL = "gpt-5.6-luna";
 const GPT_AUDIT_MODEL = "gpt-5.6-terra";
+// ── Pricing constants — change here, updates everywhere (DM prompts, UI copy) ──
+const SPRINT_PRICE = 297; // £ done-for-you monthly Growth Sprint
+const PRO_PRICE = 29;     // £ self-serve Pro plan
 async function callGPT(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.", maxTokens=2000) {
   const storedCfg = loadJSON(KEYS_KEY,{});
   if(USE_BACKEND) {
@@ -9247,6 +9265,7 @@ const NAV = [
   { id:"check",     label:"CHECKER",   ic:I.eye       },
   { id:"content",   label:"CONTENT",   ic:I.write     },
   { id:"analytics", label:"ANALYTICS", ic:I.bar       },
+  { id:"reader",    label:"READER",    ic:I.eye       },
   { id:"tasks",     label:"TASKS",     ic:I.check     },
   { id:"deals",     label:"DEALS",     ic:I.star      },
   { id:"ai",        label:"ASSIST",    ic:I.brain     },
@@ -9391,7 +9410,7 @@ Return ONLY JSON: {"creators":[{"handle":"@exacthandle","name":"Display Name","u
   };
   const setStage = (h, stage) => saveProspects(prospects.map(p=> p.h===h ? { ...p, stage, touchedAt:Date.now() } : p));
   const setNote = (h, note) => saveProspects(prospects.map(p=> p.h===h ? { ...p, note } : p));
-  const removeProspect = (h) => saveProspects(prospects.filter(p=>p.h!==h));
+  const removeProspect = (h) => { if(!window.confirm(`Remove @${h} from your pipeline? Their notes and stage will be lost.`)) return; saveProspects(prospects.filter(p=>p.h!==h)); };
   // ── Outreach cockpit helpers ──
   const daysSince = (ts) => ts ? Math.floor((Date.now()-ts)/86400000) : null;
   const agoLabel = (ts) => { const d = daysSince(ts); return d===null?"" : d===0?"today" : d===1?"1d ago" : `${d}d ago`; };
@@ -9422,10 +9441,10 @@ Return ONLY JSON: {"creators":[{"handle":"@exacthandle","name":"Display Name","u
       ? `Write ONE short, low-pressure follow-up DM to ${first} (@${p.h}). You messaged a few days ago offering a free content audit and got no reply. Use the reciprocity + takeaway angle: warmly offer to just send the audit over anyway since it is already done and free, and take the pressure fully off (no worries if the timing is off). Do NOT chase or guilt. A tiny generous nudge that reopens the door. 2 to 3 sentences max. No hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"dm":"the message"}`
       : `Write ONE short DM to ${first} (@${p.h}) who reacted well to the free audit you sent. Softly offer the done-for-you service: you run their whole content engine week to week, every idea scored before they film, fresh ideas each week that ride what is working RIGHT NOW (never a stale plan written weeks ahead, because trends move), pre-post checks, and a weekly review of what hit so you double down.
 Apply these sales principles naturally, not as a hard pitch:
-- ANCHOR then land: the full done-for-you service normally runs much higher, but the founding rate right now is 297 pounds for the month. Mention it is a founding rate so 297 lands as a deal, not the ceiling.
+- ANCHOR then land: the full done-for-you service normally runs much higher, but the founding rate right now is ${SPRINT_PRICE} pounds for the month. Mention it is a founding rate so ${SPRINT_PRICE} lands as a deal, not the ceiling.
 - LOSS AVERSION over hype: frame what they keep losing by posting on guesswork (wasted posts, reach left on the table) more than what they gain.
-- TIME IS MONEY: make the time-saving concrete. They stop spending hours every week dreaming up ideas, agonising over what to post, and filming videos that flop. You hand them exactly what to film, scored, so they just create. Position the 297 against those saved hours (and the wasted posts) as much as against the extra reach. Their time is the expensive thing.
-- VALUE not cost: position 297 as an investment against how much a single wasted month of content costs them, never as an expense.
+- TIME IS MONEY: make the time-saving concrete. They stop spending hours every week dreaming up ideas, agonising over what to post, and filming videos that flop. You hand them exactly what to film, scored, so they just create. Position the ${SPRINT_PRICE} against those saved hours (and the wasted posts) as much as against the extra reach. Their time is the expensive thing.
+- VALUE not cost: position ${SPRINT_PRICE} as an investment against how much a single wasted month of content costs them, never as an expense.
 - GENUINE SCARCITY: you only take a few creators so it stays hands on (only if true, keep it honest).
 - SMALL YES: end on a tiny easy step (want me to build your first week so you can see it), not a hard close.
 Keep it 3 to 5 sentences, casual and human. No hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"dm":"the message"}`;
@@ -9633,15 +9652,17 @@ Return ONLY JSON: {"dm":"the message, with a line break between paragraphs as \\
     await _withWakeLock(async () => {
     try {
       const hk = handle.trim().replace(/^@/,"").replace(/\s+/g,"");
+      // Gate BEFORE scraping — burning Bright Data credits then denying the audit is wrong.
+      // Cache hits are free so only gate on fresh scrapes.
       const hit = cachedScrape(hk);
+      if(!hit){
+        const gate = await meterAction("audits");
+        if(!gate.allowed){ setPhase("error"); setErr("You've used your free audit this month. Upgrade to Pro for unlimited audits →"); return; }
+      }
       const scr = hit || await scrapeProspectTikTok(handle, 4, ac.signal);
       if(!hit) putScrape(hk, scr); // save the fresh pull so a refresh won't re-charge
       const { handle:h, nick, followers, videos } = scr;
       if(videos.length < 3) throw new Error(`Only ${videos.length} videos found — need a few more to audit properly.`);
-      // Meter only once we have a real channel to audit, so a typo never burns
-      // a free user's monthly audit. Pro/founder are unlimited (meter passes).
-      const gate = await meterAction("audits");
-      if(!gate.allowed){ setPhase("error"); setErr("You've used your free audit this month. Upgrade to Pro for unlimited audits →"); return; }
       setPhase("analysing");
       const withV = videos.filter(v=>v.views>0);
       const avg = withV.length ? Math.round(withV.reduce((s,v)=>s+v.views,0)/withV.length) : 0;
@@ -10343,7 +10364,7 @@ Return ONLY JSON:
 // sends them to Stripe Checkout; the webhook flips their tier on return.
 const PRICING_PLANS = [
   { id:"audit", name:"Free", price:"Free", per:"1 / month", oneoff:true, tagline:"One audit a month, on us", feats:["One full channel audit every month","What's working & what's costing views","Your Voice DNA, decoded","5 video ideas in your voice","No card needed"] },
-  { id:"pro",   name:"Pro",   price:"£29", per:"/month",  tagline:"The full engine, every day", hot:true, feats:["Unlimited audits + idea scoring","Live trends + competitor spy","Multi-model consensus scoring","Priority AI, no queue","First 10 signups: £19/mo for 3 months (founding)"] },
+  { id:"pro",   name:"Pro",   price:"£29", per:"/month",  tagline:"The full engine, every day", hot:true, feats:["Unlimited audits + idea scoring","Live trends + competitor spy","Multi-model consensus scoring","Priority AI, no queue"] },
 ];
 function PricingModal({ tier="free", reason, onClose }){
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
@@ -10363,7 +10384,7 @@ function PricingModal({ tier="free", reason, onClose }){
         {reason && <div style={{ fontSize:13.5, color:C.yellow, background:`${C.yellow}0e`, border:`1px solid ${C.yellow}28`, borderRadius:10, padding:"10px 13px", marginBottom:18, lineHeight:1.5 }}>{reason}</div>}
         <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(2,1fr)", gap:14, maxWidth:620, margin:"0 auto" }}>
           {PRICING_PLANS.map(p=>{
-            const current = tier===p.id;
+            const current = tier===p.id || (p.id==="pro" && tier==="founder");
             return (
               <div key={p.id} style={{ position:"relative", background:p.hot?"linear-gradient(165deg,rgba(34,224,107,0.12),rgba(197,102,255,0.06))":"rgba(255,255,255,0.03)", border:`1px solid ${p.hot?C.pink+"55":"rgba(255,255,255,0.09)"}`, borderRadius:16, padding:"22px 20px", display:"flex", flexDirection:"column", gap:14 }}>
                 {p.hot && <div style={{ position:"absolute", top:-10, right:16, fontSize:10, fontWeight:800, letterSpacing:"0.1em", color:"#fff", background:`linear-gradient(135deg,${C.pink},${C.purple})`, borderRadius:20, padding:"3px 10px" }}>MOST POPULAR</div>}
@@ -10866,7 +10887,7 @@ ${memCtx ? `━━ CHANNEL MEMORY ━━\n${memCtx}` : ""}`;
     setLoading(true);
     try {
       const capCutTrends = loadJSON(CUR_TRENDS_KEY,"");
-      const prompt = `You are an expert viral video editor for TikTok and Instagram Reels in June 2026. Watch this clip carefully and create a detailed step-by-step CapCut editing guide for MAXIMUM virality.
+      const prompt = `You are an expert viral video editor for TikTok and Instagram Reels in ${new Date().toLocaleString('en-GB',{month:'long',year:'numeric'})}. Watch this clip carefully and create a detailed step-by-step CapCut editing guide for MAXIMUM virality.
 ${capCutTrends?`\nCURRENT TRENDS TO USE IN YOUR SOUND/FORMAT RECOMMENDATIONS:\n${capCutTrends}\n`:""}
 
 Give me EXACTLY this format:
@@ -11186,7 +11207,14 @@ function Dashboard({ keys, onEditKeys }) {
   useEffect(()=>{
     try {
       const q = new URLSearchParams(window.location.search);
-      if(q.get("upgraded")){ setTimeout(refreshPlan, 1500); setTimeout(refreshPlan, 5000); window.history.replaceState({}, "", window.location.pathname); }
+      if(q.get("upgraded")){
+        setAiErr("🎉 You're on Pro! Full access unlocked. Refreshing your plan…");
+        setTimeout(()=>setAiErr(""), 7000);
+        setTimeout(refreshPlan, 1500);
+        setTimeout(refreshPlan, 5000);
+        setTimeout(refreshPlan, 12000); // webhook can be slow — one extra attempt
+        window.history.replaceState({}, "", window.location.pathname);
+      }
       else if(q.get("upgrade")==="cancel"){ window.history.replaceState({}, "", window.location.pathname); }
     } catch {}
   },[refreshPlan]);
@@ -12158,7 +12186,7 @@ ${(!hasViewHistory() && corpusBlock) ? `⚡ COLD-START — this channel has litt
 ${corpusBlock ? `CROSS-CREATOR CORPUS (real outcomes pooled across creators in this niche — evidence-backed, use especially when own-channel data is thin): ${corpusBlock}\n` : ""}
 ${stolenHooks ? `Proven hooks from similar creators to adapt:\n${stolenHooks}` : "Run a competitor scan in settings to unlock niche benchmarks."}
 ${compOpportunities ? `Active content gaps competitors aren't covering: ${compOpportunities}` : ""}
-${currentTrendsForScore ? `\nCURRENT TRENDS (June 2026):\n${currentTrendsForScore}` : "NOTE: It is June 2026 — use current platform behaviour, not 2024 data."}
+${currentTrendsForScore ? `\nCURRENT TRENDS (${new Date().toLocaleString('en-GB',{month:'long',year:'numeric'})}):\n${currentTrendsForScore}` : `NOTE: It is ${new Date().toLocaleString('en-GB',{month:'long',year:'numeric'})} — use current platform behaviour.`}
 
 ━━ TIMELESS VIRALITY PRIORS (base rates — lean on these HARD when channel data is thin; let real channel data above override them when it exists) ━━
 • The first frame decides 60%+ of reach: motion, a face mid-expression, or an unresolved visual beat scroll-stop static/context shots.
@@ -12380,7 +12408,14 @@ Return JSON:
       {"hook_type": "Visual Disruption", "caption": "full caption starting with surprising statement", "hashtags": ["..."]}
     ]
   },
-  "instagram": {"caption": "...", "hashtags": ["..."]}
+  "instagram": {
+    "caption": "...(primary)",
+    "hashtags": ["..."],
+    "variants": [
+      {"hook_type": "Story Hook", "caption": "full caption opening with a personal story or experience", "hashtags": ["..."]},
+      {"hook_type": "Question Hook", "caption": "full caption opening with a direct question to the audience", "hashtags": ["..."]}
+    ]
+  }
 }`, 1600);
       setCaptionResult(r);
     } catch(e) { setAiErr("Caption failed: "+e.message); }
@@ -12987,6 +13022,7 @@ Return JSON:
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} setIdeas={setIdeas} />}
         {nav==="autopilot" && <AutopilotView videos={videos} ideas={ideas} setIdeas={setIdeas} WL={WL} setNav={id=>{ setNav(id); setSub(null); }} copyText={copyText} copied={copied} />}
         {nav==="check"     && <PrePostCheck videos={videos} WL={WL} />}
+        {nav==="reader"    && <VideoReaderView videos={videos} WL={WL} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
         {nav==="audit"     && <ProspectAuditView WL={activeWL} operator={true} />}
