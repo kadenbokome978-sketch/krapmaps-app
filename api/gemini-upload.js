@@ -17,7 +17,7 @@ import { requireUser } from "./_lib.js";
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Gemini-Key, X-File-Name, X-Mime-Type, X-Upload-Init');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Gemini-Key, X-File-Name, X-Mime-Type, X-Upload-Init, X-Upload-Url, X-Upload-Offset, X-Upload-Command');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
@@ -97,7 +97,26 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: `Gemini analysis failed: ${lastErr}` });
     }
 
-    // ── UPLOAD MODE ───────────────────────────────────────────────
+    // ── RELAY MODE (chunked resumable) ── forward one raw chunk to the resumable
+    // session URL server-side, so the browser never talks to Google directly (no CORS
+    // dependency). Each chunk is <4.5MB, so it fits within this function's body cap; the
+    // full file can be any size across multiple chunks.
+    const relayUrl = req.headers['x-upload-url'];
+    if (relayUrl) {
+      if (raw.length === 0) return res.status(400).json({ error: 'Empty chunk received' });
+      const offset = req.headers['x-upload-offset'] || '0';
+      const command = req.headers['x-upload-command'] || 'upload, finalize';
+      const gRes = await fetch(String(relayUrl), {
+        method: 'POST',
+        headers: { 'Content-Length': String(raw.length), 'X-Goog-Upload-Offset': String(offset), 'X-Goog-Upload-Command': String(command) },
+        body: raw,
+      });
+      const text = await gRes.text();
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(gRes.status).send(text || '{}');
+    }
+
+    // ── UPLOAD MODE (legacy single-shot, small files only) ─────────
     const fileName = req.headers['x-file-name'] || 'clip.mp4';
     const rawMime  = req.headers['x-mime-type'] || 'video/mp4';
     const mimeType = rawMime === 'video/quicktime' ? 'video/mov' : rawMime;
