@@ -12,6 +12,12 @@ export const config = { api: { bodyParser: false }, maxDuration: 60 };
 
 const GEN_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"];
 
+// Supabase staging — lets big clips go browser→Supabase→server→Gemini, dodging both
+// Vercel's ~4.5MB inbound cap and Google's browser-CORS block on the File API.
+const SB_URL = process.env.SUPABASE_URL || process.env.VITE_SB_URL || "https://xiudsyiinkqtmowkiqxh.supabase.co";
+const SB_SVC = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const STAGE_BUCKET = "km-uploads";
+
 import { requireUser } from "./_lib.js";
 
 export default async function handler(req, res) {
@@ -68,6 +74,48 @@ export default async function handler(req, res) {
         const uploadUrl = startRes.headers.get('x-goog-upload-url');
         if (!uploadUrl) return res.status(502).json({ error: 'No resumable upload URL from Gemini' });
         return res.json({ uploadUrl, mimeType: mime });
+      }
+
+      // ── SIGN MODE ── ensure the staging bucket exists (auto-create) and hand the browser
+      // a signed Supabase upload URL so it can upload a large clip directly (no size cap,
+      // no policy setup needed — the signed URL carries its own auth).
+      if (payload.stage === 'sign') {
+        if (!SB_SVC) return res.status(400).json({ error: 'Large-file upload not configured (SUPABASE_SERVICE_ROLE_KEY missing).' });
+        const svcH = { apikey: SB_SVC, Authorization: `Bearer ${SB_SVC}`, 'Content-Type': 'application/json' };
+        // Auto-create the private bucket (ignore "already exists").
+        await fetch(`${SB_URL}/storage/v1/bucket`, { method: 'POST', headers: svcH, body: JSON.stringify({ id: STAGE_BUCKET, name: STAGE_BUCKET, public: false, file_size_limit: 524288000 }) }).catch(() => {});
+        const ext = /mov/i.test(payload.mimeType || '') ? 'mov' : 'mp4';
+        const path = `chk/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const signRes = await fetch(`${SB_URL}/storage/v1/object/upload/sign/${STAGE_BUCKET}/${path}`, { method: 'POST', headers: svcH, body: '{}' });
+        if (!signRes.ok) { const t = await signRes.text(); return res.status(502).json({ error: `Couldn't create upload URL: ${signRes.status} ${t.slice(0, 150)}` }); }
+        const sd = await signRes.json();
+        const signedUrl = sd.url ? `${SB_URL}/storage/v1${sd.url}` : null;
+        if (!signedUrl) return res.status(502).json({ error: 'No signed URL returned' });
+        return res.json({ signedUrl, path });
+      }
+
+      // ── INGEST MODE ── pull the staged clip from Supabase (server-side, no size limit)
+      // and upload it to Gemini via the proven multipart path, then delete the staged file.
+      if (payload.stage === 'ingest') {
+        if (!SB_SVC) return res.status(400).json({ error: 'Large-file upload not configured.' });
+        const path = payload.path;
+        const mime = (payload.mimeType === 'video/quicktime' ? 'video/mov' : payload.mimeType) || 'video/mp4';
+        if (!path) return res.status(400).json({ error: 'path required' });
+        const svcAuth = { apikey: SB_SVC, Authorization: `Bearer ${SB_SVC}` };
+        const dl = await fetch(`${SB_URL}/storage/v1/object/${STAGE_BUCKET}/${path}`, { headers: svcAuth });
+        if (!dl.ok) { const t = await dl.text(); return res.status(502).json({ error: `Couldn't read staged clip: ${dl.status} ${t.slice(0, 150)}` }); }
+        const buf = Buffer.from(await dl.arrayBuffer());
+        const boundary = '----GeminiBoundary' + Date.now();
+        const metaPart = Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=utf-8\r\n\r\n` + JSON.stringify({ file: { display_name: 'clip' } }) + `\r\n--${boundary}\r\nContent-Type: ${mime}\r\n\r\n`);
+        const body = Buffer.concat([metaPart, buf, Buffer.from(`\r\n--${boundary}--`)]);
+        const up = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}&uploadType=multipart`, { method: 'POST', headers: { 'Content-Type': `multipart/related; boundary=${boundary}` }, body });
+        // Best-effort cleanup of the staged file.
+        fetch(`${SB_URL}/storage/v1/object/${STAGE_BUCKET}/${path}`, { method: 'DELETE', headers: svcAuth }).catch(() => {});
+        if (!up.ok) { const t = await up.text(); return res.status(502).json({ error: `Gemini upload failed: ${up.status}`, detail: t.slice(0, 200) }); }
+        const gd = await up.json();
+        const fileUri = gd?.file?.uri;
+        if (!fileUri) return res.status(502).json({ error: 'No file URI from Gemini' });
+        return res.json({ fileUri, mimeType: mime });
       }
 
       // ── ANALYSE MODE ──
