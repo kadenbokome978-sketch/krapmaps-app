@@ -7519,47 +7519,45 @@ async function geminiUploadAnalyse(file, prompt, onStatus=()=>{}, opts={}) {
 
   let fileUri = null, upMime = mimeType;
 
-  // Step 1 — RESUMABLE upload (preferred, any size). Ask our server to start a resumable
-  // session with its key, then stream the bytes DIRECT to Google — bypassing the ~4.5MB
-  // serverless request-body cap entirely. The upload URL is self-authorizing, so no key
-  // ever reaches the browser.
+  // Step 1 — CHUNKED RESUMABLE upload (any size, no CORS dependency). Our server starts a
+  // resumable session with its key, then the browser sends the file in <4.5MB chunks
+  // THROUGH our server, which relays each chunk to Google. Every request stays under the
+  // serverless body cap, and Google is only ever contacted server-side.
   let uploadUrl = null;
   try {
     onStatus("Preparing upload…");
     const initRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/json", ...keyHeader, "X-Upload-Init":"1" }, body: JSON.stringify({ init:true, fileName:file.name||"clip.mp4", mimeType, sizeBytes:file.size }) });
     if(initRes.ok){ const id = await initRes.json().catch(()=>({})); uploadUrl = id?.uploadUrl || null; upMime = id?.mimeType || mimeType; }
-  } catch { /* fall through to proxy */ }
+    else { const e = await initRes.json().catch(()=>({})); throw new Error(`Couldn't start upload (${initRes.status}) ${e?.error||""}`); }
+  } catch(e){ if(e?.message) throw e; }
   if(uploadUrl){
-    onStatus("Uploading your clip…");
+    const CHUNK = 4 * 1024 * 1024; // multiple of 256KB, under the 4.5MB serverless cap
+    const total = file.size;
+    let offset = 0, lastResp = null;
     const upCtl = new AbortController();
-    const upTimer = setTimeout(()=>upCtl.abort(), 180000); // 3 min for big clips on mobile
+    const upTimer = setTimeout(()=>upCtl.abort(), 240000); // 4 min ceiling for big clips on mobile
     try {
-      const gRes = await fetch(uploadUrl, { method:"POST", headers:{ "X-Goog-Upload-Offset":"0", "X-Goog-Upload-Command":"upload, finalize" }, body:file, signal:upCtl.signal });
-      if(gRes.ok){ const gd = await gRes.json().catch(()=>({})); fileUri = gd?.file?.uri || null; upMime = gd?.file?.mimeType || upMime; }
+      onStatus("Uploading your clip… 0%");
+      while(offset < total){
+        const end = Math.min(offset + CHUNK, total);
+        const isLast = end >= total;
+        const rc = await fetch("/api/gemini-upload", {
+          method:"POST",
+          headers:{ "Content-Type":"application/octet-stream", ...keyHeader, "X-Upload-Url":uploadUrl, "X-Upload-Offset":String(offset), "X-Upload-Command": isLast?"upload, finalize":"upload" },
+          body: file.slice(offset, end),
+          signal: upCtl.signal,
+        });
+        if(!rc.ok){ const e = await rc.json().catch(()=>({})); throw new Error(`Upload failed (${rc.status}) ${e?.error||""}`); }
+        if(isLast) lastResp = await rc.json().catch(()=>({}));
+        offset = end;
+        onStatus(`Uploading your clip… ${Math.round(offset/total*100)}%`);
+      }
+      fileUri = lastResp?.file?.uri || null;
+      upMime = lastResp?.file?.mimeType || upMime;
     } catch(e){
       if(e?.name==="AbortError") throw new Error("Upload stalled — check your connection and try again.");
-      // network/CORS — fall through to the proxy path (small clips only)
+      throw new Error(e?.message || "Upload failed — try again.");
     } finally { clearTimeout(upTimer); }
-  }
-
-  // Step 1b — FALLBACK: legacy proxy upload (server body cap ~4.5MB). Only reached if the
-  // resumable path was unavailable. Clear message for large clips instead of a dead end.
-  if(!fileUri){
-    if(file.size > 4.3 * 1024 * 1024){
-      throw new Error(`This clip is ${(file.size/1048576).toFixed(1)}MB and the direct uploader was unavailable. Trim it under ~4MB (shorter clip / 720p) and retry.`);
-    }
-    onStatus("Uploading your clip…");
-    const upCtl = new AbortController();
-    const upTimer = setTimeout(()=>upCtl.abort(), 90000);
-    let proxyRes;
-    try {
-      proxyRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/octet-stream", ...keyHeader, "X-File-Name":file.name||"clip.mp4", "X-Mime-Type":mimeType }, body:file, signal:upCtl.signal });
-    } catch(e){
-      if(e?.name==="AbortError") throw new Error("Upload stalled — the clip may be too large or your connection dropped. Try a shorter clip or a stronger signal.");
-      throw new Error("Upload failed — "+(e?.message||"network error"));
-    } finally { clearTimeout(upTimer); }
-    if(proxyRes.ok){ const pd = await proxyRes.json().catch(()=>({})); fileUri = pd?.fileUri || null; upMime = pd?.mimeType || upMime; }
-    else { const e = await proxyRes.json().catch(()=>({})); throw new Error(`Upload failed (${proxyRes.status}) ${e?.error||""}`); }
   }
   if(!fileUri) throw new Error("Couldn't upload the clip — try again, or use a shorter clip.");
   if(onFileUri) onFileUri(fileUri, upMime);
