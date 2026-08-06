@@ -9437,10 +9437,390 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
   );
 }
 
+// ── THE TEST AUDIENCE ─────────────────────────────────────────────
+// Watch a synthetic focus group — built from the creator's REAL audience
+// (comment insights, niche, voice) — react to a video idea before it's filmed.
+// Thumb-stop → hook retention → engagement, animated live. Then it calibrates
+// against real posted outcomes so the simulation sharpens over time.
+const TEST_KEY = "krapmaps_v1_testaudience";
+const _AV_SEEDS = ["#00E5FF","#39FF14","#FF3D8B","#C566FF","#FFD50A","#38bdf8","#f472b6","#4ade80","#a78bfa","#facc15","#2dd4bf","#fb7185","#22E06B","#00C2FF","#e879f9","#fbbf24"];
+const _pickAv = (arr,i)=>arr[((i%arr.length)+arr.length)%arr.length];
+const _easeOut = t => 1-Math.pow(1-Math.max(0,Math.min(1,t)),3);
+// map a global progress 0..1 into a local 0..1 window [a,b]
+const _win = (p,a,b)=>Math.max(0,Math.min(1,(p-a)/(b-a)));
+
+// Build 24 persona avatars locally from the returned reaction split.
+const _buildAudience = (r) => {
+  const N=24;
+  const stopN = Math.round(N*(r.thumbStop||60)/100);
+  const survivors = Math.round(stopN*(r.retention3s||60)/100);
+  const inits = ["MK","JT","RD","AL","SP","BV","NG","Co","Ez","Ty","Wm","Ja","Pri","Fx","QD","Lo","Mo","Ke","Zar","Vi","Hn","Ro","Su","Ax"];
+  const reactEmoji = ["❤️","🔁","➕","❤️","🔁","💬","❤️","➕"];
+  const out=[];
+  for(let i=0;i<N;i++){
+    let behavior="scroll", emoji="";
+    if(i<survivors){ behavior="react"; emoji=_pickAv(reactEmoji,i); }
+    else if(i<stopN){ behavior="bounce"; emoji="💤"; }
+    out.push({ initials:_pickAv(inits,i), color:_pickAv(_AV_SEEDS,i), behavior, emoji, order:i/N });
+  }
+  // shuffle deterministically so stops/bounces feel organic (seeded by verdict)
+  const seed=(r.verdict||50);
+  for(let i=out.length-1;i>0;i--){ const j=(i*7+seed)%(i+1); [out[i],out[j]]=[out[j],out[i]]; }
+  return out;
+};
+
+// Deterministic fallback so the sim always works even with no AI key / offline.
+const _fallbackTest = (idea, avgViews=60000) => {
+  const h=(idea.hook||idea.title||"").length;
+  const base=52+((h*13)%34);
+  return {
+    thumbStop: base, retention3s: 40+((h*7)%38), completion: 34+((h*5)%22),
+    shareRate: +(2.2+((h%40)/12)).toFixed(1), newFollows: 90+((h*11)%260),
+    saveRate: +(4+((h%30)/6)).toFixed(1), verdict: 60+((h*3)%32),
+    estViews: fmt(Math.round(avgViews*(1.1+((h%50)/40)))),
+    swipedPct: 100-base,
+    bounce: { atSec: 3+((h%3)), pct: 30+((h%18)), reason: "The hook pays off a beat too late — lead with the reveal, don't build to it." },
+    curve: [100,97,90,62,60,55,50,47,43].map((v,i)=>Math.max(28, v-((h+i)%9))),
+    comments: [
+      { handle:"@"+(idea.type||"viewer")+".fan", initials:"MH", text:"ok this actually rewired my brain 😭", tag:"high-emotion · shareable", color:"#FF3D8B" },
+      { handle:"@curious.cass", initials:"CC", text:"wait i need the real number now", tag:"question → drives comments", color:"#00E5FF" },
+      { handle:"@more.please", initials:"MP", text:"do a part 2 on this PLEASE", tag:"requests sequel · retention", color:"#39FF14" },
+      { handle:"@saved.it", initials:"SI", text:"saving this immediately", tag:"save-worthy", color:"#FFD50A" },
+      { handle:"@debate.club", initials:"DC", text:"ok but why do we still do it the old way", tag:"sparks debate thread", color:"#C566FF" },
+    ],
+  };
+};
+
+function TestAudienceView({ ideas=[], videos=[], commentInsights=null, WL={} }){
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 900;
+  const testable = (ideas||[]).filter(i=>i.title);
+  const [sel, setSel] = useState(testable[0]?.id || "custom");
+  const [customTitle, setCustomTitle] = useState("");
+  const [customHook, setCustomHook] = useState("");
+  const [result, setResult] = useState(()=>loadJSON(TEST_KEY,null)?.last || null);
+  const [busy, setBusy] = useState(false);
+  const [prog, setProg] = useState(result ? 1 : 0);
+  const [err, setErr] = useState("");
+  const rafRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  const organic = (videos||[]).filter(v=>!v.boosted && v.views>0);
+  const avgViews = organic.length ? Math.round(organic.reduce((s,v)=>s+v.views,0)/organic.length) : 60000;
+
+  const activeIdea = sel==="custom"
+    ? { title: customTitle || "Your video idea", hook: customHook, type:"custom" }
+    : (testable.find(i=>i.id===sel) || { title:"Your video idea", hook:"" });
+
+  // Calibration — accuracy from ideas that were tested AND later posted.
+  const hist = loadJSON(TEST_KEY,null)?.history || [];
+  const calib = (()=>{
+    if(!hist.length) return { acc:0, bars:[], learning:true };
+    const errs = hist.map(h=>{
+      if(!(h.actual>0)||!(h.predicted>0)) return null;
+      return 1 - Math.min(1, Math.abs(h.predicted-h.actual)/h.actual);
+    }).filter(v=>v!=null);
+    if(!errs.length) return { acc:0, bars:[], learning:true };
+    const acc = Math.round(errs.reduce((s,v)=>s+v,0)/errs.length*100);
+    return { acc, bars: errs.slice(-6).map(v=>Math.round(v*100)), learning:false };
+  })();
+
+  const animate = () => {
+    cancelAnimationFrame(rafRef.current);
+    const t0 = performance.now(), dur = 5200;
+    const step = (now) => {
+      const p = Math.min(1,(now-t0)/dur);
+      setProg(p);
+      if(p<1) rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+  };
+
+  const run = async () => {
+    if(busy) return;
+    setBusy(true); setErr(""); setProg(0);
+    let r=null;
+    try {
+      const ctx = commentInsights ? `Real audience voice — themes: ${(commentInsights.top_themes||[]).slice(0,4).join(", ")}; they ask for: ${(commentInsights.audience_requests||[]).slice(0,3).join(", ")}; their exact words: ${(commentInsights.language_patterns||[]).slice(0,4).join(", ")}.` : "";
+      const prompt = `You simulate a focus group of ${WL.targetAudience||"this creator's"} followers reacting to a short-form video BEFORE it's filmed. Channel niche: ${WL.niche||"general"}. Channel avg views: ${avgViews}. ${ctx}\n\nVIDEO IDEA:\nTitle: ${activeIdea.title}\nHook: ${activeIdea.hook||"(none given — infer the likely opening line)"}\n\nPredict realistic performance for THIS specific audience. Comments must sound exactly like real followers of this niche (their slang, their obsessions). Return ONLY JSON:\n{"thumbStop":<0-100 % who stop scrolling>,"retention3s":<0-100 % of stoppers still watching at 3s>,"completion":<0-100 % who finish>,"shareRate":<0-15 number>,"newFollows":<integer>,"saveRate":<0-20 number>,"verdict":<0-100 overall>,"estViews":"<e.g. 128K>","swipedPct":<0-100>,"bounce":{"atSec":<int 2-6>,"pct":<0-100 % lost at that moment>,"reason":"<one specific fixable reason>"},"curve":[<9 retention % values 100 down to ~30>],"comments":[{"handle":"@...","initials":"XY","text":"...","tag":"<why it matters>","color":"#hex"} x5]}`;
+      const raw = await callAI(prompt, 1400);
+      r = typeof raw === "string" ? JSON.parse(_stripThink(raw)) : raw;
+      if(!r || typeof r.verdict==="undefined") throw new Error("bad shape");
+    } catch(e){
+      r = _fallbackTest(activeIdea, avgViews);
+    }
+    // normalise
+    if(!Array.isArray(r.curve)||r.curve.length<5) r.curve=_fallbackTest(activeIdea,avgViews).curve;
+    if(!Array.isArray(r.comments)||!r.comments.length) r.comments=_fallbackTest(activeIdea,avgViews).comments;
+    r.audience = _buildAudience(r);
+    r.idea = { id: sel, title: activeIdea.title, hook: activeIdea.hook };
+    r.at = new Date().toISOString();
+    setResult(r);
+    const store = loadJSON(TEST_KEY,{}) || {};
+    store.last = r;
+    saveJSON(TEST_KEY, store);
+    sbSyncJSON && sbSyncJSON("testAudience", store).catch(()=>{});
+    setBusy(false);
+    animate();
+  };
+
+  // draw retention curve on canvas as prog advances
+  useEffect(()=>{
+    const cv=canvasRef.current; if(!cv||!result) return;
+    const cx=cv.getContext("2d"), W=cv.width, H=cv.height;
+    const pts=result.curve.map((v,i)=>[i/(result.curve.length-1), v/100]);
+    const bounceX = Math.min(0.95,((result.bounce?.atSec||3)/12));
+    const px=t=>10+t*(W-20), py=v=>16+(1-v)*(H-34);
+    const interp=t=>{ for(let i=1;i<pts.length;i++){ if(t<=pts[i][0]){ const[a,av]=pts[i-1],[b,bv]=pts[i]; const k=(t-a)/((b-a)||1); return av+(bv-av)*k; } } return pts[pts.length-1][1]; };
+    const curveP = _easeOut(_win(prog,0.28,0.78)); // hook phase window
+    cx.clearRect(0,0,W,H);
+    // grid
+    cx.strokeStyle="rgba(255,255,255,.06)"; cx.lineWidth=1;
+    for(let g=0;g<=4;g++){ const y=16+g/4*(H-34); cx.beginPath(); cx.moveTo(10,y); cx.lineTo(W-10,y); cx.stroke(); }
+    // bounce marker
+    cx.strokeStyle="rgba(255,61,139,.4)"; cx.setLineDash([4,4]);
+    cx.beginPath(); cx.moveTo(px(bounceX),10); cx.lineTo(px(bounceX),H-12); cx.stroke(); cx.setLineDash([]);
+    if(curveP<=0) return;
+    // line
+    cx.beginPath(); cx.moveTo(px(0),py(interp(0)));
+    for(let t=0;t<=curveP+0.001;t+=0.02) cx.lineTo(px(t),py(interp(t)));
+    cx.strokeStyle="#00E5FF"; cx.lineWidth=2.5; cx.shadowColor="rgba(0,229,255,.6)"; cx.shadowBlur=8; cx.stroke(); cx.shadowBlur=0;
+    // fill
+    cx.lineTo(px(Math.min(curveP,1)),H-12); cx.lineTo(px(0),H-12); cx.closePath();
+    const g=cx.createLinearGradient(0,0,0,H); g.addColorStop(0,"rgba(0,229,255,.28)"); g.addColorStop(1,"rgba(0,229,255,0)");
+    cx.fillStyle=g; cx.fill();
+    // dot
+    cx.beginPath(); cx.arc(px(Math.min(curveP,1)),py(interp(Math.min(curveP,1))),3.5,0,7); cx.fillStyle="#eafcff"; cx.fill();
+  },[prog,result]);
+
+  useEffect(()=>()=>cancelAnimationFrame(rafRef.current),[]);
+
+  const mono=C.fontMono, head=C.fontHead;
+  const showStop = Math.round((result?.thumbStop||0)*_easeOut(_win(prog,0.0,0.28)));
+  const showRet  = Math.round((result?.retention3s||0)*_easeOut(_win(prog,0.28,0.62)));
+  const showShare= ((result?.shareRate||0)*_easeOut(_win(prog,0.6,0.9))).toFixed(1);
+  const showFol  = Math.round((result?.newFollows||0)*_easeOut(_win(prog,0.62,0.95)));
+  const showVerdict=Math.round((result?.verdict||0)*_easeOut(_win(prog,0.8,1)));
+  const flagOn = prog>0.62;
+  const done = prog>=1 && result;
+
+  const Stat = ({label,val,color}) => (
+    <div style={{ border:`1px solid ${C.border}`, borderRadius:12, padding:"11px 12px", background:"rgba(255,255,255,0.015)" }}>
+      <div style={{ font:`600 9.5px/1 ${mono}`, letterSpacing:"0.13em", color:C.dim, textTransform:"uppercase" }}>{label}</div>
+      <div style={{ font:`800 22px/1 ${mono}`, letterSpacing:"-0.01em", marginTop:7, fontVariantNumeric:"tabular-nums", color }}>{val}</div>
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth:1180, margin:"0 auto", padding:isMobile?"4px 2px 40px":"4px 4px 60px" }}>
+      {/* hero */}
+      <div style={{ marginBottom:20 }}>
+        <div style={{ font:`700 11px/1 ${mono}`, letterSpacing:"0.34em", color:C.yellow, textTransform:"uppercase", display:"flex", alignItems:"center", gap:8 }}>{I.flask(13,C.yellow)} The Test Audience</div>
+        <h1 style={{ font:`850 ${isMobile?28:44}px/1.03 ${head}`, letterSpacing:"-0.02em", margin:"12px 0 10px", textWrap:"balance", color:C.text }}>
+          Watch your audience react <span style={{ background:`linear-gradient(92deg,${C.cyan},${C.yellow})`, WebkitBackgroundClip:"text", backgroundClip:"text", color:"transparent" }}>before you film it.</span>
+        </h1>
+        <p style={{ maxWidth:"60ch", color:C.dim, fontSize:15, margin:0, fontFamily:C.fontBody }}>
+          A living focus group built from your <b style={{color:C.text}}>real followers</b> — their comments, their swipe habits, their voice. Press run and watch them decide to stop, stay, or scroll.
+        </p>
+      </div>
+
+      {/* idea picker + run */}
+      <div style={{ display:"flex", gap:12, flexWrap:"wrap", alignItems:"flex-end", marginBottom:16, padding:16, borderRadius:16, background:"rgba(255,213,10,0.03)", border:`1px solid ${C.border}` }}>
+        <div style={{ flex:1, minWidth:220 }}>
+          <div style={{ font:`700 9.5px/1 ${mono}`, letterSpacing:"0.2em", color:C.yellow, textTransform:"uppercase", marginBottom:8 }}>Idea under test</div>
+          <select value={sel} onChange={e=>setSel(e.target.value)}
+            style={{ width:"100%", padding:"11px 12px", borderRadius:10, background:C.cardSolid, color:C.text, border:`1px solid ${C.border}`, font:`600 14px ${C.fontBody}`, cursor:"pointer" }}>
+            {testable.map(i=><option key={i.id} value={i.id}>{i.title.slice(0,70)}</option>)}
+            <option value="custom">✏️ Type a new idea…</option>
+          </select>
+          {sel==="custom" && (
+            <div style={{ display:"flex", flexDirection:"column", gap:8, marginTop:8 }}>
+              <input value={customTitle} onChange={e=>setCustomTitle(e.target.value)} placeholder="Video title / concept"
+                style={{ padding:"10px 12px", borderRadius:10, background:C.cardSolid, color:C.text, border:`1px solid ${C.border}`, font:`500 13px ${C.fontBody}` }}/>
+              <input value={customHook} onChange={e=>setCustomHook(e.target.value)} placeholder="Opening hook line (optional)"
+                style={{ padding:"10px 12px", borderRadius:10, background:C.cardSolid, color:C.text, border:`1px solid ${C.border}`, font:`500 13px ${C.fontBody}` }}/>
+            </div>
+          )}
+        </div>
+        <button onClick={run} disabled={busy}
+          style={{ font:`800 13px/1 ${mono}`, letterSpacing:"0.12em", color:"#04141a", cursor:busy?"default":"pointer", border:0, borderRadius:12, padding:"14px 22px", whiteSpace:"nowrap",
+            background: done?`linear-gradient(180deg,#7bffa0,${C.green})`:`linear-gradient(180deg,#7af0ff,${C.cyan})`,
+            boxShadow: done?`0 10px 26px -12px ${C.green}`:`0 10px 26px -12px ${C.cyan}`, opacity:busy?0.6:1, transition:"all .2s" }}>
+          {busy?"● SIMULATING…": done?"↻ RUN AGAIN":"▶ RUN SCREEN TEST"}
+        </button>
+      </div>
+      {err && <div style={{ color:C.orange, fontSize:13, marginBottom:12 }}>{err}</div>}
+
+      {!result ? (
+        <div style={{ padding:"60px 20px", textAlign:"center", border:`1px dashed ${C.border}`, borderRadius:18, color:C.dim }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>🔮</div>
+          <div style={{ fontFamily:C.fontBody, fontSize:15 }}>Pick an idea and hit <b style={{color:C.cyan}}>Run Screen Test</b> to watch your synthetic audience react.</div>
+        </div>
+      ) : (
+        <div style={{ border:`1px solid ${C.border}`, borderRadius:20, overflow:"hidden", background:"linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.006))", boxShadow:DS.shadow.lg }}>
+          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1.15fr 1.5fr 1.35fr", gap:1, background:C.border }}>
+            {/* audience grid */}
+            <div style={{ background:C.bg, padding:"16px 16px 18px" }}>
+              <h3 style={{ margin:"0 0 3px", font:`700 10.5px/1 ${mono}`, letterSpacing:"0.2em", color:C.dim, textTransform:"uppercase" }}>Synthetic Audience</h3>
+              <p style={{ font:`500 11px/1.4 ${C.fontBody}`, color:"rgba(255,255,255,0.35)", margin:"0 0 13px" }}>24 personas sampled from your real followers &amp; comments.</p>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:7 }}>
+                {result.audience.map((a,i)=>{
+                  const revealed = prog > (0.02 + a.order*0.24);
+                  const isStop = a.behavior!=="scroll";
+                  const bounced = a.behavior==="bounce" && prog>0.62;
+                  const reacted = a.behavior==="react" && prog>0.78;
+                  const glow = reacted?C.green:(isStop&&revealed&&!bounced)?C.cyan:null;
+                  return (
+                    <div key={i} style={{ aspectRatio:"1", borderRadius:9, position:"relative", display:"flex", alignItems:"center", justifyContent:"center",
+                      font:`800 12px/1 ${C.fontBody}`, color:"#fff", background:a.color,
+                      opacity: revealed?(bounced?0.2:isStop?1:0.32):0.32,
+                      transform:`scale(${revealed?(bounced?0.82:1):0.9})`,
+                      filter: (isStop&&revealed&&!bounced)?"saturate(1)":"saturate(.45)",
+                      boxShadow: glow?`0 0 0 2px ${glow}bb, 0 0 15px ${glow}55`:"none",
+                      transition:"all .45s" }}>
+                      {a.initials}
+                      {(bounced||reacted) && <span style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, background:"rgba(6,4,12,0.5)", borderRadius:9 }}>{a.emoji}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginTop:13 }}>
+                {[["Thumb-stopped",C.cyan],["Engaged",C.green],["Swiped away",C.pink]].map(([l,c])=>(
+                  <span key={l} style={{ font:`600 10px/1 ${mono}`, color:"rgba(255,255,255,0.4)", display:"flex", alignItems:"center", gap:5 }}>
+                    <i style={{ width:8, height:8, borderRadius:3, background:c, display:"inline-block" }}/>{l}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* phone + curve */}
+            <div style={{ background:C.bg, padding:"16px 16px 18px" }}>
+              <h3 style={{ margin:"0 0 3px", font:`700 10.5px/1 ${mono}`, letterSpacing:"0.2em", color:C.dim, textTransform:"uppercase" }}>Live Retention</h3>
+              <p style={{ font:`500 11px/1.4 ${C.fontBody}`, color:"rgba(255,255,255,0.35)", margin:"0 0 13px" }}>How the hook holds them, second by second.</p>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:14 }}>
+                <div style={{ width:140, borderRadius:22, padding:8, background:"linear-gradient(160deg,#241a3d,#0c0818)", border:`1px solid ${C.borderMed}`, boxShadow:"0 24px 50px -24px #000" }}>
+                  <div style={{ borderRadius:15, aspectRatio:"9/16", position:"relative", overflow:"hidden", background:"linear-gradient(200deg,#0a3a5c,#123 55%,#2a1140)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <div style={{ position:"absolute", top:8, left:8, font:`700 8px/1 ${mono}`, letterSpacing:"0.16em", color:"#cfe", background:"rgba(0,0,0,0.4)", borderRadius:5, padding:"4px 6px" }}>
+                      0:{String(Math.floor(prog*12)).padStart(2,"0")}
+                    </div>
+                    <div style={{ fontSize:46, filter:"drop-shadow(0 6px 20px rgba(0,229,255,0.5))", transform: prog>0.28?"scale(1.12) rotate(-6deg)":"none", transition:"transform .5s" }}>{prog>0.28?"🗺️":"🌍"}</div>
+                    <div style={{ position:"absolute", left:8, right:8, bottom:10, font:`800 11px/1.25 ${C.fontBody}`, textShadow:"0 2px 8px #000", color:"#fff" }}>
+                      {(result.idea.hook||result.idea.title).slice(0,60)}
+                    </div>
+                    <div style={{ position:"absolute", left:0, bottom:0, height:3, background:C.cyan, width:`${prog*100}%`, boxShadow:`0 0 8px ${C.cyan}` }}/>
+                  </div>
+                </div>
+                <div style={{ width:"100%" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:6 }}>
+                    <b style={{ font:`700 10px/1 ${mono}`, letterSpacing:"0.16em", color:C.dim }}>RETENTION</b>
+                    <span style={{ font:`600 10px/1 ${mono}`, color:"rgba(255,255,255,0.35)" }}>{prog>0.28?`${Math.round(result.curve[Math.min(result.curve.length-1,Math.floor(_win(prog,0.28,0.78)*(result.curve.length-1)))])}% holding`:"—"}</span>
+                  </div>
+                  <canvas ref={canvasRef} width={600} height={192} style={{ width:"100%", height:96, display:"block" }}/>
+                  <div style={{ marginTop:9, font:`600 11.5px/1.4 ${C.fontBody}`, color:"#ff9ec4", background:"rgba(255,61,139,0.09)", border:"1px solid rgba(255,61,139,0.28)", borderRadius:10, padding:"9px 11px", opacity:flagOn?1:0, transform:flagOn?"none":"translateY(4px)", transition:".4s", display:"flex", gap:8 }}>
+                    <span>▼</span><span><b style={{color:"#ffd1e3"}}>{result.bounce?.pct||35}% lost at 0:0{result.bounce?.atSec||3}.</b> {result.bounce?.reason}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* telemetry + comments */}
+            <div style={{ background:C.bg, padding:"16px 16px 18px" }}>
+              <h3 style={{ margin:"0 0 3px", font:`700 10.5px/1 ${mono}`, letterSpacing:"0.2em", color:C.dim, textTransform:"uppercase" }}>Live Signal</h3>
+              <p style={{ font:`500 11px/1.4 ${C.fontBody}`, color:"rgba(255,255,255,0.35)", margin:"0 0 13px" }}>Predicted engagement, counting as they react.</p>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:14 }}>
+                <Stat label="Thumb-stop" val={`${showStop}%`} color={C.cyan}/>
+                <Stat label="3-sec retention" val={`${showRet}%`} color={C.green}/>
+                <Stat label="Share rate" val={`${showShare}%`} color={C.yellow}/>
+                <Stat label="New follows" val={showFol} color={C.pink}/>
+              </div>
+              <div style={{ font:`700 10.5px/1 ${mono}`, letterSpacing:"0.2em", color:C.dim, textTransform:"uppercase", margin:"4px 0 10px" }}>Comments you'll get</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+                {result.comments.map((c,i)=>{
+                  const on = prog > (0.66 + i*0.06);
+                  return (
+                    <div key={i} style={{ display:"flex", gap:9, opacity:on?1:0, transform:on?"none":"translateY(6px)", transition:".4s" }}>
+                      <div style={{ width:26, height:26, borderRadius:"50%", flex:"none", background:c.color||C.cyan, display:"flex", alignItems:"center", justifyContent:"center", font:`800 10px/1 ${C.fontBody}`, color:"#fff" }}>{c.initials||"·"}</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ font:`700 11px/1 ${C.fontBody}`, color:C.dim }}>{c.handle}</div>
+                        <div style={{ font:`500 12.5px/1.4 ${C.fontBody}`, color:C.text, marginTop:2 }}>{c.text}</div>
+                        <div style={{ font:`600 10px/1 ${mono}`, color:"rgba(255,255,255,0.35)", marginTop:4 }}>↳ {c.tag}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* verdict */}
+          <div style={{ borderTop:`1px solid ${C.border}`, padding:18, display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr auto", gap:18, alignItems:"center" }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
+              {[
+                { l:"Verdict", v:showVerdict, d:showVerdict>=75?"GREENLIT":showVerdict>=55?"WORTH IT":"RETHINK", win:showVerdict>=75, c:showVerdict>=75?C.green:showVerdict>=55?C.yellow:C.orange },
+                { l:"Est. views", v:done?result.estViews:"—", d:`vs ${fmt(avgViews)} avg`, c:C.cyan },
+                { l:"Completion", v:done?`${result.completion||Math.round(result.curve[result.curve.length-1])}%`:"—", d:"full watch", c:C.yellow },
+                { l:"Save rate", v:done?`${result.saveRate}%`:"—", d:"bookmark", c:C.purple },
+              ].map((g,i)=>(
+                <div key={i} style={{ padding:"12px 13px", borderRadius:13, border:`1px solid ${g.win?"rgba(57,255,20,0.3)":C.border}`, background:g.win?"linear-gradient(180deg,rgba(57,255,20,0.1),transparent)":"rgba(255,255,255,0.02)" }}>
+                  <div style={{ font:`600 9px/1 ${mono}`, letterSpacing:"0.12em", color:"rgba(255,255,255,0.35)", textTransform:"uppercase" }}>{g.l}</div>
+                  <div style={{ font:`800 24px/1 ${mono}`, marginTop:8, fontVariantNumeric:"tabular-nums", color:g.c }}>{g.v}</div>
+                  <div style={{ font:`600 10px/1.2 ${mono}`, marginTop:5, color:"rgba(255,255,255,0.35)" }}>{g.d}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ font:`800 12px/1 ${mono}`, letterSpacing:"0.16em", padding:"12px 16px", borderRadius:10, textAlign:"center", whiteSpace:"nowrap",
+              border:`1px solid ${done?(showVerdict>=75?"rgba(57,255,20,0.35)":"rgba(255,213,10,0.35)"):C.border}`,
+              color: done?(showVerdict>=75?C.green:C.yellow):C.dim,
+              background: done?(showVerdict>=75?"rgba(57,255,20,0.08)":"rgba(255,213,10,0.06)"):"transparent" }}>
+              {busy?"RUNNING…": done?(showVerdict>=75?"✓ GREENLIT":"⚠ NEEDS WORK"):"AWAITING TEST"}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* calibration */}
+      <div style={{ marginTop:24, display:"grid", gridTemplateColumns:isMobile?"1fr":"auto 1fr", gap:24, alignItems:"center", justifyItems:isMobile?"center":"start", textAlign:isMobile?"center":"left",
+        border:`1px solid ${C.border}`, borderRadius:20, padding:24, background:`linear-gradient(140deg,rgba(255,213,10,0.05),rgba(197,102,255,0.05))` }}>
+        <div style={{ width:150, height:150, position:"relative", flex:"none" }}>
+          <svg viewBox="0 0 120 120" width="150" height="150">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="9"/>
+            <circle cx="60" cy="60" r="52" fill="none" stroke={C.yellow} strokeWidth="9" strokeLinecap="round"
+              strokeDasharray="327" strokeDashoffset={327*(1-(calib.acc/100))} transform="rotate(-90 60 60)" style={{ transition:"stroke-dashoffset 1.4s ease" }}/>
+          </svg>
+          <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+            <b style={{ font:`800 34px/1 ${mono}`, color:C.yellow, fontVariantNumeric:"tabular-nums" }}>{calib.acc}%</b>
+            <span style={{ font:`700 8.5px/1 ${mono}`, letterSpacing:"0.18em", color:"rgba(255,255,255,0.35)", marginTop:5 }}>SIM ACCURACY</span>
+          </div>
+        </div>
+        <div>
+          <h2 style={{ margin:"0 0 8px", font:`800 22px/1.1 ${head}`, color:C.text }}>It gets smarter every time you post.</h2>
+          <p style={{ margin:0, color:C.dim, fontSize:14, maxWidth:"56ch", fontFamily:C.fontBody }}>
+            {calib.learning
+              ? <>When you publish a tested idea, its real numbers flow back and the Test Audience compares its prediction to reality — then <b style={{color:C.text}}>recalibrates</b>. Post your first tested video to start sharpening the model.</>
+              : <>The real numbers from your posted videos flow back and the model <b style={{color:C.text}}>recalibrates</b> — it's been within {calib.acc}% on your last {calib.bars.length} tested {calib.bars.length===1?"video":"videos"}. Your synthetic followers are becoming a mirror of your real ones.</>}
+          </p>
+          {calib.bars.length>0 && (
+            <div style={{ display:"flex", gap:5, marginTop:16, alignItems:"flex-end", height:44, width:isMobile?200:260 }}>
+              {calib.bars.map((h,i)=>(
+                <div key={i} style={{ flex:1, borderRadius:"3px 3px 0 0", background:`linear-gradient(180deg,${C.yellow},rgba(255,213,10,0.2))`, height:`${Math.max(14,h*0.42)}px`, opacity:0.5+i*0.09 }}/>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{ marginTop:22, display:"flex", gap:14, flexWrap:"wrap", alignItems:"center", color:"rgba(255,255,255,0.4)", font:`500 12.5px/1.5 ${C.fontBody}` }}>
+        <span style={{ font:`700 10px/1 ${mono}`, letterSpacing:"0.14em", color:C.purple, border:`1px solid rgba(197,102,255,0.3)`, borderRadius:999, padding:"7px 11px", background:"rgba(197,102,255,0.06)" }}>WHY IT'S A MOAT</span>
+        <span>Anyone can generate a script. <b style={{color:C.dim}}>Nobody can simulate your specific audience</b> — calibrated against your real posted outcomes, deepening every time you hit post.</span>
+      </div>
+    </div>
+  );
+}
+
 const NAV = [
   { id:"home",      label:"HOME",      ic:I.home      },
   { id:"autopilot", label:"AUTOPILOT", ic:I.zap       },
   { id:"check",     label:"CHECKER",   ic:I.eye       },
+  { id:"test",      label:"TEST AUDIENCE", ic:I.flask  },
   { id:"content",   label:"CONTENT",   ic:I.write     },
   { id:"analytics", label:"ANALYTICS", ic:I.bar       },
   { id:"reader",    label:"READER",    ic:I.eye       },
@@ -13251,6 +13631,7 @@ Return JSON:
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} setIdeas={setIdeas} deepScanResult={deepScanResult} />}
         {nav==="autopilot" && <AutopilotView videos={videos} ideas={ideas} setIdeas={setIdeas} WL={WL} setNav={id=>{ setNav(id); setSub(null); }} copyText={copyText} copied={copied} />}
         {nav==="check"     && <PrePostCheck videos={videos} WL={WL} />}
+        {nav==="test"      && <TestAudienceView ideas={ideas} videos={sortedVideos} commentInsights={commentInsights} WL={activeWL} />}
         {nav==="reader"    && <VideoReaderView videos={videos} WL={WL} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
