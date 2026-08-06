@@ -108,12 +108,18 @@ export default async function handler(req, res) {
       const command = req.headers['x-upload-command'] || 'upload, finalize';
       const gRes = await fetch(String(relayUrl), {
         method: 'POST',
-        headers: { 'Content-Length': String(raw.length), 'X-Goog-Upload-Offset': String(offset), 'X-Goog-Upload-Command': String(command) },
+        headers: { 'X-Goog-Upload-Offset': String(offset), 'X-Goog-Upload-Command': String(command) },
         body: raw,
       });
       const text = await gRes.text();
       res.setHeader('Content-Type', 'application/json');
-      return res.status(gRes.status).send(text || '{}');
+      if (!gRes.ok) {
+        // Surface Google's real reason instead of an opaque status.
+        let msg = text;
+        try { const j = JSON.parse(text); msg = j?.error?.message || j?.error?.status || text; } catch {}
+        return res.status(gRes.status).json({ error: `Gemini upload rejected (${gRes.status}): ${String(msg).slice(0, 240)}` });
+      }
+      return res.status(200).send(text || '{}');
     }
 
     // ── UPLOAD MODE (legacy single-shot, small files only) ─────────
