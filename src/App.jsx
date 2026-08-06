@@ -5154,7 +5154,7 @@ function AiSelfTest(){
   );
 }
 
-const SettingsView = ({ plan, onManagePlan, keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[], onBulkImport }) => {
+const SettingsView = ({ plan, onManagePlan, keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[], onBulkImport, onRescan, deepScanResult, aiLoad={} }) => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [editing, setEditing] = useState(null);
   const [draftKey, setDraftKey] = useState("");
@@ -5406,6 +5406,22 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
           {I.refresh(16,C.cyan)} {syncMsg || "SYNC"}
         </button>
       </div>
+
+      {/* Deep Visual Scan */}
+      {keys?.gemini && (
+        <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"24px 28px", background:"linear-gradient(145deg,rgba(255,215,0,0.08),rgba(10,6,20,0.95))", border:"1px solid rgba(255,215,0,0.25)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:"linear-gradient(90deg,#FFD700,#FFD70000)" }}/>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:16, fontWeight:700, color:"#fff", marginBottom:4 }}>Deep Visual Scan</div>
+            <div style={{ fontSize:isMobile?12:13, color:"rgba(255,255,255,0.5)", lineHeight:1.4 }}>
+              {deepScanResult?.scannedAt ? "Last scan: "+new Date(deepScanResult.scannedAt).toLocaleDateString() : "Run once to analyse your best vs worst videos with Gemini 2.5 Pro"}
+            </div>
+          </div>
+          <button onClick={onRescan} disabled={aiLoad.deepScan} style={{ display:"flex", alignItems:"center", gap:8, padding:isMobile?"10px 18px":"14px 28px", borderRadius:12, border:"1px solid rgba(255,215,0,0.4)", background:"linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,215,0,0.1))", color:"#FFD700", fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?13:16, cursor:"pointer", flexShrink:0, opacity:aiLoad.deepScan?0.5:1 }}>
+            {I.zap(16,"#FFD700")} {aiLoad.deepScan ? "SCANNING..." : deepScanResult ? "RE-SCAN" : "RUN SCAN"}
+          </button>
+        </div>
+      )}
 
       {/* 2 col layout */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:16, alignItems:"start" }}>
@@ -8030,6 +8046,15 @@ const sbLoadArray = async (table) => {
   const rows = await sbFetch(table, `select=*&id=like.${wsMatch()}*&order=updated_at.desc`);
   if(!rows||!rows.length) return null;
   return rows.map(r=>r.data).filter(Boolean);
+};
+// Single-value config helpers — store/fetch one JSON blob per workspace key in km_config.
+const sbSyncJSON = async (key, value) => {
+  if(value==null) return;
+  await sbUpsert("km_config",[{ id:wsId(key), data:value, updated_at:new Date().toISOString() }]);
+};
+const sbLoadJSON = async (key) => {
+  const rows = await sbFetch("km_config",`select=data&id=eq.${wsId(key)}`);
+  return rows?.[0]?.data ?? null;
 };
 
 // ── CROSS-CREATOR CORPUS ──────────────────────────────────────────
@@ -11482,14 +11507,14 @@ function Dashboard({ keys, onEditKeys }) {
   useEffect(()=>{ saveJSON(VIDEOS_KEY, videos.map(v=>{ const {videoUrl,...rest}=v; return rest; })); },[videos]);
   useEffect(()=>{ saveJSON(IDEAS_KEY,ideas); if(sbLoaded&&ideas.length) sbSyncArray("km_ideas",ideas).catch(()=>{}); },[ideas]);
   useEffect(()=>{ saveJSON(CAL_KEY,calItems); if(sbLoaded&&calItems.length) sbSyncArray("km_cal",calItems).catch(()=>{}); },[calItems]);
-  useEffect(()=>{ saveJSON(TASKS_KEY,tasks); },[tasks]);
+  useEffect(()=>{ saveJSON(TASKS_KEY,tasks); if(sbLoaded&&tasks.length) sbSyncJSON("tasks",tasks).catch(()=>{}); },[tasks,sbLoaded]);
   useEffect(()=>{ saveJSON(APPIDEAS_KEY,appIdeas); },[appIdeas]);
   useEffect(()=>{ saveJSON(MANUAL_KEY,manualData); },[manualData]);
-  useEffect(()=>{ if(analysis) saveJSON(ANALYSIS_KEY,analysis); },[analysis]);
-  useEffect(()=>{ if(nextVids) saveJSON(NEXTVIDS_KEY,nextVids); },[nextVids]);
-  useEffect(()=>{ if(weekly) saveJSON(WEEKLY_KEY,weekly); },[weekly]);
-  useEffect(()=>{ if(trends) saveJSON(TRENDS_KEY,trends); },[trends]);
-  useEffect(()=>{ if(deepScanResult) saveJSON(DEEP_SCAN_KEY,deepScanResult); },[deepScanResult]);
+  useEffect(()=>{ if(analysis){ saveJSON(ANALYSIS_KEY,analysis); if(sbLoaded) sbSyncJSON("analysis",analysis).catch(()=>{}); } },[analysis,sbLoaded]);
+  useEffect(()=>{ if(nextVids){ saveJSON(NEXTVIDS_KEY,nextVids); if(sbLoaded) sbSyncJSON("nextVids",nextVids).catch(()=>{}); } },[nextVids,sbLoaded]);
+  useEffect(()=>{ if(weekly){ saveJSON(WEEKLY_KEY,weekly); if(sbLoaded) sbSyncJSON("weekly",weekly).catch(()=>{}); } },[weekly,sbLoaded]);
+  useEffect(()=>{ if(trends){ saveJSON(TRENDS_KEY,trends); if(sbLoaded) sbSyncJSON("trends",trends).catch(()=>{}); } },[trends,sbLoaded]);
+  useEffect(()=>{ if(deepScanResult){ saveJSON(DEEP_SCAN_KEY,deepScanResult); if(sbLoaded) sbSyncJSON("deepScan",deepScanResult).catch(()=>{}); } },[deepScanResult,sbLoaded]);
 
   // ── LOAD FROM SUPABASE ─────────────────────────────────────────
   useEffect(()=>{
@@ -11527,6 +11552,23 @@ function Dashboard({ keys, onEditKeys }) {
         // Scraped stats
         const stats = await sbFetch("km_scraped_stats","select=*&order=scraped_at.desc&limit=1");
         if(stats?.[0]) { setScrapedStats(stats[0]); saveJSON(SCRAPE_KEY,stats[0]); }
+        // AI results — load from cloud, prefer remote if present
+        const [sbAnalysis, sbNextVids, sbWeekly, sbTrends, sbDeepScan, sbTasks] = await Promise.all([
+          sbLoadJSON("analysis"), sbLoadJSON("nextVids"), sbLoadJSON("weekly"),
+          sbLoadJSON("trends"), sbLoadJSON("deepScan"), sbLoadJSON("tasks"),
+        ]);
+        if(sbAnalysis) { setAnalysis(sbAnalysis); saveJSON(ANALYSIS_KEY,sbAnalysis); }
+        if(sbNextVids) { setNextVids(sbNextVids); saveJSON(NEXTVIDS_KEY,sbNextVids); }
+        if(sbWeekly)   { setWeekly(sbWeekly);     saveJSON(WEEKLY_KEY,sbWeekly); }
+        if(sbTrends)   { setTrends(sbTrends);     saveJSON(TRENDS_KEY,sbTrends); }
+        if(sbDeepScan) { setDeepScanResult(sbDeepScan); saveJSON(DEEP_SCAN_KEY,sbDeepScan); }
+        if(sbTasks?.length) {
+          setTasks(prev => {
+            const merged = [...sbTasks];
+            prev.forEach(p=>{ if(!merged.find(t=>t.id===p.id)) merged.push(p); });
+            return merged;
+          });
+        }
       } catch(e) { setStatsError("Sync error: "+e.message); }
       setSbLoaded(true);
     };
@@ -11544,6 +11586,18 @@ function Dashboard({ keys, onEditKeys }) {
     saveJSON(SCORES_KEY, scores);
     setVideoScores(scores);
   },[videos]);
+
+  // ── DEEP SCAN AUTO-RUN (once on first build, when videos exist) ─
+  useEffect(()=>{
+    if(!sbLoaded) return;
+    if(deepScanResult) return; // already have a scan — skip
+    const videosWithViews = videos.filter(v=>v.views>0);
+    if(videosWithViews.length < 5) return; // need at least 5 real videos
+    const cfg = loadJSON("krapmaps_v1_config",{});
+    if(!cfg?.keys?.gemini) return; // Gemini key not set — user must add it first
+    // Fire and forget — same as clicking Re-run manually
+    runAI && runAI("deepScan");
+  },[sbLoaded,videos,deepScanResult]);
 
   // ── AUTO 24HR UPDATE ───────────────────────────────────────────
   useEffect(()=>{
@@ -13214,6 +13268,8 @@ Return JSON:
               setTimeout(()=>setSyncMsg(null), 4000);
             }}
             syncMsg={syncMsg} videos={videos} ideas={ideas}
+            deepScanResult={deepScanResult} aiLoad={aiLoad}
+            onRescan={()=>runAI("deepScan")}
             onBulkImport={newVids=>{
               setVideos(vs=>{
                 const merged=[...vs];
