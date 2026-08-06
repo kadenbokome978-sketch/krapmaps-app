@@ -9899,11 +9899,47 @@ function TestAudienceView({ ideas=[], videos=[], commentInsights=null, WL={} }){
   );
 }
 
+// ── CHECKER — one tab, two modes ──────────────────────────────────
+// "Test an idea" (expert panel, before you film) + "Check my video"
+// (upload a finished MP4, Gemini watches it). Same job, two stages.
+function CheckerView({ ideas=[], videos=[], sortedVideos=[], commentInsights=null, WL={} }){
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 900;
+  const [mode, setMode] = useState("idea"); // "idea" | "video"
+  const modes = [
+    { id:"idea",  label:"Test an idea", sub:"before you film", ic:I.flask },
+    { id:"video", label:"Check my video", sub:"finished MP4", ic:I.eye },
+  ];
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:isMobile?16:20 }}>
+      {/* mode toggle */}
+      <div style={{ display:"flex", gap:8, padding:5, borderRadius:14, background:"rgba(255,255,255,0.03)", border:`1px solid ${C.border}`, alignSelf:"flex-start", maxWidth:"100%", flexWrap:"wrap" }}>
+        {modes.map(t=>{
+          const on = mode===t.id;
+          return (
+            <button key={t.id} onClick={()=>setMode(t.id)}
+              style={{ display:"flex", alignItems:"center", gap:9, padding:isMobile?"9px 13px":"10px 16px", borderRadius:10, border:"none", cursor:"pointer",
+                background: on?`linear-gradient(135deg,${C.purple}2a,${C.pink}1a)`:"transparent",
+                boxShadow: on?`inset 0 0 0 1px ${C.purple}45`:"none", transition:"all .18s" }}>
+              <span style={{ opacity:on?1:0.5 }}>{t.ic(16, on?C.pink:C.dim)}</span>
+              <span style={{ textAlign:"left" }}>
+                <span style={{ display:"block", font:`800 13px/1.1 ${C.fontHead}`, color:on?"#fff":C.dim }}>{t.label}</span>
+                <span style={{ display:"block", font:`600 10px/1.2 ${C.fontMono}`, letterSpacing:"0.08em", color:on?"rgba(255,255,255,0.4)":"rgba(255,255,255,0.25)", marginTop:2 }}>{t.sub}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {mode==="idea"
+        ? <TestAudienceView ideas={ideas} videos={sortedVideos} commentInsights={commentInsights} WL={WL} />
+        : <PrePostCheck videos={videos} WL={WL} />}
+    </div>
+  );
+}
+
 const NAV = [
   { id:"home",      label:"HOME",      ic:I.home      },
   { id:"autopilot", label:"AUTOPILOT", ic:I.zap       },
   { id:"check",     label:"CHECKER",   ic:I.eye       },
-  { id:"test",      label:"TEST AUDIENCE", ic:I.flask  },
   { id:"content",   label:"CONTENT",   ic:I.write     },
   { id:"analytics", label:"ANALYTICS", ic:I.bar       },
   { id:"reader",    label:"READER",    ic:I.eye       },
@@ -13713,8 +13749,7 @@ Return JSON:
         {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} markPosted={markPosted} />}
         {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} setIdeas={setIdeas} deepScanResult={deepScanResult} />}
         {nav==="autopilot" && <AutopilotView videos={videos} ideas={ideas} setIdeas={setIdeas} WL={WL} setNav={id=>{ setNav(id); setSub(null); }} copyText={copyText} copied={copied} />}
-        {nav==="check"     && <PrePostCheck videos={videos} WL={WL} />}
-        {nav==="test"      && <TestAudienceView ideas={ideas} videos={sortedVideos} commentInsights={commentInsights} WL={activeWL} />}
+        {nav==="check"     && <CheckerView ideas={ideas} videos={videos} sortedVideos={sortedVideos} commentInsights={commentInsights} WL={activeWL} />}
         {nav==="reader"    && <VideoReaderView videos={videos} WL={WL} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
