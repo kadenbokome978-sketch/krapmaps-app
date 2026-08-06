@@ -8565,6 +8565,22 @@ const _megaFollowers = (snippet="") => {
   if(raw && parseInt(raw[1].replace(/,/g,""),10) >= 300000) return true;
   return false;
 };
+// Bounded-concurrency map — keeps prospect enrichment from hammering the scraper.
+async function _mapPool(items, n, fn){
+  const out = new Array(items.length); let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length||1) }, async () => {
+    while(i < items.length){ const idx = i++; try { out[idx] = await fn(items[idx], idx); } catch { out[idx] = null; } }
+  }));
+  return out;
+}
+// "20k-250k" → [20000, 250000]. Missing/garbled → [0, Infinity].
+const _parseBand = (s) => {
+  const m = String(s||"").toLowerCase().match(/(\d+(?:\.\d+)?)\s*([km]?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*([km]?)/);
+  const sc = u => u==="m"?1e6:u==="k"?1e3:1;
+  if(!m) return [0, Infinity];
+  return [parseFloat(m[1])*sc(m[2]), parseFloat(m[3])*sc(m[4])];
+};
+
 async function exaFindTikTokHandles(niche, excludeSet=new Set(), { courseSellers=true } = {}) {
   const out = new Map();
   const diag = { pass1Results:0, pass2Results:0, dropped:0 };
@@ -9752,57 +9768,89 @@ function ProspectAuditView({ WL, operator=false }){
   const [findBusy, setFindBusy] = useState(false);
   const [findErr, setFindErr] = useState("");
   const [findResults, setFindResults] = useState([]);
+  const [findProg, setFindProg] = useState(null); // [done,total] while verifying real numbers
   const _normH = h => String(h||"").replace(/^@/,"").trim().toLowerCase();
+  // Verify + rank: scrape each candidate for REAL followers + view pattern, filter to the
+  // band, and score fit. Ideal prospect = posts land inconsistently (proven ceiling, low
+  // median = untapped upside) + active + in band. Turns raw handles into a vetted shortlist.
+  const enrichAndRank = async (cands, band) => {
+    const [lo, hi] = _parseBand(band);
+    const top = cands.slice(0, 14); // cap scraping cost per run
+    let done = 0; setFindProg([0, top.length]);
+    const enriched = await _mapPool(top, 4, async (c) => {
+      try {
+        const { followers=0, nick, videos=[] } = await scrapeProspectTikTok(c.handle, 1);
+        setFindProg([++done, top.length]);
+        if(!videos.length) return null;
+        const vs = videos.map(v=>v.views||0);
+        const sorted = [...vs].sort((a,b)=>a-b);
+        const median = sorted[Math.floor(sorted.length/2)] || 0;
+        const ceiling = vs.reduce((m,v)=>v>m?v:m, 0);
+        const latest = videos.map(v=>+new Date(v.created_at||0)).reduce((m,t)=>t>m?t:m, 0);
+        const activeDays = latest ? Math.floor((Date.now()-latest)/86400000) : 999;
+        const inBand = followers>=lo && followers<=hi;
+        const inRatio = median>0 ? ceiling/median : 1;
+        const inconScore = Math.min(1, Math.max(0, (inRatio-1)/4)); // proven-but-inconsistent = ideal
+        const viewRate = followers>0 ? median/followers : 0;
+        const underperf = viewRate<0.1 ? 1 : viewRate<0.25 ? 0.6 : 0.3; // low reach vs size = room to help
+        const recency = activeDays<=45 ? 1 : activeDays<=90 ? 0.5 : 0;
+        const bandFit = inBand ? 1 : 0.3;
+        const fit = Math.round(100*(0.4*inconScore + 0.25*underperf + 0.2*recency + 0.15*bandFit));
+        const why = `${fmt(followers)} followers · usually ${fmt(median)} views, hit ${fmt(ceiling)} (${inRatio.toFixed(1)}× ceiling)${activeDays<=45?" · active":activeDays<=120?" · slowing":" · quiet"}`;
+        return { ...c, name:nick||c.name, followers, median, ceiling, fit, inBand, activeDays, why, verified:true };
+      } catch { setFindProg([++done, top.length]); return null; }
+    });
+    return enriched.filter(Boolean).filter(c=>c.followers>0)
+      .sort((a,b)=> (Number(b.inBand)-Number(a.inBand)) || (b.fit-a.fit));
+  };
   const runFinder = async (more=false) => {
     const niche = findNiche.trim();
     if(!niche || findBusy) return;
-    setFindBusy(true); setFindErr(""); if(!more) setFindResults([]);
+    setFindBusy(true); setFindErr(""); setFindProg(null); if(!more) setFindResults([]);
     try {
       const cfg = loadJSON("krapmaps_v1_config", {});
       if(!(cfg?.keys?.perplexity || BAKED_PERPLEXITY_KEY || USE_BACKEND)){ setFindErr("Add a Perplexity key in Settings to use live prospect search."); setFindBusy(false); return; }
       const wl = WL || loadWL();
-      // Exclude everyone already found this session AND everyone already audited, so every
-      // search returns FRESH names instead of the same famous handful.
+      // Exclude everyone already found this session AND everyone already audited.
       const seen = new Set([ ...(more?findResults:[]).map(c=>_normH(c.handle)), ...prospects.map(p=>_normH(p.h)) ].filter(Boolean));
       const exclude = [...seen].slice(0,40);
-      // ── EXA FIRST (retrieval-first, hallucination-proof) ── every handle is parsed
-      // from a REAL URL (direct profile or a round-up article), never generated. Only
-      // if Exa is unconfigured / errors / returns nothing do we fall through to the
-      // Perplexity generative search below (which can hallucinate, hence the order).
-      let exaArr = [], exaDiag = null;
+
+      // 1) GATHER raw candidate handles — Exa first (retrieval, hallucination-proof),
+      //    Perplexity generative search as fallback. Sizes here are unverified.
+      let raw = [];
       try {
         const res = await exaFindTikTokHandles(niche, seen, { courseSellers: findCourse });
-        exaArr = res.candidates; exaDiag = res.diag;
+        raw = res.candidates || [];
       } catch(e){ console.warn("[finder] Exa unavailable, falling back to Perplexity:", e?.message); }
-      if(exaArr.length){
-        const have = new Set((more?findResults:[]).map(c=>_normH(c.handle)));
-        const fresh = exaArr.filter(c=>{ const k=_normH(c.handle); if(have.has(k)) return false; have.add(k); return true; });
-        const merged = more ? [...findResults, ...fresh] : fresh;
-        setFindResults(merged.slice(0,40));
-        // Self-test signal: tell the operator how good Exa's coverage was this run, so
-        // "is the finder reliable?" is answerable from the UI, not a black box.
-        const droppedNote = exaDiag?.dropped ? ` (${exaDiag.dropped} too-big skipped)` : "";
-        if(!merged.length) setFindErr(`No mid-tier candidates came back${droppedNote}. Try a more specific niche.`);
-        else if(fresh.length < 5) setFindErr(`Exa found ${fresh.length} real mid-tier ${fresh.length===1?"handle":"handles"}${droppedNote}. Try a more specific niche for more.`);
-        setFindBusy(false);
-        return;
-      }
-      const r = await callPerplexity(`Find real TikTok creators in the "${niche}" niche who currently have roughly ${findBand} followers, for cold outreach.
+      if(!raw.length){
+        const r = await callPerplexity(`Find real TikTok creators in the "${niche}" niche who currently have roughly ${findBand} followers, for cold outreach.
 CRITICAL ACCURACY RULE (most important): every handle must be a REAL account you actually found in your web search results, verified from an actual tiktok.com/@ profile URL. Do NOT guess a handle from a creator's display name, and do NOT invent handles. A wrong handle is useless and worse than no result. If you are not certain the exact @handle exists, LEAVE THAT CREATOR OUT. Quality over quantity: it is far better to return 5 you have genuinely verified than 12 with guesses. For each, also return the creator's real display NAME and the exact profile URL you found them at, so it can be checked.
 TARGETING:
 1. REACHABLE mid-tier only, no household-name mega creators or anyone clearly outside ${findBand}. The ones who read their own DMs.
 2. Consistent posters whose views are INCONSISTENT (a few pop, most underperform), that gap is what we help with.
 3. Bonus if they sell something (course, coaching, product) so they have budget.${exclude.length?`\nExclude these already-known handles: ${exclude.map(h=>"@"+h).join(", ")}.`:""}
-Return ONLY JSON: {"creators":[{"handle":"@exacthandle","name":"Display Name","url":"https://www.tiktok.com/@exacthandle","followers":"~50k","why":"one line"}]}`, wl).catch((e)=>{ throw new Error(e?.message||"search failed"); });
-      let arr = Array.isArray(r?.creators) ? r.creators.filter(c=>c?.handle && _normH(c.handle)) : [];
-      // Dedup against what's already shown and drop anything the search returned despite the exclude list.
+Return ONLY JSON: {"creators":[{"handle":"@exacthandle","name":"Display Name","url":"https://www.tiktok.com/@exacthandle","why":"one line"}]}`, wl).catch((e)=>{ throw new Error(e?.message||"search failed"); });
+        raw = Array.isArray(r?.creators) ? r.creators.filter(c=>c?.handle && _normH(c.handle)) : [];
+      }
+      // Dedup vs already-known + already-shown.
       const have = new Set((more?findResults:[]).map(c=>_normH(c.handle)));
-      arr = arr.filter(c=>{ const k=_normH(c.handle); if(have.has(k)||seen.has(k)) return false; have.add(k); return true; });
-      const merged = more ? [...findResults, ...arr] : arr;
-      if(!merged.length){ setFindErr("No fresh candidates came back. Try a more specific niche or a different band."); }
+      raw = raw.filter(c=>{ const k=_normH(c.handle); if(!k||have.has(k)||seen.has(k)) return false; have.add(k); return true; });
+      if(!raw.length){ setFindErr("No fresh candidates came back. Try a more specific niche or a different band."); setFindBusy(false); return; }
+
+      // 2) VERIFY + RANK — scrape each for real followers + view pattern, filter to band, score fit.
+      const ranked = await enrichAndRank(raw, findBand);
+      setFindProg(null);
+      const merged = more ? [...findResults, ...ranked] : ranked;
+      merged.sort((a,b)=> (Number(b.inBand)-Number(a.inBand)) || (b.fit-a.fit));
       setFindResults(merged.slice(0,40));
+      if(!ranked.length){
+        setFindErr("Found handles, but none had public data in your band. Widen the band or try a more specific niche.");
+      } else {
+        const inb = ranked.filter(c=>c.inBand).length;
+        if(!inb) setFindErr(`None landed inside ${findBand} — showing the closest matches. Try widening the band.`);
+      }
     } catch(e){ setFindErr((e.message||"Search failed").slice(0,120)); }
-    setFindBusy(false);
+    setFindBusy(false); setFindProg(null);
   };
   const loadHandle = (h) => { const clean = String(h||"").replace(/^@/,"").trim(); setHandle(clean); setErr(""); try { window.scrollTo({ top:0, behavior:"smooth" }); } catch {} };
   const saveProspects = (list) => { setProspects(list); saveJSON(PROSPECTS_KEY, list); };
@@ -10424,13 +10472,27 @@ Return ONLY JSON:
                 Prefer creators who sell a course / coaching
               </button>
               <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", marginTop:-2 }}>Course sellers have budget and feel the reach-to-sales link directly — best prospects. Turn off to widen.</div>
+              {findBusy && findProg && (
+                <div style={{ fontSize:12, color:C.cyan, display:"flex", alignItems:"center", gap:8 }}>
+                  <Spin s={12} c={C.cyan}/> Verifying real numbers… {findProg[0]}/{findProg[1]} (scraping followers &amp; view pattern)
+                </div>
+              )}
               {findErr && <div style={{ fontSize:12.5, color:"#FF6B7D", lineHeight:1.5 }}>{findErr}</div>}
               {findResults.length>0 && (
                 <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-                  {findResults.map((c,i)=>{ const hc = String(c.handle||"").replace(/^@/,"").trim(); const already = prospects.some(p=>p.h?.toLowerCase()===hc.toLowerCase()); return (
-                    <div key={i} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"9px 12px", flexWrap:"wrap" }}>
-                      <div style={{ flex:1, minWidth:isMobile?"60%":140 }}>
-                        <div style={{ fontSize:14, fontWeight:700, color:"#fff" }}>@{hc} {c.followers&&<span style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:500 }}>· {c.followers}</span>}{already&&<span style={{ fontSize:9.5, color:C.green, fontWeight:700, marginLeft:6 }}>✓ AUDITED</span>}</div>
+                  {findResults.map((c,i)=>{ const hc = String(c.handle||"").replace(/^@/,"").trim(); const already = prospects.some(p=>p.h?.toLowerCase()===hc.toLowerCase());
+                    const fit = c.fit; const fitC = fit>=70?C.green:fit>=50?C.yellow:"#FF6B6B";
+                    const foll = typeof c.followers==="number" ? fmt(c.followers) : (c.followers||"");
+                    return (
+                    <div key={i} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", border:`1px solid ${c.inBand?fitC+"33":"rgba(255,255,255,0.07)"}`, borderRadius:10, padding:"9px 12px", flexWrap:"wrap" }}>
+                      {c.verified && fit!=null && (
+                        <div style={{ flexShrink:0, width:44, textAlign:"center" }}>
+                          <div style={{ fontSize:18, fontWeight:800, fontFamily:C.fontHead, color:fitC, lineHeight:1 }}>{fit}</div>
+                          <div style={{ fontSize:8, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.08em", marginTop:2 }}>FIT</div>
+                        </div>
+                      )}
+                      <div style={{ flex:1, minWidth:isMobile?"55%":140 }}>
+                        <div style={{ fontSize:14, fontWeight:700, color:"#fff" }}>@{hc} {foll&&<span style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:500 }}>· {foll}</span>}{c.verified&&(c.inBand?<span style={{ fontSize:9, color:C.green, fontWeight:700, marginLeft:6, border:`1px solid ${C.green}45`, borderRadius:5, padding:"1px 5px" }}>IN BAND</span>:<span style={{ fontSize:9, color:"rgba(255,255,255,0.4)", fontWeight:700, marginLeft:6, border:"1px solid rgba(255,255,255,0.2)", borderRadius:5, padding:"1px 5px" }}>OFF BAND</span>)}{already&&<span style={{ fontSize:9.5, color:C.green, fontWeight:700, marginLeft:6 }}>✓ AUDITED</span>}</div>
                         {c.name && <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.55)" }}>{c.name}</div>}
                         {c.why && <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.45)", marginTop:2 }}>{c.why}</div>}
                       </div>
@@ -10441,7 +10503,7 @@ Return ONLY JSON:
                     </div>
                   ); })}
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, flexWrap:"wrap" }}>
-                    <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", lineHeight:1.5, flex:1, minWidth:isMobile?"100%":200 }}>{findResults.length} found. Tap <b style={{color:"rgba(255,255,255,0.55)"}}>CHECK ↗</b> to confirm a handle is real on TikTok before you audit (search can still miss). Then <b style={{color:"rgba(255,255,255,0.55)"}}>LOAD</b> it.</div>
+                    <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", lineHeight:1.5, flex:1, minWidth:isMobile?"100%":200 }}>{findResults.length} verified &amp; ranked by fit — real followers &amp; view pattern, best first. <b style={{color:"rgba(255,255,255,0.55)"}}>LOAD</b> the top ones to run a full audit.</div>
                     <button onClick={()=>runFinder(true)} disabled={findBusy} style={{ padding:"7px 14px", borderRadius:9, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.05)", color:"rgba(255,255,255,0.75)", fontFamily:C.fontHead, fontWeight:700, fontSize:11, cursor:findBusy?"wait":"pointer", whiteSpace:"nowrap" }}>{findBusy?"…":"+ FIND MORE"}</button>
                   </div>
                 </div>
