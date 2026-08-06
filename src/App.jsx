@@ -7517,10 +7517,26 @@ async function geminiUploadAnalyse(file, prompt, onStatus=()=>{}, opts={}) {
   if(!geminiKey && USE_BACKEND){ const tok = await getAccessToken(); if(tok) authHeader["Authorization"] = "Bearer "+tok; }
   const keyHeader = geminiKey ? { "X-Gemini-Key":geminiKey } : authHeader;
 
+  // The serverless uploader caps request bodies at ~4.5MB, so a large clip would
+  // otherwise stall the upload forever on "Uploading…". Guard up front with a clear,
+  // actionable message instead of an infinite spinner.
+  const MAX_UPLOAD = 4.3 * 1024 * 1024;
+  if(file.size > MAX_UPLOAD){
+    throw new Error(`This clip is ${(file.size/1048576).toFixed(1)}MB — over the ${(MAX_UPLOAD/1048576).toFixed(1)}MB upload limit. Trim it shorter or re-export at a lower resolution (720p is plenty), then try again.`);
+  }
   onStatus("Uploading your clip…");
   // Step 1 — upload the raw video through the proxy (uses server key, bypasses CORS).
+  // Hard timeout so a stalled upload fails cleanly rather than hanging indefinitely.
   let fileUri = null, upMime = mimeType;
-  const proxyRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/octet-stream", ...keyHeader, "X-File-Name":file.name||"clip.mp4", "X-Mime-Type":mimeType }, body:file });
+  const upCtl = new AbortController();
+  const upTimer = setTimeout(()=>upCtl.abort(), 90000);
+  let proxyRes;
+  try {
+    proxyRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/octet-stream", ...keyHeader, "X-File-Name":file.name||"clip.mp4", "X-Mime-Type":mimeType }, body:file, signal:upCtl.signal });
+  } catch(e){
+    if(e?.name==="AbortError") throw new Error("Upload stalled — the clip may be too large or your connection dropped. Try a shorter clip or a stronger signal.");
+    throw new Error("Upload failed — "+(e?.message||"network error"));
+  } finally { clearTimeout(upTimer); }
   if(proxyRes.ok){ const pd = await proxyRes.json().catch(()=>({})); fileUri = pd?.fileUri || null; upMime = pd?.mimeType || mimeType; }
   else { const e = await proxyRes.json().catch(()=>({})); throw new Error(`Upload failed (${proxyRes.status}) ${e?.error||""}`); }
   if(!fileUri) throw new Error("No file URI from Gemini");
@@ -7530,7 +7546,15 @@ async function geminiUploadAnalyse(file, prompt, onStatus=()=>{}, opts={}) {
   // with the server key. Each call is short; if Gemini is still processing we retry.
   onStatus("Watching your video…");
   for(let i=0;i<12;i++){
-    const anRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/json", ...keyHeader }, body: JSON.stringify({ fileUri, mimeType:upMime, prompt, json, maxTokens }) });
+    const anCtl = new AbortController();
+    const anTimer = setTimeout(()=>anCtl.abort(), 45000);
+    let anRes;
+    try {
+      anRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/json", ...keyHeader }, body: JSON.stringify({ fileUri, mimeType:upMime, prompt, json, maxTokens }), signal:anCtl.signal });
+    } catch(e){
+      if(e?.name==="AbortError") throw new Error("The vision service timed out watching your clip — try again in a moment.");
+      throw new Error("Analysis failed — "+(e?.message||"network error"));
+    } finally { clearTimeout(anTimer); }
     if(!anRes.ok){ const e = await anRes.json().catch(()=>({})); throw new Error(`Gemini error ${anRes.status} ${e?.error||""}`); }
     const ad = await anRes.json();
     if(ad.done) { onStatus("Scoring it…"); return ad.text || ""; }
