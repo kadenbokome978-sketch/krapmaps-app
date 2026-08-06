@@ -9271,7 +9271,16 @@ function PrePostCheck({ videos=[], WL={} }) {
   const [reportText, setReportText] = useState("");
   const [reportDone, setReportDone] = useState(false);
   const fileRef = useRef();
+  const [pprog, setPprog] = useState(0); // judges reveal animation
+  const praf = useRef(null);
   const hasGemini = !!((loadJSON(KEYS_KEY,{})?.keys?.gemini) || BAKED_GEMINI_KEY || USE_BACKEND);
+  const animatePanel = () => {
+    cancelAnimationFrame(praf.current);
+    const t0 = performance.now(), dur = 4200;
+    const step = (now) => { const p=Math.min(1,(now-t0)/dur); setPprog(p); if(p<1) praf.current=requestAnimationFrame(step); };
+    praf.current = requestAnimationFrame(step);
+  };
+  useEffect(()=>()=>cancelAnimationFrame(praf.current),[]);
 
   const run = async (f) => {
     if(!f) return;
@@ -9299,11 +9308,22 @@ STEP 2 — only if it fits, judge the craft: first frame + first 3 seconds (scro
 
 PREDICTED VIEWS: ${avgV?`base the range on the channel average of ${fmt(avgV)} — realistic, not fantasy.`:`there is NO channel history, so do NOT invent a confident number. Return predictedViews as "—" and never fabricate a range.`}
 
-Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand","fitNote":"one or two sentences: what this account is about vs what this video is, and why it fits or doesn't","score":0-100,"predictedViews":"${avgV?"realistic range e.g. 8K-20K":"—"}","hookRating":0-100,"hookNote":"what happens in the first 3 seconds and whether it earns the scroll-stop","retention":[{"seg":"0-3s","risk":"low|med|high","note":"why viewers stay or leave here"},{"seg":"3-10s","risk":"low|med|high","note":"..."},{"seg":"10s+","risk":"low|med|high","note":"..."}],"fixes":[{"at":"timestamp e.g. 0:01","fix":"specific change","lift":"estimated score gain if applied, e.g. '+6'"}],"strongest":"one line — the best thing about it","weakest":"one line — the biggest problem","action":"the single highest-impact change","ifFixed":"the score (0-100) this video would realistically reach if the top fixes were applied — a genuine projection, must be >= score, don't inflate"}`;
+STEP 3 — THE PANEL. Having WATCHED the video, convene 6 judges. Each scores ONE factor 0-10 from what they actually saw (cite timestamps in the evidence): hook (does the first second stop the thumb), retention (where attention drops), share (a real reason to send it to a friend), emotion (a genuine emotional spike), fit (does it belong on THIS account), differentiation (fresh vs done-to-death). A score of 5.5+ means that judge says YES to posting. Use EXACTLY these 6 keys, in this order.
+
+Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand","fitNote":"one or two sentences: what this account is about vs what this video is, and why it fits or doesn't","score":0-100,"predictedViews":"${avgV?"realistic range e.g. 8K-20K":"—"}","hookRating":0-100,"hookNote":"what happens in the first 3 seconds and whether it earns the scroll-stop","retention":[{"seg":"0-3s","risk":"low|med|high","note":"why viewers stay or leave here"},{"seg":"3-10s","risk":"low|med|high","note":"..."},{"seg":"10s+","risk":"low|med|high","note":"..."}],"fixes":[{"at":"timestamp e.g. 0:01","fix":"specific change","lift":"estimated score gain if applied, e.g. '+6'"}],"strongest":"one line — the best thing about it","weakest":"one line — the biggest problem","action":"the single highest-impact change","ifFixed":"the score (0-100) this video would realistically reach if the top fixes were applied — a genuine projection, must be >= score, don't inflate","panel":[{"key":"hook","score":0-10,"headline":"<=6 words","evidence":"what you saw + timestamp","fix":"one change"},{"key":"retention","score":0-10,"headline":"...","evidence":"...","fix":"..."},{"key":"share","score":0-10,"headline":"...","evidence":"...","fix":"..."},{"key":"emotion","score":0-10,"headline":"...","evidence":"...","fix":"..."},{"key":"fit","score":0-10,"headline":"...","evidence":"...","fix":"..."},{"key":"differentiation","score":0-10,"headline":"...","evidence":"...","fix":"..."}]}`;
       const text = await geminiUploadAnalyse(f, prompt, setStatus);
       const parsed = _extractJSON(text);
       if(!parsed || !parsed.verdict) throw new Error("Couldn't read the analysis — try a shorter MP4.");
-      setRes(parsed);
+      // Normalise the judges panel — guarantee all 6 lenses, in order, with styling fields.
+      if(Array.isArray(parsed.panel) && parsed.panel.length){
+        parsed.panel = PANEL_LENSES.map(l=>{
+          const j = parsed.panel.find(x=>x.key===l.key) || {};
+          return { key:l.key, label:l.label, color:l.color, face:l.face,
+            score:Math.max(0,Math.min(10,Number(j.score)||5)), headline:j.headline||l.label, evidence:j.evidence||"", fix:j.fix||"" };
+        });
+      }
+      setRes(parsed); setPprog(0);
+      if(parsed.panel) animatePanel();
     } catch(e){ setErr(e.message||"Check failed."); }
     setLoading(false); setStatus("");
   };
@@ -9337,6 +9357,13 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
       )}
 
       {res && !loading && (<>
+        {/* The panel — judges vote on the finished video */}
+        {res.panel && (
+          <div style={{ border:`1px solid ${C.border}`, borderRadius:20, overflow:"hidden", background:"linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.006))", boxShadow:DS.shadow.lg }}>
+            <JudgesStage panel={res.panel} prog={pprog} isMobile={isMobile} subtitle="6 experts watched your video. Each votes on one thing that makes it travel." />
+            <PanelWhy panel={res.panel} prog={pprog} isMobile={isMobile} />
+          </div>
+        )}
         {/* Verdict hero */}
         <div style={{ borderRadius:20, overflow:"hidden", position:"relative", background:`linear-gradient(135deg,${vC}14,rgba(10,6,20,0.95) 65%)`, border:`1px solid ${vC}40`, padding:isMobile?"22px 20px":"28px 30px" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${vC},transparent)` }}/>
@@ -9520,6 +9547,94 @@ const _synthFromPanel = (panel, avgViews=60000) => {
   const curve = [100,96,88, retention3s+8, retention3s+4, Math.round((retention3s+completion)/2), completion+6, completion+2, completion].map(v=>Math.max(24,Math.min(100,Math.round(v))));
   return { thumbStop, retention3s, completion, shareRate, saveRate, newFollows, verdict, estViews, swipedPct:100-thumbStop, bounce, curve };
 };
+
+// X Factor judges stage — 6 experts vote YES/NO. `prog` 0..1 drives the reveal.
+function JudgesStage({ panel=[], prog=1, isMobile=false, subtitle="6 experts. Each votes on one thing that makes a video travel." }){
+  const mono=C.fontMono;
+  if(!panel||!panel.length) return null;
+  return (
+    <div style={{ position:"relative", overflow:"hidden", padding:isMobile?"20px 10px 22px":"26px 20px 26px", borderBottom:`1px solid ${C.border}`,
+      background:"radial-gradient(120% 90% at 50% -10%, rgba(197,102,255,0.14), transparent 60%), linear-gradient(180deg,#0b0718,#07050f)" }}>
+      <div style={{ textAlign:"center", marginBottom:isMobile?16:20 }}>
+        <span style={{ font:`700 10.5px/1 ${mono}`, letterSpacing:"0.28em", color:C.dim, textTransform:"uppercase" }}>The Panel</span>
+        <div style={{ font:`500 11px/1.3 ${C.fontBody}`, color:"rgba(255,255,255,0.3)", marginTop:5 }}>{subtitle}</div>
+      </div>
+      <div style={{ display:"flex", justifyContent:"center", gap:isMobile?"10px 4px":16, flexWrap:"wrap", maxWidth:820, margin:"0 auto" }}>
+        {panel.map((p,i)=>{
+          const revealAt = 0.38 + i*0.075;
+          const shown = prog > revealAt;
+          const sc = Math.round(p.score*10*_easeOut(_win(prog, revealAt, revealAt+0.16)))/10;
+          const yes = p.score>=5.5;
+          const vC = yes?C.green:"#FF4D4D";
+          return (
+            <div key={p.key} style={{ flex:isMobile?"0 0 30%":"0 0 118px", display:"flex", flexDirection:"column", alignItems:"center", gap:7, position:"relative", padding:"8px 2px" }}>
+              <div style={{ position:"absolute", top:-14, left:"50%", transform:"translateX(-50%)", width:100, height:130, pointerEvents:"none", transition:".5s",
+                background: shown?`radial-gradient(60% 55% at 50% 0%, ${vC}30, transparent 72%)`:"transparent" }}/>
+              <div style={{ width:isMobile?52:62, height:isMobile?52:62, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:isMobile?24:30, position:"relative", zIndex:1,
+                background:`radial-gradient(circle at 35% 28%, ${p.color}55, #16102c)`,
+                border:`2px solid ${shown?vC:C.border}`,
+                boxShadow: shown?`0 0 0 3px ${vC}22, 0 0 22px ${vC}55`:"none",
+                opacity: shown?1:0.4, transform:`scale(${shown?1:0.9})`, transition:"all .45s" }}>
+                {p.face||_lensFace(p.key)}
+                {shown && (
+                  <div style={{ position:"absolute", bottom:-5, right:-5, width:23, height:23, borderRadius:"50%", background:vC, display:"flex", alignItems:"center", justifyContent:"center", font:`900 13px/1 ${C.fontHead}`, color:"#04140a", boxShadow:`0 2px 8px ${vC}99` }}>{yes?"✓":"✕"}</div>
+                )}
+              </div>
+              <div style={{ font:`800 9.5px/1.15 ${C.fontHead}`, letterSpacing:"0.06em", color: shown?"#fff":C.dim, textTransform:"uppercase", textAlign:"center", minHeight:22, display:"flex", alignItems:"center" }}>{p.label}</div>
+              <div style={{ display:"flex", alignItems:"baseline", gap:5, opacity:shown?1:0.3, transition:".3s" }}>
+                <span style={{ font:`900 12px/1 ${C.fontHead}`, letterSpacing:"0.06em", color:vC }}>{shown?(yes?"YES":"NO"):"…"}</span>
+                <span style={{ font:`700 11px/1 ${mono}`, color:"rgba(255,255,255,0.4)", fontVariantNumeric:"tabular-nums" }}>{sc.toFixed(1)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {prog>0.92 && (()=>{ const yc=panel.filter(p=>p.score>=5.5).length; const tC=yc>=4?C.green:yc>=3?C.yellow:"#FF4D4D"; return (
+        <div style={{ textAlign:"center", marginTop:isMobile?14:18 }}>
+          <span style={{ font:`800 13px/1 ${C.fontHead}`, letterSpacing:"0.04em", color:tC, padding:"8px 16px", borderRadius:999, border:`1px solid ${tC}45`, background:`${tC}12` }}>
+            {yc} of {panel.length} judges said YES
+          </span>
+        </div>
+      );})()}
+    </div>
+  );
+}
+
+// The per-lens detail — score bar, headline, evidence, fix.
+function PanelWhy({ panel=[], prog=1, isMobile=false }){
+  const mono=C.fontMono;
+  if(!panel||!panel.length) return null;
+  return (
+    <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14, flexWrap:"wrap" }}>
+        {I.brain(15,C.purple)}
+        <span style={{ font:`700 11px/1 ${mono}`, letterSpacing:"0.2em", color:C.dim, textTransform:"uppercase" }}>Expert Panel — the why</span>
+        <span style={{ font:`500 11px/1 ${C.fontBody}`, color:"rgba(255,255,255,0.3)" }}>6 specialists, each judging one viral factor</span>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:10 }}>
+        {panel.map((p,i)=>{
+          const on = prog > (0.8 + i*0.028);
+          const sc = Math.round(p.score*10*_easeOut(_win(prog,0.82,1)))/10;
+          const tone = p.score>=7?C.green:p.score>=4.5?C.yellow:C.orange;
+          return (
+            <div key={p.key} style={{ opacity:on?1:0, transform:on?"none":"translateY(6px)", transition:".4s", padding:"12px 14px", borderRadius:13, border:`1px solid ${p.color}22`, background:`${p.color}08` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                <span style={{ font:`700 10px/1 ${mono}`, letterSpacing:"0.12em", color:p.color, textTransform:"uppercase", flex:1 }}>{p.label}</span>
+                <span style={{ font:`800 15px/1 ${mono}`, color:tone, fontVariantNumeric:"tabular-nums" }}>{sc.toFixed(1)}<span style={{ fontSize:10, color:"rgba(255,255,255,0.3)" }}>/10</span></span>
+              </div>
+              <div style={{ height:5, borderRadius:3, background:"rgba(255,255,255,0.06)", overflow:"hidden", marginBottom:9 }}>
+                <div style={{ height:"100%", width:`${sc*10}%`, background:tone, borderRadius:3, transition:"width .5s" }}/>
+              </div>
+              <div style={{ font:`700 12.5px/1.35 ${C.fontBody}`, color:C.text, marginBottom:4 }}>{p.headline}</div>
+              {p.evidence && <div style={{ font:`500 12px/1.45 ${C.fontBody}`, color:C.dim, marginBottom:6 }}>{p.evidence}</div>}
+              {p.fix && <div style={{ font:`600 11.5px/1.4 ${C.fontBody}`, color:tone, display:"flex", gap:6 }}><span>→</span><span>{p.fix}</span></div>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function TestAudienceView({ ideas=[], videos=[], commentInsights=null, WL={} }){
   const isMobile = typeof window !== "undefined" && window.innerWidth < 900;
@@ -9709,58 +9824,7 @@ function TestAudienceView({ ideas=[], videos=[], commentInsights=null, WL={} }){
         </div>
       ) : (
         <div style={{ border:`1px solid ${C.border}`, borderRadius:20, overflow:"hidden", background:"linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.006))", boxShadow:DS.shadow.lg }}>
-          {/* ── THE PANEL — X Factor judges stage ── */}
-          {result.panel && (
-            <div style={{ position:"relative", overflow:"hidden", padding:isMobile?"20px 10px 22px":"26px 20px 26px", borderBottom:`1px solid ${C.border}`,
-              background:"radial-gradient(120% 90% at 50% -10%, rgba(197,102,255,0.14), transparent 60%), linear-gradient(180deg,#0b0718,#07050f)" }}>
-              <div style={{ textAlign:"center", marginBottom:isMobile?16:20 }}>
-                <span style={{ font:`700 10.5px/1 ${mono}`, letterSpacing:"0.28em", color:C.dim, textTransform:"uppercase" }}>The Panel</span>
-                <div style={{ font:`500 11px/1.3 ${C.fontBody}`, color:"rgba(255,255,255,0.3)", marginTop:5 }}>6 experts. Each votes on one thing that makes a video travel.</div>
-              </div>
-              <div style={{ display:"flex", justifyContent:"center", gap:isMobile?"10px 4px":16, flexWrap:"wrap", maxWidth:820, margin:"0 auto" }}>
-                {result.panel.map((p,i)=>{
-                  const revealAt = 0.38 + i*0.075;
-                  const shown = prog > revealAt;
-                  const sc = Math.round(p.score*10*_easeOut(_win(prog, revealAt, revealAt+0.16)))/10;
-                  const yes = p.score>=5.5;
-                  const vC = yes?C.green:"#FF4D4D";
-                  return (
-                    <div key={p.key} style={{ flex:isMobile?"0 0 30%":"0 0 118px", display:"flex", flexDirection:"column", alignItems:"center", gap:7, position:"relative", padding:"8px 2px" }}>
-                      {/* spotlight */}
-                      <div style={{ position:"absolute", top:-14, left:"50%", transform:"translateX(-50%)", width:100, height:130, pointerEvents:"none", transition:".5s",
-                        background: shown?`radial-gradient(60% 55% at 50% 0%, ${vC}30, transparent 72%)`:"transparent" }}/>
-                      {/* judge avatar */}
-                      <div style={{ width:isMobile?52:62, height:isMobile?52:62, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:isMobile?24:30, position:"relative", zIndex:1,
-                        background:`radial-gradient(circle at 35% 28%, ${p.color}55, #16102c)`,
-                        border:`2px solid ${shown?vC:C.border}`,
-                        boxShadow: shown?`0 0 0 3px ${vC}22, 0 0 22px ${vC}55`:"none",
-                        opacity: shown?1:0.4, transform:`scale(${shown?1:0.9})`, transition:"all .45s" }}>
-                        {p.face||_lensFace(p.key)}
-                        {shown && (
-                          <div style={{ position:"absolute", bottom:-5, right:-5, width:23, height:23, borderRadius:"50%", background:vC, display:"flex", alignItems:"center", justifyContent:"center", font:`900 13px/1 ${C.fontHead}`, color:"#04140a", boxShadow:`0 2px 8px ${vC}99` }}>{yes?"✓":"✕"}</div>
-                        )}
-                      </div>
-                      {/* name */}
-                      <div style={{ font:`800 9.5px/1.15 ${C.fontHead}`, letterSpacing:"0.06em", color: shown?"#fff":C.dim, textTransform:"uppercase", textAlign:"center", minHeight:22, display:"flex", alignItems:"center" }}>{p.label}</div>
-                      {/* verdict + score */}
-                      <div style={{ display:"flex", alignItems:"baseline", gap:5, opacity:shown?1:0.3, transition:".3s" }}>
-                        <span style={{ font:`900 12px/1 ${C.fontHead}`, letterSpacing:"0.06em", color:vC }}>{shown?(yes?"YES":"NO"):"…"}</span>
-                        <span style={{ font:`700 11px/1 ${mono}`, color:"rgba(255,255,255,0.4)", fontVariantNumeric:"tabular-nums" }}>{sc.toFixed(1)}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              {/* tally */}
-              {prog>0.92 && (()=>{ const yc=result.panel.filter(p=>p.score>=5.5).length; const tC=yc>=4?C.green:yc>=3?C.yellow:"#FF4D4D"; return (
-                <div style={{ textAlign:"center", marginTop:isMobile?14:18 }}>
-                  <span style={{ font:`800 13px/1 ${C.fontHead}`, letterSpacing:"0.04em", color:tC, padding:"8px 16px", borderRadius:999, border:`1px solid ${tC}45`, background:`${tC}12` }}>
-                    {yc} of 6 judges said YES
-                  </span>
-                </div>
-              );})()}
-            </div>
-          )}
+          <JudgesStage panel={result.panel} prog={prog} isMobile={isMobile} />
 
           <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1.4fr 1.35fr", gap:1, background:C.border }}>
 
@@ -9847,37 +9911,7 @@ function TestAudienceView({ ideas=[], videos=[], commentInsights=null, WL={} }){
             </div>
           </div>
 
-          {/* expert panel — the WHY */}
-          {result.panel && (
-            <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14, flexWrap:"wrap" }}>
-                {I.brain(15,C.purple)}
-                <span style={{ font:`700 11px/1 ${mono}`, letterSpacing:"0.2em", color:C.dim, textTransform:"uppercase" }}>Expert Panel — the why</span>
-                <span style={{ font:`500 11px/1 ${C.fontBody}`, color:"rgba(255,255,255,0.3)" }}>6 specialists, each hunting one viral factor</span>
-              </div>
-              <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:10 }}>
-                {result.panel.map((p,i)=>{
-                  const on = prog > (0.8 + i*0.028);
-                  const sc = Math.round(p.score*10*_easeOut(_win(prog,0.82,1)))/10;
-                  const tone = p.score>=7?C.green:p.score>=4.5?C.yellow:C.orange;
-                  return (
-                    <div key={p.key} style={{ opacity:on?1:0, transform:on?"none":"translateY(6px)", transition:".4s", padding:"12px 14px", borderRadius:13, border:`1px solid ${p.color}22`, background:`${p.color}08` }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-                        <span style={{ font:`700 10px/1 ${mono}`, letterSpacing:"0.12em", color:p.color, textTransform:"uppercase", flex:1 }}>{p.label}</span>
-                        <span style={{ font:`800 15px/1 ${mono}`, color:tone, fontVariantNumeric:"tabular-nums" }}>{sc.toFixed(1)}<span style={{ fontSize:10, color:"rgba(255,255,255,0.3)" }}>/10</span></span>
-                      </div>
-                      <div style={{ height:5, borderRadius:3, background:"rgba(255,255,255,0.06)", overflow:"hidden", marginBottom:9 }}>
-                        <div style={{ height:"100%", width:`${sc*10}%`, background:tone, borderRadius:3, transition:"width .5s" }}/>
-                      </div>
-                      <div style={{ font:`700 12.5px/1.35 ${C.fontBody}`, color:C.text, marginBottom:4 }}>{p.headline}</div>
-                      {p.evidence && <div style={{ font:`500 12px/1.45 ${C.fontBody}`, color:C.dim, marginBottom:6 }}>{p.evidence}</div>}
-                      {p.fix && <div style={{ font:`600 11.5px/1.4 ${C.fontBody}`, color:tone, display:"flex", gap:6 }}><span>→</span><span>{p.fix}</span></div>}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <PanelWhy panel={result.panel} prog={prog} isMobile={isMobile} />
         </div>
       )}
 
