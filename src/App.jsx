@@ -7519,46 +7519,43 @@ async function geminiUploadAnalyse(file, prompt, onStatus=()=>{}, opts={}) {
 
   let fileUri = null, upMime = mimeType;
 
-  // Step 1 — DIRECT resumable upload, single finalize request (any size). Our server starts
-  // a resumable session with its key; the browser then sends the WHOLE file in one shot
-  // straight to Google's session URL. Single-shot finalize sidesteps Google's 8MB chunk
-  // granularity (which can't fit through the ~4.5MB serverless proxy), and the session URL
-  // is self-authorizing so no key ever reaches the browser. XHR gives real upload progress.
-  let uploadUrl = null;
+  // Step 1 — STAGE via Supabase (any size). The browser uploads the clip straight to
+  // Supabase Storage (no size cap, no Google-CORS problem), then our server pulls it and
+  // uploads to Gemini server-side. Sidesteps Vercel's 4.5MB inbound cap AND Google's
+  // browser-upload CORS block — the two walls that broke every other approach.
+  let staged = null;
   try {
     onStatus("Preparing upload…");
-    const initRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/json", ...keyHeader, "X-Upload-Init":"1" }, body: JSON.stringify({ init:true, fileName:file.name||"clip.mp4", mimeType, sizeBytes:file.size }) });
-    if(initRes.ok){ const id = await initRes.json().catch(()=>({})); uploadUrl = id?.uploadUrl || null; upMime = id?.mimeType || mimeType; }
-    else { const e = await initRes.json().catch(()=>({})); throw new Error(`Couldn't start upload (${initRes.status}) ${e?.error||""}`); }
+    const signRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/json", ...keyHeader }, body: JSON.stringify({ stage:"sign", fileName:file.name||"clip.mp4", mimeType, sizeBytes:file.size }) });
+    if(signRes.ok){ staged = await signRes.json().catch(()=>null); }
+    else if(signRes.status !== 400){ const e = await signRes.json().catch(()=>({})); throw new Error(e?.error||`Upload prep failed (${signRes.status})`); }
+    // 400 → staging not configured on the server; fall through to the small-file proxy.
   } catch(e){ if(e?.message) throw e; }
-  if(uploadUrl){
-    try {
-      onStatus("Uploading your clip… 0%");
-      const result = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", uploadUrl);
-        xhr.setRequestHeader("X-Goog-Upload-Offset", "0");
-        xhr.setRequestHeader("X-Goog-Upload-Command", "upload, finalize");
-        xhr.timeout = 300000; // 5 min for large clips on a weak mobile connection
-        xhr.upload.onprogress = e => { if(e.lengthComputable) onStatus(`Uploading your clip… ${Math.round(e.loaded/e.total*100)}%`); };
-        xhr.onload = () => { if(xhr.status>=200 && xhr.status<300){ try { resolve(JSON.parse(xhr.responseText)); } catch { reject(new Error("Bad upload response")); } } else { let msg=""; try { msg = JSON.parse(xhr.responseText)?.error?.message||""; } catch {} reject(new Error(`Upload rejected (${xhr.status})${msg?`: ${msg}`:""}`)); } };
-        xhr.onerror = () => reject(new Error("net"));
-        xhr.ontimeout = () => reject(new Error("timeout"));
-        xhr.send(file);
-      });
-      fileUri = result?.file?.uri || null;
-      upMime = result?.file?.mimeType || upMime;
-    } catch(e){
-      if(e?.message==="timeout") throw new Error("Upload stalled — check your connection and try again.");
-      if(e?.message!=="net") throw e; // a real Google rejection — surface it
-      // network error — fall through to the proxy fallback for small clips
-    }
+  if(staged?.signedUrl){
+    onStatus("Uploading your clip… 0%");
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", staged.signedUrl);
+      xhr.setRequestHeader("Content-Type", mimeType);
+      xhr.setRequestHeader("x-upsert", "true");
+      xhr.timeout = 300000; // 5 min for large clips on a weak mobile connection
+      xhr.upload.onprogress = e => { if(e.lengthComputable) onStatus(`Uploading your clip… ${Math.round(e.loaded/e.total*100)}%`); };
+      xhr.onload = () => (xhr.status>=200 && xhr.status<300) ? resolve() : reject(new Error(`Upload failed (${xhr.status})`));
+      xhr.onerror = () => reject(new Error("Upload failed — network dropped."));
+      xhr.ontimeout = () => reject(new Error("Upload stalled — check your connection and try again."));
+      xhr.send(file);
+    });
+    onStatus("Processing your clip…");
+    const ingRes = await fetch("/api/gemini-upload", { method:"POST", headers:{ "Content-Type":"application/json", ...keyHeader }, body: JSON.stringify({ stage:"ingest", path:staged.path, mimeType }) });
+    if(!ingRes.ok){ const e = await ingRes.json().catch(()=>({})); throw new Error(e?.error||`Processing failed (${ingRes.status})`); }
+    const ing = await ingRes.json().catch(()=>({}));
+    fileUri = ing?.fileUri || null; upMime = ing?.mimeType || upMime;
   }
 
-  // Step 1b — FALLBACK: legacy single-shot proxy (server body cap ~4.5MB). Only if the
-  // direct upload couldn't run at all (e.g. offline mid-request).
+  // Step 1b — FALLBACK: legacy single-shot proxy (server body cap ~4.5MB). Only if staging
+  // is unavailable (no service key configured).
   if(!fileUri){
-    if(file.size > 4.3 * 1024 * 1024) throw new Error(`Couldn't upload directly and this clip is ${(file.size/1048576).toFixed(1)}MB — over the fallback limit. Try again on a stronger connection, or trim it under ~4MB.`);
+    if(file.size > 4.3 * 1024 * 1024) throw new Error(`This clip is ${(file.size/1048576).toFixed(1)}MB and large-file staging is unavailable right now. Trim it under ~4MB (720p / shorter) and retry.`);
     onStatus("Uploading your clip…");
     const upCtl = new AbortController(); const upTimer = setTimeout(()=>upCtl.abort(), 90000);
     let proxyRes;
