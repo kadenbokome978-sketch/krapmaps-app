@@ -9318,7 +9318,7 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
       if(Array.isArray(parsed.panel) && parsed.panel.length){
         parsed.panel = PANEL_LENSES.map(l=>{
           const j = parsed.panel.find(x=>x.key===l.key) || {};
-          return { key:l.key, label:l.label, color:l.color, face:l.face,
+          return { key:l.key, label:l.label, color:l.color,
             score:Math.max(0,Math.min(10,Number(j.score)||5)), headline:j.headline||l.label, evidence:j.evidence||"", fix:j.fix||"" };
         });
       }
@@ -9520,14 +9520,53 @@ const _fallbackTest = (idea, avgViews=60000) => {
 
 // The panel — 6 specialist agents, each hunting ONE factor that makes videos travel.
 const PANEL_LENSES = [
-  { key:"hook",            label:"Hook",            face:"🎯", color:"#00E5FF", weight:0.28, ask:"Does the first 1 second stop the thumb? Judge the opening line / visual purely as a scroll-stopper." },
-  { key:"retention",       label:"Retention",       face:"⏳", color:"#39FF14", weight:0.22, ask:"Is there an open loop that holds attention past 3 seconds? Where exactly will viewers drop off?" },
-  { key:"share",           label:"Share Trigger",   face:"🔁", color:"#FFD50A", weight:0.20, ask:"Is there a concrete reason to send this to a friend (identity, utility, 'you HAVE to see this')? Share rate is the #1 cold-distribution lever." },
-  { key:"emotion",         label:"Emotional Spike", face:"🔥", color:"#FF3D8B", weight:0.12, ask:"Does it trigger a strong emotion — surprise, awe, outrage, 'I knew it'? Flat feeling = no spread." },
-  { key:"fit",             label:"Audience Fit",    face:"🎧", color:"#C566FF", weight:0.10, ask:"Does it match what THIS channel's real followers actually ask for and engage with?" },
-  { key:"differentiation", label:"Differentiation", face:"✨", color:"#FF6B1A", weight:0.08, ask:"Is this fresh, or has the niche done it to death? Overdone angles cap reach." },
+  { key:"hook",            label:"Hook",            judge:"Maya",   color:"#00E5FF", weight:0.28, person:{ skin:"#f1c27d", hair:"#171717", style:"long",  top:"#0e3a44" }, ask:"Does the first 1 second stop the thumb? Judge the opening line / visual purely as a scroll-stopper." },
+  { key:"retention",       label:"Retention",       judge:"Theo",   color:"#39FF14", weight:0.22, person:{ skin:"#8d5524", hair:"#0d0d0d", style:"short", top:"#123a17" }, ask:"Is there an open loop that holds attention past 3 seconds? Where exactly will viewers drop off?" },
+  { key:"share",           label:"Share Trigger",   judge:"Priya",  color:"#FFD50A", weight:0.20, person:{ skin:"#c68642", hair:"#241a12", style:"bun",   top:"#4a3a0e" }, ask:"Is there a concrete reason to send this to a friend (identity, utility, 'you HAVE to see this')? Share rate is the #1 cold-distribution lever." },
+  { key:"emotion",         label:"Emotional Spike", judge:"Jordan", color:"#FF3D8B", weight:0.12, person:{ skin:"#e0ac69", hair:"#5b3413", style:"curly", top:"#4a1030" }, ask:"Does it trigger a strong emotion — surprise, awe, outrage, 'I knew it'? Flat feeling = no spread." },
+  { key:"fit",             label:"Audience Fit",    judge:"Kwame",  color:"#C566FF", weight:0.10, person:{ skin:"#5c3a21", hair:"#050505", style:"buzz",  top:"#3a1a4a" }, ask:"Does it match what THIS channel's real followers actually ask for and engage with?" },
+  { key:"differentiation", label:"Differentiation", judge:"Elena",  color:"#FF6B1A", weight:0.08, person:{ skin:"#ffdbb4", hair:"#7a4a1e", style:"long",  top:"#4a2410" }, ask:"Is this fresh, or has the niche done it to death? Overdone angles cap reach." },
 ];
-const _lensFace = (key) => (PANEL_LENSES.find(l=>l.key===key)||{}).face || "🧑";
+const _lensCfg = (key) => PANEL_LENSES.find(l=>l.key===key) || {};
+
+// Illustrated human judge — flat SVG portrait, varied per person. Self-contained, crisp at any size.
+function JudgeAvatar({ cfg={}, size=60 }){
+  const { skin="#e8b48c", hair="#2b2b2b", style="short", top="#3a3a4a" } = cfg;
+  const shadow = "rgba(0,0,0,0.18)";
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" style={{ display:"block" }}>
+      <defs><clipPath id={`c${skin}${hair}${style}`.replace(/[^a-z0-9]/gi,"")}><circle cx="32" cy="32" r="32"/></clipPath></defs>
+      <g clipPath={`url(#${`c${skin}${hair}${style}`.replace(/[^a-z0-9]/gi,"")})`}>
+        <rect width="64" height="64" fill="#16102c"/>
+        {/* shoulders */}
+        <path d="M6 64 C6 49 19 43 32 43 C45 43 58 49 58 64 Z" fill={top}/>
+        <path d="M6 64 C6 49 19 43 32 43 C45 43 58 49 58 64 Z" fill={shadow} opacity="0.0"/>
+        {/* neck */}
+        <rect x="27" y="37" width="10" height="9" rx="4" fill={skin}/>
+        <rect x="27" y="37" width="10" height="4" rx="2" fill="#000" opacity="0.08"/>
+        {/* head */}
+        <circle cx="32" cy="25" r="14.5" fill={skin}/>
+        {/* ears */}
+        <circle cx="18.5" cy="26" r="2.6" fill={skin}/>
+        <circle cx="45.5" cy="26" r="2.6" fill={skin}/>
+        {/* hair by style */}
+        {style==="short" && <path d="M18 24 C18 12 46 12 46 24 C46 20 42 15 32 15 C22 15 18 20 18 24 Z" fill={hair}/>}
+        {style==="buzz"  && <path d="M19 23 C19 13 45 13 45 23 C45 19 40 16 32 16 C24 16 19 19 19 23 Z" fill={hair} opacity="0.92"/>}
+        {style==="long"  && <path d="M16 40 C13 24 18 11 32 11 C46 11 51 24 48 40 C48 40 46 27 44 24 C44 20 40 15 32 15 C24 15 20 20 20 24 C18 27 16 40 16 40 Z" fill={hair}/>}
+        {style==="curly" && <path d="M17 22 C15 10 49 10 47 22 C50 18 47 9 40 12 C40 8 33 8 32 11 C31 8 24 8 24 12 C17 9 14 18 17 22 Z" fill={hair}/>}
+        {style==="bun"   && <><circle cx="32" cy="11" r="4.5" fill={hair}/><path d="M18 24 C18 13 46 13 46 24 C46 19 41 15 32 15 C23 15 18 19 18 24 Z" fill={hair}/></>}
+        {/* eyes */}
+        <circle cx="27" cy="25.5" r="1.5" fill="#231a14"/>
+        <circle cx="37" cy="25.5" r="1.5" fill="#231a14"/>
+        {/* brows */}
+        <path d="M24.5 22.3 L29 22" stroke={hair} strokeWidth="1.1" strokeLinecap="round"/>
+        <path d="M35 22 L39.5 22.3" stroke={hair} strokeWidth="1.1" strokeLinecap="round"/>
+        {/* smile */}
+        <path d="M27.5 30.5 Q32 33.5 36.5 30.5" stroke="#9c5b45" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+      </g>
+    </svg>
+  );
+}
 const _lensScore = (panel,key)=>{ const p=(panel||[]).find(x=>x.key===key); return p?Math.max(0,Math.min(10,Number(p.score)||0)):5; };
 // Turn the panel's dimension scores into grounded, explainable telemetry.
 const _synthFromPanel = (panel, avgViews=60000) => {
@@ -9566,21 +9605,23 @@ function JudgesStage({ panel=[], prog=1, isMobile=false, subtitle="6 experts. Ea
           const sc = Math.round(p.score*10*_easeOut(_win(prog, revealAt, revealAt+0.16)))/10;
           const yes = p.score>=5.5;
           const vC = yes?C.green:"#FF4D4D";
+          const lens = _lensCfg(p.key);
+          const avSize = isMobile?52:62;
           return (
-            <div key={p.key} style={{ flex:isMobile?"0 0 30%":"0 0 118px", display:"flex", flexDirection:"column", alignItems:"center", gap:7, position:"relative", padding:"8px 2px" }}>
+            <div key={p.key} style={{ flex:isMobile?"0 0 30%":"0 0 122px", display:"flex", flexDirection:"column", alignItems:"center", gap:6, position:"relative", padding:"8px 2px" }}>
               <div style={{ position:"absolute", top:-14, left:"50%", transform:"translateX(-50%)", width:100, height:130, pointerEvents:"none", transition:".5s",
                 background: shown?`radial-gradient(60% 55% at 50% 0%, ${vC}30, transparent 72%)`:"transparent" }}/>
-              <div style={{ width:isMobile?52:62, height:isMobile?52:62, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:isMobile?24:30, position:"relative", zIndex:1,
-                background:`radial-gradient(circle at 35% 28%, ${p.color}55, #16102c)`,
+              <div style={{ width:avSize, height:avSize, borderRadius:"50%", overflow:"hidden", position:"relative", zIndex:1,
                 border:`2px solid ${shown?vC:C.border}`,
                 boxShadow: shown?`0 0 0 3px ${vC}22, 0 0 22px ${vC}55`:"none",
-                opacity: shown?1:0.4, transform:`scale(${shown?1:0.9})`, transition:"all .45s" }}>
-                {p.face||_lensFace(p.key)}
+                opacity: shown?1:0.45, transform:`scale(${shown?1:0.9})`, filter: shown?"none":"saturate(.6) brightness(.8)", transition:"all .45s" }}>
+                <JudgeAvatar cfg={lens.person} size={avSize} />
                 {shown && (
-                  <div style={{ position:"absolute", bottom:-5, right:-5, width:23, height:23, borderRadius:"50%", background:vC, display:"flex", alignItems:"center", justifyContent:"center", font:`900 13px/1 ${C.fontHead}`, color:"#04140a", boxShadow:`0 2px 8px ${vC}99` }}>{yes?"✓":"✕"}</div>
+                  <div style={{ position:"absolute", bottom:-2, right:-2, width:22, height:22, borderRadius:"50%", background:vC, display:"flex", alignItems:"center", justifyContent:"center", font:`900 12px/1 ${C.fontHead}`, color:"#04140a", boxShadow:`0 2px 8px ${vC}99`, border:"2px solid #0b0718" }}>{yes?"✓":"✕"}</div>
                 )}
               </div>
-              <div style={{ font:`800 9.5px/1.15 ${C.fontHead}`, letterSpacing:"0.06em", color: shown?"#fff":C.dim, textTransform:"uppercase", textAlign:"center", minHeight:22, display:"flex", alignItems:"center" }}>{p.label}</div>
+              <div style={{ font:`800 12px/1.1 ${C.fontHead}`, color: shown?"#fff":C.dim, textAlign:"center", transition:".3s" }}>{lens.judge||p.label}</div>
+              <div style={{ font:`700 8px/1.1 ${mono}`, letterSpacing:"0.1em", color:p.color, textTransform:"uppercase", textAlign:"center", minHeight:18, display:"flex", alignItems:"center" }}>{p.label}</div>
               <div style={{ display:"flex", alignItems:"baseline", gap:5, opacity:shown?1:0.3, transition:".3s" }}>
                 <span style={{ font:`900 12px/1 ${C.fontHead}`, letterSpacing:"0.06em", color:vC }}>{shown?(yes?"YES":"NO"):"…"}</span>
                 <span style={{ font:`700 11px/1 ${mono}`, color:"rgba(255,255,255,0.4)", fontVariantNumeric:"tabular-nums" }}>{sc.toFixed(1)}</span>
