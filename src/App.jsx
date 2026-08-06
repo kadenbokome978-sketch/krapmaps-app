@@ -2238,7 +2238,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
   );
 };
 
-const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={}, commentInsights=null, visualDNA=null, setIdeas }) => {
+const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={}, commentInsights=null, visualDNA=null, setIdeas, deepScanResult=null }) => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [sentIdeas, setSentIdeas] = useState({});
   const [hiddenInsights, setHiddenInsights] = useState({ whatsWorking:true, nextVids:true, weekly:true, trends:true, visualDNA:true }); // collapsed by default
@@ -2358,6 +2358,23 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                         </div>
                       )}
                       {/* Stats grid */}
+                      {(() => {
+                        const shareRate = (v.shares>0 && v.views>0) ? +((v.shares/v.views)*100).toFixed(2) : null;
+                        const shareC = shareRate===null?"rgba(255,255,255,0.3)":shareRate>=4?C.green:shareRate>=2?C.yellow:"#FF6B6B";
+                        const shareLabel = shareRate===null?"—":shareRate>=4?"VIRAL LEVER":shareRate>=2?"BUILDING":"LOW";
+                        return shareRate!==null && (
+                          <div style={{ margin:"0 0 8px", padding:"8px 12px", borderRadius:10, background:`${shareC}08`, border:`1px solid ${shareC}25`, display:"flex", alignItems:"center", gap:10 }}>
+                            <div>
+                              <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.1em", color:"rgba(255,255,255,0.4)", textTransform:"uppercase" }}>Share-to-View </span>
+                              <span style={{ fontSize:14, fontWeight:800, fontFamily:C.fontHead, color:shareC }}>{shareRate}%</span>
+                              <span style={{ fontSize:10, fontWeight:700, color:shareC, marginLeft:6, background:`${shareC}15`, borderRadius:4, padding:"1px 6px" }}>{shareLabel}</span>
+                            </div>
+                            <span style={{ fontSize:11, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody }}>
+                              {shareRate>=4?"Above viral threshold (≥4%) — algorithm pushing to cold audience":shareRate>=2?"Approaching threshold — add shareable hook next time":"Below 2% threshold — shares are the key unlock for cold reach"}
+                            </span>
+                          </div>
+                        );
+                      })()}
                       <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:6 }}>
                         {[
                           {l:"VIEWS", v:fmt(v.views||0), c:C.cyan},
@@ -2417,7 +2434,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 );
   };
 
-  const tabs = ["OVERVIEW","VIDEOS","AI INSIGHTS"];
+  const tabs = ["OVERVIEW","VIDEOS","FORMAT ELO","AI INSIGHTS"];
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:28 }}>
@@ -2675,6 +2692,64 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
 
 
 
+      {/* ── FORMAT ELO ──────────────────────────────────────────── */}
+      {sub==="FORMAT ELO" && (() => {
+        const ratings = calcFormatElo(videos);
+        const sorted = Object.entries(ratings).sort((a,b)=>b[1].elo-a[1].elo);
+        const maxElo = sorted.length ? sorted[0][1].elo : ELO_BASE;
+        const minElo = sorted.length ? sorted[sorted.length-1][1].elo : ELO_BASE;
+        const eloRange = Math.max(maxElo - minElo, 100);
+        if(!sorted.length) return (
+          <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
+            <div style={{ fontSize:22, fontWeight:800, color:"rgba(255,255,255,0.2)", fontFamily:C.fontHead }}>1200</div>
+            <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.6)", fontFamily:C.fontHead }}>No matches yet</div>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:320, lineHeight:1.6 }}>Post videos and log their views — every post is a match that updates your Format Elo. After 5+ posts your skill ratings stabilise into a reliable performance map.</div>
+          </div>
+        );
+        return (
+          <div style={{ display:"flex", flexDirection:"column", gap:isMobile?14:18 }}>
+            <div style={{ padding:isMobile?"14px 16px":"16px 20px", borderRadius:16, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)" }}>
+              <div style={{ fontSize:11, fontWeight:800, letterSpacing:"0.12em", color:"rgba(255,255,255,0.35)", marginBottom:10 }}>WHAT IS FORMAT ELO?</div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.6)", lineHeight:1.6, fontFamily:C.fontBody }}>Every video you post is a match. Beat your channel median = win. Miss it = loss. Elo updates after each match — exactly like chess rankings. After enough posts, this reveals your genuine edge per format more reliably than averages (which lie when sample sizes are small).</div>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {sorted.map(([fmt, r], i)=>{
+                const tier = eloTier(r.elo);
+                const barPct = Math.max(5, Math.min(100, ((r.elo - minElo) / eloRange) * 100));
+                const winRate = r.matches ? Math.round((r.wins/r.matches)*100) : 0;
+                const streakLabel = r.streak >= 3 ? `🔥 ${r.streak} win streak` : r.streak <= -3 ? `❄️ ${Math.abs(r.streak)} loss streak` : null;
+                return (
+                  <div key={fmt} style={{ borderRadius:14, background:"rgba(12,8,24,0.95)", border:`1px solid ${tier.color}22`, padding:isMobile?"14px 16px":"14px 18px" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                      <div style={{ fontSize:isMobile?11:13, fontWeight:800, color:"rgba(255,255,255,0.5)", minWidth:20 }}>#{i+1}</div>
+                      <div style={{ flex:1 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                          <span style={{ fontSize:14, fontWeight:700, color:"#fff", textTransform:"capitalize" }}>{fmt.replace(/_/g," ")}</span>
+                          <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.08em", color:tier.color, background:`${tier.color}15`, borderRadius:5, padding:"2px 7px" }}>{tier.label}</span>
+                          {streakLabel && <span style={{ fontSize:10, color:"rgba(255,255,255,0.5)" }}>{streakLabel}</span>}
+                        </div>
+                        <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", marginTop:2 }}>{r.matches} matches · {winRate}% win rate · last: {r.last==="win"?"✓ win":"✗ loss"}</div>
+                      </div>
+                      <div style={{ textAlign:"right", flexShrink:0 }}>
+                        <div style={{ fontSize:isMobile?22:26, fontWeight:800, fontFamily:C.fontHead, color:tier.color, lineHeight:1 }}>{r.elo}</div>
+                        <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:"0.08em" }}>ELO</div>
+                      </div>
+                    </div>
+                    <div style={{ height:6, borderRadius:4, background:"rgba(255,255,255,0.05)", overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:`${barPct}%`, borderRadius:4, background:`linear-gradient(90deg,${tier.color}88,${tier.color})`, transition:"width 0.6s ease" }}/>
+                    </div>
+                    {r.matches < 5 && <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)", marginTop:6 }}>Need {5-r.matches} more posts for reliable rating</div>}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ padding:"12px 16px", borderRadius:12, background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.05)" }}>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", lineHeight:1.6, fontFamily:C.fontBody }}>Ratings update automatically as you post and log views. Elo converges to a reliable estimate after ~10 matches per format — small sample sizes show wider swings.</div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── AI INSIGHTS ─────────────────────────────────────────── */}
       {sub==="AI INSIGHTS" && (
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?18:28 }}>
@@ -2834,8 +2909,47 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 </>
               ),
             }] : []),
+          // ── GEMINI DEEP CATALOGUE SCAN — added to insight card list ──
+          ...[{
+            key:"deepScan",
+            label:"Deep Visual Scan",
+            dot:"#FFD700",
+            color:"#FFD700",
+            runKey:"deepScan",
+            hasData:!!(deepScanResult?.one_rule),
+            emptyMsg:"Gemini watches your best and worst videos simultaneously — tells you exactly what separates winners from losers visually, aurally, and energetically. One scan, cached 30 days.",
+            badge: hasGeminiKey ? "Gemini 2.5 Pro" : "Needs Gemini key",
+            content: deepScanResult?.one_rule ? (
+              <>
+                {deepScanResult.one_rule && <div style={{ fontSize:13, color:"#FFD700", lineHeight:1.5, marginBottom:14, fontFamily:C.fontBody, fontWeight:600, display:"flex", alignItems:"flex-start", gap:6 }}>{I.zap(13,"#FFD700")}<span>{deepScanResult.one_rule}</span></div>}
+                <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:10 }}>
+                  {[
+                    {l:"Winning DNA", arr:deepScanResult.winning_dna, c:C.green},
+                    {l:"Losing Patterns", arr:deepScanResult.losing_patterns, c:"#FF4D4D"},
+                  ].filter(x=>x.arr?.length).map((x,i)=>(
+                    <div key={i} style={{ padding:"12px 14px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${x.c}18` }}>
+                      <div style={{ fontSize:10, color:x.c, fontWeight:700, letterSpacing:"0.08em", marginBottom:8 }}>{x.l.toUpperCase()}</div>
+                      {x.arr.slice(0,5).map((t,j)=><div key={j} style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, marginBottom:4, fontFamily:C.fontBody }}>• {t}</div>)}
+                    </div>
+                  ))}
+                  {[
+                    {l:"Hook Formula", v:deepScanResult.hook_formula, c:"#FFD700"},
+                    {l:"Dead Zone", v:deepScanResult.dead_zone, c:"#FF6B6B"},
+                    {l:"2x-3x Multiplier", v:deepScanResult.multiplier_insight, c:C.green},
+                    {l:"Next Video Brief", v:deepScanResult.next_video_brief, c:C.cyan},
+                  ].filter(x=>x.v).map((x,i)=>(
+                    <div key={"ds"+i} style={{ padding:"12px 14px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${x.c}18` }}>
+                      <div style={{ fontSize:10, color:x.c, fontWeight:700, letterSpacing:"0.08em", marginBottom:8 }}>{x.l.toUpperCase()}</div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, fontFamily:C.fontBody }}>{x.v}</div>
+                    </div>
+                  ))}
+                </div>
+                {deepScanResult.scannedAt && <div style={{ fontSize:10, color:"rgba(255,255,255,0.25)", marginTop:10 }}>Scanned {new Date(deepScanResult.scannedAt).toLocaleDateString()} · {deepScanResult.sampleSize||20} videos analysed</div>}
+              </>
+            ) : null,
+          }],
           ].map(card=>{
-            const _ic = ({whatsWorking:I.search,nextVids:I.target,weekly:I.write,trends:I.trend,visualDNA:I.eye})[card.key] || I.zap;
+            const _ic = ({whatsWorking:I.search,nextVids:I.target,weekly:I.write,trends:I.trend,visualDNA:I.eye,deepScan:I.zap})[card.key] || I.zap;
             return (
             <div key={card.key} data-card style={{ borderRadius:16, background:"rgba(255,255,255,0.025)", border:`1px solid ${card.color}22`, position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.4, background:`linear-gradient(90deg,${card.color},${card.color}00)` }}/>
@@ -5656,6 +5770,7 @@ const ANALYSIS_KEY = "krapmaps_v1_analysis";
 const NEXTVIDS_KEY = "krapmaps_v1_nextvids";
 const WEEKLY_KEY   = "krapmaps_v1_weekly";
 const TRENDS_KEY   = "krapmaps_v1_trends";
+const DEEP_SCAN_KEY = "krapmaps_v1_deepscan";
 const SYNC_KEY     = "krapmaps_v1_syncurl";
 const SB_URL_KEY   = "krapmaps_sb_url";
 const SB_KEY_KEY   = "krapmaps_sb_key";
@@ -7219,6 +7334,41 @@ const formatPipelineSaturation = (sat) => {
   if(!sat) return "";
   return `PIPELINE SATURATION: ${sat.count} other unposted ideas already cover this same topic (${sat.titles.join("; ")}). If the plan is to post all of them, deduct from niche fit — topic repetition burns the audience even when hooks differ. Recommend consolidating or spacing them out.\n`;
 };
+
+// ── CONTENT ELO RATING SYSTEM ────────────────────────────────────
+// Each video posted is a "match". Beating channel median = win. Losing = loss.
+// Elo updates after every match, giving each format/hook a live skill rating.
+// After enough posts, this reveals your genuine edge per format more reliably
+// than simple averages (which are distorted by outliers and sample size).
+const ELO_BASE = 1200;
+const ELO_K = 32;
+const calcFormatElo = (videos=[]) => {
+  const byDate = [...videos].filter(v=>v.views>0).sort((a,b)=>{
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return ta - tb;
+  });
+  const allViews = byDate.map(v=>v.views).sort((a,b)=>a-b);
+  const median = allViews[Math.floor(allViews.length/2)] || 1;
+  const ratings = {}; // format → { elo, wins, losses, streak, last }
+  byDate.forEach(v => {
+    const fmt = (v.hook || v.type || "unknown").toLowerCase().replace(/\s+/g,"_");
+    if(!ratings[fmt]) ratings[fmt] = { elo: ELO_BASE, wins:0, losses:0, streak:0, matches:0, recentViews:[] };
+    const r = ratings[fmt];
+    const won = v.views >= median;
+    // Expected score vs field (0.5 = evenly matched vs channel average)
+    const expected = 1 / (1 + Math.pow(10, (ELO_BASE - r.elo) / 400));
+    r.elo = Math.round(r.elo + ELO_K * ((won ? 1 : 0) - expected));
+    r.matches++;
+    r.recentViews.push(v.views);
+    if(r.recentViews.length > 5) r.recentViews.shift();
+    if(won){ r.wins++; r.streak = r.streak >= 0 ? r.streak+1 : 1; }
+    else  { r.losses++; r.streak = r.streak <= 0 ? r.streak-1 : -1; }
+    r.last = won ? "win" : "loss";
+  });
+  return ratings;
+};
+const eloTier = (elo) => elo >= 1600 ? { label:"ELITE", color:"#FFD700" } : elo >= 1450 ? { label:"STRONG", color:"#22E06B" } : elo >= 1300 ? { label:"ABOVE AVG", color:"#00E5FF" } : elo >= 1150 ? { label:"AVERAGE", color:"rgba(255,255,255,0.5)" } : { label:"WEAK", color:"#FF6B6B" };
 
 // ── CONTENT ALLOCATOR (multi-armed bandit) ────────────────────────
 // Treats each content pillar as an arm. Each posted result is a Bernoulli trial
@@ -11298,6 +11448,7 @@ function Dashboard({ keys, onEditKeys }) {
   const [nextVids, setNextVids]     = useState(()=>loadJSON(NEXTVIDS_KEY,null));
   const [weekly, setWeekly]         = useState(()=>loadJSON(WEEKLY_KEY,null));
   const [trends, setTrends]         = useState(()=>loadJSON(TRENDS_KEY,null));
+  const [deepScanResult, setDeepScanResult] = useState(()=>loadJSON(DEEP_SCAN_KEY,null));
   const [scrapedStats, setScrapedStats] = useState(()=>loadJSON(SCRAPE_KEY,null));
   const [sbLoaded, setSbLoaded]     = useState(false);
   const ttFetchedRef = useRef(false);
@@ -11338,6 +11489,7 @@ function Dashboard({ keys, onEditKeys }) {
   useEffect(()=>{ if(nextVids) saveJSON(NEXTVIDS_KEY,nextVids); },[nextVids]);
   useEffect(()=>{ if(weekly) saveJSON(WEEKLY_KEY,weekly); },[weekly]);
   useEffect(()=>{ if(trends) saveJSON(TRENDS_KEY,trends); },[trends]);
+  useEffect(()=>{ if(deepScanResult) saveJSON(DEEP_SCAN_KEY,deepScanResult); },[deepScanResult]);
 
   // ── LOAD FROM SUPABASE ─────────────────────────────────────────
   useEffect(()=>{
@@ -11905,7 +12057,32 @@ function Dashboard({ keys, onEditKeys }) {
         nextVids:  richCtx+liveCtx+"\nSuggest next 5 videos, all ON-BRAND for this account. Use winning hook+type combos and engagement signals from the data above. Be specific. "+noFabRule()+" Return JSON: {tiktok:[{title,type,hook,thumbnail_style,whyItWillWork,openingLine,priority:'HIGH|MEDIUM',estimated_views,winning_combo_used}],instagram:[{concept,contentType,whyItWillWork}]}. Videos: "+JSON.stringify(vSummary),
         weekly:    channelCtx+"\nWrite a filming brief for "+(wl.creator2||wl.creator1||"this creator")+". Return JSON: {brief:'2-3 sentences',priorities:[{task,why,how_to_shoot}],rawSummaryText:'WhatsApp-ready message'}. Videos: "+JSON.stringify(vSummary),
         trends:    channelCtx+liveCtx+"\nBest trending angles for "+wl.appName+" RIGHT NOW that fit this channel style. Return JSON: {trends:[{trend,urgency:'POST NOW|THIS WEEK|THIS MONTH',tiktokAngle,hook,why_fits_channel,instagramAngle}]}",
-            };
+      };
+
+      // ── DEEP SCAN — Gemini catalogue analysis ──────────────────────
+      if(mode==="deepScan") {
+        const cfg = loadJSON("krapmaps_v1_config",{});
+        const geminiKey = cfg?.keys?.gemini || "";
+        if(!geminiKey) throw new Error("Gemini API key required for Deep Visual Scan. Add it in Settings → API Keys.");
+        const sorted = [...sortedVideos].filter(v=>v.views>0);
+        sorted.sort((a,b)=>(b.views||0)-(a.views||0));
+        const top10 = sorted.slice(0,10).map(v=>({ title:v.title||"Untitled", views:v.views, likes:v.likes||0, shares:v.shares||0, type:v.type||"unknown", hook:v.hook||"", duration:v.duration||"" }));
+        const bottom10 = sorted.slice(-10).map(v=>({ title:v.title||"Untitled", views:v.views, likes:v.likes||0, shares:v.shares||0, type:v.type||"unknown", hook:v.hook||"", duration:v.duration||"" }));
+        const scanPrompt = `You are a world-class content strategist with deep expertise in short-form video performance. You are analysing two groups of videos from the same TikTok channel to find what separates winners from losers.\n\nCHANNEL: ${wl.appName} | Niche: ${wl.niche} | Audience: ${wl.targetAudience}\n\nTOP 10 PERFORMERS:\n${JSON.stringify(top10,null,2)}\n\nBOTTOM 10 PERFORMERS:\n${JSON.stringify(bottom10,null,2)}\n\nAnalyse across every dimension — hook phrasing, content type, duration, engagement ratios, energy level implied by title, format patterns. Identify the EXACT DNA of what makes videos win vs lose on this specific channel.\n\nReturn JSON:\n{\n  "one_rule": "The single most important rule this channel's data reveals (one sentence)",\n  "winning_dna": [string, string, string, string, string],\n  "losing_patterns": [string, string, string, string],\n  "hook_formula": "The winning hook structure distilled to a template",\n  "dead_zone": "The content type / format that consistently underperforms and should be avoided",\n  "multiplier_insight": "The format or approach that appears to 2x-3x this channel's average views",\n  "next_video_brief": "A specific, actionable brief for the next video based purely on the winning patterns",\n  "confidence": "high|medium|low",\n  "scannedAt": "${new Date().toISOString()}"\n}`;
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiKey}`,{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ contents:[{ parts:[{ text: scanPrompt }] }], generationConfig:{ temperature:0.3 } }),
+        });
+        if(!res.ok) throw new Error(`Gemini error ${res.status}`);
+        const gData = await res.json();
+        const rawText = gData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const cleaned = _stripThink(rawText);
+        const parsed = typeof cleaned === "string" ? JSON.parse(cleaned.replace(/```json|```/g,"").trim()) : cleaned;
+        setDeepScanResult({ ...parsed, sampleSize: top10.length + bottom10.length, scannedAt: new Date().toISOString() });
+        addMemoryEntry("DEEP_SCAN", `Deep Visual Scan complete. Rule: ${parsed.one_rule||"N/A"}`);
+        return;
+      }
 
       const r = await callAI(prompts[mode], 3000);
       if(mode==="analysis") { setAnalysis(r); addMemoryEntry("ANALYSIS", "Analysis run. Top: "+(r.whatIsWorking?.[0]?.insight||"N/A")); }
@@ -13017,7 +13194,7 @@ Return JSON:
         <div key={nav} className="viewEnter">
         {nav==="home"      && <HomeView ideas={topIdeas} allIdeas={ideas} outcomeMatches={autoMatchOutcomes(ideas, videos)} confirmOutcome={confirmOutcome} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} weeklyDebrief={weeklyDebrief} debriefLoading={debriefLoading} runDebrief={runDebrief} />}
         {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} markPosted={markPosted} />}
-        {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} setIdeas={setIdeas} />}
+        {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} setIdeas={setIdeas} deepScanResult={deepScanResult} />}
         {nav==="autopilot" && <AutopilotView videos={videos} ideas={ideas} setIdeas={setIdeas} WL={WL} setNav={id=>{ setNav(id); setSub(null); }} copyText={copyText} copied={copied} />}
         {nav==="check"     && <PrePostCheck videos={videos} WL={WL} />}
         {nav==="reader"    && <VideoReaderView videos={videos} WL={WL} />}
