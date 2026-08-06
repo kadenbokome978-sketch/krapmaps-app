@@ -9357,7 +9357,9 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
       if(attached && setIdeas){
         setIdeas(is => is.map(i => i.id===attached.id ? { ...i, check: {
           verdict: parsed.verdict, score: parsed.score, brandFit: parsed.brandFit,
-          yesCount: parsed.panel.filter(p=>p.score>=5.5).length, at: new Date().toISOString(),
+          yesCount: parsed.panel.filter(p=>p.score>=5.5).length,
+          lenses: parsed.panel.map(p=>({ key:p.key, score:p.score })), // feeds the brain
+          at: new Date().toISOString(),
         } } : i));
       }
     } catch(e){ setErr(e.message||"Check failed."); }
@@ -9550,6 +9552,25 @@ const _panelFromVerdict = (res={}) => {
       evidence: l.key==="fit" ? (res.fitNote||"") : (score>=5.5 ? (res.strongest||"") : (res.weakest||"")),
       fix: res.action||"" };
   });
+};
+
+// EXECUTION LEARNING — aggregate how the panel judged your ACTUAL filmed videos,
+// per factor. This is what closes the score→film→learn loop: the scorer learns
+// which factors this channel tends to under-deliver on when the camera rolls.
+const buildCheckLearning = (ideas=[]) => {
+  const checked = (ideas||[]).filter(i=>i.check?.lenses?.length);
+  if(!checked.length) return null;
+  const agg = {};
+  checked.forEach(i=>i.check.lenses.forEach(l=>{ if(!agg[l.key]) agg[l.key]={sum:0,n:0}; agg[l.key].sum+=Number(l.score)||0; agg[l.key].n++; }));
+  const perLens = Object.entries(agg).map(([key,a])=>({ key, avg:+(a.sum/a.n).toFixed(1) })).sort((a,b)=>a.avg-b.avg);
+  if(!perLens.length) return null;
+  return { n:checked.length, perLens, weakest:perLens[0], strongest:perLens[perLens.length-1] };
+};
+const formatCheckLearning = (cl) => {
+  if(!cl) return "";
+  const nm = k => (PANEL_LENSES.find(l=>l.key===k)||{}).label || k;
+  const list = cl.perLens.map(l=>`${nm(l.key)} ${l.avg}/10`).join(", ");
+  return `EXECUTION FEEDBACK [the expert panel watched your ${cl.n} actual filmed video${cl.n>1?"s":""} — this is how the CONCEPT translated to the screen]:\n• Per-factor execution scores: ${list}\n• Consistently WEAKEST on camera: ${nm(cl.weakest.key)} (${cl.weakest.avg}/10) — this channel tends to under-deliver here in the edit.\n• Strongest: ${nm(cl.strongest.key)} (${cl.strongest.avg}/10).\n→ Be realistic: if this idea LEANS on ${nm(cl.weakest.key)} to work, temper the score — the channel has historically struggled to pull that off on film. Reward ideas that play to ${nm(cl.strongest.key)}.\n`;
 };
 
 // Illustrated human judge — flat SVG portrait, varied per person. Self-contained, crisp at any size.
@@ -12603,6 +12624,28 @@ LEARNING: [one sentence]`}]}, key);
       const _vd = loadJSON(VISION_KEY, null);
       const visualBlock = _vd ? `VISUAL DNA [learned by a vision model from ${_vd.sampleSize} real thumbnails — top vs bottom performers on THIS channel]:\n• Winning visual traits: ${(_vd.winning_traits||[]).join("; ")||"n/a"}\n• What loses: ${(_vd.losing_traits||[]).join("; ")||"n/a"}\n• Color/contrast that wins: ${_vd.color_palette||"n/a"}\n• Composition: ${_vd.composition||"n/a"}\n• Faces: ${_vd.face_pattern||"n/a"}\n• Text overlay: ${_vd.text_overlay||"n/a"}\n• THE RULE: ${_vd.one_rule||"n/a"}\n→ Score this idea's thumbnail concept ("${idea.thumbnail||"not specified"}") against this learned visual DNA. If the thumbnail concept violates the winning pattern, lower hook strength and flag it in hookFeedback with a concrete visual fix.\n` : "";
 
+      // DEEP CATALOGUE SCAN — merge the second visual brain into scoring (was display-only).
+      const _ds = loadJSON(DEEP_SCAN_KEY, null);
+      const deepScanBlock = _ds?.one_rule ? `DEEP CATALOGUE SCAN [a vision model watched your best vs worst videos end-to-end]:\n• The one rule: ${_ds.one_rule}\n• Winning DNA: ${(_ds.winning_dna||[]).slice(0,5).join("; ")||"n/a"}\n• Losing patterns: ${(_ds.losing_patterns||[]).slice(0,4).join("; ")||"n/a"}\n• Hook formula that works here: ${_ds.hook_formula||"n/a"}\n• Dead zone (avoid): ${_ds.dead_zone||"n/a"}\n→ If this idea matches the dead zone, lower the score; if it hits the winning DNA or hook formula, raise it.\n` : "";
+
+      // EXECUTION FEEDBACK — the panel's verdict on ACTUAL filmed videos (was an island).
+      const checkBlock = formatCheckLearning(buildCheckLearning(ideas));
+
+      // FORMAT ELO — the channel's live skill-rating per format now steers the score (was display-only).
+      const eloBlock = (() => {
+        try {
+          const ratings = calcFormatElo(organicVids.length?organicVids:videos);
+          const fmtKey = String(idea.hook||idea.type||"").toLowerCase().replace(/\s+/g,"_");
+          const r = ratings[fmtKey];
+          if(r && r.matches>=2){
+            const t = eloTier(r.elo);
+            const steer = r.elo>=1450 ? "A proven winner on this channel — favour it." : r.elo<=1200 ? "A weak performer historically — needs a genuinely fresh angle to justify; otherwise temper the score." : "Middling track record — no strong signal either way.";
+            return `FORMAT TRACK RECORD (Elo): this idea's format ("${idea.hook||idea.type}") is rated ${r.elo} — ${t.label} (${r.wins}W/${r.losses}L, ${r.matches} posts). ${steer}\n`;
+          }
+        } catch { /* elo optional */ }
+        return "";
+      })();
+
       // Cross-channel anonymised priors — warm-start from other channels in the same niche bucket
       let metaBlock = "";
       try {
@@ -12649,6 +12692,9 @@ ${pipelineSatBlock}
 ${scoreValidityBlock}
 ${neuralBlock}
 ${visualBlock}
+${deepScanBlock}
+${checkBlock}
+${eloBlock}
 ${allocatorBlock}
 ${semanticBlock}
 ${analogBlock}
