@@ -17,7 +17,7 @@ import { requireUser } from "./_lib.js";
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Gemini-Key, X-File-Name, X-Mime-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Gemini-Key, X-File-Name, X-Mime-Type, X-Upload-Init');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
@@ -41,10 +41,36 @@ export default async function handler(req, res) {
     const contentType = (req.headers['content-type'] || '').toLowerCase();
     const isJson = contentType.includes('application/json');
 
-    // ── ANALYSE MODE ──────────────────────────────────────────────
+    // ── JSON MODES (init + analyse) ───────────────────────────────
     if (isJson) {
       let payload = {};
       try { payload = JSON.parse(raw.toString('utf8') || '{}'); } catch { return res.status(400).json({ error: 'Bad JSON' }); }
+
+      // ── INIT MODE (resumable) ── start a resumable session with the server key and
+      // return a self-authorizing upload URL. The browser then streams the bytes DIRECT
+      // to Google, bypassing this function's ~4.5MB request-body cap entirely.
+      if (payload.init) {
+        const mime = (payload.mimeType === 'video/quicktime' ? 'video/mov' : payload.mimeType) || 'video/mp4';
+        const size = parseInt(payload.sizeBytes, 10) || 0;
+        if (!size) return res.status(400).json({ error: 'sizeBytes required' });
+        const startRes = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}`, {
+          method: 'POST',
+          headers: {
+            'X-Goog-Upload-Protocol': 'resumable',
+            'X-Goog-Upload-Command': 'start',
+            'X-Goog-Upload-Header-Content-Length': String(size),
+            'X-Goog-Upload-Header-Content-Type': mime,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ file: { display_name: payload.fileName || 'clip.mp4' } }),
+        });
+        if (!startRes.ok) { const t = await startRes.text(); return res.status(502).json({ error: `Init failed: ${startRes.status}`, detail: t.slice(0, 300) }); }
+        const uploadUrl = startRes.headers.get('x-goog-upload-url');
+        if (!uploadUrl) return res.status(502).json({ error: 'No resumable upload URL from Gemini' });
+        return res.json({ uploadUrl, mimeType: mime });
+      }
+
+      // ── ANALYSE MODE ──
       const { fileUri, mimeType = 'video/mp4', prompt, json = true, maxTokens = 1800 } = payload;
       if (!fileUri || !prompt) return res.status(400).json({ error: 'Missing fileUri or prompt' });
 
