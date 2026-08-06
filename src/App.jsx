@@ -1712,6 +1712,21 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                       </div>
                     )}
 
+                    {/* Filmed & judged — the video checker's panel verdict, banked onto the idea */}
+                    {!isScoring && idea.check && (() => {
+                      const v = idea.check.verdict;
+                      const vc = v==="GO"?C.green:v==="RISKY"?C.yellow:"#FF4D4D";
+                      return (
+                        <div style={{ display:"flex", alignItems:"center", gap:9, flexWrap:"wrap", padding:"8px 12px", borderRadius:10, background:`${vc}10`, border:`1px solid ${vc}33`, marginBottom:12 }}>
+                          {I.eye(13, vc)}
+                          <span style={{ fontSize:11, fontWeight:800, fontFamily:C.fontHead, letterSpacing:"0.08em", color:vc }}>FILMED · {v}</span>
+                          {idea.check.yesCount!=null && <span style={{ fontSize:11.5, color:"rgba(255,255,255,0.6)", fontFamily:C.fontBody }}>{idea.check.yesCount}/6 judges said YES</span>}
+                          {idea.check.brandFit==="off-brand" && <span style={{ fontSize:11, color:"#FF6B6B", fontFamily:C.fontBody }}>· off-brand</span>}
+                          <span style={{ fontSize:10.5, color:"rgba(255,255,255,0.3)", fontFamily:C.fontMono, marginLeft:"auto" }}>panel checked</span>
+                        </div>
+                      );
+                    })()}
+
                     {/* Improved hook — only in expanded */}
                     {isExpanded && idea.improvedHook && (
                       <div style={{ padding:isMobile?"13px 16px":"10px 14px", background:`${C.green}08`, border:`1px solid ${C.green}18`, borderRadius:12, marginBottom:isMobile?8:10 }}>
