@@ -4274,7 +4274,6 @@ const VideoReaderView = ({ videos=[], WL }) => {
     setSelected(video);
     try {
       const wl = loadWL();
-      const ctx = buildChannelContext ? null : null;
       const avgViews = videos.length ? Math.round(videos.reduce((s,v)=>s+(v.views||0),0)/videos.length) : 0;
       const memCtx = buildMemoryContext();
 
@@ -8376,12 +8375,21 @@ async function ttScrape(handle, byoKey, maxPages=4, signal){
     items = rawText.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{ try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
   }
   if(!Array.isArray(items) || !items.length){ const e = new Error("empty"); e.status = 404; e.detail = rawText.slice(0,300); throw e; }
+  // Distinguish Bright Data's non-video payloads so the 404 tells the truth instead of
+  // always blaming the handle: an error/warning record, or an async snapshot job.
+  const first = items[0] || {};
+  if(items.length===1 && !first.id && !first.video_id && (first.error || first.errors || first.warning)){
+    const e = new Error("bderr"); e.status = 422; e.detail = String(first.error || first.warning || JSON.stringify(first.errors)).slice(0,220); throw e;
+  }
+  if(items.length===1 && (first.snapshot_id || first.status==="running" || first.status==="building") && !first.id){
+    const e = new Error("async"); e.status = 202; e.detail = "Bright Data queued a job instead of returning data."; throw e;
+  }
   const seen = new Set(); const videos = [];
   for(const it of items){ const v = ttNormalize(it); if(v.video_id && !seen.has(v.video_id)){ seen.add(v.video_id); videos.push(v); } }
   const prof = ttProfileFrom(items[0]||{});
   return { ...prof, videos };
 }
-const ttErrMsg = (status) => status===429?"Rate limited — wait ~30s and retry":status===401||status===403?"Scraper auth failed — check BRIGHTDATA_TOKEN is set in Vercel":status===402?"Scraper is out of funds — top up your Bright Data balance to keep pulling videos":status===404?"No public TikTok found — check the handle is exact (no spaces)":status===504||status===408?"Scraper timed out — try again in a moment":`Scraper error ${status||""} — try again shortly`;
+const ttErrMsg = (status) => status===429?"Rate limited — wait ~30s and retry":status===401||status===403?"Scraper auth failed — check BRIGHTDATA_TOKEN is set in Vercel":status===402?"Scraper is out of funds — top up your Bright Data balance to keep pulling videos":status===404?"No videos returned — the profile may be private, brand-new, or the handle is slightly off. It can also be a scraper hiccup — try once more":status===422?"The scraper returned an error for this profile (see detail) — usually private/removed or a bad handle":status===202?"Scraper queued the job instead of answering instantly — wait ~15s and retry":status===504||status===408?"Scraper timed out — try again in a moment":`Scraper error ${status||""} — try again shortly`;
 
 // GET proxy for RapidAPI scraper calls — returns the native response.
 async function rapidFetch(targetUrl, byoKey) {
