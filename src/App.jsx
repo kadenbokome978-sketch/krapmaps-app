@@ -8854,12 +8854,15 @@ Write today's briefing. Return ONLY JSON: {"headline":"one punchy line summarisi
       const raw = await genIdeas(ctx, pool);
       if(!raw.length) throw new Error("Autopilot couldn't generate ideas — try again.");
       setPhase("scoring"); setScoreProg([0, raw.length]);
-      const scored = [];
-      for(let i=0;i<raw.length;i++){
-        const s = await scoreOne(raw[i], ctx);
-        scored.push({ ...raw[i], ...s, score: Math.round(Number(s.score)||0) });
-        setScoreProg([i+1, raw.length]);
-      }
+      // Score all ideas in parallel — was sequential (8 ideas × 3s each = 24s+).
+      // Now all fire at once and resolve as they complete, cutting wall-clock to ~3-5s.
+      let doneCount = 0;
+      const scored = (await Promise.all(
+        raw.map(idea => scoreOne(idea, ctx).then(s => {
+          setScoreProg([++doneCount, raw.length]);
+          return { ...idea, ...s, score: Math.round(Number(s.score)||0) };
+        }).catch(() => ({ ...idea, score: 0 })))
+      )).filter(Boolean);
       scored.sort((a,b)=>(b.score||0)-(a.score||0));
       // Keep only strong ideas (>=72); always keep the top 3 so there's a plan even on a lean day.
       const strong = scored.filter(s=>(s.score||0)>=72);
@@ -11570,22 +11573,22 @@ function Dashboard({ keys, onEditKeys }) {
   // Pulls real comments off the top videos and distils the AUDIENCE VOICE —
   // the richest signal there is: their exact words, requests, and emotional drivers.
   const mineComments = useCallback(async()=>{
-    const cfg = loadJSON(KEYS_KEY,{});
-    const rapidKey = cfg?.keys?.tikwm || cfg?.keys?.igscraper;
-    const aiKey = cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
-    if((!rapidKey || !aiKey) && !USE_BACKEND) return;
-    if(Date.now() - loadJSON("krapmaps_v1_comments_last", 0) < 3*24*60*60*1000) return; // every 3 days
-    const top = [...videos].filter(v=>(v.platform==="tiktok"||!v.platform)&&v.views>0&&(v._tikwmId||v.url)).sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
+    const aiKey = loadJSON(KEYS_KEY,{})?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
+    if(!aiKey && !USE_BACKEND) return;
+    if(Date.now() - loadJSON("krapmaps_v1_comments_last", 0) < 3*24*60*60*1000) return;
+    const top = [...videos].filter(v=>(v.platform==="tiktok"||!v.platform)&&v.views>0).sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,8);
     if(top.length < 2) return;
     try {
-      let pool = [];
-      // Comment mining used the old RapidAPI comments endpoint (now retired). Not wired for
-      // Bright Data yet, so this optional feature no-ops (empty pool → early return below).
-      pool = pool.filter(Boolean).slice(0,120);
-      if(pool.length < 10) return;
       const wl = loadWL();
-      const insights = await callAI(`These are real audience comments on ${wl.handle}'s top videos (${wl.niche}). Analyse the AUDIENCE VOICE — what they actually feel, want, and say.\n\nCOMMENTS:\n${pool.map((c,i)=>`${i+1}. ${c.slice(0,160)}`).join("\n")}\n\nReturn JSON: {"overall_sentiment":"positive|mixed|negative — plus one line why","top_themes":["recurring things they mention"],"audience_requests":["things they explicitly ask for"],"language_patterns":["exact words/phrases the audience uses — to reuse in captions"],"content_ideas":["specific videos the comments are begging for"],"emotional_drivers":["what emotion is making them comment"]}`, 1500);
-      saveJSON(COMMENTS_KEY, { ...insights, sampleSize:pool.length, minedAt:new Date().toISOString() });
+      // RapidAPI comments endpoint is retired. Instead: use Perplexity to research
+      // what this niche audience says on TikTok — more reliable than raw scraping
+      // and gives broader, trend-aware signal rather than just one creator's comments.
+      const topTitles = top.map(v=>`"${(v.title||v.hook||"").slice(0,60)}"`).join(", ");
+      const researchPrompt = `What do ${wl.niche||"lifestyle"} TikTok viewers most commonly comment, request, and emotionally respond to in 2025? Focus on: exact language patterns they use, recurring questions they ask, what makes them save/share, emotional triggers. Context: top videos in this niche include ${topTitles}. Return JSON: {"overall_sentiment":"string","top_themes":["..."],"audience_requests":["..."],"language_patterns":["exact phrases audiences use"],"content_ideas":["specific video types audiences ask for"],"emotional_drivers":["..."]}`;
+      const raw = await callPerplexity(researchPrompt, wl);
+      if(!raw) return;
+      const insights = typeof raw === "string" ? JSON.parse(_stripThink(raw)) : raw;
+      saveJSON(COMMENTS_KEY, { ...insights, sampleSize: top.length, minedAt: new Date().toISOString(), source: "perplexity_research" });
       saveJSON("krapmaps_v1_comments_last", Date.now());
       setCommentInsights(insights);
     } catch(e){ /* silent — additive signal */ }
@@ -12639,13 +12642,8 @@ Return JSON:
       };
       setIdeas(is=>is.map(i=>i.id===idea.id?updated:i));
       closeModal("editIdea");
-      // Auto-rescore after saving
-      setScoring(true);
-      try {
-        const r = await callAI(`${brandContext(WL)}\n${BRAND_FIT_RULE}\nScore this TikTok idea for the account above. Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 1-2 sentence verdict","viralityReason":"string","hookFeedback":"string","improvedHook":"string under 12 words","recommendations":[{"action":"string","impact":"high|medium"}]}. Idea: "${title.trim()}" type:${type}`, 1000);
-        setIdeas(is=>is.map(i=>i.id===idea.id?{...i,viral:r.viralityScore,hookScore:r.hookScore,verdict:r.verdict,viralReason:r.viralityReason,hookFeedback:r.hookFeedback,improvedHook:r.improvedHook,recs:r.recommendations?.map(x=>({a:x.action,impact:x.impact?.toUpperCase()}))}:i));
-      } catch(e) { setAiErr("Rescore failed: "+e.message); }
-      setScoring(false);
+      // Use the full scoring pipeline (consensus + channel calibration), not a lightweight single call.
+      await scoreIdea(updated, { reveal: false });
     };
 
     const displayHooks = altHooks||idea.altHooks||null;
