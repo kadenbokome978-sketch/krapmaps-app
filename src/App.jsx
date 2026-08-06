@@ -9191,7 +9191,7 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
       {loading && (
         <div className="km-shimmer-wrap" style={{ borderRadius:20, background:"linear-gradient(135deg,#0A0614,#160a26 55%,#0A0614)", border:`1px solid ${C.purple}30`, padding:isMobile?"30px 22px":"44px 34px", textAlign:"center" }}>
           <div style={{ display:"inline-flex", alignItems:"center", gap:11 }}><Spin s={18} c={C.purple}/><span style={{ fontSize:16, fontWeight:700, color:"#fff", fontFamily:C.fontHead }}>{status||"Analysing…"}</span></div>
-          <div style={{ marginTop:10, fontSize:12.5, color:"rgba(255,255,255,0.4)" }}>Gemini is watching your video frame by frame — this takes ~20–40s.</div>
+          <div style={{ marginTop:10, fontSize:12.5, color:"rgba(255,255,255,0.4)" }}>{/uploading/i.test(status||"")?"Sending your clip up — the % shows real progress.":/processing/i.test(status||"")?"Handing it to Gemini…":"Gemini is watching your video frame by frame — this can take 30–60s."}</div>
         </div>
       )}
 
