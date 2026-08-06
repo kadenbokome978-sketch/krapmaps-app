@@ -11773,7 +11773,13 @@ function Dashboard({ keys, onEditKeys }) {
 
       let scrapeRes;
       try { scrapeRes = await ttScrape(handle, tikwmKey, 10); }
-      catch(e){ reportHealth("tiktok","error",`TikTok scraper HTTP ${e.status||"error"} — ${ttErrMsg(e.status)}${e.detail?` · RAW: ${e.detail}`:""}`); return; }
+      catch(e){
+        // Surface the REAL cause: a status-less error (session expired, network,
+        // config) was previously collapsed into a generic "Scraper error".
+        const reason = e.status ? ttErrMsg(e.status) : (e.message || "try again shortly");
+        reportHealth("tiktok","error",`TikTok scraper ${e.status?`HTTP ${e.status}`:"error"} — ${reason}${e.detail?` · RAW: ${String(e.detail).slice(0,220)}`:""}`);
+        return;
+      }
 
       // Auto-update TT followers + likes from the profile — but NEVER overwrite a
       // follower count the operator has locked by setting it manually (scrapers are
