@@ -881,7 +881,7 @@ const HomeView = ({ ideas, allIdeas=[], outcomeMatches=[], confirmOutcome, calIt
   })();
   const platformDonut = [
     { label:"TikTok", value:ttViewsDisplay||1, color:C.pink },
-    { label:"Instagram", value:(igData?.profile?.media_count||0)*100||0, color:C.purple },
+    { label:"Instagram", value:igViewsTotal||0, color:C.purple },
   ];
 
   return (
@@ -1894,6 +1894,43 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                     </div>
                   )}
 
+                  {/* ── PREDICTION vs ACTUAL — shows after posting with a score ── */}
+                  {idea.status==="posted" && (idea.postedViews>0) && (idea.viral>0) && (() => {
+                    const organicAvg = videoScores ? Object.values(videoScores).reduce((s,x)=>s+(x?.score||0),0)/Math.max(1,Object.values(videoScores).length) : 0;
+                    // Use channel avg views from videos array (passed via videoScores context) — best-effort
+                    const estV = idea.aiScore?.estimated_views;
+                    const actual = idea.postedViews;
+                    // Parse estimated_views like "80k–120k" or "50k" to a number for comparison
+                    const parseEst = (s) => { if(!s) return 0; const m=String(s).replace(/,/g,"").match(/(\d+(?:\.\d+)?)\s*[kK]/); if(m) return parseFloat(m[1])*1000; const m2=String(s).replace(/,/g,"").match(/(\d+(?:\.\d+)?)\s*[mM]/); if(m2) return parseFloat(m2[1])*1e6; const m3=String(s).replace(/,/g,"").match(/(\d+)/); return m3?parseFloat(m3[1]):0; };
+                    const estNum = parseEst(estV);
+                    const hitRate = estNum>0 ? actual/estNum : null;
+                    const verdict = hitRate==null ? null : hitRate>=1.3?"OVERPERFORMED":hitRate>=0.7?"ON TRACK":"UNDERPERFORMED";
+                    const verdictC = verdict==="OVERPERFORMED"?C.green:verdict==="ON TRACK"?C.cyan:"#FF6B6B";
+                    return (
+                      <div style={{ margin:"0 14px 10px", padding:"10px 14px", borderRadius:10, background: verdict==="OVERPERFORMED"?`${C.green}0a`:verdict==="ON TRACK"?`${C.cyan}08`:`rgba(255,107,107,0.06)`, border:`1px solid ${verdictC||C.cyan}22` }}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, flexWrap:"wrap" }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+                            {/* Prediction */}
+                            <div style={{ display:"flex", flexDirection:"column" }}>
+                              <span style={{ fontSize:9, fontWeight:800, letterSpacing:"0.1em", color:"rgba(255,255,255,0.3)", textTransform:"uppercase" }}>Predicted</span>
+                              <span style={{ fontSize:14, fontWeight:800, fontFamily:C.fontHead, color:"rgba(255,255,255,0.55)" }}>{idea.viral}/100{estV?<span style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.3)"}}> · ~{showEst(estV)}</span>:null}</span>
+                            </div>
+                            <span style={{ fontSize:16, color:"rgba(255,255,255,0.2)", fontWeight:300 }}>→</span>
+                            {/* Actual */}
+                            <div style={{ display:"flex", flexDirection:"column" }}>
+                              <span style={{ fontSize:9, fontWeight:800, letterSpacing:"0.1em", color:"rgba(255,255,255,0.3)", textTransform:"uppercase" }}>Actual</span>
+                              <span style={{ fontSize:14, fontWeight:800, fontFamily:C.fontHead, color:verdictC||"#fff" }}>{fmt(actual)} views</span>
+                            </div>
+                          </div>
+                          {verdict && <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.1em", color:verdictC, background:`${verdictC}18`, border:`1px solid ${verdictC}30`, borderRadius:6, padding:"3px 8px" }}>{verdict}</span>}
+                        </div>
+                        <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:6, fontFamily:C.fontBody }}>
+                          {verdict==="OVERPERFORMED" ? "Result banked — system learned what made this work." : verdict==="ON TRACK" ? "Result banked — system is calibrating to your channel." : "Result banked — system noted what to improve next time."}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* ── ACTIONS — clear hierarchy ── */}
                   <div style={{ padding:isMobile?"13px 16px":"10px 14px", borderTop:"1px solid rgba(255,255,255,0.05)", display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
 
@@ -2164,11 +2201,26 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
                     </button>
                   </div>
                   <div style={{ padding:"16px 18px" }}>
-                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", fontWeight:700, letterSpacing:"0.12em", marginBottom:8 }}>CAPTION</div>
+                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", fontWeight:700, letterSpacing:"0.12em", marginBottom:8 }}>PRIMARY CAPTION</div>
                     <div style={{ fontSize:14, color:"rgba(255,255,255,0.85)", lineHeight:1.75, fontFamily:C.fontBody, marginBottom:isMobile?8:10 }}>{captionResult.instagram?.caption}</div>
-                    <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                    <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom: captionResult.instagram?.variants?.length ? 14 : 0 }}>
                       {(captionResult.instagram?.hashtags||[]).map(h=><span key={h} style={{ fontSize:11, color:C.purple, background:`${C.purple}10`, borderRadius:5, padding:"2px 7px" }}>#{h}</span>)}
                     </div>
+                    {(captionResult.instagram?.variants||[]).map((v,vi)=>(
+                      <div key={vi} style={{ marginTop:10, padding:"12px 14px", borderRadius:10, background:`${C.purple}08`, border:`1px solid ${C.purple}20` }}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7 }}>
+                          <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.1em", color:C.purple }}>{v.hook_type?.toUpperCase()}</span>
+                          <button onClick={()=>copyText&&copyText("igV"+vi, v.caption+" "+(v.hashtags||[]).map(h=>"#"+h).join(" "))}
+                            style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${copied?.["igV"+vi]?C.green:C.purple}35`, background:copied?.["igV"+vi]?`${C.green}12`:`${C.purple}10`, color:copied?.["igV"+vi]?C.green:C.purple, fontFamily:C.fontHead, fontWeight:700, fontSize:10, cursor:"pointer" }}>
+                            {copied?.["igV"+vi]?"COPIED":"COPY"}
+                          </button>
+                        </div>
+                        <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)", lineHeight:1.65, fontFamily:C.fontBody, marginBottom:6 }}>{v.caption}</div>
+                        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                          {(v.hashtags||[]).map(h=><span key={h} style={{ fontSize:10, color:C.purple, background:`${C.purple}10`, borderRadius:4, padding:"2px 6px" }}>#{h}</span>)}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -2186,7 +2238,7 @@ const ContentView = ({ ideas, setIdeas, calItems, setCalItems, scoreIdea, genCap
   );
 };
 
-const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={}, commentInsights=null, visualDNA=null, setIdeas }) => {
+const AnalyticsView = ({ videos=[], totalViews=0, avgRatio=0, facecamAvg=0, hookStats=[], analysis, nextVids, weekly, trends, igData, hasIG, igLoad, fetchIG, runAI, aiLoad={}, setUpdateTarget, openModal, deleteVideo, WL={}, m={}, videoScores={}, commentInsights=null, visualDNA=null, setIdeas, deepScanResult=null }) => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [sentIdeas, setSentIdeas] = useState({});
   const [hiddenInsights, setHiddenInsights] = useState({ whatsWorking:true, nextVids:true, weekly:true, trends:true, visualDNA:true }); // collapsed by default
@@ -2306,6 +2358,23 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                         </div>
                       )}
                       {/* Stats grid */}
+                      {(() => {
+                        const shareRate = (v.shares>0 && v.views>0) ? +((v.shares/v.views)*100).toFixed(2) : null;
+                        const shareC = shareRate===null?"rgba(255,255,255,0.3)":shareRate>=4?C.green:shareRate>=2?C.yellow:"#FF6B6B";
+                        const shareLabel = shareRate===null?"—":shareRate>=4?"VIRAL LEVER":shareRate>=2?"BUILDING":"LOW";
+                        return shareRate!==null && (
+                          <div style={{ margin:"0 0 8px", padding:"8px 12px", borderRadius:10, background:`${shareC}08`, border:`1px solid ${shareC}25`, display:"flex", alignItems:"center", gap:10 }}>
+                            <div>
+                              <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.1em", color:"rgba(255,255,255,0.4)", textTransform:"uppercase" }}>Share-to-View </span>
+                              <span style={{ fontSize:14, fontWeight:800, fontFamily:C.fontHead, color:shareC }}>{shareRate}%</span>
+                              <span style={{ fontSize:10, fontWeight:700, color:shareC, marginLeft:6, background:`${shareC}15`, borderRadius:4, padding:"1px 6px" }}>{shareLabel}</span>
+                            </div>
+                            <span style={{ fontSize:11, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody }}>
+                              {shareRate>=4?"Above viral threshold (≥4%) — algorithm pushing to cold audience":shareRate>=2?"Approaching threshold — add shareable hook next time":"Below 2% threshold — shares are the key unlock for cold reach"}
+                            </span>
+                          </div>
+                        );
+                      })()}
                       <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:6 }}>
                         {[
                           {l:"VIEWS", v:fmt(v.views||0), c:C.cyan},
@@ -2365,7 +2434,7 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 );
   };
 
-  const tabs = ["OVERVIEW","VIDEOS","AI INSIGHTS"];
+  const tabs = ["OVERVIEW","VIDEOS","FORMAT ELO","AI INSIGHTS"];
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:isMobile?20:28 }}>
@@ -2623,6 +2692,64 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
 
 
 
+      {/* ── FORMAT ELO ──────────────────────────────────────────── */}
+      {sub==="FORMAT ELO" && (() => {
+        const ratings = calcFormatElo(videos);
+        const sorted = Object.entries(ratings).sort((a,b)=>b[1].elo-a[1].elo);
+        const maxElo = sorted.length ? sorted[0][1].elo : ELO_BASE;
+        const minElo = sorted.length ? sorted[sorted.length-1][1].elo : ELO_BASE;
+        const eloRange = Math.max(maxElo - minElo, 100);
+        if(!sorted.length) return (
+          <div style={{ padding:"60px 24px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
+            <div style={{ fontSize:22, fontWeight:800, color:"rgba(255,255,255,0.2)", fontFamily:C.fontHead }}>1200</div>
+            <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.6)", fontFamily:C.fontHead }}>No matches yet</div>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,0.35)", fontFamily:C.fontBody, maxWidth:320, lineHeight:1.6 }}>Post videos and log their views — every post is a match that updates your Format Elo. After 5+ posts your skill ratings stabilise into a reliable performance map.</div>
+          </div>
+        );
+        return (
+          <div style={{ display:"flex", flexDirection:"column", gap:isMobile?14:18 }}>
+            <div style={{ padding:isMobile?"14px 16px":"16px 20px", borderRadius:16, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)" }}>
+              <div style={{ fontSize:11, fontWeight:800, letterSpacing:"0.12em", color:"rgba(255,255,255,0.35)", marginBottom:10 }}>WHAT IS FORMAT ELO?</div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.6)", lineHeight:1.6, fontFamily:C.fontBody }}>Every video you post is a match. Beat your channel median = win. Miss it = loss. Elo updates after each match — exactly like chess rankings. After enough posts, this reveals your genuine edge per format more reliably than averages (which lie when sample sizes are small).</div>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {sorted.map(([fmt, r], i)=>{
+                const tier = eloTier(r.elo);
+                const barPct = Math.max(5, Math.min(100, ((r.elo - minElo) / eloRange) * 100));
+                const winRate = r.matches ? Math.round((r.wins/r.matches)*100) : 0;
+                const streakLabel = r.streak >= 3 ? `🔥 ${r.streak} win streak` : r.streak <= -3 ? `❄️ ${Math.abs(r.streak)} loss streak` : null;
+                return (
+                  <div key={fmt} style={{ borderRadius:14, background:"rgba(12,8,24,0.95)", border:`1px solid ${tier.color}22`, padding:isMobile?"14px 16px":"14px 18px" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                      <div style={{ fontSize:isMobile?11:13, fontWeight:800, color:"rgba(255,255,255,0.5)", minWidth:20 }}>#{i+1}</div>
+                      <div style={{ flex:1 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                          <span style={{ fontSize:14, fontWeight:700, color:"#fff", textTransform:"capitalize" }}>{fmt.replace(/_/g," ")}</span>
+                          <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.08em", color:tier.color, background:`${tier.color}15`, borderRadius:5, padding:"2px 7px" }}>{tier.label}</span>
+                          {streakLabel && <span style={{ fontSize:10, color:"rgba(255,255,255,0.5)" }}>{streakLabel}</span>}
+                        </div>
+                        <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", marginTop:2 }}>{r.matches} matches · {winRate}% win rate · last: {r.last==="win"?"✓ win":"✗ loss"}</div>
+                      </div>
+                      <div style={{ textAlign:"right", flexShrink:0 }}>
+                        <div style={{ fontSize:isMobile?22:26, fontWeight:800, fontFamily:C.fontHead, color:tier.color, lineHeight:1 }}>{r.elo}</div>
+                        <div style={{ fontSize:9, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:"0.08em" }}>ELO</div>
+                      </div>
+                    </div>
+                    <div style={{ height:6, borderRadius:4, background:"rgba(255,255,255,0.05)", overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:`${barPct}%`, borderRadius:4, background:`linear-gradient(90deg,${tier.color}88,${tier.color})`, transition:"width 0.6s ease" }}/>
+                    </div>
+                    {r.matches < 5 && <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)", marginTop:6 }}>Need {5-r.matches} more posts for reliable rating</div>}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ padding:"12px 16px", borderRadius:12, background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.05)" }}>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", lineHeight:1.6, fontFamily:C.fontBody }}>Ratings update automatically as you post and log views. Elo converges to a reliable estimate after ~10 matches per format — small sample sizes show wider swings.</div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── AI INSIGHTS ─────────────────────────────────────────── */}
       {sub==="AI INSIGHTS" && (
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?18:28 }}>
@@ -2782,8 +2909,47 @@ Return ONLY JSON: {"overall_score":0-100,"performance_verdict":"viral|above_avg|
                 </>
               ),
             }] : []),
+          // ── GEMINI DEEP CATALOGUE SCAN — added to insight card list ──
+          ...[{
+            key:"deepScan",
+            label:"Deep Visual Scan",
+            dot:"#FFD700",
+            color:"#FFD700",
+            runKey:"deepScan",
+            hasData:!!(deepScanResult?.one_rule),
+            emptyMsg:"Gemini watches your best and worst videos simultaneously — tells you exactly what separates winners from losers visually, aurally, and energetically. One scan, cached 30 days.",
+            badge: hasGeminiKey ? "Gemini 2.5 Pro" : "Needs Gemini key",
+            content: deepScanResult?.one_rule ? (
+              <>
+                {deepScanResult.one_rule && <div style={{ fontSize:13, color:"#FFD700", lineHeight:1.5, marginBottom:14, fontFamily:C.fontBody, fontWeight:600, display:"flex", alignItems:"flex-start", gap:6 }}>{I.zap(13,"#FFD700")}<span>{deepScanResult.one_rule}</span></div>}
+                <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:10 }}>
+                  {[
+                    {l:"Winning DNA", arr:deepScanResult.winning_dna, c:C.green},
+                    {l:"Losing Patterns", arr:deepScanResult.losing_patterns, c:"#FF4D4D"},
+                  ].filter(x=>x.arr?.length).map((x,i)=>(
+                    <div key={i} style={{ padding:"12px 14px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${x.c}18` }}>
+                      <div style={{ fontSize:10, color:x.c, fontWeight:700, letterSpacing:"0.08em", marginBottom:8 }}>{x.l.toUpperCase()}</div>
+                      {x.arr.slice(0,5).map((t,j)=><div key={j} style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, marginBottom:4, fontFamily:C.fontBody }}>• {t}</div>)}
+                    </div>
+                  ))}
+                  {[
+                    {l:"Hook Formula", v:deepScanResult.hook_formula, c:"#FFD700"},
+                    {l:"Dead Zone", v:deepScanResult.dead_zone, c:"#FF6B6B"},
+                    {l:"2x-3x Multiplier", v:deepScanResult.multiplier_insight, c:C.green},
+                    {l:"Next Video Brief", v:deepScanResult.next_video_brief, c:C.cyan},
+                  ].filter(x=>x.v).map((x,i)=>(
+                    <div key={"ds"+i} style={{ padding:"12px 14px", background:"rgba(255,255,255,0.025)", borderRadius:10, border:`1px solid ${x.c}18` }}>
+                      <div style={{ fontSize:10, color:x.c, fontWeight:700, letterSpacing:"0.08em", marginBottom:8 }}>{x.l.toUpperCase()}</div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.8)", lineHeight:1.5, fontFamily:C.fontBody }}>{x.v}</div>
+                    </div>
+                  ))}
+                </div>
+                {deepScanResult.scannedAt && <div style={{ fontSize:10, color:"rgba(255,255,255,0.25)", marginTop:10 }}>Scanned {new Date(deepScanResult.scannedAt).toLocaleDateString()} · {deepScanResult.sampleSize||20} videos analysed</div>}
+              </>
+            ) : null,
+          }],
           ].map(card=>{
-            const _ic = ({whatsWorking:I.search,nextVids:I.target,weekly:I.write,trends:I.trend,visualDNA:I.eye})[card.key] || I.zap;
+            const _ic = ({whatsWorking:I.search,nextVids:I.target,weekly:I.write,trends:I.trend,visualDNA:I.eye,deepScan:I.zap})[card.key] || I.zap;
             return (
             <div key={card.key} data-card style={{ borderRadius:16, background:"rgba(255,255,255,0.025)", border:`1px solid ${card.color}22`, position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.4, background:`linear-gradient(90deg,${card.color},${card.color}00)` }}/>
@@ -4988,7 +5154,7 @@ function AiSelfTest(){
   );
 }
 
-const SettingsView = ({ plan, onManagePlan, keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[], onBulkImport }) => {
+const SettingsView = ({ plan, onManagePlan, keys, onEditKeys, scrapedStats, hasIG, WL, onEditWL, onSyncTikTok, syncMsg, videos=[], ideas=[], onBulkImport, onRescan, deepScanResult, aiLoad={} }) => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
   const [editing, setEditing] = useState(null);
   const [draftKey, setDraftKey] = useState("");
@@ -5240,6 +5406,22 @@ Write as 5 numbered points, each 1-2 sentences. Be specific to this channel — 
           {I.refresh(16,C.cyan)} {syncMsg || "SYNC"}
         </button>
       </div>
+
+      {/* Deep Visual Scan */}
+      {keys?.gemini && (
+        <div style={{ borderRadius:16, padding:isMobile?"20px 20px":"24px 28px", background:"linear-gradient(145deg,rgba(255,215,0,0.08),rgba(10,6,20,0.95))", border:"1px solid rgba(255,215,0,0.25)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:1, opacity:0.5, background:"linear-gradient(90deg,#FFD700,#FFD70000)" }}/>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:16, fontWeight:700, color:"#fff", marginBottom:4 }}>Deep Visual Scan</div>
+            <div style={{ fontSize:isMobile?12:13, color:"rgba(255,255,255,0.5)", lineHeight:1.4 }}>
+              {deepScanResult?.scannedAt ? "Last scan: "+new Date(deepScanResult.scannedAt).toLocaleDateString() : "Run once to analyse your best vs worst videos with Gemini 2.5 Pro"}
+            </div>
+          </div>
+          <button onClick={onRescan} disabled={aiLoad.deepScan} style={{ display:"flex", alignItems:"center", gap:8, padding:isMobile?"10px 18px":"14px 28px", borderRadius:12, border:"1px solid rgba(255,215,0,0.4)", background:"linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,215,0,0.1))", color:"#FFD700", fontFamily:C.fontHead, fontWeight:700, fontSize:isMobile?13:16, cursor:"pointer", flexShrink:0, opacity:aiLoad.deepScan?0.5:1 }}>
+            {I.zap(16,"#FFD700")} {aiLoad.deepScan ? "SCANNING..." : deepScanResult ? "RE-SCAN" : "RUN SCAN"}
+          </button>
+        </div>
+      )}
 
       {/* 2 col layout */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:16, alignItems:"start" }}>
@@ -5604,6 +5786,7 @@ const ANALYSIS_KEY = "krapmaps_v1_analysis";
 const NEXTVIDS_KEY = "krapmaps_v1_nextvids";
 const WEEKLY_KEY   = "krapmaps_v1_weekly";
 const TRENDS_KEY   = "krapmaps_v1_trends";
+const DEEP_SCAN_KEY = "krapmaps_v1_deepscan";
 const SYNC_KEY     = "krapmaps_v1_syncurl";
 const SB_URL_KEY   = "krapmaps_sb_url";
 const SB_KEY_KEY   = "krapmaps_sb_key";
@@ -7168,6 +7351,41 @@ const formatPipelineSaturation = (sat) => {
   return `PIPELINE SATURATION: ${sat.count} other unposted ideas already cover this same topic (${sat.titles.join("; ")}). If the plan is to post all of them, deduct from niche fit — topic repetition burns the audience even when hooks differ. Recommend consolidating or spacing them out.\n`;
 };
 
+// ── CONTENT ELO RATING SYSTEM ────────────────────────────────────
+// Each video posted is a "match". Beating channel median = win. Losing = loss.
+// Elo updates after every match, giving each format/hook a live skill rating.
+// After enough posts, this reveals your genuine edge per format more reliably
+// than simple averages (which are distorted by outliers and sample size).
+const ELO_BASE = 1200;
+const ELO_K = 32;
+const calcFormatElo = (videos=[]) => {
+  const byDate = [...videos].filter(v=>v.views>0).sort((a,b)=>{
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return ta - tb;
+  });
+  const allViews = byDate.map(v=>v.views).sort((a,b)=>a-b);
+  const median = allViews[Math.floor(allViews.length/2)] || 1;
+  const ratings = {}; // format → { elo, wins, losses, streak, last }
+  byDate.forEach(v => {
+    const fmt = (v.hook || v.type || "unknown").toLowerCase().replace(/\s+/g,"_");
+    if(!ratings[fmt]) ratings[fmt] = { elo: ELO_BASE, wins:0, losses:0, streak:0, matches:0, recentViews:[] };
+    const r = ratings[fmt];
+    const won = v.views >= median;
+    // Expected score vs field (0.5 = evenly matched vs channel average)
+    const expected = 1 / (1 + Math.pow(10, (ELO_BASE - r.elo) / 400));
+    r.elo = Math.round(r.elo + ELO_K * ((won ? 1 : 0) - expected));
+    r.matches++;
+    r.recentViews.push(v.views);
+    if(r.recentViews.length > 5) r.recentViews.shift();
+    if(won){ r.wins++; r.streak = r.streak >= 0 ? r.streak+1 : 1; }
+    else  { r.losses++; r.streak = r.streak <= 0 ? r.streak-1 : -1; }
+    r.last = won ? "win" : "loss";
+  });
+  return ratings;
+};
+const eloTier = (elo) => elo >= 1600 ? { label:"ELITE", color:"#FFD700" } : elo >= 1450 ? { label:"STRONG", color:"#22E06B" } : elo >= 1300 ? { label:"ABOVE AVG", color:"#00E5FF" } : elo >= 1150 ? { label:"AVERAGE", color:"rgba(255,255,255,0.5)" } : { label:"WEAK", color:"#FF6B6B" };
+
 // ── CONTENT ALLOCATOR (multi-armed bandit) ────────────────────────
 // Treats each content pillar as an arm. Each posted result is a Bernoulli trial
 // (beat channel median = win). Maintains a Beta(α,β) posterior per pillar and ranks
@@ -7382,6 +7600,9 @@ async function _geminiGenerate(apiKey, body) {
 // replies and converts. Dial GPT_AUDIT_MODEL back to Luna if credit is tight.
 const GPT_MODEL = "gpt-5.6-luna";
 const GPT_AUDIT_MODEL = "gpt-5.6-terra";
+// ── Pricing constants — change here, updates everywhere (DM prompts, UI copy) ──
+const SPRINT_PRICE = 297; // £ done-for-you monthly Growth Sprint
+const PRO_PRICE = 29;     // £ self-serve Pro plan
 async function callGPT(prompt, systemMsg="You are an expert TikTok content strategist. Return ONLY valid JSON.", maxTokens=2000) {
   const storedCfg = loadJSON(KEYS_KEY,{});
   if(USE_BACKEND) {
@@ -7825,6 +8046,15 @@ const sbLoadArray = async (table) => {
   const rows = await sbFetch(table, `select=*&id=like.${wsMatch()}*&order=updated_at.desc`);
   if(!rows||!rows.length) return null;
   return rows.map(r=>r.data).filter(Boolean);
+};
+// Single-value config helpers — store/fetch one JSON blob per workspace key in km_config.
+const sbSyncJSON = async (key, value) => {
+  if(value==null) return;
+  await sbUpsert("km_config",[{ id:wsId(key), data:value, updated_at:new Date().toISOString() }]);
+};
+const sbLoadJSON = async (key) => {
+  const rows = await sbFetch("km_config",`select=data&id=eq.${wsId(key)}`);
+  return rows?.[0]?.data ?? null;
 };
 
 // ── CROSS-CREATOR CORPUS ──────────────────────────────────────────
@@ -8799,12 +9029,15 @@ Write today's briefing. Return ONLY JSON: {"headline":"one punchy line summarisi
       const raw = await genIdeas(ctx, pool);
       if(!raw.length) throw new Error("Autopilot couldn't generate ideas — try again.");
       setPhase("scoring"); setScoreProg([0, raw.length]);
-      const scored = [];
-      for(let i=0;i<raw.length;i++){
-        const s = await scoreOne(raw[i], ctx);
-        scored.push({ ...raw[i], ...s, score: Math.round(Number(s.score)||0) });
-        setScoreProg([i+1, raw.length]);
-      }
+      // Score all ideas in parallel — was sequential (8 ideas × 3s each = 24s+).
+      // Now all fire at once and resolve as they complete, cutting wall-clock to ~3-5s.
+      let doneCount = 0;
+      const scored = (await Promise.all(
+        raw.map(idea => scoreOne(idea, ctx).then(s => {
+          setScoreProg([++doneCount, raw.length]);
+          return { ...idea, ...s, score: Math.round(Number(s.score)||0) };
+        }).catch(() => ({ ...idea, score: 0 })))
+      )).filter(Boolean);
       scored.sort((a,b)=>(b.score||0)-(a.score||0));
       // Keep only strong ideas (>=72); always keep the top 3 so there's a plan even on a lean day.
       const strong = scored.filter(s=>(s.score||0)>=72);
@@ -9204,12 +9437,476 @@ Return ONLY JSON: {"verdict":"GO|RISKY|NO","brandFit":"fit|borderline|off-brand"
   );
 }
 
+// ── THE TEST AUDIENCE ─────────────────────────────────────────────
+// Watch a synthetic focus group — built from the creator's REAL audience
+// (comment insights, niche, voice) — react to a video idea before it's filmed.
+// Thumb-stop → hook retention → engagement, animated live. Then it calibrates
+// against real posted outcomes so the simulation sharpens over time.
+const TEST_KEY = "krapmaps_v1_testaudience";
+const _AV_SEEDS = ["#00E5FF","#39FF14","#FF3D8B","#C566FF","#FFD50A","#38bdf8","#f472b6","#4ade80","#a78bfa","#facc15","#2dd4bf","#fb7185","#22E06B","#00C2FF","#e879f9","#fbbf24"];
+const _pickAv = (arr,i)=>arr[((i%arr.length)+arr.length)%arr.length];
+const _easeOut = t => 1-Math.pow(1-Math.max(0,Math.min(1,t)),3);
+// map a global progress 0..1 into a local 0..1 window [a,b]
+const _win = (p,a,b)=>Math.max(0,Math.min(1,(p-a)/(b-a)));
+
+// Build 24 persona avatars locally from the returned reaction split.
+const _buildAudience = (r) => {
+  const N=24;
+  const stopN = Math.round(N*(r.thumbStop||60)/100);
+  const survivors = Math.round(stopN*(r.retention3s||60)/100);
+  const inits = ["MK","JT","RD","AL","SP","BV","NG","Co","Ez","Ty","Wm","Ja","Pri","Fx","QD","Lo","Mo","Ke","Zar","Vi","Hn","Ro","Su","Ax"];
+  const reactEmoji = ["❤️","🔁","➕","❤️","🔁","💬","❤️","➕"];
+  const out=[];
+  for(let i=0;i<N;i++){
+    let behavior="scroll", emoji="";
+    if(i<survivors){ behavior="react"; emoji=_pickAv(reactEmoji,i); }
+    else if(i<stopN){ behavior="bounce"; emoji="💤"; }
+    out.push({ initials:_pickAv(inits,i), color:_pickAv(_AV_SEEDS,i), behavior, emoji, order:i/N });
+  }
+  // shuffle deterministically so stops/bounces feel organic (seeded by verdict)
+  const seed=(r.verdict||50);
+  for(let i=out.length-1;i>0;i--){ const j=(i*7+seed)%(i+1); [out[i],out[j]]=[out[j],out[i]]; }
+  return out;
+};
+
+// Deterministic fallback so the sim always works even with no AI key / offline.
+const _fallbackTest = (idea, avgViews=60000) => {
+  const h=(idea.hook||idea.title||"").length;
+  const base=52+((h*13)%34);
+  return {
+    thumbStop: base, retention3s: 40+((h*7)%38), completion: 34+((h*5)%22),
+    shareRate: +(2.2+((h%40)/12)).toFixed(1), newFollows: 90+((h*11)%260),
+    saveRate: +(4+((h%30)/6)).toFixed(1), verdict: 60+((h*3)%32),
+    estViews: fmt(Math.round(avgViews*(1.1+((h%50)/40)))),
+    swipedPct: 100-base,
+    bounce: { atSec: 3+((h%3)), pct: 30+((h%18)), reason: "The hook pays off a beat too late — lead with the reveal, don't build to it." },
+    curve: [100,97,90,62,60,55,50,47,43].map((v,i)=>Math.max(28, v-((h+i)%9))),
+    comments: [
+      { handle:"@"+(idea.type||"viewer")+".fan", initials:"MH", text:"ok this actually rewired my brain 😭", tag:"high-emotion · shareable", color:"#FF3D8B" },
+      { handle:"@curious.cass", initials:"CC", text:"wait i need the real number now", tag:"question → drives comments", color:"#00E5FF" },
+      { handle:"@more.please", initials:"MP", text:"do a part 2 on this PLEASE", tag:"requests sequel · retention", color:"#39FF14" },
+      { handle:"@saved.it", initials:"SI", text:"saving this immediately", tag:"save-worthy", color:"#FFD50A" },
+      { handle:"@debate.club", initials:"DC", text:"ok but why do we still do it the old way", tag:"sparks debate thread", color:"#C566FF" },
+    ],
+  };
+};
+
+// The panel — 6 specialist agents, each hunting ONE factor that makes videos travel.
+const PANEL_LENSES = [
+  { key:"hook",            label:"Hook",            color:"#00E5FF", weight:0.28, ask:"Does the first 1 second stop the thumb? Judge the opening line / visual purely as a scroll-stopper." },
+  { key:"retention",       label:"Retention",       color:"#39FF14", weight:0.22, ask:"Is there an open loop that holds attention past 3 seconds? Where exactly will viewers drop off?" },
+  { key:"share",           label:"Share Trigger",   color:"#FFD50A", weight:0.20, ask:"Is there a concrete reason to send this to a friend (identity, utility, 'you HAVE to see this')? Share rate is the #1 cold-distribution lever." },
+  { key:"emotion",         label:"Emotional Spike", color:"#FF3D8B", weight:0.12, ask:"Does it trigger a strong emotion — surprise, awe, outrage, 'I knew it'? Flat feeling = no spread." },
+  { key:"fit",             label:"Audience Fit",    color:"#C566FF", weight:0.10, ask:"Does it match what THIS channel's real followers actually ask for and engage with?" },
+  { key:"differentiation", label:"Differentiation", color:"#FF6B1A", weight:0.08, ask:"Is this fresh, or has the niche done it to death? Overdone angles cap reach." },
+];
+const _lensScore = (panel,key)=>{ const p=(panel||[]).find(x=>x.key===key); return p?Math.max(0,Math.min(10,Number(p.score)||0)):5; };
+// Turn the panel's dimension scores into grounded, explainable telemetry.
+const _synthFromPanel = (panel, avgViews=60000) => {
+  const sh=_lensScore(panel,"hook"), sr=_lensScore(panel,"retention"), ss=_lensScore(panel,"share"),
+        se=_lensScore(panel,"emotion"), sf=_lensScore(panel,"fit"), sd=_lensScore(panel,"differentiation");
+  const verdict = Math.round(PANEL_LENSES.reduce((s,l)=>s+_lensScore(panel,l.key)*l.weight,0)*10);
+  const thumbStop = Math.round(34+sh*6);
+  const retention3s = Math.round(28+sr*6.5);
+  const completion = Math.round(18+Math.min(sr,se+2)*5);
+  const shareRate = +(Math.max(0.4,(ss*0.85+se*0.15))).toFixed(1);
+  const saveRate = +(2+se*1.4).toFixed(1);
+  const newFollows = Math.round(sf*40 + verdict*0.6);
+  const diffMod = 0.7+sd*0.06;
+  const estViews = fmt(Math.round(avgViews*(0.45+verdict/100*1.55)*diffMod));
+  const retLens = (panel||[]).find(x=>x.key==="retention");
+  const bounce = { atSec: sr>=7?4:3, pct: Math.max(12,100-retention3s), reason: (retLens&&retLens.fix)||"The hook pays off too late — front-load the reveal." };
+  const curve = [100,96,88, retention3s+8, retention3s+4, Math.round((retention3s+completion)/2), completion+6, completion+2, completion].map(v=>Math.max(24,Math.min(100,Math.round(v))));
+  return { thumbStop, retention3s, completion, shareRate, saveRate, newFollows, verdict, estViews, swipedPct:100-thumbStop, bounce, curve };
+};
+
+function TestAudienceView({ ideas=[], videos=[], commentInsights=null, WL={} }){
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 900;
+  const testable = (ideas||[]).filter(i=>i.title);
+  const [sel, setSel] = useState(testable[0]?.id || "custom");
+  const [customTitle, setCustomTitle] = useState("");
+  const [customHook, setCustomHook] = useState("");
+  const [result, setResult] = useState(()=>loadJSON(TEST_KEY,null)?.last || null);
+  const [busy, setBusy] = useState(false);
+  const [prog, setProg] = useState(result ? 1 : 0);
+  const [err, setErr] = useState("");
+  const rafRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  const organic = (videos||[]).filter(v=>!v.boosted && v.views>0);
+  const avgViews = organic.length ? Math.round(organic.reduce((s,v)=>s+v.views,0)/organic.length) : 60000;
+
+  const activeIdea = sel==="custom"
+    ? { title: customTitle || "Your video idea", hook: customHook, type:"custom" }
+    : (testable.find(i=>i.id===sel) || { title:"Your video idea", hook:"" });
+
+  // Calibration — accuracy from ideas that were tested AND later posted.
+  const hist = loadJSON(TEST_KEY,null)?.history || [];
+  const calib = (()=>{
+    if(!hist.length) return { acc:0, bars:[], learning:true };
+    const errs = hist.map(h=>{
+      if(!(h.actual>0)||!(h.predicted>0)) return null;
+      return 1 - Math.min(1, Math.abs(h.predicted-h.actual)/h.actual);
+    }).filter(v=>v!=null);
+    if(!errs.length) return { acc:0, bars:[], learning:true };
+    const acc = Math.round(errs.reduce((s,v)=>s+v,0)/errs.length*100);
+    return { acc, bars: errs.slice(-6).map(v=>Math.round(v*100)), learning:false };
+  })();
+
+  const animate = () => {
+    cancelAnimationFrame(rafRef.current);
+    const t0 = performance.now(), dur = 5200;
+    const step = (now) => {
+      const p = Math.min(1,(now-t0)/dur);
+      setProg(p);
+      if(p<1) rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+  };
+
+  const run = async () => {
+    if(busy) return;
+    setBusy(true); setErr(""); setProg(0);
+    const audCtx = commentInsights ? `THIS channel's real audience — themes they obsess over: ${(commentInsights.top_themes||[]).slice(0,4).join(", ")}; what they ask for: ${(commentInsights.audience_requests||[]).slice(0,3).join(", ")}; their exact words: ${(commentInsights.language_patterns||[]).slice(0,4).join(", ")}.` : "";
+    const ideaBlock = `Niche: ${WL.niche||"general"} | Audience: ${WL.targetAudience||"general"} | Channel avg views: ${avgViews}\n${audCtx}\nVIDEO IDEA — Title: "${activeIdea.title}" | Hook: "${activeIdea.hook||"(infer the likely opening line)"}"`;
+    const fb = _fallbackTest(activeIdea, avgViews);
+
+    // ── Panel of expert agents — each hunts ONE viral factor, all in parallel ──
+    const lensTasks = PANEL_LENSES.map(async (l)=>{
+      try {
+        const p = `You are a short-form virality analyst evaluating ONE dimension only: ${l.label.toUpperCase()}. ${l.ask}\n\n${ideaBlock}\n\nScore ONLY this dimension for THIS specific audience. Be honest — most ideas are average, reserve 8+ for genuinely strong. Return ONLY JSON: {"score":<0-10>,"headline":"<≤6 word verdict>","evidence":"<one sentence, reference the actual idea>","fix":"<one specific improvement>"}`;
+        const raw = await callAI(p, 400);
+        const j = typeof raw==="string" ? JSON.parse(_stripThink(raw)) : raw;
+        return { key:l.key, label:l.label, color:l.color, score:Math.max(0,Math.min(10,Number(j.score)||5)), headline:j.headline||l.label, evidence:j.evidence||"", fix:j.fix||"" };
+      } catch(e){
+        return { key:l.key, label:l.label, color:l.color, score:Math.round(fb.verdict/10), headline:l.label, evidence:"Estimated offline.", fix:"Add an AI key for a live expert read.", offline:true };
+      }
+    });
+    // Voice agent — the visible comments, in parallel with the panel
+    const voiceTask = (async ()=>{
+      try {
+        const p = `${ideaBlock}\n\nWrite 5 comments THIS channel's real followers would actually leave, in their exact voice and slang. Return ONLY JSON: {"comments":[{"handle":"@...","initials":"XY","text":"...","tag":"<why it matters for reach>","color":"#hex"}]}`;
+        const raw = await callAI(p, 700);
+        const j = typeof raw==="string" ? JSON.parse(_stripThink(raw)) : raw;
+        return Array.isArray(j.comments)&&j.comments.length ? j.comments : fb.comments;
+      } catch(e){ return fb.comments; }
+    })();
+
+    let panel, comments;
+    try {
+      [panel, comments] = await Promise.all([Promise.all(lensTasks), voiceTask]);
+    } catch(e){
+      panel = PANEL_LENSES.map(l=>({ key:l.key, label:l.label, color:l.color, score:Math.round(fb.verdict/10), headline:l.label, evidence:"Estimated offline.", fix:"", offline:true }));
+      comments = fb.comments;
+    }
+    const r = _synthFromPanel(panel, avgViews);
+    r.panel = panel;
+    r.comments = (Array.isArray(comments)&&comments.length) ? comments : fb.comments;
+    r.audience = _buildAudience(r);
+    r.idea = { id: sel, title: activeIdea.title, hook: activeIdea.hook };
+    r.at = new Date().toISOString();
+    setResult(r);
+    const store = loadJSON(TEST_KEY,{}) || {};
+    store.last = r;
+    saveJSON(TEST_KEY, store);
+    sbSyncJSON && sbSyncJSON("testAudience", store).catch(()=>{});
+    setBusy(false);
+    animate();
+  };
+
+  // draw retention curve on canvas as prog advances
+  useEffect(()=>{
+    const cv=canvasRef.current; if(!cv||!result) return;
+    const cx=cv.getContext("2d"), W=cv.width, H=cv.height;
+    const pts=result.curve.map((v,i)=>[i/(result.curve.length-1), v/100]);
+    const bounceX = Math.min(0.95,((result.bounce?.atSec||3)/12));
+    const px=t=>10+t*(W-20), py=v=>16+(1-v)*(H-34);
+    const interp=t=>{ for(let i=1;i<pts.length;i++){ if(t<=pts[i][0]){ const[a,av]=pts[i-1],[b,bv]=pts[i]; const k=(t-a)/((b-a)||1); return av+(bv-av)*k; } } return pts[pts.length-1][1]; };
+    const curveP = _easeOut(_win(prog,0.28,0.78)); // hook phase window
+    cx.clearRect(0,0,W,H);
+    // grid
+    cx.strokeStyle="rgba(255,255,255,.06)"; cx.lineWidth=1;
+    for(let g=0;g<=4;g++){ const y=16+g/4*(H-34); cx.beginPath(); cx.moveTo(10,y); cx.lineTo(W-10,y); cx.stroke(); }
+    // bounce marker
+    cx.strokeStyle="rgba(255,61,139,.4)"; cx.setLineDash([4,4]);
+    cx.beginPath(); cx.moveTo(px(bounceX),10); cx.lineTo(px(bounceX),H-12); cx.stroke(); cx.setLineDash([]);
+    if(curveP<=0) return;
+    // line
+    cx.beginPath(); cx.moveTo(px(0),py(interp(0)));
+    for(let t=0;t<=curveP+0.001;t+=0.02) cx.lineTo(px(t),py(interp(t)));
+    cx.strokeStyle="#00E5FF"; cx.lineWidth=2.5; cx.shadowColor="rgba(0,229,255,.6)"; cx.shadowBlur=8; cx.stroke(); cx.shadowBlur=0;
+    // fill
+    cx.lineTo(px(Math.min(curveP,1)),H-12); cx.lineTo(px(0),H-12); cx.closePath();
+    const g=cx.createLinearGradient(0,0,0,H); g.addColorStop(0,"rgba(0,229,255,.28)"); g.addColorStop(1,"rgba(0,229,255,0)");
+    cx.fillStyle=g; cx.fill();
+    // dot
+    cx.beginPath(); cx.arc(px(Math.min(curveP,1)),py(interp(Math.min(curveP,1))),3.5,0,7); cx.fillStyle="#eafcff"; cx.fill();
+  },[prog,result]);
+
+  useEffect(()=>()=>cancelAnimationFrame(rafRef.current),[]);
+
+  const mono=C.fontMono, head=C.fontHead;
+  const showStop = Math.round((result?.thumbStop||0)*_easeOut(_win(prog,0.0,0.28)));
+  const showRet  = Math.round((result?.retention3s||0)*_easeOut(_win(prog,0.28,0.62)));
+  const showShare= ((result?.shareRate||0)*_easeOut(_win(prog,0.6,0.9))).toFixed(1);
+  const showFol  = Math.round((result?.newFollows||0)*_easeOut(_win(prog,0.62,0.95)));
+  const showVerdict=Math.round((result?.verdict||0)*_easeOut(_win(prog,0.8,1)));
+  const flagOn = prog>0.62;
+  const done = prog>=1 && result;
+
+  const Stat = ({label,val,color}) => (
+    <div style={{ border:`1px solid ${C.border}`, borderRadius:12, padding:"11px 12px", background:"rgba(255,255,255,0.015)" }}>
+      <div style={{ font:`600 9.5px/1 ${mono}`, letterSpacing:"0.13em", color:C.dim, textTransform:"uppercase" }}>{label}</div>
+      <div style={{ font:`800 22px/1 ${mono}`, letterSpacing:"-0.01em", marginTop:7, fontVariantNumeric:"tabular-nums", color }}>{val}</div>
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth:1180, margin:"0 auto", padding:isMobile?"4px 2px 40px":"4px 4px 60px" }}>
+      {/* hero */}
+      <div style={{ marginBottom:20 }}>
+        <div style={{ font:`700 11px/1 ${mono}`, letterSpacing:"0.34em", color:C.yellow, textTransform:"uppercase", display:"flex", alignItems:"center", gap:8 }}>{I.flask(13,C.yellow)} The Test Audience</div>
+        <h1 style={{ font:`850 ${isMobile?28:44}px/1.03 ${head}`, letterSpacing:"-0.02em", margin:"12px 0 10px", textWrap:"balance", color:C.text }}>
+          Watch your audience react <span style={{ background:`linear-gradient(92deg,${C.cyan},${C.yellow})`, WebkitBackgroundClip:"text", backgroundClip:"text", color:"transparent" }}>before you film it.</span>
+        </h1>
+        <p style={{ maxWidth:"60ch", color:C.dim, fontSize:15, margin:0, fontFamily:C.fontBody }}>
+          A living focus group built from your <b style={{color:C.text}}>real followers</b>, scored by a <b style={{color:C.text}}>panel of 6 expert agents</b> — each hunting one factor that makes videos travel. Watch them react, then see exactly which factor decides it.
+        </p>
+      </div>
+
+      {/* idea picker + run */}
+      <div style={{ display:"flex", gap:12, flexWrap:"wrap", alignItems:"flex-end", marginBottom:16, padding:16, borderRadius:16, background:"rgba(255,213,10,0.03)", border:`1px solid ${C.border}` }}>
+        <div style={{ flex:1, minWidth:220 }}>
+          <div style={{ font:`700 9.5px/1 ${mono}`, letterSpacing:"0.2em", color:C.yellow, textTransform:"uppercase", marginBottom:8 }}>Idea under test</div>
+          <select value={sel} onChange={e=>setSel(e.target.value)}
+            style={{ width:"100%", padding:"11px 12px", borderRadius:10, background:C.cardSolid, color:C.text, border:`1px solid ${C.border}`, font:`600 14px ${C.fontBody}`, cursor:"pointer" }}>
+            {testable.map(i=><option key={i.id} value={i.id}>{i.title.slice(0,70)}</option>)}
+            <option value="custom">✏️ Type a new idea…</option>
+          </select>
+          {sel==="custom" && (
+            <div style={{ display:"flex", flexDirection:"column", gap:8, marginTop:8 }}>
+              <input value={customTitle} onChange={e=>setCustomTitle(e.target.value)} placeholder="Video title / concept"
+                style={{ padding:"10px 12px", borderRadius:10, background:C.cardSolid, color:C.text, border:`1px solid ${C.border}`, font:`500 13px ${C.fontBody}` }}/>
+              <input value={customHook} onChange={e=>setCustomHook(e.target.value)} placeholder="Opening hook line (optional)"
+                style={{ padding:"10px 12px", borderRadius:10, background:C.cardSolid, color:C.text, border:`1px solid ${C.border}`, font:`500 13px ${C.fontBody}` }}/>
+            </div>
+          )}
+        </div>
+        <button onClick={run} disabled={busy}
+          style={{ font:`800 13px/1 ${mono}`, letterSpacing:"0.12em", color:"#04141a", cursor:busy?"default":"pointer", border:0, borderRadius:12, padding:"14px 22px", whiteSpace:"nowrap",
+            background: done?`linear-gradient(180deg,#7bffa0,${C.green})`:`linear-gradient(180deg,#7af0ff,${C.cyan})`,
+            boxShadow: done?`0 10px 26px -12px ${C.green}`:`0 10px 26px -12px ${C.cyan}`, opacity:busy?0.6:1, transition:"all .2s" }}>
+          {busy?"● SIMULATING…": done?"↻ RUN AGAIN":"▶ RUN SCREEN TEST"}
+        </button>
+      </div>
+      {err && <div style={{ color:C.orange, fontSize:13, marginBottom:12 }}>{err}</div>}
+
+      {!result ? (
+        <div style={{ padding:"60px 20px", textAlign:"center", border:`1px dashed ${C.border}`, borderRadius:18, color:C.dim }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>🔮</div>
+          <div style={{ fontFamily:C.fontBody, fontSize:15 }}>Pick an idea and hit <b style={{color:C.cyan}}>Run Screen Test</b> to watch your synthetic audience react.</div>
+        </div>
+      ) : (
+        <div style={{ border:`1px solid ${C.border}`, borderRadius:20, overflow:"hidden", background:"linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.006))", boxShadow:DS.shadow.lg }}>
+          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1.15fr 1.5fr 1.35fr", gap:1, background:C.border }}>
+            {/* audience grid */}
+            <div style={{ background:C.bg, padding:"16px 16px 18px" }}>
+              <h3 style={{ margin:"0 0 3px", font:`700 10.5px/1 ${mono}`, letterSpacing:"0.2em", color:C.dim, textTransform:"uppercase" }}>Synthetic Audience</h3>
+              <p style={{ font:`500 11px/1.4 ${C.fontBody}`, color:"rgba(255,255,255,0.35)", margin:"0 0 13px" }}>24 personas sampled from your real followers &amp; comments.</p>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:7 }}>
+                {result.audience.map((a,i)=>{
+                  const revealed = prog > (0.02 + a.order*0.24);
+                  const isStop = a.behavior!=="scroll";
+                  const bounced = a.behavior==="bounce" && prog>0.62;
+                  const reacted = a.behavior==="react" && prog>0.78;
+                  const glow = reacted?C.green:(isStop&&revealed&&!bounced)?C.cyan:null;
+                  return (
+                    <div key={i} style={{ aspectRatio:"1", borderRadius:9, position:"relative", display:"flex", alignItems:"center", justifyContent:"center",
+                      font:`800 12px/1 ${C.fontBody}`, color:"#fff", background:a.color,
+                      opacity: revealed?(bounced?0.2:isStop?1:0.32):0.32,
+                      transform:`scale(${revealed?(bounced?0.82:1):0.9})`,
+                      filter: (isStop&&revealed&&!bounced)?"saturate(1)":"saturate(.45)",
+                      boxShadow: glow?`0 0 0 2px ${glow}bb, 0 0 15px ${glow}55`:"none",
+                      transition:"all .45s" }}>
+                      {a.initials}
+                      {(bounced||reacted) && <span style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, background:"rgba(6,4,12,0.5)", borderRadius:9 }}>{a.emoji}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginTop:13 }}>
+                {[["Thumb-stopped",C.cyan],["Engaged",C.green],["Swiped away",C.pink]].map(([l,c])=>(
+                  <span key={l} style={{ font:`600 10px/1 ${mono}`, color:"rgba(255,255,255,0.4)", display:"flex", alignItems:"center", gap:5 }}>
+                    <i style={{ width:8, height:8, borderRadius:3, background:c, display:"inline-block" }}/>{l}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* phone + curve */}
+            <div style={{ background:C.bg, padding:"16px 16px 18px" }}>
+              <h3 style={{ margin:"0 0 3px", font:`700 10.5px/1 ${mono}`, letterSpacing:"0.2em", color:C.dim, textTransform:"uppercase" }}>Live Retention</h3>
+              <p style={{ font:`500 11px/1.4 ${C.fontBody}`, color:"rgba(255,255,255,0.35)", margin:"0 0 13px" }}>How the hook holds them, second by second.</p>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:14 }}>
+                <div style={{ width:140, borderRadius:22, padding:8, background:"linear-gradient(160deg,#241a3d,#0c0818)", border:`1px solid ${C.borderMed}`, boxShadow:"0 24px 50px -24px #000" }}>
+                  <div style={{ borderRadius:15, aspectRatio:"9/16", position:"relative", overflow:"hidden", background:"linear-gradient(200deg,#0a3a5c,#123 55%,#2a1140)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <div style={{ position:"absolute", top:8, left:8, font:`700 8px/1 ${mono}`, letterSpacing:"0.16em", color:"#cfe", background:"rgba(0,0,0,0.4)", borderRadius:5, padding:"4px 6px" }}>
+                      0:{String(Math.floor(prog*12)).padStart(2,"0")}
+                    </div>
+                    <div style={{ fontSize:46, filter:"drop-shadow(0 6px 20px rgba(0,229,255,0.5))", transform: prog>0.28?"scale(1.12) rotate(-6deg)":"none", transition:"transform .5s" }}>{prog>0.28?"🗺️":"🌍"}</div>
+                    <div style={{ position:"absolute", left:8, right:8, bottom:10, font:`800 11px/1.25 ${C.fontBody}`, textShadow:"0 2px 8px #000", color:"#fff" }}>
+                      {(result.idea.hook||result.idea.title).slice(0,60)}
+                    </div>
+                    <div style={{ position:"absolute", left:0, bottom:0, height:3, background:C.cyan, width:`${prog*100}%`, boxShadow:`0 0 8px ${C.cyan}` }}/>
+                  </div>
+                </div>
+                <div style={{ width:"100%" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:6 }}>
+                    <b style={{ font:`700 10px/1 ${mono}`, letterSpacing:"0.16em", color:C.dim }}>RETENTION</b>
+                    <span style={{ font:`600 10px/1 ${mono}`, color:"rgba(255,255,255,0.35)" }}>{prog>0.28?`${Math.round(result.curve[Math.min(result.curve.length-1,Math.floor(_win(prog,0.28,0.78)*(result.curve.length-1)))])}% holding`:"—"}</span>
+                  </div>
+                  <canvas ref={canvasRef} width={600} height={192} style={{ width:"100%", height:96, display:"block" }}/>
+                  <div style={{ marginTop:9, font:`600 11.5px/1.4 ${C.fontBody}`, color:"#ff9ec4", background:"rgba(255,61,139,0.09)", border:"1px solid rgba(255,61,139,0.28)", borderRadius:10, padding:"9px 11px", opacity:flagOn?1:0, transform:flagOn?"none":"translateY(4px)", transition:".4s", display:"flex", gap:8 }}>
+                    <span>▼</span><span><b style={{color:"#ffd1e3"}}>{result.bounce?.pct||35}% lost at 0:0{result.bounce?.atSec||3}.</b> {result.bounce?.reason}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* telemetry + comments */}
+            <div style={{ background:C.bg, padding:"16px 16px 18px" }}>
+              <h3 style={{ margin:"0 0 3px", font:`700 10.5px/1 ${mono}`, letterSpacing:"0.2em", color:C.dim, textTransform:"uppercase" }}>Live Signal</h3>
+              <p style={{ font:`500 11px/1.4 ${C.fontBody}`, color:"rgba(255,255,255,0.35)", margin:"0 0 13px" }}>Predicted engagement, counting as they react.</p>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:14 }}>
+                <Stat label="Thumb-stop" val={`${showStop}%`} color={C.cyan}/>
+                <Stat label="3-sec retention" val={`${showRet}%`} color={C.green}/>
+                <Stat label="Share rate" val={`${showShare}%`} color={C.yellow}/>
+                <Stat label="New follows" val={showFol} color={C.pink}/>
+              </div>
+              <div style={{ font:`700 10.5px/1 ${mono}`, letterSpacing:"0.2em", color:C.dim, textTransform:"uppercase", margin:"4px 0 10px" }}>Comments you'll get</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+                {result.comments.map((c,i)=>{
+                  const on = prog > (0.66 + i*0.06);
+                  return (
+                    <div key={i} style={{ display:"flex", gap:9, opacity:on?1:0, transform:on?"none":"translateY(6px)", transition:".4s" }}>
+                      <div style={{ width:26, height:26, borderRadius:"50%", flex:"none", background:c.color||C.cyan, display:"flex", alignItems:"center", justifyContent:"center", font:`800 10px/1 ${C.fontBody}`, color:"#fff" }}>{c.initials||"·"}</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ font:`700 11px/1 ${C.fontBody}`, color:C.dim }}>{c.handle}</div>
+                        <div style={{ font:`500 12.5px/1.4 ${C.fontBody}`, color:C.text, marginTop:2 }}>{c.text}</div>
+                        <div style={{ font:`600 10px/1 ${mono}`, color:"rgba(255,255,255,0.35)", marginTop:4 }}>↳ {c.tag}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* verdict */}
+          <div style={{ borderTop:`1px solid ${C.border}`, padding:18, display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr auto", gap:18, alignItems:"center" }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
+              {[
+                { l:"Verdict", v:showVerdict, d:showVerdict>=75?"GREENLIT":showVerdict>=55?"WORTH IT":"RETHINK", win:showVerdict>=75, c:showVerdict>=75?C.green:showVerdict>=55?C.yellow:C.orange },
+                { l:"Est. views", v:done?result.estViews:"—", d:`vs ${fmt(avgViews)} avg`, c:C.cyan },
+                { l:"Completion", v:done?`${result.completion||Math.round(result.curve[result.curve.length-1])}%`:"—", d:"full watch", c:C.yellow },
+                { l:"Save rate", v:done?`${result.saveRate}%`:"—", d:"bookmark", c:C.purple },
+              ].map((g,i)=>(
+                <div key={i} style={{ padding:"12px 13px", borderRadius:13, border:`1px solid ${g.win?"rgba(57,255,20,0.3)":C.border}`, background:g.win?"linear-gradient(180deg,rgba(57,255,20,0.1),transparent)":"rgba(255,255,255,0.02)" }}>
+                  <div style={{ font:`600 9px/1 ${mono}`, letterSpacing:"0.12em", color:"rgba(255,255,255,0.35)", textTransform:"uppercase" }}>{g.l}</div>
+                  <div style={{ font:`800 24px/1 ${mono}`, marginTop:8, fontVariantNumeric:"tabular-nums", color:g.c }}>{g.v}</div>
+                  <div style={{ font:`600 10px/1.2 ${mono}`, marginTop:5, color:"rgba(255,255,255,0.35)" }}>{g.d}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ font:`800 12px/1 ${mono}`, letterSpacing:"0.16em", padding:"12px 16px", borderRadius:10, textAlign:"center", whiteSpace:"nowrap",
+              border:`1px solid ${done?(showVerdict>=75?"rgba(57,255,20,0.35)":"rgba(255,213,10,0.35)"):C.border}`,
+              color: done?(showVerdict>=75?C.green:C.yellow):C.dim,
+              background: done?(showVerdict>=75?"rgba(57,255,20,0.08)":"rgba(255,213,10,0.06)"):"transparent" }}>
+              {busy?"RUNNING…": done?(showVerdict>=75?"✓ GREENLIT":"⚠ NEEDS WORK"):"AWAITING TEST"}
+            </div>
+          </div>
+
+          {/* expert panel — the WHY */}
+          {result.panel && (
+            <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14, flexWrap:"wrap" }}>
+                {I.brain(15,C.purple)}
+                <span style={{ font:`700 11px/1 ${mono}`, letterSpacing:"0.2em", color:C.dim, textTransform:"uppercase" }}>Expert Panel — the why</span>
+                <span style={{ font:`500 11px/1 ${C.fontBody}`, color:"rgba(255,255,255,0.3)" }}>6 specialists, each hunting one viral factor</span>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:10 }}>
+                {result.panel.map((p,i)=>{
+                  const on = prog > (0.8 + i*0.028);
+                  const sc = Math.round(p.score*10*_easeOut(_win(prog,0.82,1)))/10;
+                  const tone = p.score>=7?C.green:p.score>=4.5?C.yellow:C.orange;
+                  return (
+                    <div key={p.key} style={{ opacity:on?1:0, transform:on?"none":"translateY(6px)", transition:".4s", padding:"12px 14px", borderRadius:13, border:`1px solid ${p.color}22`, background:`${p.color}08` }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                        <span style={{ font:`700 10px/1 ${mono}`, letterSpacing:"0.12em", color:p.color, textTransform:"uppercase", flex:1 }}>{p.label}</span>
+                        <span style={{ font:`800 15px/1 ${mono}`, color:tone, fontVariantNumeric:"tabular-nums" }}>{sc.toFixed(1)}<span style={{ fontSize:10, color:"rgba(255,255,255,0.3)" }}>/10</span></span>
+                      </div>
+                      <div style={{ height:5, borderRadius:3, background:"rgba(255,255,255,0.06)", overflow:"hidden", marginBottom:9 }}>
+                        <div style={{ height:"100%", width:`${sc*10}%`, background:tone, borderRadius:3, transition:"width .5s" }}/>
+                      </div>
+                      <div style={{ font:`700 12.5px/1.35 ${C.fontBody}`, color:C.text, marginBottom:4 }}>{p.headline}</div>
+                      {p.evidence && <div style={{ font:`500 12px/1.45 ${C.fontBody}`, color:C.dim, marginBottom:6 }}>{p.evidence}</div>}
+                      {p.fix && <div style={{ font:`600 11.5px/1.4 ${C.fontBody}`, color:tone, display:"flex", gap:6 }}><span>→</span><span>{p.fix}</span></div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* calibration */}
+      <div style={{ marginTop:24, display:"grid", gridTemplateColumns:isMobile?"1fr":"auto 1fr", gap:24, alignItems:"center", justifyItems:isMobile?"center":"start", textAlign:isMobile?"center":"left",
+        border:`1px solid ${C.border}`, borderRadius:20, padding:24, background:`linear-gradient(140deg,rgba(255,213,10,0.05),rgba(197,102,255,0.05))` }}>
+        <div style={{ width:150, height:150, position:"relative", flex:"none" }}>
+          <svg viewBox="0 0 120 120" width="150" height="150">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="9"/>
+            <circle cx="60" cy="60" r="52" fill="none" stroke={C.yellow} strokeWidth="9" strokeLinecap="round"
+              strokeDasharray="327" strokeDashoffset={327*(1-(calib.acc/100))} transform="rotate(-90 60 60)" style={{ transition:"stroke-dashoffset 1.4s ease" }}/>
+          </svg>
+          <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+            <b style={{ font:`800 34px/1 ${mono}`, color:C.yellow, fontVariantNumeric:"tabular-nums" }}>{calib.acc}%</b>
+            <span style={{ font:`700 8.5px/1 ${mono}`, letterSpacing:"0.18em", color:"rgba(255,255,255,0.35)", marginTop:5 }}>SIM ACCURACY</span>
+          </div>
+        </div>
+        <div>
+          <h2 style={{ margin:"0 0 8px", font:`800 22px/1.1 ${head}`, color:C.text }}>It gets smarter every time you post.</h2>
+          <p style={{ margin:0, color:C.dim, fontSize:14, maxWidth:"56ch", fontFamily:C.fontBody }}>
+            {calib.learning
+              ? <>When you publish a tested idea, its real numbers flow back and the Test Audience compares its prediction to reality — then <b style={{color:C.text}}>recalibrates</b>. Post your first tested video to start sharpening the model.</>
+              : <>The real numbers from your posted videos flow back and the model <b style={{color:C.text}}>recalibrates</b> — it's been within {calib.acc}% on your last {calib.bars.length} tested {calib.bars.length===1?"video":"videos"}. Your synthetic followers are becoming a mirror of your real ones.</>}
+          </p>
+          {calib.bars.length>0 && (
+            <div style={{ display:"flex", gap:5, marginTop:16, alignItems:"flex-end", height:44, width:isMobile?200:260 }}>
+              {calib.bars.map((h,i)=>(
+                <div key={i} style={{ flex:1, borderRadius:"3px 3px 0 0", background:`linear-gradient(180deg,${C.yellow},rgba(255,213,10,0.2))`, height:`${Math.max(14,h*0.42)}px`, opacity:0.5+i*0.09 }}/>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{ marginTop:22, display:"flex", gap:14, flexWrap:"wrap", alignItems:"center", color:"rgba(255,255,255,0.4)", font:`500 12.5px/1.5 ${C.fontBody}` }}>
+        <span style={{ font:`700 10px/1 ${mono}`, letterSpacing:"0.14em", color:C.purple, border:`1px solid rgba(197,102,255,0.3)`, borderRadius:999, padding:"7px 11px", background:"rgba(197,102,255,0.06)" }}>WHY IT'S A MOAT</span>
+        <span>Anyone can generate a script. <b style={{color:C.dim}}>Nobody can simulate your specific audience</b> — calibrated against your real posted outcomes, deepening every time you hit post.</span>
+      </div>
+    </div>
+  );
+}
+
 const NAV = [
   { id:"home",      label:"HOME",      ic:I.home      },
   { id:"autopilot", label:"AUTOPILOT", ic:I.zap       },
   { id:"check",     label:"CHECKER",   ic:I.eye       },
+  { id:"test",      label:"TEST AUDIENCE", ic:I.flask  },
   { id:"content",   label:"CONTENT",   ic:I.write     },
   { id:"analytics", label:"ANALYTICS", ic:I.bar       },
+  { id:"reader",    label:"READER",    ic:I.eye       },
   { id:"tasks",     label:"TASKS",     ic:I.check     },
   { id:"deals",     label:"DEALS",     ic:I.star      },
   { id:"ai",        label:"ASSIST",    ic:I.brain     },
@@ -9354,7 +10051,7 @@ Return ONLY JSON: {"creators":[{"handle":"@exacthandle","name":"Display Name","u
   };
   const setStage = (h, stage) => saveProspects(prospects.map(p=> p.h===h ? { ...p, stage, touchedAt:Date.now() } : p));
   const setNote = (h, note) => saveProspects(prospects.map(p=> p.h===h ? { ...p, note } : p));
-  const removeProspect = (h) => saveProspects(prospects.filter(p=>p.h!==h));
+  const removeProspect = (h) => { if(!window.confirm(`Remove @${h} from your pipeline? Their notes and stage will be lost.`)) return; saveProspects(prospects.filter(p=>p.h!==h)); };
   // ── Outreach cockpit helpers ──
   const daysSince = (ts) => ts ? Math.floor((Date.now()-ts)/86400000) : null;
   const agoLabel = (ts) => { const d = daysSince(ts); return d===null?"" : d===0?"today" : d===1?"1d ago" : `${d}d ago`; };
@@ -9385,10 +10082,10 @@ Return ONLY JSON: {"creators":[{"handle":"@exacthandle","name":"Display Name","u
       ? `Write ONE short, low-pressure follow-up DM to ${first} (@${p.h}). You messaged a few days ago offering a free content audit and got no reply. Use the reciprocity + takeaway angle: warmly offer to just send the audit over anyway since it is already done and free, and take the pressure fully off (no worries if the timing is off). Do NOT chase or guilt. A tiny generous nudge that reopens the door. 2 to 3 sentences max. No hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"dm":"the message"}`
       : `Write ONE short DM to ${first} (@${p.h}) who reacted well to the free audit you sent. Softly offer the done-for-you service: you run their whole content engine week to week, every idea scored before they film, fresh ideas each week that ride what is working RIGHT NOW (never a stale plan written weeks ahead, because trends move), pre-post checks, and a weekly review of what hit so you double down.
 Apply these sales principles naturally, not as a hard pitch:
-- ANCHOR then land: the full done-for-you service normally runs much higher, but the founding rate right now is 297 pounds for the month. Mention it is a founding rate so 297 lands as a deal, not the ceiling.
+- ANCHOR then land: the full done-for-you service normally runs much higher, but the founding rate right now is ${SPRINT_PRICE} pounds for the month. Mention it is a founding rate so ${SPRINT_PRICE} lands as a deal, not the ceiling.
 - LOSS AVERSION over hype: frame what they keep losing by posting on guesswork (wasted posts, reach left on the table) more than what they gain.
-- TIME IS MONEY: make the time-saving concrete. They stop spending hours every week dreaming up ideas, agonising over what to post, and filming videos that flop. You hand them exactly what to film, scored, so they just create. Position the 297 against those saved hours (and the wasted posts) as much as against the extra reach. Their time is the expensive thing.
-- VALUE not cost: position 297 as an investment against how much a single wasted month of content costs them, never as an expense.
+- TIME IS MONEY: make the time-saving concrete. They stop spending hours every week dreaming up ideas, agonising over what to post, and filming videos that flop. You hand them exactly what to film, scored, so they just create. Position the ${SPRINT_PRICE} against those saved hours (and the wasted posts) as much as against the extra reach. Their time is the expensive thing.
+- VALUE not cost: position ${SPRINT_PRICE} as an investment against how much a single wasted month of content costs them, never as an expense.
 - GENUINE SCARCITY: you only take a few creators so it stays hands on (only if true, keep it honest).
 - SMALL YES: end on a tiny easy step (want me to build your first week so you can see it), not a hard close.
 Keep it 3 to 5 sentences, casual and human. No hashtags, no emojis, no em-dashes or semicolons. Return ONLY JSON: {"dm":"the message"}`;
@@ -9596,15 +10293,17 @@ Return ONLY JSON: {"dm":"the message, with a line break between paragraphs as \\
     await _withWakeLock(async () => {
     try {
       const hk = handle.trim().replace(/^@/,"").replace(/\s+/g,"");
+      // Gate BEFORE scraping — burning Bright Data credits then denying the audit is wrong.
+      // Cache hits are free so only gate on fresh scrapes.
       const hit = cachedScrape(hk);
+      if(!hit){
+        const gate = await meterAction("audits");
+        if(!gate.allowed){ setPhase("error"); setErr("You've used your free audit this month. Upgrade to Pro for unlimited audits →"); return; }
+      }
       const scr = hit || await scrapeProspectTikTok(handle, 4, ac.signal);
       if(!hit) putScrape(hk, scr); // save the fresh pull so a refresh won't re-charge
       const { handle:h, nick, followers, videos } = scr;
       if(videos.length < 3) throw new Error(`Only ${videos.length} videos found — need a few more to audit properly.`);
-      // Meter only once we have a real channel to audit, so a typo never burns
-      // a free user's monthly audit. Pro/founder are unlimited (meter passes).
-      const gate = await meterAction("audits");
-      if(!gate.allowed){ setPhase("error"); setErr("You've used your free audit this month. Upgrade to Pro for unlimited audits →"); return; }
       setPhase("analysing");
       const withV = videos.filter(v=>v.views>0);
       const avg = withV.length ? Math.round(withV.reduce((s,v)=>s+v.views,0)/withV.length) : 0;
@@ -10306,7 +11005,7 @@ Return ONLY JSON:
 // sends them to Stripe Checkout; the webhook flips their tier on return.
 const PRICING_PLANS = [
   { id:"audit", name:"Free", price:"Free", per:"1 / month", oneoff:true, tagline:"One audit a month, on us", feats:["One full channel audit every month","What's working & what's costing views","Your Voice DNA, decoded","5 video ideas in your voice","No card needed"] },
-  { id:"pro",   name:"Pro",   price:"£29", per:"/month",  tagline:"The full engine, every day", hot:true, feats:["Unlimited audits + idea scoring","Live trends + competitor spy","Multi-model consensus scoring","Priority AI, no queue","First 10 signups: £19/mo for 3 months (founding)"] },
+  { id:"pro",   name:"Pro",   price:"£29", per:"/month",  tagline:"The full engine, every day", hot:true, feats:["Unlimited audits + idea scoring","Live trends + competitor spy","Multi-model consensus scoring","Priority AI, no queue"] },
 ];
 function PricingModal({ tier="free", reason, onClose }){
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
@@ -10326,7 +11025,7 @@ function PricingModal({ tier="free", reason, onClose }){
         {reason && <div style={{ fontSize:13.5, color:C.yellow, background:`${C.yellow}0e`, border:`1px solid ${C.yellow}28`, borderRadius:10, padding:"10px 13px", marginBottom:18, lineHeight:1.5 }}>{reason}</div>}
         <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(2,1fr)", gap:14, maxWidth:620, margin:"0 auto" }}>
           {PRICING_PLANS.map(p=>{
-            const current = tier===p.id;
+            const current = tier===p.id || (p.id==="pro" && tier==="founder");
             return (
               <div key={p.id} style={{ position:"relative", background:p.hot?"linear-gradient(165deg,rgba(34,224,107,0.12),rgba(197,102,255,0.06))":"rgba(255,255,255,0.03)", border:`1px solid ${p.hot?C.pink+"55":"rgba(255,255,255,0.09)"}`, borderRadius:16, padding:"22px 20px", display:"flex", flexDirection:"column", gap:14 }}>
                 {p.hot && <div style={{ position:"absolute", top:-10, right:16, fontSize:10, fontWeight:800, letterSpacing:"0.1em", color:"#fff", background:`linear-gradient(135deg,${C.pink},${C.purple})`, borderRadius:20, padding:"3px 10px" }}>MOST POPULAR</div>}
@@ -10829,7 +11528,7 @@ ${memCtx ? `━━ CHANNEL MEMORY ━━\n${memCtx}` : ""}`;
     setLoading(true);
     try {
       const capCutTrends = loadJSON(CUR_TRENDS_KEY,"");
-      const prompt = `You are an expert viral video editor for TikTok and Instagram Reels in June 2026. Watch this clip carefully and create a detailed step-by-step CapCut editing guide for MAXIMUM virality.
+      const prompt = `You are an expert viral video editor for TikTok and Instagram Reels in ${new Date().toLocaleString('en-GB',{month:'long',year:'numeric'})}. Watch this clip carefully and create a detailed step-by-step CapCut editing guide for MAXIMUM virality.
 ${capCutTrends?`\nCURRENT TRENDS TO USE IN YOUR SOUND/FORMAT RECOMMENDATIONS:\n${capCutTrends}\n`:""}
 
 Give me EXACTLY this format:
@@ -11149,7 +11848,14 @@ function Dashboard({ keys, onEditKeys }) {
   useEffect(()=>{
     try {
       const q = new URLSearchParams(window.location.search);
-      if(q.get("upgraded")){ setTimeout(refreshPlan, 1500); setTimeout(refreshPlan, 5000); window.history.replaceState({}, "", window.location.pathname); }
+      if(q.get("upgraded")){
+        setAiErr("🎉 You're on Pro! Full access unlocked. Refreshing your plan…");
+        setTimeout(()=>setAiErr(""), 7000);
+        setTimeout(refreshPlan, 1500);
+        setTimeout(refreshPlan, 5000);
+        setTimeout(refreshPlan, 12000); // webhook can be slow — one extra attempt
+        window.history.replaceState({}, "", window.location.pathname);
+      }
       else if(q.get("upgrade")==="cancel"){ window.history.replaceState({}, "", window.location.pathname); }
     } catch {}
   },[refreshPlan]);
@@ -11230,6 +11936,7 @@ function Dashboard({ keys, onEditKeys }) {
   const [nextVids, setNextVids]     = useState(()=>loadJSON(NEXTVIDS_KEY,null));
   const [weekly, setWeekly]         = useState(()=>loadJSON(WEEKLY_KEY,null));
   const [trends, setTrends]         = useState(()=>loadJSON(TRENDS_KEY,null));
+  const [deepScanResult, setDeepScanResult] = useState(()=>loadJSON(DEEP_SCAN_KEY,null));
   const [scrapedStats, setScrapedStats] = useState(()=>loadJSON(SCRAPE_KEY,null));
   const [sbLoaded, setSbLoaded]     = useState(false);
   const ttFetchedRef = useRef(false);
@@ -11263,13 +11970,14 @@ function Dashboard({ keys, onEditKeys }) {
   useEffect(()=>{ saveJSON(VIDEOS_KEY, videos.map(v=>{ const {videoUrl,...rest}=v; return rest; })); },[videos]);
   useEffect(()=>{ saveJSON(IDEAS_KEY,ideas); if(sbLoaded&&ideas.length) sbSyncArray("km_ideas",ideas).catch(()=>{}); },[ideas]);
   useEffect(()=>{ saveJSON(CAL_KEY,calItems); if(sbLoaded&&calItems.length) sbSyncArray("km_cal",calItems).catch(()=>{}); },[calItems]);
-  useEffect(()=>{ saveJSON(TASKS_KEY,tasks); },[tasks]);
+  useEffect(()=>{ saveJSON(TASKS_KEY,tasks); if(sbLoaded&&tasks.length) sbSyncJSON("tasks",tasks).catch(()=>{}); },[tasks,sbLoaded]);
   useEffect(()=>{ saveJSON(APPIDEAS_KEY,appIdeas); },[appIdeas]);
   useEffect(()=>{ saveJSON(MANUAL_KEY,manualData); },[manualData]);
-  useEffect(()=>{ if(analysis) saveJSON(ANALYSIS_KEY,analysis); },[analysis]);
-  useEffect(()=>{ if(nextVids) saveJSON(NEXTVIDS_KEY,nextVids); },[nextVids]);
-  useEffect(()=>{ if(weekly) saveJSON(WEEKLY_KEY,weekly); },[weekly]);
-  useEffect(()=>{ if(trends) saveJSON(TRENDS_KEY,trends); },[trends]);
+  useEffect(()=>{ if(analysis){ saveJSON(ANALYSIS_KEY,analysis); if(sbLoaded) sbSyncJSON("analysis",analysis).catch(()=>{}); } },[analysis,sbLoaded]);
+  useEffect(()=>{ if(nextVids){ saveJSON(NEXTVIDS_KEY,nextVids); if(sbLoaded) sbSyncJSON("nextVids",nextVids).catch(()=>{}); } },[nextVids,sbLoaded]);
+  useEffect(()=>{ if(weekly){ saveJSON(WEEKLY_KEY,weekly); if(sbLoaded) sbSyncJSON("weekly",weekly).catch(()=>{}); } },[weekly,sbLoaded]);
+  useEffect(()=>{ if(trends){ saveJSON(TRENDS_KEY,trends); if(sbLoaded) sbSyncJSON("trends",trends).catch(()=>{}); } },[trends,sbLoaded]);
+  useEffect(()=>{ if(deepScanResult){ saveJSON(DEEP_SCAN_KEY,deepScanResult); if(sbLoaded) sbSyncJSON("deepScan",deepScanResult).catch(()=>{}); } },[deepScanResult,sbLoaded]);
 
   // ── LOAD FROM SUPABASE ─────────────────────────────────────────
   useEffect(()=>{
@@ -11307,6 +12015,23 @@ function Dashboard({ keys, onEditKeys }) {
         // Scraped stats
         const stats = await sbFetch("km_scraped_stats","select=*&order=scraped_at.desc&limit=1");
         if(stats?.[0]) { setScrapedStats(stats[0]); saveJSON(SCRAPE_KEY,stats[0]); }
+        // AI results — load from cloud, prefer remote if present
+        const [sbAnalysis, sbNextVids, sbWeekly, sbTrends, sbDeepScan, sbTasks] = await Promise.all([
+          sbLoadJSON("analysis"), sbLoadJSON("nextVids"), sbLoadJSON("weekly"),
+          sbLoadJSON("trends"), sbLoadJSON("deepScan"), sbLoadJSON("tasks"),
+        ]);
+        if(sbAnalysis) { setAnalysis(sbAnalysis); saveJSON(ANALYSIS_KEY,sbAnalysis); }
+        if(sbNextVids) { setNextVids(sbNextVids); saveJSON(NEXTVIDS_KEY,sbNextVids); }
+        if(sbWeekly)   { setWeekly(sbWeekly);     saveJSON(WEEKLY_KEY,sbWeekly); }
+        if(sbTrends)   { setTrends(sbTrends);     saveJSON(TRENDS_KEY,sbTrends); }
+        if(sbDeepScan) { setDeepScanResult(sbDeepScan); saveJSON(DEEP_SCAN_KEY,sbDeepScan); }
+        if(sbTasks?.length) {
+          setTasks(prev => {
+            const merged = [...sbTasks];
+            prev.forEach(p=>{ if(!merged.find(t=>t.id===p.id)) merged.push(p); });
+            return merged;
+          });
+        }
       } catch(e) { setStatsError("Sync error: "+e.message); }
       setSbLoaded(true);
     };
@@ -11324,6 +12049,18 @@ function Dashboard({ keys, onEditKeys }) {
     saveJSON(SCORES_KEY, scores);
     setVideoScores(scores);
   },[videos]);
+
+  // ── DEEP SCAN AUTO-RUN (once on first build, when videos exist) ─
+  useEffect(()=>{
+    if(!sbLoaded) return;
+    if(deepScanResult) return; // already have a scan — skip
+    const videosWithViews = videos.filter(v=>v.views>0);
+    if(videosWithViews.length < 5) return; // need at least 5 real videos
+    const cfg = loadJSON("krapmaps_v1_config",{});
+    if(!cfg?.keys?.gemini) return; // Gemini key not set — user must add it first
+    // Fire and forget — same as clicking Re-run manually
+    runAI && runAI("deepScan");
+  },[sbLoaded,videos,deepScanResult]);
 
   // ── AUTO 24HR UPDATE ───────────────────────────────────────────
   useEffect(()=>{
@@ -11505,22 +12242,22 @@ function Dashboard({ keys, onEditKeys }) {
   // Pulls real comments off the top videos and distils the AUDIENCE VOICE —
   // the richest signal there is: their exact words, requests, and emotional drivers.
   const mineComments = useCallback(async()=>{
-    const cfg = loadJSON(KEYS_KEY,{});
-    const rapidKey = cfg?.keys?.tikwm || cfg?.keys?.igscraper;
-    const aiKey = cfg?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
-    if((!rapidKey || !aiKey) && !USE_BACKEND) return;
-    if(Date.now() - loadJSON("krapmaps_v1_comments_last", 0) < 3*24*60*60*1000) return; // every 3 days
-    const top = [...videos].filter(v=>(v.platform==="tiktok"||!v.platform)&&v.views>0&&(v._tikwmId||v.url)).sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
+    const aiKey = loadJSON(KEYS_KEY,{})?.keys?.anthropic || BAKED_ANTHROPIC_KEY;
+    if(!aiKey && !USE_BACKEND) return;
+    if(Date.now() - loadJSON("krapmaps_v1_comments_last", 0) < 3*24*60*60*1000) return;
+    const top = [...videos].filter(v=>(v.platform==="tiktok"||!v.platform)&&v.views>0).sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,8);
     if(top.length < 2) return;
     try {
-      let pool = [];
-      // Comment mining used the old RapidAPI comments endpoint (now retired). Not wired for
-      // Bright Data yet, so this optional feature no-ops (empty pool → early return below).
-      pool = pool.filter(Boolean).slice(0,120);
-      if(pool.length < 10) return;
       const wl = loadWL();
-      const insights = await callAI(`These are real audience comments on ${wl.handle}'s top videos (${wl.niche}). Analyse the AUDIENCE VOICE — what they actually feel, want, and say.\n\nCOMMENTS:\n${pool.map((c,i)=>`${i+1}. ${c.slice(0,160)}`).join("\n")}\n\nReturn JSON: {"overall_sentiment":"positive|mixed|negative — plus one line why","top_themes":["recurring things they mention"],"audience_requests":["things they explicitly ask for"],"language_patterns":["exact words/phrases the audience uses — to reuse in captions"],"content_ideas":["specific videos the comments are begging for"],"emotional_drivers":["what emotion is making them comment"]}`, 1500);
-      saveJSON(COMMENTS_KEY, { ...insights, sampleSize:pool.length, minedAt:new Date().toISOString() });
+      // RapidAPI comments endpoint is retired. Instead: use Perplexity to research
+      // what this niche audience says on TikTok — more reliable than raw scraping
+      // and gives broader, trend-aware signal rather than just one creator's comments.
+      const topTitles = top.map(v=>`"${(v.title||v.hook||"").slice(0,60)}"`).join(", ");
+      const researchPrompt = `What do ${wl.niche||"lifestyle"} TikTok viewers most commonly comment, request, and emotionally respond to in 2025? Focus on: exact language patterns they use, recurring questions they ask, what makes them save/share, emotional triggers. Context: top videos in this niche include ${topTitles}. Return JSON: {"overall_sentiment":"string","top_themes":["..."],"audience_requests":["..."],"language_patterns":["exact phrases audiences use"],"content_ideas":["specific video types audiences ask for"],"emotional_drivers":["..."]}`;
+      const raw = await callPerplexity(researchPrompt, wl);
+      if(!raw) return;
+      const insights = typeof raw === "string" ? JSON.parse(_stripThink(raw)) : raw;
+      saveJSON(COMMENTS_KEY, { ...insights, sampleSize: top.length, minedAt: new Date().toISOString(), source: "perplexity_research" });
       saveJSON("krapmaps_v1_comments_last", Date.now());
       setCommentInsights(insights);
     } catch(e){ /* silent — additive signal */ }
@@ -11837,7 +12574,32 @@ function Dashboard({ keys, onEditKeys }) {
         nextVids:  richCtx+liveCtx+"\nSuggest next 5 videos, all ON-BRAND for this account. Use winning hook+type combos and engagement signals from the data above. Be specific. "+noFabRule()+" Return JSON: {tiktok:[{title,type,hook,thumbnail_style,whyItWillWork,openingLine,priority:'HIGH|MEDIUM',estimated_views,winning_combo_used}],instagram:[{concept,contentType,whyItWillWork}]}. Videos: "+JSON.stringify(vSummary),
         weekly:    channelCtx+"\nWrite a filming brief for "+(wl.creator2||wl.creator1||"this creator")+". Return JSON: {brief:'2-3 sentences',priorities:[{task,why,how_to_shoot}],rawSummaryText:'WhatsApp-ready message'}. Videos: "+JSON.stringify(vSummary),
         trends:    channelCtx+liveCtx+"\nBest trending angles for "+wl.appName+" RIGHT NOW that fit this channel style. Return JSON: {trends:[{trend,urgency:'POST NOW|THIS WEEK|THIS MONTH',tiktokAngle,hook,why_fits_channel,instagramAngle}]}",
-            };
+      };
+
+      // ── DEEP SCAN — Gemini catalogue analysis ──────────────────────
+      if(mode==="deepScan") {
+        const cfg = loadJSON("krapmaps_v1_config",{});
+        const geminiKey = cfg?.keys?.gemini || "";
+        if(!geminiKey) throw new Error("Gemini API key required for Deep Visual Scan. Add it in Settings → API Keys.");
+        const sorted = [...sortedVideos].filter(v=>v.views>0);
+        sorted.sort((a,b)=>(b.views||0)-(a.views||0));
+        const top10 = sorted.slice(0,10).map(v=>({ title:v.title||"Untitled", views:v.views, likes:v.likes||0, shares:v.shares||0, type:v.type||"unknown", hook:v.hook||"", duration:v.duration||"" }));
+        const bottom10 = sorted.slice(-10).map(v=>({ title:v.title||"Untitled", views:v.views, likes:v.likes||0, shares:v.shares||0, type:v.type||"unknown", hook:v.hook||"", duration:v.duration||"" }));
+        const scanPrompt = `You are a world-class content strategist with deep expertise in short-form video performance. You are analysing two groups of videos from the same TikTok channel to find what separates winners from losers.\n\nCHANNEL: ${wl.appName} | Niche: ${wl.niche} | Audience: ${wl.targetAudience}\n\nTOP 10 PERFORMERS:\n${JSON.stringify(top10,null,2)}\n\nBOTTOM 10 PERFORMERS:\n${JSON.stringify(bottom10,null,2)}\n\nAnalyse across every dimension — hook phrasing, content type, duration, engagement ratios, energy level implied by title, format patterns. Identify the EXACT DNA of what makes videos win vs lose on this specific channel.\n\nReturn JSON:\n{\n  "one_rule": "The single most important rule this channel's data reveals (one sentence)",\n  "winning_dna": [string, string, string, string, string],\n  "losing_patterns": [string, string, string, string],\n  "hook_formula": "The winning hook structure distilled to a template",\n  "dead_zone": "The content type / format that consistently underperforms and should be avoided",\n  "multiplier_insight": "The format or approach that appears to 2x-3x this channel's average views",\n  "next_video_brief": "A specific, actionable brief for the next video based purely on the winning patterns",\n  "confidence": "high|medium|low",\n  "scannedAt": "${new Date().toISOString()}"\n}`;
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiKey}`,{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ contents:[{ parts:[{ text: scanPrompt }] }], generationConfig:{ temperature:0.3 } }),
+        });
+        if(!res.ok) throw new Error(`Gemini error ${res.status}`);
+        const gData = await res.json();
+        const rawText = gData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const cleaned = _stripThink(rawText);
+        const parsed = typeof cleaned === "string" ? JSON.parse(cleaned.replace(/```json|```/g,"").trim()) : cleaned;
+        setDeepScanResult({ ...parsed, sampleSize: top10.length + bottom10.length, scannedAt: new Date().toISOString() });
+        addMemoryEntry("DEEP_SCAN", `Deep Visual Scan complete. Rule: ${parsed.one_rule||"N/A"}`);
+        return;
+      }
 
       const r = await callAI(prompts[mode], 3000);
       if(mode==="analysis") { setAnalysis(r); addMemoryEntry("ANALYSIS", "Analysis run. Top: "+(r.whatIsWorking?.[0]?.insight||"N/A")); }
@@ -12121,7 +12883,7 @@ ${(!hasViewHistory() && corpusBlock) ? `⚡ COLD-START — this channel has litt
 ${corpusBlock ? `CROSS-CREATOR CORPUS (real outcomes pooled across creators in this niche — evidence-backed, use especially when own-channel data is thin): ${corpusBlock}\n` : ""}
 ${stolenHooks ? `Proven hooks from similar creators to adapt:\n${stolenHooks}` : "Run a competitor scan in settings to unlock niche benchmarks."}
 ${compOpportunities ? `Active content gaps competitors aren't covering: ${compOpportunities}` : ""}
-${currentTrendsForScore ? `\nCURRENT TRENDS (June 2026):\n${currentTrendsForScore}` : "NOTE: It is June 2026 — use current platform behaviour, not 2024 data."}
+${currentTrendsForScore ? `\nCURRENT TRENDS (${new Date().toLocaleString('en-GB',{month:'long',year:'numeric'})}):\n${currentTrendsForScore}` : `NOTE: It is ${new Date().toLocaleString('en-GB',{month:'long',year:'numeric'})} — use current platform behaviour.`}
 
 ━━ TIMELESS VIRALITY PRIORS (base rates — lean on these HARD when channel data is thin; let real channel data above override them when it exists) ━━
 • The first frame decides 60%+ of reach: motion, a face mid-expression, or an unresolved visual beat scroll-stop static/context shots.
@@ -12343,7 +13105,14 @@ Return JSON:
       {"hook_type": "Visual Disruption", "caption": "full caption starting with surprising statement", "hashtags": ["..."]}
     ]
   },
-  "instagram": {"caption": "...", "hashtags": ["..."]}
+  "instagram": {
+    "caption": "...(primary)",
+    "hashtags": ["..."],
+    "variants": [
+      {"hook_type": "Story Hook", "caption": "full caption opening with a personal story or experience", "hashtags": ["..."]},
+      {"hook_type": "Question Hook", "caption": "full caption opening with a direct question to the audience", "hashtags": ["..."]}
+    ]
+  }
 }`, 1600);
       setCaptionResult(r);
     } catch(e) { setAiErr("Caption failed: "+e.message); }
@@ -12567,13 +13336,8 @@ Return JSON:
       };
       setIdeas(is=>is.map(i=>i.id===idea.id?updated:i));
       closeModal("editIdea");
-      // Auto-rescore after saving
-      setScoring(true);
-      try {
-        const r = await callAI(`${brandContext(WL)}\n${BRAND_FIT_RULE}\nScore this TikTok idea for the account above. Return JSON: {"viralityScore":0-100,"hookScore":0-100,"verdict":"honest 1-2 sentence verdict","viralityReason":"string","hookFeedback":"string","improvedHook":"string under 12 words","recommendations":[{"action":"string","impact":"high|medium"}]}. Idea: "${title.trim()}" type:${type}`, 1000);
-        setIdeas(is=>is.map(i=>i.id===idea.id?{...i,viral:r.viralityScore,hookScore:r.hookScore,verdict:r.verdict,viralReason:r.viralityReason,hookFeedback:r.hookFeedback,improvedHook:r.improvedHook,recs:r.recommendations?.map(x=>({a:x.action,impact:x.impact?.toUpperCase()}))}:i));
-      } catch(e) { setAiErr("Rescore failed: "+e.message); }
-      setScoring(false);
+      // Use the full scoring pipeline (consensus + channel calibration), not a lightweight single call.
+      await scoreIdea(updated, { reveal: false });
     };
 
     const displayHooks = altHooks||idea.altHooks||null;
@@ -12947,9 +13711,11 @@ Return JSON:
         <div key={nav} className="viewEnter">
         {nav==="home"      && <HomeView ideas={topIdeas} allIdeas={ideas} outcomeMatches={autoMatchOutcomes(ideas, videos)} confirmOutcome={confirmOutcome} calItems={upcomingCal} setNav={id=>{ setNav(id); setSub(null); }} runAI={runAI} aiLoad={aiLoad} openModal={openModal} ttViewsDisplay={ttViewsDisplay} igViewsTotal={igViewsTotal} allViewsDisplay={allViewsDisplay} m={m} scrapedStats={scrapedStats} statsError={statsError} igData={igData} videos={videos} weeklyDebrief={weeklyDebrief} debriefLoading={debriefLoading} runDebrief={runDebrief} />}
         {nav==="content"   && <ContentView videoScores={videoScores} ideas={ideas} setIdeas={setIdeas} calItems={calItems} setCalItems={setCalItems} scoreIdea={scoreIdea} genCaption={genCaption} aiLoad={aiLoad} captionResult={captionResult} captionIdea={captionIdea} copied={copied} copyText={copyText} openModal={openModal} setEditIdeaTarget={setEditIdeaTarget} setModals={setModals} setNavSub={setSub} onBuildScript={handleBuildScript} markPosted={markPosted} />}
-        {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} setIdeas={setIdeas} />}
+        {nav==="analytics" && <AnalyticsView m={manualData} videos={sortedVideos} totalViews={totalViews} avgRatio={avgRatio} facecamAvg={facecamAvg} hookStats={hookStats} analysis={analysis} nextVids={nextVids} weekly={weekly} trends={trends} igData={igData} hasIG={hasIG} igLoad={igLoad} fetchIG={fetchIG} runAI={runAI} aiLoad={aiLoad} setUpdateTarget={setUpdateTarget} openModal={openModal} deleteVideo={deleteVideo} WL={WL} videoScores={videoScores} commentInsights={commentInsights} visualDNA={visualDNA} setIdeas={setIdeas} deepScanResult={deepScanResult} />}
         {nav==="autopilot" && <AutopilotView videos={videos} ideas={ideas} setIdeas={setIdeas} WL={WL} setNav={id=>{ setNav(id); setSub(null); }} copyText={copyText} copied={copied} />}
         {nav==="check"     && <PrePostCheck videos={videos} WL={WL} />}
+        {nav==="test"      && <TestAudienceView ideas={ideas} videos={sortedVideos} commentInsights={commentInsights} WL={activeWL} />}
+        {nav==="reader"    && <VideoReaderView videos={videos} WL={WL} />}
         {nav==="tasks"     && <TasksView tasks={tasks} setTasks={setTasks} appIdeas={appIdeas} setAppIdeas={setAppIdeas} setEditAppIdeaTarget={setEditAppIdeaTarget} setModals={setModals} />}
         {nav==="deals"     && <DealsView />}
         {nav==="audit"     && <ProspectAuditView WL={activeWL} operator={true} />}
@@ -12966,6 +13732,8 @@ Return JSON:
               setTimeout(()=>setSyncMsg(null), 4000);
             }}
             syncMsg={syncMsg} videos={videos} ideas={ideas}
+            deepScanResult={deepScanResult} aiLoad={aiLoad}
+            onRescan={()=>runAI("deepScan")}
             onBulkImport={newVids=>{
               setVideos(vs=>{
                 const merged=[...vs];
