@@ -9080,14 +9080,20 @@ function PrePostCheck({ videos=[], WL={}, ideas=[], setIdeas=null }) {
   const fileRef = useRef();
   const [pprog, setPprog] = useState(0); // judges reveal animation
   const praf = useRef(null);
+  const psafe = useRef(null);
   const hasGemini = !!((loadJSON(KEYS_KEY,{})?.keys?.gemini) || BAKED_GEMINI_KEY || USE_BACKEND);
   const animatePanel = () => {
     cancelAnimationFrame(praf.current);
     const t0 = performance.now(), dur = 4200;
     const step = (now) => { const p=Math.min(1,(now-t0)/dur); setPprog(p); if(p<1) praf.current=requestAnimationFrame(step); };
     praf.current = requestAnimationFrame(step);
+    // Safety net: iOS Low Power Mode (and backgrounded tabs) throttle/pause
+    // requestAnimationFrame, which would leave the judges stuck hidden. Force the
+    // panel fully revealed shortly after the intended duration no matter what.
+    clearTimeout(psafe.current);
+    psafe.current = setTimeout(()=>setPprog(1), dur + 700);
   };
-  useEffect(()=>()=>cancelAnimationFrame(praf.current),[]);
+  useEffect(()=>()=>{ cancelAnimationFrame(praf.current); clearTimeout(psafe.current); },[]);
 
   const run = async (f) => {
     if(!f) return;
