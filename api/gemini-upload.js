@@ -81,9 +81,12 @@ export default async function handler(req, res) {
       // no policy setup needed — the signed URL carries its own auth).
       if (payload.stage === 'sign') {
         if (!SB_SVC) return res.status(400).json({ error: 'Large-file upload not configured (SUPABASE_SERVICE_ROLE_KEY missing).' });
-        const svcH = { apikey: SB_SVC, Authorization: `Bearer ${SB_SVC}`, 'Content-Type': 'application/json' };
-        // Auto-create the private bucket (ignore "already exists").
-        await fetch(`${SB_URL}/storage/v1/bucket`, { method: 'POST', headers: svcH, body: JSON.stringify({ id: STAGE_BUCKET, name: STAGE_BUCKET, public: false, file_size_limit: 524288000 }) }).catch(() => {});
+        // New-style Supabase secret keys authorize via `apikey` only — a Bearer header
+        // (a non-JWT secret) gets rejected, which is what silently broke bucket creation.
+        const svcH = { apikey: SB_SVC, 'Content-Type': 'application/json' };
+        // Auto-create the private bucket; tolerate "already exists", surface anything else.
+        const mk = await fetch(`${SB_URL}/storage/v1/bucket`, { method: 'POST', headers: svcH, body: JSON.stringify({ id: STAGE_BUCKET, name: STAGE_BUCKET, public: false, file_size_limit: 524288000 }) });
+        if (!mk.ok) { const t = await mk.text(); if (!/exist/i.test(t)) return res.status(502).json({ error: `Couldn't create storage bucket: ${mk.status} ${t.slice(0, 160)}` }); }
         const ext = /mov/i.test(payload.mimeType || '') ? 'mov' : 'mp4';
         const path = `chk/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const signRes = await fetch(`${SB_URL}/storage/v1/object/upload/sign/${STAGE_BUCKET}/${path}`, { method: 'POST', headers: svcH, body: '{}' });
@@ -101,7 +104,7 @@ export default async function handler(req, res) {
         const path = payload.path;
         const mime = (payload.mimeType === 'video/quicktime' ? 'video/mov' : payload.mimeType) || 'video/mp4';
         if (!path) return res.status(400).json({ error: 'path required' });
-        const svcAuth = { apikey: SB_SVC, Authorization: `Bearer ${SB_SVC}` };
+        const svcAuth = { apikey: SB_SVC };
         const dl = await fetch(`${SB_URL}/storage/v1/object/${STAGE_BUCKET}/${path}`, { headers: svcAuth });
         if (!dl.ok) { const t = await dl.text(); return res.status(502).json({ error: `Couldn't read staged clip: ${dl.status} ${t.slice(0, 150)}` }); }
         const buf = Buffer.from(await dl.arrayBuffer());
