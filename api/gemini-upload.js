@@ -85,7 +85,9 @@ export default async function handler(req, res) {
         // (a non-JWT secret) gets rejected, which is what silently broke bucket creation.
         const svcH = { apikey: SB_SVC, 'Content-Type': 'application/json' };
         // Auto-create the private bucket; tolerate "already exists", surface anything else.
-        const mk = await fetch(`${SB_URL}/storage/v1/bucket`, { method: 'POST', headers: svcH, body: JSON.stringify({ id: STAGE_BUCKET, name: STAGE_BUCKET, public: false, file_size_limit: 524288000 }) });
+        // Don't request a file_size_limit — a value above the project's global cap makes
+        // Supabase reject the whole bucket creation. Inherit the project default instead.
+        const mk = await fetch(`${SB_URL}/storage/v1/bucket`, { method: 'POST', headers: svcH, body: JSON.stringify({ id: STAGE_BUCKET, name: STAGE_BUCKET, public: false }) });
         if (!mk.ok) { const t = await mk.text(); if (!/exist/i.test(t)) return res.status(502).json({ error: `Couldn't create storage bucket: ${mk.status} ${t.slice(0, 160)}` }); }
         const ext = /mov/i.test(payload.mimeType || '') ? 'mov' : 'mp4';
         const path = `chk/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
