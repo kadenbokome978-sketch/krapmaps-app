@@ -3333,7 +3333,7 @@ const NicheView = ({ WL, keys, aiLoad, setAiLoad, setAiErr, videos=[], ideas=[] 
     try {
       const wl = loadWL();
       const ctx = buildChannelContext();
-      const memCtx = buildMemoryContext();
+      const memCtx = await buildMemoryContext();
       const topicsAlreadyCovered = videos.map(v=>v.title).filter(Boolean).slice(0,20);
 
       // Step 1 — Perplexity scans live for gaps
@@ -3373,7 +3373,7 @@ Return ONLY JSON: { gaps:[{topic,why_gap_exists,urgency_days:number,potential_re
     try {
       const wl = loadWL();
       const ctx = buildChannelContext();
-      const memCtx = buildMemoryContext();
+      const memCtx = await buildMemoryContext();
       const hDB = buildHookDB(videos);
       const pats = buildPatterns(videos);
       const sharedContext = `
@@ -3440,7 +3440,7 @@ Return ONLY JSON: {
     setLoad("predict", true);
     try {
       const ctx = buildChannelContext();
-      const memCtx = buildMemoryContext();
+      const memCtx = await buildMemoryContext();
       const compCtx = competitors?.data ? `Competitor intel: ${JSON.stringify(competitors.data.opportunities?.slice(0,2))}` : "";
       // Silently check if this topic is trending right now
       const liveTrendCheck = await silentPPX(`Is "${predictInput.title}" currently trending on TikTok? Is "${predictInput.hook}" a proven hook style right now? What is the current demand level for this type of ${loadWL().niche} content? Return JSON: { topic_trending:true|false, topic_momentum:"rising|stable|fading|unknown", hook_style_working:true|false, demand_level:"HIGH|MEDIUM|LOW", similar_viral_examples:[string] }`);
@@ -3543,7 +3543,7 @@ Return ONLY JSON: {
     try {
       const wl = loadWL();
       const ctx = buildChannelContext();
-      const memCtx = buildMemoryContext();
+      const memCtx = await buildMemoryContext();
       const compCtx = competitors?.data?.opportunities ? `Competitor gaps identified: ${JSON.stringify(competitors.data.opportunities.slice(0,2))}` : "";
       // Step 1a — raw trend fetch
       const trendPrompt = `You are researching TikTok and Instagram trends RIGHT NOW in ${wl.niche} for a creator targeting ${wl.targetAudience}.
@@ -3566,7 +3566,7 @@ Return ONLY JSON: { trends:[{title,why,engagement_level:"HIGH|MEDIUM|LOW",how_to
     try {
       const ctx = buildChannelContext();
       const { wl } = ctx;
-      const memCtx = buildMemoryContext();
+      const memCtx = await buildMemoryContext();
       const hDB = buildHookDB(videos);
       const pats = buildPatterns(videos);
 
@@ -3621,7 +3621,7 @@ Return JSON: {
     try {
       const ctx = buildChannelContext();
       const { wl } = ctx;
-      const memCtx = buildMemoryContext();
+      const memCtx = await buildMemoryContext();
       const hDB = buildHookDB(videos);
       ensureVoiceProfile(videos, ideas, wl); // keep the distilled voice profile warm (fire-and-forget)
 
@@ -4959,7 +4959,7 @@ const SettingsView = ({ plan, onManagePlan, keys, onEditKeys, scrapedStats, hasI
       const top5 = sorted.slice(0,5).map(v=>({title:v.title,views:v.views,hook:v.hook,type:v.type}));
       const bot5 = sorted.slice(-5).map(v=>({title:v.title,views:v.views,hook:v.hook,type:v.type}));
       const postedIdeas = ideas.filter(i=>i.status==="posted"&&i.postedViews>0).slice(0,5);
-      const mem = buildMemoryContext();
+      const mem = await buildMemoryContext();
       const compData = loadCompetitorData();
       const compSummary = compData?.data?.opportunities?.slice(0,2).map(o=>o.gap).join(", ")||"";
 
@@ -5745,6 +5745,34 @@ const noFabRule = () => hasViewHistory()
 // Hide a fabricated-looking estimate in the UI: empty, "—", or "N/A" render as nothing.
 const showEst = (v) => { const s=(v==null?"":String(v)).trim(); return (!s || s==="—" || /^n\/?a$/i.test(s)) ? null : s; };
 
+// ── NEXUS VAULT BRIDGE ──────────────────────────────────────────
+const nexusVaultCall = async (action, params={}) => {
+  try {
+    const r = await fetch('/api/_nexus', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action, ...params }),
+    });
+    if(!r.ok) return null;
+    return r.json();
+  } catch { return null; }
+};
+const nexusVaultWrite = (entry) => {
+  nexusVaultCall('write', {
+    title: `greenlit/${entry.type.toLowerCase()}/${entry.date}/${entry.id}`,
+    body: entry.recommendation + (entry.outcome ? '\nOutcome: '+entry.outcome : ''),
+    memoryClass: 'fact',
+    tags: ['greenlit', entry.type.toLowerCase()],
+  }).catch(()=>{});
+};
+const nexusVaultSearch = async (query) => {
+  try {
+    const r = await nexusVaultCall('search', { query, limit: 8 });
+    if(!r?.results?.length) return '';
+    const lines = r.results.map(n => '[NEXUS] ' + (n.title||'').split('/').pop() + ': ' + (n.body||n.excerpt||'').slice(0,200));
+    return '\nNEXUS INSTITUTIONAL MEMORY (cross-system intelligence):\n' + lines.join('\n');
+  } catch { return ''; }
+};
+
 // ── MEMORY SYSTEM ────────────────────────────────────────────────
 // Stores what AI recommended + what actually happened, compounds over time
 const loadMemory = () => loadJSON(MEMORY_KEY, { entries:[], lastUpdated:null });
@@ -5756,10 +5784,14 @@ const addMemoryEntry = (type, recommendation, outcome=null) => {
   if(mem.entries.length>50) mem.entries = mem.entries.slice(-50);
   mem.lastUpdated = new Date().toISOString().slice(0,10);
   saveMemory(mem);
+  nexusVaultWrite(entry);
 };
-const buildMemoryContext = () => {
+const buildMemoryContext = async (searchHint) => {
   const mem = loadMemory();
-  if(!mem.entries.length) return "";
+  if(!mem.entries.length) {
+    const vault = await nexusVaultSearch(searchHint || 'greenlit content strategy performance');
+    return vault;
+  }
 
   // Categorize entries by type for structured context instead of flat log
   const outcomes   = mem.entries.filter(e=>["IDEA_OUTCOME","STRUCTURED_LEARNING","OUTCOME","AUTO_OUTCOME","COUNTERFACTUAL","REPLICATION_KEY"].includes(e.type));
@@ -5795,7 +5827,8 @@ const buildMemoryContext = () => {
   }
 
   ctx += "\nPattern: avoid repeating failed recommendations. Double down on what worked.";
-  return ctx;
+  const vault = await nexusVaultSearch(searchHint || 'greenlit content strategy performance');
+  return ctx + vault;
 };
 
 // ── COMPETITOR INTELLIGENCE ──────────────────────────────────────
@@ -10959,7 +10992,7 @@ Be specific with timestamps. Harsh but constructive. No generic advice.`;
     try {
       const organicVids = videos.filter(v=>!v.boosted);
       const avgViews = organicVids.length ? Math.round(organicVids.reduce((s,v)=>s+(v.views||0),0)/organicVids.length) : (videos.length ? Math.round(videos.reduce((s,v)=>s+(v.views||0),0)/videos.length) : 0);
-      const memCtx = buildMemoryContext();
+      const memCtx = await buildMemoryContext();
       const currentTrends = loadJSON(CUR_TRENDS_KEY,"");
       const channelTheoryChat = loadJSON(CHANNEL_THEORY_KEY,"");
       const chatInsights = buildChannelInsights(organicVids.length?organicVids:videos);
@@ -12191,7 +12224,7 @@ function Dashboard({ keys, onEditKeys }) {
       const avgViews = vSummary.length ? Math.round(vSummary.reduce((s,v)=>s+(v.views||0),0)/vSummary.length) : 0;
       const hookDB = buildHookDB(sortedVideos);
       const patterns = buildPatterns(sortedVideos);
-      const memCtx = buildMemoryContext();
+      const memCtx = await buildMemoryContext();
       const channelCtx = "Channel: "+wl.appName+" | Niche: "+wl.niche+" | Audience: "+wl.targetAudience+"\nAvg views: "+avgViews+" | Best hooks: "+JSON.stringify(hookDB.slice(0,3))+(patterns?"\nBest day: "+patterns.dayPerf[0]?.day+" | Best type: "+patterns.typePerf[0]?.type:"")+"\n"+memCtx;
 
       // Silently prefetch live data from Perplexity before Claude runs
