@@ -5748,7 +5748,7 @@ const showEst = (v) => { const s=(v==null?"":String(v)).trim(); return (!s || s=
 // ── NEXUS VAULT BRIDGE ──────────────────────────────────────────
 const nexusVaultCall = async (action, params={}) => {
   try {
-    const r = await fetch('/api/_nexus', {
+    const r = await fetch('/api/nexus', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ action, ...params }),
     });

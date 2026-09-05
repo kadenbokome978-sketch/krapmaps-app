@@ -6,6 +6,7 @@
 //        own minted code → a hand-made client build the email is allow-listed for.
 import { cors, requireUser, readJson } from "./_lib.js";
 import { getBilling, TIERS, configured, isFounder } from "./_billing.js";
+import meterHandler from "./_meter.js";
 
 const ADMINS = new Set(
   String(process.env.ADMIN_EMAILS || "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)
@@ -25,6 +26,7 @@ const founderCode = (id) => "FND" + String(id).replace(/[^a-zA-Z0-9]/g, "").slic
 export default async function handler(req, res) {
   cors(res);
   if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.query.action === "meter") return meterHandler(req, res);
 
   const user = await requireUser(req, res);
   if (!user) return;

@@ -1,5 +1,7 @@
 {
   "rewrites": [
+    { "source": "/api/nexus-state", "destination": "/api/nexus" },
+    { "source": "/api/meter", "destination": "/api/me?action=meter" },
     { "source": "/api/ig-callback", "destination": "/api/ig?action=callback" },
     { "source": "/r/:handle", "destination": "/api/r?u=:handle" },
     { "source": "/dashboard", "destination": "/app.html" },
